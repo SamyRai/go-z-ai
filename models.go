@@ -82,7 +82,7 @@ func runModelsList(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	models, err := apiClient.Models().List()
+	models, err := apiClient.Models().List(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to list models: %w", err)
 	}
@@ -97,7 +97,7 @@ func runModelsGet(cmd *cobra.Command, args []string) error {
 	}
 
 	modelID := args[0]
-	model, err := apiClient.Models().Get(modelID)
+	model, err := apiClient.Models().Get(cmd.Context(), modelID)
 	if err != nil {
 		return fmt.Errorf("failed to get model: %w", err)
 	}
@@ -111,7 +111,7 @@ func runModelsText(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	models, err := apiClient.Models().GetTextModels()
+	models, err := apiClient.Models().GetTextModels(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to get text models: %w", err)
 	}
@@ -125,7 +125,7 @@ func runModelsVision(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	models, err := apiClient.Models().GetVisionModels()
+	models, err := apiClient.Models().GetVisionModels(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to get vision models: %w", err)
 	}
@@ -139,7 +139,7 @@ func runModelsFree(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	models, err := apiClient.Models().GetFreeModels()
+	models, err := apiClient.Models().GetFreeModels(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to get free models: %w", err)
 	}

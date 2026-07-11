@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"mime"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -36,6 +39,7 @@ var (
 	chatSchemaName   string
 	chatSchemaStrict bool
 	chatToolFile     string
+	chatImages       []string
 )
 
 var chatCreateCmd = &cobra.Command{
@@ -81,6 +85,7 @@ func init() {
 	chatCreateCmd.Flags().StringVar(&chatSchemaName, "schema-name", "output", "Name for the json_schema response format")
 	chatCreateCmd.Flags().BoolVar(&chatSchemaStrict, "schema-strict", false, "Require strict schema adherence")
 	chatCreateCmd.Flags().StringVar(&chatToolFile, "tool", "", "Function-calling tool definitions: @tools.json or inline JSON array")
+	chatCreateCmd.Flags().StringArrayVar(&chatImages, "image", nil, "Attach an image (repeatable): a URL, or @path to a local file (base64-encoded). Requires a vision model (glm-4.6v/4.5v).")
 
 	chatSimpleCmd.Flags().StringVar(&chatFormat, "format", "text", "Output format (text, json)")
 }
@@ -105,10 +110,10 @@ func runChatCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	if chatStream {
-		return runChatStream(apiClient, context.Background(), req)
+		return runChatStream(apiClient, cmd.Context(), req)
 	}
 
-	resp, err := apiClient.Chat().Create(*req)
+	resp, err := apiClient.Chat().Create(cmd.Context(), *req)
 	if err != nil {
 		return fmt.Errorf("failed to create chat completion: %w", err)
 	}
@@ -162,7 +167,41 @@ func buildChatRequest(userMessage string) (*client.ChatRequest, error) {
 		req.Tools = tools
 	}
 
+	if len(chatImages) > 0 {
+		images := make([]string, len(chatImages))
+		for i, arg := range chatImages {
+			resolved, err := resolveImageArg(arg)
+			if err != nil {
+				return nil, fmt.Errorf("read --image %q: %w", arg, err)
+			}
+			images[i] = resolved
+		}
+		// The user message is always the last one buildChatRequest set up.
+		req.Messages[len(req.Messages)-1].Images = images
+	}
+
 	return req, nil
+}
+
+// resolveImageArg turns a --image argument into the URL/data-URI form the
+// API expects: a bare http(s):// URL passes through unchanged; an "@path"
+// (matching --tool/--json-schema's @file convention) reads the local file
+// and base64-encodes it as a data: URI, guessing the MIME type from the
+// extension (falling back to image/jpeg, the API's documented default).
+func resolveImageArg(arg string) (string, error) {
+	if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
+		return arg, nil
+	}
+	path := strings.TrimPrefix(arg, "@")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	mimeType := mime.TypeByExtension(filepath.Ext(path))
+	if mimeType == "" {
+		mimeType = "image/jpeg"
+	}
+	return fmt.Sprintf("data:%s;base64,%s", mimeType, base64.StdEncoding.EncodeToString(data)), nil
 }
 
 // loadJSONArg resolves a "@path" file reference or returns the literal bytes.
@@ -216,7 +255,7 @@ func runChatSimple(cmd *cobra.Command, args []string) error {
 		{Role: "user", Content: message},
 	}
 
-	response, err := apiClient.Chat().CreateSimple(model, message, messages)
+	response, err := apiClient.Chat().CreateSimple(cmd.Context(), model, message, messages)
 	if err != nil {
 		return fmt.Errorf("failed to create simple chat: %w", err)
 	}

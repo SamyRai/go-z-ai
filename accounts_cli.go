@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"zai-api-client/pkg/accounts"
 	"zai-api-client/pkg/client"
+	"zai-api-client/pkg/usageview"
 )
 
 var accountsCmd = &cobra.Command{
@@ -125,7 +126,7 @@ func runAccountsAdd(cmd *cobra.Command, args []string) error {
 		}
 	} else {
 		fmt.Println("🔍 Detecting account type (free probe, no tokens spent)...")
-		detected, confirmed, err := accounts.ProbeType(apiKey)
+		detected, confirmed, err := accounts.ProbeType(cmd.Context(), apiKey)
 		if err != nil {
 			return fmt.Errorf("failed to detect account type: %w", err)
 		}
@@ -193,7 +194,7 @@ func runAccountsList(cmd *cobra.Command, args []string) error {
 		if acct.Name == store.Active {
 			active = "✅"
 		}
-		fmt.Printf("%-16s %-14s %-38s %-14s %-8s %s\n", acct.Name, acct.Type, baseURL, maskAPIKey(acct.APIKey), active, formatRelativeTime(acct.LastUsedAt))
+		fmt.Printf("%-16s %-14s %-38s %-14s %-8s %s\n", acct.Name, acct.Type, baseURL, maskAPIKey(acct.APIKey), active, usageview.FormatRelativeTime(acct.LastUsedAt))
 	}
 
 	return nil
@@ -272,7 +273,7 @@ func runAccountsShow(cmd *cobra.Command, args []string) error {
 	fmt.Printf("   API Key: %s\n", maskAPIKey(acct.APIKey))
 	fmt.Printf("   Active: %t\n", acct.Name == store.Active)
 	fmt.Printf("   Added: %s\n", acct.CreatedAt.Format("2006-01-02 15:04:05"))
-	fmt.Printf("   Last Used: %s\n", formatRelativeTime(acct.LastUsedAt))
+	fmt.Printf("   Last Used: %s\n", usageview.FormatRelativeTime(acct.LastUsedAt))
 
 	return nil
 }
@@ -336,7 +337,7 @@ func runAccountsQuota(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("account %q: %w", acct.Name, err)
 		}
 
-		quota, err := apiClient.Quota().GetQuotaLimit()
+		quota, err := apiClient.Quota().GetQuotaLimit(cmd.Context())
 		if err != nil {
 			results = append(results, accountQuotaResult{Name: acct.Name, Type: acct.Type, Skipped: err.Error()})
 			if format != "json" {
@@ -387,7 +388,7 @@ func runAccountsUsage(cmd *cobra.Command, args []string) error {
 	if days < 1 {
 		days = 1
 	}
-	start, end := usageWindow(days, today)
+	start, end := usageview.Window(days, today)
 
 	targets, err := resolveTargets(store, only)
 	if err != nil {
@@ -424,7 +425,7 @@ func runAccountsUsage(cmd *cobra.Command, args []string) error {
 		failed := false
 
 		if metric == "model" || metric == "both" {
-			models, err := apiClient.Quota().GetModelUsage(start, end)
+			models, err := apiClient.Quota().GetModelUsage(cmd.Context(), start, end)
 			if err != nil {
 				result.Skipped = fmt.Sprintf("failed to fetch model usage: %v", err)
 				failed = true
@@ -433,7 +434,7 @@ func runAccountsUsage(cmd *cobra.Command, args []string) error {
 			}
 		}
 		if !failed && (metric == "tool" || metric == "both") {
-			tools, err := apiClient.Quota().GetToolUsage(start, end)
+			tools, err := apiClient.Quota().GetToolUsage(cmd.Context(), start, end)
 			if err != nil {
 				result.Skipped = fmt.Sprintf("failed to fetch tool usage: %v", err)
 				failed = true
@@ -464,91 +465,6 @@ func runAccountsUsage(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-// usageWindow computes the [start, end] range to query: today at hourly
-// granularity when today is set or days<=1, otherwise the trailing N
-// calendar days (daily granularity), matching how the monitor API itself
-// switches granularity based on the requested range's width.
-func usageWindow(days int, today bool) (time.Time, time.Time) {
-	now := time.Now()
-	endOfToday := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, now.Location())
-
-	if today || days <= 1 {
-		startOfToday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-		return startOfToday, endOfToday
-	}
-
-	startDay := endOfToday.AddDate(0, 0, -(days - 1))
-	start := time.Date(startDay.Year(), startDay.Month(), startDay.Day(), 0, 0, 0, 0, startDay.Location())
-	return start, endOfToday
-}
-
-// heatmapLevels is the density ramp used to render each bucket, from empty
-// to peak.
-var heatmapLevels = []rune(" ░▒▓█")
-
-// heatmapBlocks renders one character per value, scaled against that row's
-// own maximum (not a global maximum) so each series' own activity pattern
-// stays readable regardless of how it compares in magnitude to others.
-func heatmapBlocks(values []int64) string {
-	var max int64
-	for _, v := range values {
-		if v > max {
-			max = v
-		}
-	}
-
-	runes := make([]rune, len(values))
-	for i, v := range values {
-		if max == 0 || v == 0 {
-			runes[i] = heatmapLevels[0]
-			continue
-		}
-		level := int(float64(v)/float64(max)*float64(len(heatmapLevels)-1) + 0.5)
-		if level < 1 {
-			level = 1
-		}
-		if level >= len(heatmapLevels) {
-			level = len(heatmapLevels) - 1
-		}
-		runes[i] = heatmapLevels[level]
-	}
-	return string(runes)
-}
-
-// formatRelativeTime renders how long ago t was, or "never" for the zero
-// value (an account that has never been used for a real command).
-func formatRelativeTime(t time.Time) string {
-	if t.IsZero() {
-		return "never"
-	}
-
-	d := time.Since(t)
-	switch {
-	case d < time.Minute:
-		return "just now"
-	case d < time.Hour:
-		return fmt.Sprintf("%dm ago", int(d.Minutes()))
-	case d < 24*time.Hour:
-		return fmt.Sprintf("%dh ago", int(d.Hours()))
-	default:
-		return fmt.Sprintf("%dd ago", int(d.Hours()/24))
-	}
-}
-
-// formatCount renders large counters compactly (e.g. 159454762 -> "159.5M").
-func formatCount(n int64) string {
-	switch {
-	case n >= 1_000_000_000:
-		return fmt.Sprintf("%.1fB", float64(n)/1_000_000_000)
-	case n >= 1_000_000:
-		return fmt.Sprintf("%.1fM", float64(n)/1_000_000)
-	case n >= 1_000:
-		return fmt.Sprintf("%.1fK", float64(n)/1_000)
-	default:
-		return fmt.Sprintf("%d", n)
-	}
 }
 
 // rangeLabel summarizes a bucket list's span for display.
@@ -584,9 +500,9 @@ func printModelHeatmap(u *client.ModelUsageResponse) {
 	}
 
 	for _, m := range series {
-		fmt.Printf("  %-*s %s  %s tokens\n", nameWidth, m.ModelName, heatmapBlocks(m.TokensUsage), formatCount(m.TotalTokens))
+		fmt.Printf("  %-*s %s  %s tokens\n", nameWidth, m.ModelName, usageview.HeatmapBlocks(m.TokensUsage), usageview.FormatCount(m.TotalTokens))
 	}
-	fmt.Printf("  Total: %s calls, %s tokens\n\n", formatCount(d.TotalUsage.TotalModelCallCount), formatCount(d.TotalUsage.TotalTokensUsage))
+	fmt.Printf("  Total: %s calls, %s tokens\n\n", usageview.FormatCount(d.TotalUsage.TotalModelCallCount), usageview.FormatCount(d.TotalUsage.TotalTokensUsage))
 }
 
 func printToolHeatmap(u *client.ToolUsageResponse) {
@@ -623,7 +539,7 @@ func printToolHeatmap(u *client.ToolUsageResponse) {
 	}
 
 	for _, t := range series {
-		fmt.Printf("  %-*s %s  %s calls\n", nameWidth, label(t), heatmapBlocks(t.UsageCount), formatCount(t.TotalUsageCount))
+		fmt.Printf("  %-*s %s  %s calls\n", nameWidth, label(t), usageview.HeatmapBlocks(t.UsageCount), usageview.FormatCount(t.TotalUsageCount))
 	}
 	fmt.Println()
 }

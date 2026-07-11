@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -85,7 +86,7 @@ func runUsageQuota(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	quota, err := apiClient.Quota().GetQuotaLimit()
+	quota, err := apiClient.Quota().GetQuotaLimit(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to get quota limit: %w", err)
 	}
@@ -106,10 +107,10 @@ func runUsageQuota(cmd *cobra.Command, args []string) error {
 // and tool-specific breakdown when available.
 //
 // The output format:
-// • [Window Description]
-//   Usage: [current/total (percentage)] — [remaining] remaining
-//   Resets: [reset time] (in [countdown])
-//   By tool: [breakdown for MCP tools quotas]
+//   - [Window Description]
+//     Usage: [current/total (percentage)] — [remaining] remaining
+//     Resets: [reset time] (in [countdown])
+//     By tool: [breakdown for MCP tools quotas]
 func outputQuotaLimit(quota *client.QuotaLimitResponse) error {
 	fmt.Printf("📊 GLM Coding Plan Usage (%s tier)\n\n", strings.ToUpper(quota.Data.Level))
 
@@ -169,7 +170,7 @@ func runUsageSummary(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	status, err := apiClient.Usage().GetAccountStatus()
+	status, err := apiClient.Usage().GetAccountStatus(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to get account status: %w", err)
 	}
@@ -183,7 +184,7 @@ func runUsageAccount(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	status, err := apiClient.Usage().GetAccountStatus()
+	status, err := apiClient.Usage().GetAccountStatus(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to get account info: %w", err)
 	}
@@ -207,7 +208,7 @@ func runUsageBilling(cmd *cobra.Command, args []string) error {
 
 func runUsageCheck(cmd *cobra.Command, args []string) error {
 	if watchMode {
-		return runUsageWatch()
+		return runUsageWatch(cmd.Context())
 	}
 
 	apiClient, err := getClient()
@@ -215,7 +216,7 @@ func runUsageCheck(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	status, err := apiClient.Usage().GetAccountStatus()
+	status, err := apiClient.Usage().GetAccountStatus(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to check status: %w", err)
 	}
@@ -233,7 +234,7 @@ func runUsageCheck(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runUsageWatch() error {
+func runUsageWatch(ctx context.Context) error {
 	apiClient, err := getClient()
 	if err != nil {
 		return err
@@ -247,8 +248,10 @@ func runUsageWatch() error {
 
 	for {
 		select {
+		case <-ctx.Done():
+			return ctx.Err()
 		case <-ticker.C:
-			status, err := apiClient.Usage().GetAccountStatus()
+			status, err := apiClient.Usage().GetAccountStatus(ctx)
 			if err != nil {
 				fmt.Printf("Error checking status: %v\n", err)
 				continue
@@ -355,7 +358,7 @@ func runUsageDetect(cmd *cobra.Command, args []string) error {
 	fmt.Println("🔍 Detecting Account Type...")
 	fmt.Print("Testing both pay-as-you-go and coding plan endpoints...\n\n")
 
-	account, err := apiClient.Detection().GetAccountInfo()
+	account, err := apiClient.Detection().GetAccountInfo(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("detection failed: %w", err)
 	}
@@ -380,6 +383,6 @@ func runUsageDetect(cmd *cobra.Command, args []string) error {
 		fmt.Printf("   Weekly Reset: %s\n", account.UsageLimits.WeeklyReset)
 		fmt.Println("\n   💡 Z.AI doesn't provide usage limit endpoints.")
 		fmt.Println("   Check your actual limits at: https://z.ai")
-}
+	}
 	return nil
 }

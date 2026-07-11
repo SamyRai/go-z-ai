@@ -12,7 +12,7 @@ import (
 
 // newTestClient builds a client pointed at baseURL with a tiny RetryDelay so
 // retry tests stay fast. Tests live in-package to exercise the unexported
-// doRequest/doRequestWithContext retry path directly.
+// doRequest retry path directly.
 func newTestClient(t *testing.T, baseURL string, cfg Config) *Client {
 	t.Helper()
 	cfg.APIKey = "test-key"
@@ -51,7 +51,7 @@ func TestRetryOnRetriableThenSuccess(t *testing.T) {
 
 	c := newTestClient(t, srv.URL, Config{MaxRetries: 3})
 	var resp ChatResponse
-	if err := c.doRequest("POST", "/chat/completions", map[string]string{"q": "hi"}, &resp); err != nil {
+	if err := c.doRequest(context.Background(), "POST", "/chat/completions", map[string]string{"q": "hi"}, &resp); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if calls != 2 {
@@ -72,7 +72,7 @@ func TestNoRetryOnNonRetriableCode(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(t, srv.URL, Config{MaxRetries: 3})
-	err := c.doRequest("POST", "/chat/completions", nil, nil)
+	err := c.doRequest(context.Background(), "POST", "/chat/completions", nil, nil)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -95,7 +95,7 @@ func TestRetryExhaustedReturnsLastError(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(t, srv.URL, Config{MaxRetries: 2})
-	err := c.doRequest("POST", "/x", nil, nil)
+	err := c.doRequest(context.Background(), "POST", "/x", nil, nil)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -120,7 +120,7 @@ func TestRetryBackoffRespectsContextCancel(t *testing.T) {
 	}()
 
 	start := time.Now()
-	err := c.doRequestWithContext(ctx, "POST", "/x", nil, nil)
+	err := c.doRequest(ctx, "POST", "/x", nil, nil)
 	elapsed := time.Since(start)
 	if err == nil {
 		t.Fatal("expected error, got nil")
@@ -138,7 +138,7 @@ func TestRetryOnTransportError(t *testing.T) {
 	srv.Close() // free the port → subsequent dials refuse
 
 	c := newTestClient(t, addr, Config{MaxRetries: 2})
-	err := c.doRequest("POST", "/x", nil, nil)
+	err := c.doRequest(context.Background(), "POST", "/x", nil, nil)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -183,7 +183,7 @@ func TestMaxRetriesNegativeDisablesRetry(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(t, srv.URL, Config{MaxRetries: -1})
-	_ = c.doRequest("POST", "/x", nil, nil)
+	_ = c.doRequest(context.Background(), "POST", "/x", nil, nil)
 	if calls != 1 {
 		t.Fatalf("MaxRetries=-1 should disable retries; expected 1 call, got %d", calls)
 	}

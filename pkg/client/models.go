@@ -1,7 +1,9 @@
 package client
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -14,7 +16,7 @@ type ModelsService struct {
 }
 
 // List returns all available models
-func (s *ModelsService) List() (*ModelsInfo, error) {
+func (s *ModelsService) List(ctx context.Context) (*ModelsInfo, error) {
 	// Try to get from cache first
 	s.cacheMu.RLock()
 	if s.cache != nil {
@@ -29,7 +31,7 @@ func (s *ModelsService) List() (*ModelsInfo, error) {
 		Data   []ModelDetails `json:"data"`
 	}
 
-	err := s.client.doRequest("GET", "/models", nil, &response)
+	err := s.client.doRequest(ctx, "GET", "/models", nil, &response)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list models: %w", err)
 	}
@@ -47,12 +49,12 @@ func (s *ModelsService) List() (*ModelsInfo, error) {
 }
 
 // Get returns details for a specific model
-func (s *ModelsService) Get(modelID string) (*ModelDetails, error) {
+func (s *ModelsService) Get(ctx context.Context, modelID string) (*ModelDetails, error) {
 	if modelID == "" {
 		return nil, fmt.Errorf("model ID is required")
 	}
 
-	models, err := s.List()
+	models, err := s.List(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -67,8 +69,8 @@ func (s *ModelsService) Get(modelID string) (*ModelDetails, error) {
 }
 
 // GetTextModels returns all text-only models
-func (s *ModelsService) GetTextModels() ([]ModelDetails, error) {
-	models, err := s.List()
+func (s *ModelsService) GetTextModels(ctx context.Context) ([]ModelDetails, error) {
+	models, err := s.List(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +86,8 @@ func (s *ModelsService) GetTextModels() ([]ModelDetails, error) {
 }
 
 // GetVisionModels returns all vision-capable models
-func (s *ModelsService) GetVisionModels() ([]ModelDetails, error) {
-	models, err := s.List()
+func (s *ModelsService) GetVisionModels(ctx context.Context) ([]ModelDetails, error) {
+	models, err := s.List(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -101,8 +103,8 @@ func (s *ModelsService) GetVisionModels() ([]ModelDetails, error) {
 }
 
 // GetFreeModels returns all free models
-func (s *ModelsService) GetFreeModels() ([]ModelDetails, error) {
-	models, err := s.List()
+func (s *ModelsService) GetFreeModels(ctx context.Context) ([]ModelDetails, error) {
+	models, err := s.List(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -118,12 +120,12 @@ func (s *ModelsService) GetFreeModels() ([]ModelDetails, error) {
 }
 
 // RefreshCache clears and refreshes the models cache
-func (s *ModelsService) RefreshCache() error {
+func (s *ModelsService) RefreshCache(ctx context.Context) error {
 	s.cacheMu.Lock()
 	s.cache = nil
 	s.cacheMu.Unlock()
 
-	_, err := s.List()
+	_, err := s.List(ctx)
 	return err
 }
 
@@ -131,7 +133,7 @@ func (s *ModelsService) RefreshCache() error {
 func isTextModel(modelID string) bool {
 	visionModels := []string{"glm-5v", "glm-4.6v", "glm-4.5v", "glm-ocr"}
 	for _, vm := range visionModels {
-		if contains(modelID, vm) {
+		if strings.Contains(modelID, vm) {
 			return false
 		}
 	}
@@ -141,13 +143,9 @@ func isTextModel(modelID string) bool {
 func isVisionModel(modelID string) bool {
 	visionModels := []string{"glm-5v", "glm-4.6v", "glm-4.5v", "glm-ocr"}
 	for _, vm := range visionModels {
-		if contains(modelID, vm) {
+		if strings.Contains(modelID, vm) {
 			return true
 		}
 	}
 	return false
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && s[0:len(substr)] == substr)
 }

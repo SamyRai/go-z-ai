@@ -283,7 +283,7 @@ func DetectOpenCode(home string) (Detection, error) {
 		return Detection{}, nil
 	}
 	for name, plan := range map[string]string{
-		"zai-coding-plan":    PlanGlobal,
+		"zai-coding-plan":     PlanGlobal,
 		"zhipuai-coding-plan": PlanChina,
 	} {
 		if entry, ok := prov[name].(map[string]interface{}); ok {
@@ -306,10 +306,10 @@ func LoadCrush(home, plan, key string) error {
 	}
 	prov := objectField(m, "providers")
 	prov["zai"] = map[string]interface{}{
-		"id":      "zai",
-		"name":    "ZAI Provider",
+		"id":       "zai",
+		"name":     "ZAI Provider",
 		"base_url": CodingBaseURL(plan),
-		"api_key": key,
+		"api_key":  key,
 	}
 	m["providers"] = prov
 	return writeJSONMap(path, m)
@@ -463,6 +463,49 @@ func DetectFactoryDroid(home string) (Detection, error) {
 	return Detection{}, nil
 }
 
+// --- Cursor (settings.json, path varies by OS — see cursorConfigPath) ---
+
+// LoadCursor writes the GLM Coding Plan into Cursor's settings as a simple
+// {apiKey, baseURL} pair — Cursor's config shape is far simpler than the
+// other tools', it has no env/provider nesting.
+func LoadCursor(home, plan, key string) error {
+	path := Tools[4].ConfigPath(home)
+	m, err := readJSONMap(path)
+	if err != nil {
+		return err
+	}
+	m["apiKey"] = key
+	m["baseURL"] = AnthropicBaseURL(plan)
+	return writeJSONMap(path, m)
+}
+
+// UnloadCursor removes the Z.AI apiKey/baseURL from Cursor's settings.
+func UnloadCursor(home string) error {
+	path := Tools[4].ConfigPath(home)
+	m, err := readJSONMap(path)
+	if err != nil {
+		return err
+	}
+	delete(m, "apiKey")
+	delete(m, "baseURL")
+	return writeJSONMap(path, m)
+}
+
+// DetectCursor reports Cursor's Z.AI configuration state.
+func DetectCursor(home string) (Detection, error) {
+	m, err := readJSONMap(Tools[4].ConfigPath(home))
+	if err != nil {
+		return Detection{}, err
+	}
+	key, _ := m["apiKey"].(string)
+	if key == "" {
+		return Detection{}, nil
+	}
+	baseURL, _ := m["baseURL"].(string)
+	plan, _ := planFromBaseURL(baseURL)
+	return Detection{Configured: true, Plan: plan, APIKey: key}, nil
+}
+
 // --- Dispatch by tool ---
 
 // Load writes the plan into the named tool's config.
@@ -480,6 +523,8 @@ func Load(home, toolID, plan, key string) error {
 		return LoadCrush(home, plan, key)
 	case "factory-droid":
 		return LoadFactoryDroid(home, plan, key)
+	case "cursor":
+		return LoadCursor(home, plan, key)
 	}
 	return fmt.Errorf("unsupported tool %q", toolID)
 }
@@ -499,6 +544,8 @@ func Unload(home, toolID string) error {
 		return UnloadCrush(home)
 	case "factory-droid":
 		return UnloadFactoryDroid(home)
+	case "cursor":
+		return UnloadCursor(home)
 	}
 	return fmt.Errorf("unsupported tool %q", toolID)
 }
@@ -518,6 +565,8 @@ func Detect(home, toolID string) (Detection, error) {
 		return DetectCrush(home)
 	case "factory-droid":
 		return DetectFactoryDroid(home)
+	case "cursor":
+		return DetectCursor(home)
 	}
 	return Detection{}, fmt.Errorf("unsupported tool %q", toolID)
 }

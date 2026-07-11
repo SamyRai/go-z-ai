@@ -1,7 +1,8 @@
 # Sprint Plan — Better Z.AI API support in `zai-client`
 
-> Planned 2026-07-08. **Sprint A delivered 2026-07-08.** Operational checklist:
-> [`todo.md`](./todo.md). API facts reconciled against the live
+> Planned 2026-07-08. **Sprint A delivered 2026-07-08. Phase 3 (provider
+> cleanup + media services + TUI) delivered 2026-07-10.** Operational
+> checklist: [`todo.md`](./todo.md). API facts reconciled against the live
 > `https://docs.z.ai` (quick-start + nav) and the in-repo client source.
 
 ## Sprint A status: ✓ delivered
@@ -108,11 +109,120 @@ loop, and set thinking/effort — all while retrying transient failures.
 
 ## Sprint B — generation, multimodal, correctness
 
-6. **B1 · Multimodal messages (M)** — backward-compatible `Content` type, `--image`.
-7. **B2 · Image generation service (M)** — `images.go`, CogView-4 / GLM-Image.
-8. **B3 · Video generation service (M)** — `videos.go`, async submit + poll.
-9. **B4 · Fix `tools.go` (S)** — route through `httpClient`, verify endpoints.
-10. **B5 · Tests + catalog hardening (M)** — golden tests; drive `/models` live.
+6. **B1 · Multimodal messages (M)** — backward-compatible `Content` type, `--image`. **← open, moved to Sprint C**
+7. **B2 · Image generation service (M)** — `images.go`, CogView-4 / GLM-Image. **✓ Phase 3**
+8. **B3 · Video generation service (M)** — `videos.go`, async submit + poll. **✓ Phase 3**
+9. **B4 · Fix `tools.go` (S)** — route through `httpClient`, verify endpoints. **← open, moved to Sprint C**
+10. **B5 · Tests + catalog hardening (M)** — golden tests; drive `/models` live. **← open, split across Sprint C/D**
+
+## Phase 3 status: ✓ delivered (2026-07-10, uncommitted)
+
+Superset of B2/B3 plus structural cleanup — see `todo.md` progress log:
+
+- Deleted the fictional `pkg/provider` / `pkg/appconfig` / `provider_cli.go`
+  abstraction; Cursor folded into `pkg/coding` as the 5th tool.
+- New services: `images.go` (sync+async), `videos.go`, `audio.go` (multipart),
+  `layout.go` (OCR), `async.go` (shared poller). CLI `image/video/audio/ocr`
+  commands; TUI rebuilt as `pkg/tui/*` with a Media tab.
+- `go build` / `go vet` / `go test -race` clean; 7-tab pty smoke test passed.
+- **Debt created:** the five new service files have zero tests; new methods
+  don't take `context.Context`; endpoints not yet validated live.
+
+## Sprint C — commit, correctness, multimodal, coverage
+
+**Status (2026-07-10): C0–C5 delivered; C6 pending (user-gated, spends real
+quota).** See `todo.md` for full detail per item; commits: C0 (5 batches,
+prior session), C1 `72c80ea`, C2 (same commit as C1), C4 `ffa1c42`, C5
+`99c124c`, C3 `36fae1a`. Full green gate (`go build`/`vet`/`test -race`/
+`gofmt`/`govulncheck`) after every commit.
+
+Review verdict (2026-07-10): the codebase is structurally healthy (largest
+file 572 LOC, packages own real domains, race-clean) but carries risk in
+three places: **nothing is committed**, the newest surface is **untested**,
+and `tools.go` is the last service bypassing the hardened transport.
+Performance: no measured bottleneck exists and this is a CLI/TUI without hot
+paths — no optimization work is justified; the one perf-adjacent fix
+(per-call `http.Client` in `tools.go` defeating connection reuse) is C2.
+
+Priority order (value ÷ effort, dependencies respected):
+
+1. **C0 · Commit + repo hygiene (S)** ✓ — batch conventional commits of all
+   in-flight work; removed `usage.go.backup` and stray built binaries;
+   `.gitignore` covers them.
+2. **C1 · Context plumbing (M)** ✓ — every `pkg/client` service method now
+   takes `ctx context.Context` first. Core: `doRequest`/new `doRequestBase`
+   are ctx-first; ~25 call sites updated (CLI via `cmd.Context()`, TUI via
+   `context.Background()` — no cancel plumbing yet).
+3. **C2 · Fix transport-bypassing services (S → scope grew)** ✓ — `tools.go`
+   was the known offender; auditing every C1 call site found the identical
+   bug (private `http.Client{30s}`, no retry, no `parseAPIError`) already
+   present in `account.go` and `quota.go` too. Fixed all three via
+   `doRequestBase` + a new `ToolsBaseURL` const. Endpoints unchanged, still
+   unverified live (C6).
+4. **C3 · Multimodal messages (M)** ✓ — `Message` gained `Images []string`;
+   `Content` stays a plain `string` (zero source-compat break). Custom
+   `MarshalJSON`/`UnmarshalJSON` switch the wire shape only when `Images` is
+   set. CLI `chat create --image url|@path` (repeatable). TUI attachment
+   stays out of scope (Sprint D).
+5. **C4 · Media-service tests + poll helper (M)** ✓ — 15 httptest cases
+   across images/videos/layout/audio/async; added
+   `Client.WaitForResult(ctx, id, interval)`.
+6. **C5 · Streaming timeout (S)** ✓ — root cause was `http.Client.Timeout`
+   bounding the whole request *including* streamed-body reads; fixed by
+   moving the timeout to transport-level dial/handshake/header-wait instead.
+   No API change needed.
+7. **C6 · Live media smoke test (S, user-gated)** — pending. One cheap real
+   call per new endpoint to confirm response shapes; spends real quota —
+   run only with explicit go-ahead from the account owner.
+
+**Done when** all in-flight work is committed in reviewable batches, every
+`pkg/client` service goes through the shared transport with a caller
+context, vision chat works from the CLI, and the media surface has the same
+httptest coverage standard as chat/errors.
+
+```
+C0 (commit) ─► C1 (ctx signatures) ─► C2, C4
+                                       C3 (independent) ─► TUI image attach (D)
+                                       C5, C6 (anytime after C0)
+```
+
+## Sprint D — candidates (next)
+
+- Model catalog from live `/models` + GLM-5.x reconciliation (B5 remainder).
+- CLI tool auto-exec loop (needs a security-gated tool→command convention).
+- TUI automated tests (`teatest`): tab switching, form submit, quit restore.
+- Root-level CLI refactor: `usage.go` (385 LOC) and `accounts_cli.go`
+  (545 LOC) are the two largest non-package files; split by command surface.
+
+## SDK/CLI parity research (2026-07-10)
+
+Researched `docs.z.ai` and the official `zai-org/z-ai-sdk-python` (the
+current SDK; supersedes legacy `zhipuai`/`MetaGLM/zhipuai-sdk-python-v4`)
+to find real capability gaps. **There is no official Z.AI CLI** — the only
+"zai-cli" on npm is third-party (`numman-ali/zai-cli`), not a parity
+target. Full detail with endpoint shapes and source links in `todo.md`'s
+"Sprint D candidates" section; headline findings:
+
+- **Already covered, nothing to do**: Context Caching is fully automatic
+  server-side and `Usage.PromptTokensDetails.CachedTokens` already surfaces
+  it; tool-calls-in-stream is already handled.
+- **Real gaps, no CLI/SDK coverage at all**: Assistant API (a second,
+  distinct conversation API alongside the already-backlogged Agents API —
+  unclear which is authoritative, verify live before picking one), Batch
+  API (needs Files API first — batch input is an uploaded JSONL file),
+  Files API, Moderations API, Handwriting OCR (distinct endpoint from the
+  layout-parsing/glm-ocr we already have), Voice cloning API.
+- **Verify-before-building caveats**: Embeddings has an open upstream issue
+  ([#67](https://github.com/zai-org/z-ai-sdk-python/issues/67)) reporting
+  it doesn't work on the global `api.z.ai` endpoint; Voice cloning isn't in
+  `docs.z.ai`'s own doc index at all (may be beta/region-restricted).
+
+## Later / backlog (unchanged)
+
+Anthropic-protocol wrapper (`/api/anthropic`), request/response logging +
+metrics, benchmarks + `benchstat` CI gate — benchmarks only once an actual
+hot path exists. Agents/Batch/Assistant/Files/Embeddings/Moderations/Voice
+now scoped in detail above and in `todo.md` rather than one-line bullets.
 
 ## Sequencing & dependencies
 

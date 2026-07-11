@@ -1,6 +1,10 @@
 package accounts
 
-import "zai-api-client/pkg/client"
+import (
+	"context"
+
+	"zai-api-client/pkg/client"
+)
 
 // ProbeType classifies an API key's account type with a single free
 // (no token cost) call to the coding-plan-only monitor/quota endpoint,
@@ -11,13 +15,13 @@ import "zai-api-client/pkg/client"
 // decode/network failure) falls back to pay_as_you_go with confirmed=false —
 // this is an inference by elimination, not a positive confirmation, since no
 // endpoint exists that is known to work for pay-as-you-go keys specifically.
-func ProbeType(apiKey string) (accountType client.AccountType, confirmed bool, err error) {
+func ProbeType(ctx context.Context, apiKey string) (accountType client.AccountType, confirmed bool, err error) {
 	c, err := client.NewClient(client.Config{APIKey: apiKey})
 	if err != nil {
 		return "", false, err
 	}
 
-	quota, callErr := c.Quota().GetQuotaLimit()
+	quota, callErr := c.Quota().GetQuotaLimit(ctx)
 	if callErr == nil && quota != nil && quota.Success && quota.Data.Level != "" {
 		return client.AccountTypeCodingPlan, true, nil
 	}

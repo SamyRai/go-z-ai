@@ -11,16 +11,16 @@ import (
 
 // codingCmd ports Z.AI's official @z_ai/coding-helper ("chelper") Node CLI to
 // Go: it manages GLM Coding Plan credentials and loads them into supported
-// coding tools (Claude Code, OpenCode, Crush, Factory Droid) using each tool's
-// native config format. The credential store at ~/.chelper/config.yaml is
-// shared/compatible with the Node helper.
+// coding tools (Claude Code, OpenCode, Crush, Factory Droid, Cursor) using
+// each tool's native config format. The credential store at
+// ~/.chelper/config.yaml is shared/compatible with the Node helper.
 var codingCmd = &cobra.Command{
 	Use:   "coding",
 	Short: "GLM Coding Plan credentials & coding-tool configuration",
 	Long: `Manage GLM Coding Plan credentials and configure coding tools to use Z.AI.
 
 A Go port of the official @z_ai/coding-helper ("chelper"). Supported tools:
-Claude Code, OpenCode, Crush, Factory Droid. Plans:
+Claude Code, OpenCode, Crush, Factory Droid, Cursor. Plans:
   glm_coding_plan_global  -> https://api.z.ai
   glm_coding_plan_china   -> https://open.bigmodel.cn
 

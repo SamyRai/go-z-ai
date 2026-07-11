@@ -10,65 +10,65 @@ import (
 // TestAPIErrorParsing tests the parsing of API error responses
 func TestAPIErrorParsing(t *testing.T) {
 	tests := []struct {
-		name           string
-		responseBody   string
-		httpStatus     int
-		expectedCode   int
-		expectedCat    ErrorCategory
+		name              string
+		responseBody      string
+		httpStatus        int
+		expectedCode      int
+		expectedCat       ErrorCategory
 		expectedRetriable bool
 	}{
 		{
-			name:         "Authentication error",
-			responseBody: `{"error":{"code":"1001","message":"Authentication parameter not received"}}`,
-			httpStatus:   401,
-			expectedCode: 1001,
-			expectedCat:  ErrorCategoryAuth,
+			name:              "Authentication error",
+			responseBody:      `{"error":{"code":"1001","message":"Authentication parameter not received"}}`,
+			httpStatus:        401,
+			expectedCode:      1001,
+			expectedCat:       ErrorCategoryAuth,
 			expectedRetriable: false,
 		},
 		{
-			name:         "Quota exceeded error",
-			responseBody: `{"error":{"code":"1308","message":"Usage limit reached"}}`,
-			httpStatus:   429,
-			expectedCode: 1308,
-			expectedCat:  ErrorCategoryQuota,
+			name:              "Quota exceeded error",
+			responseBody:      `{"error":{"code":"1308","message":"Usage limit reached"}}`,
+			httpStatus:        429,
+			expectedCode:      1308,
+			expectedCat:       ErrorCategoryQuota,
 			expectedRetriable: false,
 		},
 		{
-			name:         "Rate limit error",
-			responseBody: `{"error":{"code":"1302","message":"Rate limit reached"}}`,
-			httpStatus:   429,
-			expectedCode: 1302,
-			expectedCat:  ErrorCategoryRateLimit,
+			name:              "Rate limit error",
+			responseBody:      `{"error":{"code":"1302","message":"Rate limit reached"}}`,
+			httpStatus:        429,
+			expectedCode:      1302,
+			expectedCat:       ErrorCategoryRateLimit,
 			expectedRetriable: true,
 		},
 		{
-			name:         "Parameter error",
-			responseBody: `{"error":{"code":"1214","message":"Parameter invalid"}}`,
-			httpStatus:   400,
-			expectedCode: 1214,
-			expectedCat:  ErrorCategoryParameter,
+			name:              "Parameter error",
+			responseBody:      `{"error":{"code":"1214","message":"Parameter invalid"}}`,
+			httpStatus:        400,
+			expectedCode:      1214,
+			expectedCat:       ErrorCategoryParameter,
 			expectedRetriable: false,
 		},
 		{
-			name:         "Server error",
-			responseBody: `{"error":{"code":"1200","message":"API Call Error"}}`,
-			httpStatus:   500,
-			expectedCode: 1200,
-			expectedCat:  ErrorCategoryServer,
+			name:              "Server error",
+			responseBody:      `{"error":{"code":"1200","message":"API Call Error"}}`,
+			httpStatus:        500,
+			expectedCode:      1200,
+			expectedCat:       ErrorCategoryServer,
 			expectedRetriable: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-		// Create a mock HTTP response
-		resp := &http.Response{
-			StatusCode: tt.httpStatus,
-			Header:     make(http.Header),
-		}
+			// Create a mock HTTP response
+			resp := &http.Response{
+				StatusCode: tt.httpStatus,
+				Header:     make(http.Header),
+			}
 
-		// Create a read closer with the response body
-		resp.Body = io.NopCloser(strings.NewReader(tt.responseBody))
+			// Create a read closer with the response body
+			resp.Body = io.NopCloser(strings.NewReader(tt.responseBody))
 
 			// Parse the error
 			err := parseAPIError(resp)
@@ -102,18 +102,18 @@ func TestAPIErrorParsing(t *testing.T) {
 // TestAPIErrorHelpers tests the helper methods
 func TestAPIErrorHelpers(t *testing.T) {
 	tests := []struct {
-		name         string
-		errorCode    int
-		isAuthError  bool
-		isQuotaError bool
+		name             string
+		errorCode        int
+		isAuthError      bool
+		isQuotaError     bool
 		isRateLimitError bool
 		isParameterError bool
-		isServerError bool
+		isServerError    bool
 	}{
 		{
-			name:         "Authentication error",
-			errorCode:    1001,
-			isAuthError:  true,
+			name:        "Authentication error",
+			errorCode:   1001,
+			isAuthError: true,
 		},
 		{
 			name:         "Quota error",
@@ -121,18 +121,18 @@ func TestAPIErrorHelpers(t *testing.T) {
 			isQuotaError: true,
 		},
 		{
-			name:            "Rate limit error",
-			errorCode:       1302,
+			name:             "Rate limit error",
+			errorCode:        1302,
 			isRateLimitError: true,
 		},
 		{
-			name:            "Parameter error",
-			errorCode:       1214,
+			name:             "Parameter error",
+			errorCode:        1214,
 			isParameterError: true,
 		},
 		{
-			name:         "Server error",
-			errorCode:    1200,
+			name:          "Server error",
+			errorCode:     1200,
 			isServerError: true,
 		},
 	}

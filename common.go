@@ -124,7 +124,7 @@ func validateAPIKey(cmd *cobra.Command, args []string) error {
 	}
 
 	// Test API key by making a simple request
-	_, err = apiClient.Models().List()
+	_, err = apiClient.Models().List(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("invalid API key: %w", err)
 	}
@@ -137,4 +137,13 @@ func outputJSON(v interface{}) error {
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(v)
+}
+
+// maskAPIKey renders an API key safely for display (e.g. account listings),
+// keeping only the first/last 4 characters visible.
+func maskAPIKey(key string) string {
+	if len(key) <= 8 {
+		return "********"
+	}
+	return key[:4] + "****" + key[len(key)-4:]
 }

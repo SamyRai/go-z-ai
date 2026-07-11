@@ -49,7 +49,7 @@ func (s *ChatService) RunWithToolsLimit(ctx context.Context, req ChatRequest, ex
 		}
 
 		req.Messages = messages
-		r, err := s.Create(req)
+		r, err := s.Create(ctx, req)
 		if err != nil {
 			return nil, err
 		}

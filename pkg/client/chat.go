@@ -15,13 +15,13 @@ type ChatService struct {
 }
 
 // Create creates a chat completion
-func (s *ChatService) Create(req ChatRequest) (*ChatResponse, error) {
+func (s *ChatService) Create(ctx context.Context, req ChatRequest) (*ChatResponse, error) {
 	if err := validateChatRequest(&req); err != nil {
 		return nil, fmt.Errorf("invalid chat request: %w", err)
 	}
 
 	var response ChatResponse
-	err := s.client.doRequest("POST", "/chat/completions", req, &response)
+	err := s.client.doRequest(ctx, "POST", "/chat/completions", req, &response)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create chat completion: %w", err)
 	}
@@ -30,7 +30,7 @@ func (s *ChatService) Create(req ChatRequest) (*ChatResponse, error) {
 }
 
 // CreateSimple creates a simple chat completion with basic parameters
-func (s *ChatService) CreateSimple(model, userMessage string, messages []Message) (*ChatResponse, error) {
+func (s *ChatService) CreateSimple(ctx context.Context, model, userMessage string, messages []Message) (*ChatResponse, error) {
 	if len(messages) == 0 {
 		messages = []Message{
 			{Role: "user", Content: userMessage},
@@ -45,7 +45,7 @@ func (s *ChatService) CreateSimple(model, userMessage string, messages []Message
 		MaxTokens:   4096,
 	}
 
-	return s.Create(req)
+	return s.Create(ctx, req)
 }
 
 // sseDone is the sentinel the server sends to terminate an SSE stream.
@@ -73,7 +73,7 @@ func (s *ChatService) CreateStream(ctx context.Context, req ChatRequest, onChunk
 			return err
 		}
 
-		resp, err := s.client.send(ctx, "POST", "/chat/completions", req)
+		resp, err := s.client.send(ctx, s.client.config.BaseURL, "POST", "/chat/completions", req)
 		if err != nil {
 			lastErr = fmt.Errorf("failed to execute request: %w", err)
 			if attempt < maxRetries {

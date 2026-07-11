@@ -1,23 +1,25 @@
 package client
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 )
 
 // UsageService handles client-side usage tracking and balance checking
 type UsageService struct {
-	client      *Client
-	tracker     *UsageTracker
-	mu          sync.RWMutex
+	client  *Client
+	tracker *UsageTracker
+	mu      sync.RWMutex
 }
 
 // UsageTracker provides client-side usage tracking
 type UsageTracker struct {
-	requests    map[string]int      // model -> request count
-	tokens      map[string]int64    // model -> total tokens
-	costs       map[string]float64  // model -> total cost
+	requests    map[string]int     // model -> request count
+	tokens      map[string]int64   // model -> total tokens
+	costs       map[string]float64 // model -> total cost
 	lastUpdated time.Time
 	mu          sync.RWMutex
 }
@@ -59,18 +61,18 @@ func (t *UsageTracker) GetSummary() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"total_requests":   totalRequests,
-		"total_tokens":     totalTokens,
-		"total_cost":       totalCost,
-		"by_model":         t.requests,
-		"tokens_by_model":  t.tokens,
-		"costs_by_model":   t.costs,
-		"last_updated":     t.lastUpdated,
+		"total_requests":  totalRequests,
+		"total_tokens":    totalTokens,
+		"total_cost":      totalCost,
+		"by_model":        t.requests,
+		"tokens_by_model": t.tokens,
+		"costs_by_model":  t.costs,
+		"last_updated":    t.lastUpdated,
 	}
 }
 
 // TestBalance checks if account has sufficient balance
-func (s *UsageService) TestBalance() error {
+func (s *UsageService) TestBalance(ctx context.Context) error {
 	s.mu.Lock()
 	if s.tracker == nil {
 		s.tracker = NewUsageTracker()
@@ -86,10 +88,10 @@ func (s *UsageService) TestBalance() error {
 		TopP:        0.95,
 	}
 
-	_, err := s.client.Chat().Create(testReq)
+	_, err := s.client.Chat().Create(ctx, testReq)
 	if err != nil {
 		// Check if it's a balance error
-		if contains(err.Error(), "1113") || contains(err.Error(), "Insufficient balance") {
+		if strings.Contains(err.Error(), "1113") || strings.Contains(err.Error(), "Insufficient balance") {
 			return fmt.Errorf("insufficient balance: please recharge your account at https://z.ai")
 		}
 		return err
@@ -113,8 +115,8 @@ func (s *UsageService) GetClientSideUsage() map[string]interface{} {
 }
 
 // GetModelPricing returns pricing information for a specific model
-func (s *UsageService) GetModelPricing(model string) (map[string]float64, error) {
-	models, err := s.client.Models().List()
+func (s *UsageService) GetModelPricing(ctx context.Context, model string) (map[string]float64, error) {
+	models, err := s.client.Models().List(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -122,10 +124,10 @@ func (s *UsageService) GetModelPricing(model string) (map[string]float64, error)
 	for _, m := range models.Models {
 		if m.ID == model && m.Pricing != nil {
 			return map[string]float64{
-				"input":           m.Pricing.Input,
-				"output":          m.Pricing.Output,
-				"cached":          m.Pricing.Cached,
-				"cached_storage":  m.Pricing.CacheStore,
+				"input":          m.Pricing.Input,
+				"output":         m.Pricing.Output,
+				"cached":         m.Pricing.Cached,
+				"cached_storage": m.Pricing.CacheStore,
 			}, nil
 		}
 	}
@@ -134,8 +136,8 @@ func (s *UsageService) GetModelPricing(model string) (map[string]float64, error)
 }
 
 // CalculateRequestCost calculates the cost of a request based on model pricing
-func (s *UsageService) CalculateRequestCost(model string, promptTokens, completionTokens int) (float64, error) {
-	pricing, err := s.GetModelPricing(model)
+func (s *UsageService) CalculateRequestCost(ctx context.Context, model string, promptTokens, completionTokens int) (float64, error) {
+	pricing, err := s.GetModelPricing(ctx, model)
 	if err != nil {
 		return 0, err
 	}
@@ -148,35 +150,35 @@ func (s *UsageService) CalculateRequestCost(model string, promptTokens, completi
 
 // AccountStatus represents the current account status
 type AccountStatus struct {
-	APIAccessible  bool      `json:"api_accessible"`
-	HasBalance     bool      `json:"has_balance"`
-	LastChecked    time.Time `json:"last_checked"`
-	Message        string    `json:"message"`
-	WebDashboard   string    `json:"web_dashboard"`
+	APIAccessible bool      `json:"api_accessible"`
+	HasBalance    bool      `json:"has_balance"`
+	LastChecked   time.Time `json:"last_checked"`
+	Message       string    `json:"message"`
+	WebDashboard  string    `json:"web_dashboard"`
 }
 
 // GetAccountStatus checks the current account status
-func (s *UsageService) GetAccountStatus() (*AccountStatus, error) {
+func (s *UsageService) GetAccountStatus(ctx context.Context) (*AccountStatus, error) {
 	status := &AccountStatus{
 		LastChecked:  time.Now(),
 		WebDashboard: "https://z.ai",
 	}
 
 	// Test API accessibility and balance
-	err := s.TestBalance()
+	err := s.TestBalance(ctx)
 	if err != nil {
 		errMsg := err.Error()
 
 		// Check for specific error patterns
-		if contains(errMsg, "429") && (contains(errMsg, "1113") || contains(errMsg, "Insufficient balance")) {
+		if strings.Contains(errMsg, "429") && (strings.Contains(errMsg, "1113") || strings.Contains(errMsg, "Insufficient balance")) {
 			status.APIAccessible = true
 			status.HasBalance = false
 			status.Message = "API accessible but insufficient balance - please recharge at https://z.ai"
-		} else if contains(errMsg, "401") || contains(errMsg, "token expired") || contains(errMsg, "unauthorized") {
+		} else if strings.Contains(errMsg, "401") || strings.Contains(errMsg, "token expired") || strings.Contains(errMsg, "unauthorized") {
 			status.APIAccessible = false
 			status.HasBalance = false
 			status.Message = "API key authentication failed - check your API key"
-		} else if contains(errMsg, "429") {
+		} else if strings.Contains(errMsg, "429") {
 			status.APIAccessible = true
 			status.HasBalance = false
 			status.Message = "API accessible but rate limited - try again later"
@@ -205,12 +207,10 @@ func extractCleanError(errMsg string) string {
 	cleaned := errMsg
 
 	// Remove "failed to create chat completion: "
-	if contains(cleaned, "failed to create chat completion: ") {
-		cleaned = cleaned[len("failed to create chat completion: "):]
-	}
+	cleaned = strings.TrimPrefix(cleaned, "failed to create chat completion: ")
 
 	// Extract JSON message if present
-	if contains(cleaned, `"message":`) {
+	if strings.Contains(cleaned, `"message":`) {
 		// Find the message value
 		msgStart := indexOfString(cleaned, `"message":"`) + 11 // skip "message":"
 		if msgStart > 10 && msgStart < len(cleaned) {

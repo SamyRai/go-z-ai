@@ -198,8 +198,53 @@ func TestFactoryDroidPreservesOtherModels(t *testing.T) {
 	}
 }
 
+func TestCursorLoadDetectUnload(t *testing.T) {
+	home := t.TempDir()
+	// The settings path is OS-dependent (Application Support on darwin,
+	// ~/.cursor or ~/.config/Cursor elsewhere) — resolve it like Load does.
+	tool, err := FindTool("cursor")
+	if err != nil {
+		t.Fatalf("FindTool: %v", err)
+	}
+	path := tool.ConfigPath(home)
+
+	// Pre-existing unrelated settings must survive the round-trip.
+	_ = os.MkdirAll(filepath.Dir(path), 0o700)
+	_ = os.WriteFile(path, []byte(`{"editor.fontSize":14}`), 0o600)
+
+	if err := Load(home, "cursor", PlanGlobal, "c-key"); err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	m := readJSON(t, path)
+	if m["apiKey"] != "c-key" {
+		t.Errorf("apiKey = %v, want c-key", m["apiKey"])
+	}
+	if m["baseURL"] != "https://api.z.ai/api/anthropic" {
+		t.Errorf("baseURL = %v", m["baseURL"])
+	}
+
+	d, err := Detect(home, "cursor")
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if !d.Configured || d.Plan != PlanGlobal || d.APIKey != "c-key" {
+		t.Fatalf("unexpected detection: %+v", d)
+	}
+
+	if err := Unload(home, "cursor"); err != nil {
+		t.Fatalf("Unload: %v", err)
+	}
+	d, _ = Detect(home, "cursor")
+	if d.Configured {
+		t.Fatal("should not be configured after unload")
+	}
+	if m := readJSON(t, path); m["editor.fontSize"] != float64(14) {
+		t.Errorf("unrelated setting not preserved: %v", m["editor.fontSize"])
+	}
+}
+
 func TestFindToolAliases(t *testing.T) {
-	for _, alias := range []string{"claude", "claude-code", "opencode", "crush", "factory-droid", "droid"} {
+	for _, alias := range []string{"claude", "claude-code", "opencode", "crush", "factory-droid", "droid", "cursor"} {
 		if _, err := FindTool(alias); err != nil {
 			t.Errorf("FindTool(%q): %v", alias, err)
 		}
@@ -283,4 +328,3 @@ func TestClaudeCodeCustomTuning(t *testing.T) {
 		t.Errorf("env should be fully removed after unload, got %v", v)
 	}
 }
-

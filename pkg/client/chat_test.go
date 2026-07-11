@@ -173,6 +173,44 @@ func TestCreateStreamNonRetriable(t *testing.T) {
 	}
 }
 
+// A stream that runs longer than Config.Timeout must not be cut off:
+// Timeout bounds connection setup/response headers, not body reads, so a
+// long-lived SSE stream survives past it as long as tokens keep arriving.
+func TestCreateStreamSurvivesPastConfigTimeout(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		flusher, _ := w.(http.Flusher)
+		for i := 0; i < 3; i++ {
+			fmt.Fprint(w, "data: {\"id\":\"1\",\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"x\"}}]}\n\n")
+			if flusher != nil {
+				flusher.Flush()
+			}
+			time.Sleep(30 * time.Millisecond)
+		}
+		fmt.Fprint(w, "data: [DONE]\n\n")
+	}))
+	defer srv.Close()
+
+	// A 10ms Config.Timeout would kill the stream almost immediately under
+	// the old http.Client.Timeout-based design; the transport-level timeout
+	// only bounds dial/handshake/header-wait, so the ~90ms stream (3x30ms)
+	// must still complete cleanly.
+	c := newTestClient(t, srv.URL, Config{MaxRetries: 0, Timeout: 10 * time.Millisecond})
+	req := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95}
+
+	var chunks int
+	err := c.Chat().CreateStream(context.Background(), req, func(ch StreamChunk) error {
+		chunks++
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("CreateStream: %v", err)
+	}
+	if chunks != 3 {
+		t.Fatalf("expected 3 chunks despite a short Config.Timeout, got %d", chunks)
+	}
+}
+
 // Context cancellation aborts an in-flight stream.
 func TestCreateStreamContextCancel(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

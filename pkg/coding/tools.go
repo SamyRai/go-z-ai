@@ -2,6 +2,7 @@ package coding
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -11,11 +12,11 @@ import (
 // SUPPORTED_TOOLS table: the CLI binary name, install command, display name,
 // and the config file the helper writes.
 type Tool struct {
-	ID            string
-	Command       string // CLI binary looked up on PATH to detect installation
-	DisplayName   string
+	ID             string
+	Command        string // CLI binary looked up on PATH to detect installation
+	DisplayName    string
 	InstallCommand string
-	configPath    func(home string) string
+	configPath     func(home string) string
 }
 
 // ConfigPath returns the absolute config file path for this tool under home.
@@ -61,6 +62,29 @@ var Tools = []Tool{
 		// (SUPPORTED_TOOLS lists config.json, but the manager uses settings.json).
 		configPath: func(h string) string { return filepath.Join(h, ".factory", "settings.json") },
 	},
+	{
+		ID:             "cursor",
+		Command:        "cursor",
+		DisplayName:    "Cursor",
+		InstallCommand: "https://cursor.com/download",
+		configPath:     cursorConfigPath,
+	},
+}
+
+// cursorConfigPath mirrors Cursor's own per-OS settings location: macOS
+// stores it under Application Support, Linux/Windows under ~/.cursor with a
+// ~/.config/Cursor fallback if that doesn't exist yet.
+func cursorConfigPath(home string) string {
+	switch runtime.GOOS {
+	case "darwin":
+		return filepath.Join(home, "Library", "Application Support", "Cursor", "User", "settings.json")
+	default:
+		p := filepath.Join(home, ".cursor", "settings.json")
+		if _, err := os.Stat(p); os.IsNotExist(err) {
+			return filepath.Join(home, ".config", "Cursor", "User", "settings.json")
+		}
+		return p
+	}
 }
 
 func factoryDroidInstall() string {
@@ -81,6 +105,8 @@ func FindTool(id string) (Tool, error) {
 		return Tools[2], nil
 	case "factory-droid", "droid", "factory":
 		return Tools[3], nil
+	case "cursor":
+		return Tools[4], nil
 	}
-	return Tool{}, fmt.Errorf("unsupported tool %q (supported: claude-code, opencode, crush, factory-droid)", id)
+	return Tool{}, fmt.Errorf("unsupported tool %q (supported: claude-code, opencode, crush, factory-droid, cursor)", id)
 }

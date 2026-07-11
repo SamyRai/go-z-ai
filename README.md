@@ -427,9 +427,10 @@ zai-api/
 ├── models.go              # Model CLI commands
 ├── usage.go               # Usage/quota CLI commands
 ├── accounts_cli.go        # Multi-account management CLI
-├── provider_cli.go        # Provider research CLI
+├── coding_cli.go          # GLM Coding Plan credentials & coding-tool config CLI
 ├── tools_cli.go           # Tools CLI
-├── common.go              # Shared CLI helpers (getClient, outputJSON)
+├── tui_cli.go             # Interactive terminal UI entry point ("zai-client tui")
+├── common.go              # Shared CLI helpers (getClient, outputJSON, maskAPIKey)
 ├── pkg/
 │   ├── client/            # API client package (SDK)
 │   │   ├── client.go      # HTTP client, retry/backoff
@@ -441,11 +442,13 @@ zai-api/
 │   │   ├── usage.go       # UsageService
 │   │   ├── quota.go       # Quota + tool-usage monitoring
 │   │   ├── account.go     # AccountService
-│   │   ├── tools.go       # Web search/reader tools
+│   │   ├── tools.go       # Web search/reader/tokenizer tools
 │   │   └── detection.go   # Endpoint / key-type detection
 │   ├── accounts/          # Multi-account credential store
-│   ├── appconfig/         # App configuration
-│   └── provider/          # Provider metadata
+│   ├── coding/            # GLM Coding Plan credentials + per-tool config writers
+│   │                      #   (Claude Code, OpenCode, Crush, Factory Droid, Cursor)
+│   ├── usageview/         # Shared usage/quota rendering helpers (CLI + TUI)
+│   └── tui/                # Bubble Tea v2 interactive terminal UI
 ├── .env / .env.example
 └── README.md
 ```

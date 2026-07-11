@@ -5,38 +5,43 @@ import (
 	"time"
 )
 
-// Message represents a chat message
+// Message represents a chat message. Content is plain text for ordinary use;
+// set Images (one or more https:// URLs or data: URIs) to attach images for
+// vision models (GLM-4.6V/4.5V) — MarshalJSON/UnmarshalJSON handle the
+// content-parts wire shape transparently, so existing Content-only code is
+// unaffected. See content.go.
 type Message struct {
 	Role       string     `json:"role"`
 	Content    string     `json:"content"`
-	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`  // set on assistant messages that request tool calls
+	Images     []string   `json:"-"`                      // image URLs/data-URIs; non-empty switches Content to a content-parts array on the wire
+	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`   // set on assistant messages that request tool calls
 	ToolCallID string     `json:"tool_call_id,omitempty"` // set on role:"tool" messages to reference the call
 	Name       string     `json:"name,omitempty"`         // optional tool/function name
 }
 
 // ChatRequest represents a chat completion request
 type ChatRequest struct {
-	Model           string                 `json:"model"`
-	Messages        []Message              `json:"messages"`
-	Temperature     float64                `json:"temperature,omitempty"`
-	TopP            float64                `json:"top_p,omitempty"`
-	MaxTokens       int                    `json:"max_tokens,omitempty"`
-	Stream          bool                   `json:"stream,omitempty"`
-	DoSample        bool                   `json:"do_sample,omitempty"`
-	Stop            []string               `json:"stop,omitempty"`
-	Tools           []Tool                 `json:"tools,omitempty"`
-	ToolChoice      string                 `json:"tool_choice,omitempty"`
-	ResponseFormat  *ResponseFormat        `json:"response_format,omitempty"`
-	Thinking        *ThinkingConfig        `json:"thinking,omitempty"`
-	Metadata        map[string]interface{} `json:"metadata,omitempty"`
-	User            string                 `json:"user,omitempty"`
+	Model          string                 `json:"model"`
+	Messages       []Message              `json:"messages"`
+	Temperature    float64                `json:"temperature,omitempty"`
+	TopP           float64                `json:"top_p,omitempty"`
+	MaxTokens      int                    `json:"max_tokens,omitempty"`
+	Stream         bool                   `json:"stream,omitempty"`
+	DoSample       bool                   `json:"do_sample,omitempty"`
+	Stop           []string               `json:"stop,omitempty"`
+	Tools          []Tool                 `json:"tools,omitempty"`
+	ToolChoice     string                 `json:"tool_choice,omitempty"`
+	ResponseFormat *ResponseFormat        `json:"response_format,omitempty"`
+	Thinking       *ThinkingConfig        `json:"thinking,omitempty"`
+	Metadata       map[string]interface{} `json:"metadata,omitempty"`
+	User           string                 `json:"user,omitempty"`
 }
 
 // ThinkingConfig controls chain-of-thought reasoning
 type ThinkingConfig struct {
-	Type     string `json:"type,omitempty"`      // enabled, disabled
+	Type      string `json:"type,omitempty"`      // enabled, disabled
 	Preserved bool   `json:"preserved,omitempty"` // keep reasoning across turns
-	Effort   string `json:"effort,omitempty"`     // max, high, medium, low, minimal, none
+	Effort    string `json:"effort,omitempty"`    // max, high, medium, low, minimal, none
 }
 
 // ResponseFormat controls the output format
@@ -66,8 +71,8 @@ func NewJSONSchemaFormat(name string, schema json.RawMessage, strict bool) *Resp
 
 // Tool represents a function/tool definition
 type Tool struct {
-	Type     string           `json:"type"`     // function
-	Function *FunctionDef      `json:"function,omitempty"`
+	Type     string       `json:"type"` // function
+	Function *FunctionDef `json:"function,omitempty"`
 }
 
 // FunctionDef defines a function for tool calling
@@ -95,16 +100,16 @@ type Choice struct {
 
 // ResponseMsg represents the response message
 type ResponseMsg struct {
-	Role            string      `json:"role"`
-	Content         string      `json:"content,omitempty"`
+	Role             string     `json:"role"`
+	Content          string     `json:"content,omitempty"`
 	ReasoningContent string     `json:"reasoning_content,omitempty"`
-	ToolCalls       []ToolCall  `json:"tool_calls,omitempty"`
+	ToolCalls        []ToolCall `json:"tool_calls,omitempty"`
 }
 
 // ToolCall represents a tool/function call
 type ToolCall struct {
-	ID       string       `json:"id,omitempty"`
-	Type     string       `json:"type,omitempty"`
+	ID       string        `json:"id,omitempty"`
+	Type     string        `json:"type,omitempty"`
 	Function *FunctionCall `json:"function,omitempty"`
 }
 
@@ -116,9 +121,9 @@ type FunctionCall struct {
 
 // Usage represents token usage information
 type Usage struct {
-	PromptTokens     int                    `json:"prompt_tokens"`
-	CompletionTokens int                    `json:"completion_tokens"`
-	TotalTokens      int                    `json:"total_tokens"`
+	PromptTokens        int                 `json:"prompt_tokens"`
+	CompletionTokens    int                 `json:"completion_tokens"`
+	TotalTokens         int                 `json:"total_tokens"`
 	PromptTokensDetails *PromptTokensDetail `json:"prompt_tokens_details,omitempty"`
 }
 
@@ -153,39 +158,39 @@ type Pricing struct {
 
 // UsageInfo represents current usage and quota information
 type UsageInfo struct {
-	QuotaID       string    `json:"quota_id,omitempty"`
-	TotalQuota    int64     `json:"total_quota"`
-	UsedQuota     int64     `json:"used_quota"`
-	RemainingQuota int64    `json:"remaining_quota"`
-	ResetTime     time.Time `json:"reset_time"`
-	UsagePeriod   string    `json:"usage_period"` // 5hour, weekly
+	QuotaID        string    `json:"quota_id,omitempty"`
+	TotalQuota     int64     `json:"total_quota"`
+	UsedQuota      int64     `json:"used_quota"`
+	RemainingQuota int64     `json:"remaining_quota"`
+	ResetTime      time.Time `json:"reset_time"`
+	UsagePeriod    string    `json:"usage_period"` // 5hour, weekly
 }
 
 // AccountInfo represents account information
 type AccountInfo struct {
-	AccountID     string    `json:"account_id"`
-	AccountType   string    `json:"account_type"` // payg, subscription, enterprise
-	PlanName      string    `json:"plan_name,omitempty"`
-	Status        string    `json:"status"`
-	CreatedAt     time.Time `json:"created_at"`
-	UsageStats    *UsageStats `json:"usage_stats,omitempty"`
-	BillingInfo   *BillingInfo `json:"billing_info,omitempty"`
+	AccountID   string       `json:"account_id"`
+	AccountType string       `json:"account_type"` // payg, subscription, enterprise
+	PlanName    string       `json:"plan_name,omitempty"`
+	Status      string       `json:"status"`
+	CreatedAt   time.Time    `json:"created_at"`
+	UsageStats  *UsageStats  `json:"usage_stats,omitempty"`
+	BillingInfo *BillingInfo `json:"billing_info,omitempty"`
 }
 
 // UsageStats represents account usage statistics
 type UsageStats struct {
-	TotalRequests    int64     `json:"total_requests"`
-	TotalTokens      int64     `json:"total_tokens"`
+	TotalRequests      int64     `json:"total_requests"`
+	TotalTokens        int64     `json:"total_tokens"`
 	CurrentPeriodStart time.Time `json:"current_period_start"`
 	CurrentPeriodEnd   time.Time `json:"current_period_end"`
 }
 
 // BillingInfo represents billing information
 type BillingInfo struct {
-	BillingCycle string  `json:"billing_cycle"` // monthly, yearly
-	NextBillDate time.Time `json:"next_bill_date"`
-	LastBillAmount float64 `json:"last_bill_amount,omitempty"`
-	Currency   string  `json:"currency"`
+	BillingCycle   string    `json:"billing_cycle"` // monthly, yearly
+	NextBillDate   time.Time `json:"next_bill_date"`
+	LastBillAmount float64   `json:"last_bill_amount,omitempty"`
+	Currency       string    `json:"currency"`
 }
 
 // --- Streaming types ---
@@ -200,9 +205,9 @@ type StreamDelta struct {
 
 // StreamChoice is one choice within a streamed chunk.
 type StreamChoice struct {
-	Index        int          `json:"index"`
-	Delta        StreamDelta  `json:"delta"`
-	FinishReason string       `json:"finish_reason,omitempty"`
+	Index        int         `json:"index"`
+	Delta        StreamDelta `json:"delta"`
+	FinishReason string      `json:"finish_reason,omitempty"`
 }
 
 // StreamChunk is one Server-Sent-Event payload from a streaming completion.

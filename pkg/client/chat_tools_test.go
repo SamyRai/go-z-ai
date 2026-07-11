@@ -139,7 +139,7 @@ func TestRunWithToolsExecutorError(t *testing.T) {
 	req := ChatRequest{
 		Model: "m", TopP: 0.95,
 		Messages: []Message{{Role: "user", Content: "do it"}},
-		Tools:   []Tool{{Type: "function", Function: &FunctionDef{Name: "boom"}}},
+		Tools:    []Tool{{Type: "function", Function: &FunctionDef{Name: "boom"}}},
 	}
 	if _, err := c.Chat().RunWithTools(context.Background(), req, func(string, string) (string, error) {
 		return "", fmt.Errorf("kaboom")
@@ -162,7 +162,7 @@ func TestRunWithToolsRoundLimit(t *testing.T) {
 	req := ChatRequest{
 		Model: "m", TopP: 0.95,
 		Messages: []Message{{Role: "user", Content: "loop"}},
-		Tools:   []Tool{{Type: "function", Function: &FunctionDef{Name: "loop"}}},
+		Tools:    []Tool{{Type: "function", Function: &FunctionDef{Name: "loop"}}},
 	}
 	if _, err := c.Chat().RunWithToolsLimit(context.Background(), req, func(string, string) (string, error) {
 		return "ok", nil

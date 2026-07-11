@@ -1,9 +1,8 @@
 package client
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -98,14 +97,14 @@ type QuotaData struct {
 // - NextResetTime: Next reset timestamp (milliseconds since epoch)
 // - UsageDetails: Tool-specific breakdown for TIME_LIMIT quotas
 type QuotaLimit struct {
-	Type          string            `json:"type"`          // Quota type: TOKENS_LIMIT or TIME_LIMIT
-	Unit          int               `json:"unit"`          // Time unit code: 3, 5, or 6
-	Number        int               `json:"number"`        // Number of time units
-	Usage         int               `json:"usage"`         // Total usage limit (0 = no limit provided)
-	CurrentValue  int               `json:"currentValue"`  // Current usage count
-	Remaining     int               `json:"remaining"`     // Remaining quota
-	Percentage    float64           `json:"percentage"`    // Usage percentage (0-100)
-	NextResetTime int64             `json:"nextResetTime"` // Next reset timestamp (milliseconds since epoch)
+	Type          string            `json:"type"`                   // Quota type: TOKENS_LIMIT or TIME_LIMIT
+	Unit          int               `json:"unit"`                   // Time unit code: 3, 5, or 6
+	Number        int               `json:"number"`                 // Number of time units
+	Usage         int               `json:"usage"`                  // Total usage limit (0 = no limit provided)
+	CurrentValue  int               `json:"currentValue"`           // Current usage count
+	Remaining     int               `json:"remaining"`              // Remaining quota
+	Percentage    float64           `json:"percentage"`             // Usage percentage (0-100)
+	NextResetTime int64             `json:"nextResetTime"`          // Next reset timestamp (milliseconds since epoch)
 	UsageDetails  []ToolUsageDetail `json:"usageDetails,omitempty"` // Tool-specific breakdown for TIME_LIMIT
 }
 
@@ -122,7 +121,8 @@ type ToolUsageDetail struct {
 // of cryptic API codes like "TOKENS_LIMIT (unit 3 × 5)".
 //
 // Example usage:
-//   limit.WindowDescription() // "5-hour rolling token window"
+//
+//	limit.WindowDescription() // "5-hour rolling token window"
 func (q *QuotaLimit) WindowDescription() string {
 	config := findWindowConfig(q.Type, q.Unit, q.Number)
 	return config.Description
@@ -257,40 +257,11 @@ func NewQuotaService(client *Client) *QuotaService {
 }
 
 // GetQuotaLimit retrieves the current quota limit status
-func (s *QuotaService) GetQuotaLimit() (*QuotaLimitResponse, error) {
+func (s *QuotaService) GetQuotaLimit(ctx context.Context) (*QuotaLimitResponse, error) {
 	var result QuotaLimitResponse
-
-	// Create a temporary HTTP client for monitor API
-	tempClient := &http.Client{
-		Timeout: 30 * time.Second,
+	if err := s.client.doRequestBase(ctx, MonitorBaseURL, "GET", QuotaLimitEndpoint, nil, &result); err != nil {
+		return nil, fmt.Errorf("failed to get quota limit: %w", err)
 	}
-
-	// Create request to monitor API
-	reqURL := MonitorBaseURL + QuotaLimitEndpoint
-	req, err := http.NewRequest("GET", reqURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Set authorization header
-	req.Header.Set("Authorization", "Bearer "+s.client.config.APIKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := tempClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status %d", resp.StatusCode)
-	}
-
-	// Parse response
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
 	return &result, nil
 }
 
@@ -298,89 +269,34 @@ func (s *QuotaService) GetQuotaLimit() (*QuotaLimitResponse, error) {
 // endTime query params in.
 const monitorUsageTimeFormat = "2006-01-02 15:04:05"
 
-// monitorUsageURL builds a properly-encoded monitor usage URL. startTime/
-// endTime contain a space and colons, which must go through url.Values
-// (not raw fmt.Sprintf string concatenation) — an unescaped space in the
-// query string trips an HTTP/2 stream error against this API.
-func monitorUsageURL(endpoint string, startTime, endTime time.Time) string {
+// monitorUsagePath builds the endpoint + properly-encoded query string for a
+// monitor usage request. startTime/endTime contain a space and colons,
+// which must go through url.Values (not raw fmt.Sprintf string
+// concatenation) — an unescaped space in the query string trips an HTTP/2
+// stream error against this API.
+func monitorUsagePath(endpoint string, startTime, endTime time.Time) string {
 	q := url.Values{}
 	q.Set("startTime", startTime.Format(monitorUsageTimeFormat))
 	q.Set("endTime", endTime.Format(monitorUsageTimeFormat))
-	return MonitorBaseURL + endpoint + "?" + q.Encode()
+	return endpoint + "?" + q.Encode()
 }
 
 // GetModelUsage retrieves model usage statistics for a time window
-func (s *QuotaService) GetModelUsage(startTime, endTime time.Time) (*ModelUsageResponse, error) {
+func (s *QuotaService) GetModelUsage(ctx context.Context, startTime, endTime time.Time) (*ModelUsageResponse, error) {
 	var result ModelUsageResponse
-
-	// Create a temporary HTTP client for monitor API
-	tempClient := &http.Client{
-		Timeout: 30 * time.Second,
+	path := monitorUsagePath(ModelUsageEndpoint, startTime, endTime)
+	if err := s.client.doRequestBase(ctx, MonitorBaseURL, "GET", path, nil, &result); err != nil {
+		return nil, fmt.Errorf("failed to get model usage: %w", err)
 	}
-
-	reqURL := monitorUsageURL(ModelUsageEndpoint, startTime, endTime)
-
-	req, err := http.NewRequest("GET", reqURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Set authorization header
-	req.Header.Set("Authorization", "Bearer "+s.client.config.APIKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := tempClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status %d", resp.StatusCode)
-	}
-
-	// Parse response
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
 	return &result, nil
 }
 
 // GetToolUsage retrieves MCP tool usage statistics for a time window
-func (s *QuotaService) GetToolUsage(startTime, endTime time.Time) (*ToolUsageResponse, error) {
+func (s *QuotaService) GetToolUsage(ctx context.Context, startTime, endTime time.Time) (*ToolUsageResponse, error) {
 	var result ToolUsageResponse
-
-	// Create a temporary HTTP client for monitor API
-	tempClient := &http.Client{
-		Timeout: 30 * time.Second,
+	path := monitorUsagePath(ToolUsageEndpoint, startTime, endTime)
+	if err := s.client.doRequestBase(ctx, MonitorBaseURL, "GET", path, nil, &result); err != nil {
+		return nil, fmt.Errorf("failed to get tool usage: %w", err)
 	}
-
-	reqURL := monitorUsageURL(ToolUsageEndpoint, startTime, endTime)
-
-	req, err := http.NewRequest("GET", reqURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Set authorization header
-	req.Header.Set("Authorization", "Bearer "+s.client.config.APIKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := tempClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status %d", resp.StatusCode)
-	}
-
-	// Parse response
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
 	return &result, nil
 }

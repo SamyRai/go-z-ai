@@ -1,7 +1,9 @@
 package client
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -10,17 +12,17 @@ type AccountType string
 
 const (
 	AccountTypePayAsYouGo AccountType = "pay_as_you_go"
-	AccountTypeCodingPlan  AccountType = "coding_plan"
+	AccountTypeCodingPlan AccountType = "coding_plan"
 	AccountTypeUnknown    AccountType = "unknown"
 )
 
 // AccountInfo represents detected account information
 type DetectedAccount struct {
-	Type         AccountType `json:"type"`
-	BaseURL      string     `json:"base_url"`
-	Working      bool       `json:"working"`
-	Models       []string   `json:"available_models"`
-	UsageLimits  *UsageLimits `json:"usage_limits,omitempty"`
+	Type        AccountType  `json:"type"`
+	BaseURL     string       `json:"base_url"`
+	Working     bool         `json:"working"`
+	Models      []string     `json:"available_models"`
+	UsageLimits *UsageLimits `json:"usage_limits,omitempty"`
 }
 
 // UsageLimits represents subscription usage limits
@@ -29,16 +31,16 @@ type UsageLimits struct {
 	WeeklyPromptLimit int    `json:"weekly_prompt_limit"`
 	HourlyWindowReset string `json:"hourly_window_reset"`
 	WeeklyReset       string `json:"weekly_reset"`
-	CurrentUsage      int     `json:"current_usage"`
-	RemainingQuota    int     `json:"remaining_quota"`
+	CurrentUsage      int    `json:"current_usage"`
+	RemainingQuota    int    `json:"remaining_quota"`
 }
 
 // DetectionService handles account type detection
 type DetectionService struct {
 	client *Client
-	mu      sync.RWMutex
-	cache   *DetectedAccount
-	once    sync.Once
+	mu     sync.RWMutex
+	cache  *DetectedAccount
+	once   sync.Once
 }
 
 // NewDetectionService creates a new detection service
@@ -49,7 +51,7 @@ func NewDetectionService(client *Client) *DetectionService {
 }
 
 // DetectAccountType detects the account type by testing different endpoints
-func (s *DetectionService) DetectAccountType() (*DetectedAccount, error) {
+func (s *DetectionService) DetectAccountType(ctx context.Context) (*DetectedAccount, error) {
 	// Try to use cached result
 	s.mu.RLock()
 	if s.cache != nil {
@@ -62,7 +64,7 @@ func (s *DetectionService) DetectAccountType() (*DetectedAccount, error) {
 	defer s.mu.Unlock()
 
 	// Test Coding Plan endpoint
-	codingResult := s.testEndpoint(CodingBaseURL)
+	codingResult := s.testEndpoint(ctx, CodingBaseURL)
 	if codingResult.Working {
 		account := &DetectedAccount{
 			Type:        AccountTypeCodingPlan,
@@ -76,7 +78,7 @@ func (s *DetectionService) DetectAccountType() (*DetectedAccount, error) {
 	}
 
 	// Test Pay-as-you-go endpoint
-	paasResult := s.testEndpoint(ProdBaseURL)
+	paasResult := s.testEndpoint(ctx, ProdBaseURL)
 	if paasResult.Working {
 		account := &DetectedAccount{
 			Type:        AccountTypePayAsYouGo,
@@ -92,7 +94,7 @@ func (s *DetectionService) DetectAccountType() (*DetectedAccount, error) {
 	return nil, fmt.Errorf("unable to detect account type - both endpoints failed")
 }
 
-func (s *DetectionService) testEndpoint(baseURL string) *EndpointTest {
+func (s *DetectionService) testEndpoint(ctx context.Context, baseURL string) *EndpointTest {
 	result := &EndpointTest{
 		BaseURL: baseURL,
 	}
@@ -108,7 +110,7 @@ func (s *DetectionService) testEndpoint(baseURL string) *EndpointTest {
 	}
 
 	// Try to make a request
-	_, err = tempClient.Chat().Create(ChatRequest{
+	_, err = tempClient.Chat().Create(ctx, ChatRequest{
 		Model:       "glm-4.7",
 		Messages:    []Message{{Role: "user", Content: "test"}},
 		MaxTokens:   1,
@@ -119,7 +121,7 @@ func (s *DetectionService) testEndpoint(baseURL string) *EndpointTest {
 	if err != nil {
 		// Check if error indicates API is working but has other issues
 		errMsg := err.Error()
-		if contains(errMsg, "429") || contains(errMsg, "1113") || contains(errMsg, "rate limit") {
+		if strings.Contains(errMsg, "429") || strings.Contains(errMsg, "1113") || strings.Contains(errMsg, "rate limit") {
 			// 429 rate limit means API is accessible
 			result.Working = true
 			result.Error = err
@@ -145,8 +147,8 @@ func (s *DetectionService) detectCodingPlanLimits() *UsageLimits {
 	// These are general reference values from documentation
 	// Your actual limits may vary based on your specific plan
 	return &UsageLimits{
-		HourlyPromptLimit: 0,    // Unknown - would need API endpoint
-		WeeklyPromptLimit: 0,    // Unknown - would need API endpoint
+		HourlyPromptLimit: 0, // Unknown - would need API endpoint
+		WeeklyPromptLimit: 0, // Unknown - would need API endpoint
 		HourlyWindowReset: "5-hours (rolling window)",
 		WeeklyReset:       "7-days (estimated)",
 		CurrentUsage:      0,
@@ -155,8 +157,8 @@ func (s *DetectionService) detectCodingPlanLimits() *UsageLimits {
 }
 
 // GetAccountInfo returns detected account information
-func (s *DetectionService) GetAccountInfo() (*DetectedAccount, error) {
-	account, err := s.DetectAccountType()
+func (s *DetectionService) GetAccountInfo(ctx context.Context) (*DetectedAccount, error) {
+	account, err := s.DetectAccountType(ctx)
 	if err != nil {
 		return nil, err
 	}

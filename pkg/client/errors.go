@@ -17,22 +17,22 @@ const (
 	ErrCodeAuthNeed2FA      = 1005 // Need Two-Factor Authentication
 
 	// Rate Limit/Quota Errors (HTTP 429)
-	ErrCodeInsufficientBalance      = 1113 // Insufficient balance or no resource package
-	ErrCodeRateLimitReached         = 1302 // Rate limit reached for requests
-	ErrCodeServiceOverloaded        = 1305 // Service temporarily overloaded
-	ErrCodeUsageLimitReached        = 1308 // Usage limit reached for {number} {unit}
-	ErrCodeCodingPlanExpired        = 1309 // GLM Coding Plan package expired
-	ErrCodeWeeklyMonthlyExhausted   = 1310 // Weekly/Monthly Limit Exhausted
-	ErrCodeModelNotIncluded         = 1311 // Subscription doesn't include this model
-	ErrCodeFairUsageViolation       = 1313 // Fair Usage Policy violation
-	ErrCodeEnterpriseExpired        = 1314 // Enterprise package expired
-	ErrCodeEnterpriseKeyOnly        = 1315 // API Key limited to enterprise scenarios
-	ErrCodeHourlyLimitNoBalance     = 1316 // 5-hour limit reached, no balance for extra
-	ErrCodeWeeklyLimitNoBalance     = 1317 // 7-day limit reached, no balance for extra
-	ErrCodeHourlyLimitNoSpend       = 1318 // 5-hour limit reached, no monthly spend
-	ErrCodeWeeklyLimitNoSpend       = 1319 // 7-day limit reached, no monthly spend
-	ErrCodeHourlyLimitSpendCap      = 1320 // 5-hour limit reached, monthly spend cap
-	ErrCodeWeeklyLimitSpendCap      = 1321 // 7-day limit reached, monthly spend cap
+	ErrCodeInsufficientBalance    = 1113 // Insufficient balance or no resource package
+	ErrCodeRateLimitReached       = 1302 // Rate limit reached for requests
+	ErrCodeServiceOverloaded      = 1305 // Service temporarily overloaded
+	ErrCodeUsageLimitReached      = 1308 // Usage limit reached for {number} {unit}
+	ErrCodeCodingPlanExpired      = 1309 // GLM Coding Plan package expired
+	ErrCodeWeeklyMonthlyExhausted = 1310 // Weekly/Monthly Limit Exhausted
+	ErrCodeModelNotIncluded       = 1311 // Subscription doesn't include this model
+	ErrCodeFairUsageViolation     = 1313 // Fair Usage Policy violation
+	ErrCodeEnterpriseExpired      = 1314 // Enterprise package expired
+	ErrCodeEnterpriseKeyOnly      = 1315 // API Key limited to enterprise scenarios
+	ErrCodeHourlyLimitNoBalance   = 1316 // 5-hour limit reached, no balance for extra
+	ErrCodeWeeklyLimitNoBalance   = 1317 // 7-day limit reached, no balance for extra
+	ErrCodeHourlyLimitNoSpend     = 1318 // 5-hour limit reached, no monthly spend
+	ErrCodeWeeklyLimitNoSpend     = 1319 // 7-day limit reached, no monthly spend
+	ErrCodeHourlyLimitSpendCap    = 1320 // 5-hour limit reached, monthly spend cap
+	ErrCodeWeeklyLimitSpendCap    = 1321 // 7-day limit reached, monthly spend cap
 
 	// Parameter Errors (HTTP 400)
 	ErrCodeInvalidParameter   = 1210 // Invalid API parameter
@@ -71,14 +71,14 @@ const (
 
 // APIError represents a structured error from the Z.ai API
 type APIError struct {
-	HTTPStatus  int          `json:"http_status"`    // HTTP status code
-	Code        int          `json:"code"`           // Business error code
-	Message     string       `json:"message"`        // Error message
-	Category    ErrorCategory `json:"category"`      // Error category
-	UserMessage string       `json:"user_message"`   // User-friendly message
-	IsRetriable bool         `json:"retriable"`      // Can this error be retried
-	RequestID   string       `json:"request_id"`     // Request ID for support
-	Err         error        `json:"-"`              // Wrapped error for internal use
+	HTTPStatus  int           `json:"http_status"`  // HTTP status code
+	Code        int           `json:"code"`         // Business error code
+	Message     string        `json:"message"`      // Error message
+	Category    ErrorCategory `json:"category"`     // Error category
+	UserMessage string        `json:"user_message"` // User-friendly message
+	IsRetriable bool          `json:"retriable"`    // Can this error be retried
+	RequestID   string        `json:"request_id"`   // Request ID for support
+	Err         error         `json:"-"`            // Wrapped error for internal use
 }
 
 func (e *APIError) Error() string {
@@ -140,10 +140,10 @@ type errorConfig struct {
 // errorMapping maps error codes to their configurations
 var errorMapping = map[int]errorConfig{
 	// Authentication errors
-	ErrCodeAuthFailed:     {ErrorCategoryAuth, "Authentication failed. Please check your API key.", false},
-	ErrCodeAuthNotFound:   {ErrorCategoryAuth, "Authentication credentials not found. Please provide a valid API key.", false},
+	ErrCodeAuthFailed:       {ErrorCategoryAuth, "Authentication failed. Please check your API key.", false},
+	ErrCodeAuthNotFound:     {ErrorCategoryAuth, "Authentication credentials not found. Please provide a valid API key.", false},
 	ErrCodeAuthTokenExpired: {ErrorCategoryAuth, "Authentication token has expired. Please regenerate your API key.", false},
-	ErrCodeAuthNeed2FA:    {ErrorCategoryAuth, "Two-factor authentication is required.", false},
+	ErrCodeAuthNeed2FA:      {ErrorCategoryAuth, "Two-factor authentication is required.", false},
 
 	// Rate limit/quota errors
 	ErrCodeInsufficientBalance:    {ErrorCategoryQuota, "Insufficient balance or no active resource package. Please recharge.", false},
@@ -155,7 +155,7 @@ var errorMapping = map[int]errorConfig{
 	ErrCodeModelNotIncluded:       {ErrorCategoryQuota, "Your subscription plan doesn't include access to this model.", false},
 	ErrCodeFairUsageViolation:     {ErrorCategoryQuota, "Account usage pattern doesn't comply with Fair Usage Policy. Access has been limited.", false},
 	ErrCodeEnterpriseExpired:      {ErrorCategoryQuota, "Your enterprise package has expired. Please contact your administrator.", false},
-	ErrCodeEnterpriseKeyOnly:       {ErrorCategoryQuota, "This API key is limited to enterprise coding scenarios. Please use the correct API key type.", false},
+	ErrCodeEnterpriseKeyOnly:      {ErrorCategoryQuota, "This API key is limited to enterprise coding scenarios. Please use the correct API key type.", false},
 	ErrCodeHourlyLimitNoBalance:   {ErrorCategoryQuota, "5-hour usage limit reached. Insufficient balance for extra usage.", false},
 	ErrCodeWeeklyLimitNoBalance:   {ErrorCategoryQuota, "7-day usage limit reached. Insufficient balance for extra usage.", false},
 	ErrCodeHourlyLimitNoSpend:     {ErrorCategoryQuota, "5-hour usage limit reached. Extra usage unavailable due to monthly spend limit.", false},
@@ -169,7 +169,7 @@ var errorMapping = map[int]errorConfig{
 	ErrCodeMethodNotSupported: {ErrorCategoryParameter, "The current model doesn't support this API method.", false},
 	ErrCodeParameterMissing:   {ErrorCategoryParameter, "Required parameter not provided. Please check the API documentation.", false},
 	ErrCodeParameterInvalid:   {ErrorCategoryParameter, "Invalid parameter value. Please check the API documentation.", false},
-	ErrCodeParametersConflict:  {ErrorCategoryParameter, "Conflicting parameters provided. Please check the API documentation.", false},
+	ErrCodeParametersConflict: {ErrorCategoryParameter, "Conflicting parameters provided. Please check the API documentation.", false},
 	ErrCodeAPITakenOffline:    {ErrorCategoryParameter, "This API has been taken offline.", false},
 	ErrCodeAPINotExist:        {ErrorCategoryParameter, "This API endpoint doesn't exist.", false},
 	ErrCodePromptTooLong:      {ErrorCategoryParameter, "Prompt text is too long. Please shorten your input.", false},
@@ -246,9 +246,9 @@ var (
 // NewAPIError creates a new API error (legacy compatibility)
 func NewAPIError(statusCode int, message string) *APIError {
 	return &APIError{
-		HTTPStatus: statusCode,
-		Message:    message,
-		Category:   ErrorCategoryServer,
+		HTTPStatus:  statusCode,
+		Message:     message,
+		Category:    ErrorCategoryServer,
 		IsRetriable: statusCode >= 500,
 	}
 }
@@ -256,9 +256,9 @@ func NewAPIError(statusCode int, message string) *APIError {
 // WrapAPIError wraps an existing error with API context (legacy compatibility)
 func WrapAPIError(err error, message string) *APIError {
 	return &APIError{
-		Message: message,
-		Err:     err,
-		Category: ErrorCategoryServer,
+		Message:     message,
+		Err:         err,
+		Category:    ErrorCategoryServer,
 		IsRetriable: true,
 	}
 }
