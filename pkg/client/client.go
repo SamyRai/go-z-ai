@@ -70,6 +70,7 @@ type Client struct {
 	layout     *LayoutService
 	files      *FilesService
 	batch      *BatchService
+	agents     *AgentsService
 }
 
 // NewClient creates a new Z.AI API client with the given configuration
@@ -139,6 +140,7 @@ func NewClient(config Config) (*Client, error) {
 	client.layout = &LayoutService{client: client}
 	client.files = &FilesService{client: client}
 	client.batch = &BatchService{client: client}
+	client.agents = &AgentsService{client: client}
 
 	return client, nil
 }
@@ -395,4 +397,9 @@ func (c *Client) Files() *FilesService {
 // Batch returns the batch job service
 func (c *Client) Batch() *BatchService {
 	return c.batch
+}
+
+// Agents returns the agents (specialized-agent invocation) service
+func (c *Client) Agents() *AgentsService {
+	return c.agents
 }

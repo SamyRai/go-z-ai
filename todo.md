@@ -6,6 +6,20 @@ Operational work tracker. Rationale and gap analysis live in
 **Status:** `[ ]` pending · `[~]` in progress · `[x]` done · `[!]` blocked
 
 **Progress log**
+- 2026-07-11 — Live verification pass against the real Z.AI API (`damir`
+  account, coding_plan type, user-authorized). Added
+  `gopkg.in/dnaeon/go-vcr.v4` for recorded-cassette testing: real
+  interactions saved under `pkg/client/testdata/cassettes/*.yaml` with
+  `Authorization` redacted via a `BeforeSaveHook`, replayed in
+  `ModeReplayOnly` (errors loudly rather than silently hitting the network
+  if a cassette is missing/incomplete) — so these tests are both real
+  (server-generated, not hand-written fixtures) and hermetic (no network or
+  API key needed to run `go test`). Confirmed Agents API is real and
+  reachable at a bare-root base URL (`AgentsBaseURL`, implemented); Assistant
+  API times out completely on both bases tried (unreachable, not just
+  wrong-model); Embeddings/Moderations both return the identical
+  "Unknown Model" error on the general base (endpoint routes correctly,
+  model name/plan is the remaining blocker). Full detail per-item below.
 - 2026-07-08 — Sprint A complete (A1–A5). All `pkg/client` tests green; full
   repo `go build`/`go vet`/`go test` clean. Live integration confirmed against
   z.ai (auth + transport + structured-error + non-retry-on-quota all observed);
@@ -203,20 +217,40 @@ voice}` — everything below is a real module in that list not yet in
   `Usage.PromptTokensDetails.CachedTokens` (`types.go`) already surfaces the
   `cached_tokens` field the docs describe. Tool-calling-in-stream ("Tool
   Streaming Output") is already handled via `StreamDelta.ToolCalls`.
-- [ ] **Agents API** (`api_resource/agents`) — a generic `agent chat`
-  endpoint (`docs.z.ai/api-reference/agents/agent.md`) plus three named
-  agents: GLM Slide/Poster, Translation, Video Effect Template. Was already
-  backlogged as one line; now confirmed as a real, documented resource
-  distinct from regular chat completions (takes an agent/assistant ID, not
-  just a model name).
-- [ ] **Assistant API** (`api_resource/assistant`) — a *separate* resource
-  from Agents (unclear from docs alone whether Agents supersedes/deprecates
-  this, or they're parallel product lines — verify live before implementing
-  either). Methods: `conversation()` (assistant_id + messages + optional
-  streaming/attachments/metadata — supports tool types `code_interpreter`,
-  `drawing_tool`, `function`, `retrieval`, `web_browser`), `query_support()`
-  (list available assistants), `query_conversation_usage()` (paginated usage
-  stats per assistant).
+- [x] **Agents API** (`api_resource/agents`) — implemented in
+  `pkg/client/agents.go`: `AgentsService.Invoke` against `POST /v1/agents`.
+  **Live-verified 2026-07-11** against the `damir` account (coding_plan)
+  using the `damir` key with the user's explicit go-ahead:
+  - **Base URL is a bare root path**, not nested under `ProdBaseURL`/
+    `CodingBaseURL` — confirmed by getting a 404 on
+    `api.z.ai/api/coding/paas/v4/v1/agents` and a real 200 on
+    `api.z.ai/api/v1/agents`. New `AgentsBaseURL` const.
+  - **The API signals business failure via HTTP 200**, not a non-200
+    status: invoking `general_translation` returned `200 OK` with
+    `{"status":"failed","error":{"code":"1113","message":"...insufficient
+    balance..."}}` in the body. `AgentResponse.Failed()` exists because of
+    this — callers MUST check it; `Invoke` returning `nil` error does not
+    mean success. Recorded as a go-vcr cassette
+    (`testdata/cassettes/agents_invoke.yaml`, `Authorization` redacted) and
+    replayed in `TestAgentsInvokeInsufficientBalance` — this is a real
+    server response, not a hand-written fixture.
+  - **Not verified live**: the success-path shape (`Choices`/`Usage` on
+    `AgentResponse`) — the test account has no PAYG balance, so only the
+    failure envelope was ever exercised. Modeled from `docs.z.ai`'s
+    documented example only; each type doc-comments this explicitly.
+    Re-verify once an account with balance is available.
+  - CLI: `agents invoke [agent-id] [message] [--source-lang] [--target-lang]`.
+- [ ] **Assistant API** (`api_resource/assistant`) — **still not
+  implemented; live-verified as unreachable.** `POST /assistant/list`
+  (`query_support`, the free discovery call with no generation cost) timed
+  out completely — no response at all after 15s — against both the general
+  (`ProdBaseURL`) and coding-plan (`CodingBaseURL`) bases. This isn't a
+  wrong-model or balance error like Moderations/Embeddings/Agents got; the
+  request never got a response. Distinct from Agents (which is real and
+  reachable) — genuinely unclear whether Assistant is deprecated,
+  region-gated, or just down. No cassette was worth keeping (nothing to
+  record). Re-probe before implementing, ideally from a different
+  account/network.
 - [x] **Batch API** (`api_resource/batch`) — implemented in
   `pkg/client/batch.go`: `Create/Retrieve/List/Cancel` against
   `POST /batches`, `GET /batches/{id}`, `GET /batches` (cursor-paginated
@@ -233,30 +267,60 @@ voice}` — everything below is a real module in that list not yet in
   `GET /files`, `DELETE /files/{id}`, `GET /files/{id}/content`. CLI:
   `files upload/list/delete/download`. 5 tests in `pkg/client/files_test.go`.
   Endpoints not yet verified live.
-- [ ] **Embeddings API** (`api_resource/embeddings`) —
-  `/api/paas/v4/embeddings`. **Not implemented**: a live GitHub issue
-  ([zai-org/z-ai-sdk-python#67](https://github.com/zai-org/z-ai-sdk-python/issues/67))
-  reports "Unknown Model" errors calling embeddings on the global
-  `api.z.ai` endpoint — may only work on the China `open.bigmodel.cn`
-  endpoint today. Verify live on both endpoints before implementing;
-  don't ship a service that silently only half-works.
-- [ ] **Moderations API** (`api_resource/moderations`) — **not implemented**:
-  unlike Batch/Files, the response shape (categories/scores/flagged fields)
-  isn't documented anywhere — not in `docs.z.ai`'s doc index, not resolvable
-  from the SDK's own type source (`moderation_completion.py` only shows a
-  `model`/`input` echo, no results fields). Implementing this now would mean
-  guessing JSON field names for something that fails silently (wrong names
-  just deserialize to zero values, no error) rather than loudly. Needs a
-  live call against the real API to capture an actual response body before
-  writing the Go types.
-- [ ] **Handwriting OCR** (`api_resource/ocr/handwriting_ocr.py`) — **not
-  implemented**: request shape is known (`POST /files/ocr`,
-  `tool_type: hand_write`, same multipart pattern as
-  `pkg/client/layout.go`), but the response shape wasn't confirmed (unlike
-  Files/Batch, couldn't pin it down from source in this pass) — same
-  "verify before guessing types" concern as Moderations. Cheap to add once
-  confirmed; distinct from the layout-parsing/glm-ocr endpoint already
-  implemented (`/layout_parsing`).
+- [ ] **Embeddings API** (`api_resource/embeddings`) — **still not
+  implemented; live-verified the GitHub issue reproduces exactly.**
+  Request/response types are fully known (confirmed via direct source
+  fetch of `embeddings.py` + `types/embeddings/embeddings.py`:
+  `{model, input, dimensions?, encoding_format?}` →
+  `{object, data: [{object, index, embedding: []float}], model, usage}`),
+  but a live call on `ProdBaseURL` (`/api/paas/v4/embeddings`) with the
+  SDK's own test-fixture model name (`embedding-2`) returned
+  `400 {"code":"1211","message":"Unknown Model, please check the model
+  code."}` — reproducing
+  [zai-org/z-ai-sdk-python#67](https://github.com/zai-org/z-ai-sdk-python/issues/67)
+  exactly. This rules out a routing/base-URL mistake on our side (the
+  endpoint is real and reachable, confirmed via a recorded cassette:
+  `testdata/cassettes/embeddings.yaml`, replayed in
+  `TestEmbeddingsLiveErrorIsUnknownModelNotRouting`) — the blocker is
+  either a wrong/deprecated model code or an account/plan gate. Needs
+  either a confirmed-current model name or a PAYG-balance account to
+  resolve; don't implement the service until a real success response is
+  seen.
+- [ ] **Moderations API** (`api_resource/moderations`) — **still not
+  implemented; confirmed unresolvable without a live call.** Went further
+  than a doc/type read: fetched the actual SDK source directly (`curl` on
+  `raw.githubusercontent.com`, not WebFetch's summarized view) for
+  `moderations.py`, `moderation_completion.py`, and the integration test.
+  The `Completion` response type genuinely only declares `model`/`input` —
+  even the official SDK's author never modeled the real result fields
+  (categories/scores/flagged). It's pydantic-based (openai-python's
+  internal `_base_models.py`/`_base_compat.py` structure, reused verbatim),
+  which likely means `extra="allow"` lets real API fields pass through
+  *dynamically* in Python without ever being declared — but that gives no
+  ground truth for a statically-typed Go struct. No example script exists
+  for moderation anywhere in the repo (every other resource has one under
+  `examples/`). Confirmed: needs one live API call to capture a real
+  response body before writing Go types — cannot be resolved by more
+  reading. **Live-verified 2026-07-11**: a real call with the SDK's own
+  test-fixture model name (`"moderation"`) on `ProdBaseURL` returned the
+  *same* `400 {"code":"1211","message":"Unknown Model..."}` as Embeddings —
+  same conclusion (endpoint real and reachable, model name wrong or
+  plan-gated), recorded and replayed the same way
+  (`testdata/cassettes/moderations.yaml`,
+  `TestModerationsLiveErrorIsUnknownModelNotRouting`). Still no confirmed
+  success response for either endpoint.
+- [x] **Handwriting OCR** (`api_resource/ocr/handwriting_ocr.py`) —
+  implemented as `LayoutService.HandwritingOCR` in `pkg/client/layout.go`
+  (same service as `Parse`/`/layout_parsing`, matching the official SDK's
+  own grouping of both under one `ocr` resource). Response shape confirmed
+  via direct source fetch of `zai/types/ocr/handwriting_ocr_resp.py`
+  (`task_id`/`message`/`status`/`words_result_num`/`words_result[]`, each
+  with `location` bounding box + optional `probability` stats) — unlike
+  Moderations, this one *does* have a fully-declared response type in the
+  SDK, plus a dedicated `examples/handwriting_ocr_example.py`. Multipart
+  upload to `POST /files/ocr` with `tool_type=hand_write`, not retried
+  (matching `AudioService.Transcribe`'s precedent). CLI:
+  `ocr handwriting [file] [--language] [--probability]`. 3 new tests.
 - [ ] **Voice cloning API** (`api_resource/voice/voice.py`) — `/voice/clone`
   (audio sample + target text), `/voice/delete`, `/voice/list`. Not
   mentioned in the `docs.z.ai` `llms.txt` index at all (only

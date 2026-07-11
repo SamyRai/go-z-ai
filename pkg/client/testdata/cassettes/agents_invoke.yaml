@@ -1,0 +1,47 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 170
+        host: api.z.ai
+        body: '{"agent_id":"general_translation","custom_variables":{"source_lang":"auto","target_lang":"zh-CN"},"messages":[{"content":[{"text":"hello","type":"text"}],"role":"user"}]}'
+        headers:
+            Authorization:
+                - Bearer REDACTED
+            Content-Type:
+                - application/json
+        url: https://api.z.ai/api/v1/agents
+        method: POST
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: -1
+        uncompressed: true
+        body: '{"id":"2026071106202516f8db3a3eaf460f","agent_id":"general_translation","status":"failed","error":{"code":"1113","message":"Your account balance is insufficient. Please recharge and try again."}}'
+        headers:
+            Content-Type:
+                - application/json;charset=UTF-8
+            Date:
+                - Fri, 10 Jul 2026 22:20:25 GMT
+            Server:
+                - nginx
+            Strict-Transport-Security:
+                - max-age=31536000; includeSubDomains
+            Vary:
+                - Accept-Encoding
+                - Origin
+                - Access-Control-Request-Method
+                - Access-Control-Request-Headers
+                - Origin
+                - Access-Control-Request-Method
+                - Access-Control-Request-Headers
+            X-Log-Id:
+                - 2026071106202516f8db3a3eaf460f
+        status: 200 OK
+        code: 200
+        duration: 935.631042ms
