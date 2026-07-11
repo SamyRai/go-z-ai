@@ -1,0 +1,140 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"zai-api-client/pkg/accounts"
+	"zai-api-client/pkg/client"
+)
+
+func getClient() (*client.Client, error) {
+	apiKey := viper.GetString("api-key")
+	baseURL := viper.GetString("base-url")
+	accountName := viper.GetString("account")
+
+	switch {
+	case apiKey != "":
+		// --api-key is the most explicit override; nothing else applies.
+	case accountName != "":
+		// --account is an explicit choice on this invocation — it must win
+		// over an ambient ZAI_API_KEY env var, not lose to it, and an
+		// unknown name must fail loud rather than silently falling through.
+		acct, err := lookupAccount(accountName)
+		if err != nil {
+			return nil, err
+		}
+		apiKey = acct.APIKey
+		if baseURL == "" {
+			resolvedURL, err := acct.ResolvedBaseURL()
+			if err != nil {
+				return nil, err
+			}
+			baseURL = resolvedURL
+		}
+		markAccountUsed(acct.Name)
+	default:
+		apiKey = os.Getenv("ZAI_API_KEY")
+		if apiKey == "" {
+			apiKey = os.Getenv("KEY") // Support KEY variable name
+		}
+	}
+
+	if baseURL == "" {
+		baseURL = os.Getenv("ZAI_API_BASE_URL")
+	}
+
+	// Last resort: the accounts store's active account, when nothing above
+	// (flags, --account, env vars) resolved an API key.
+	if apiKey == "" {
+		if acct, ok, err := activeAccount(); err != nil {
+			return nil, err
+		} else if ok {
+			apiKey = acct.APIKey
+			if baseURL == "" {
+				resolvedURL, err := acct.ResolvedBaseURL()
+				if err != nil {
+					return nil, err
+				}
+				baseURL = resolvedURL
+			}
+			markAccountUsed(acct.Name)
+		}
+	}
+
+	if apiKey == "" {
+		return nil, fmt.Errorf("API key is required. Set it via --api-key flag, ZAI_API_KEY environment variable, KEY environment variable, 'zai-client accounts use <name>', or --account <name>")
+	}
+
+	config := client.Config{
+		APIKey:  apiKey,
+		BaseURL: baseURL,
+	}
+
+	return client.NewClient(config)
+}
+
+// lookupAccount resolves a stored account by name, erroring if it doesn't
+// exist (fail loud — an explicitly-named account that isn't found must never
+// silently fall through to another credential source).
+func lookupAccount(name string) (accounts.Account, error) {
+	store, err := accounts.Load()
+	if err != nil {
+		return accounts.Account{}, err
+	}
+	acct, found := store.Get(name)
+	if !found {
+		return accounts.Account{}, fmt.Errorf("account %q not found (run 'zai-client accounts list')", name)
+	}
+	return acct, nil
+}
+
+// activeAccount returns the accounts store's active account, if any. ok is
+// false when no account is configured/active, which is not itself an error.
+func activeAccount() (accounts.Account, bool, error) {
+	store, err := accounts.Load()
+	if err != nil {
+		return accounts.Account{}, false, err
+	}
+	acct, found := store.ActiveAccount()
+	return acct, found, nil
+}
+
+// markAccountUsed records that name's credentials were just resolved for a
+// real command, best-effort — a failure to persist "last used" bookkeeping
+// must never block the command that's actually using the account.
+func markAccountUsed(name string) {
+	store, err := accounts.Load()
+	if err != nil {
+		return
+	}
+	if err := store.Touch(name); err != nil {
+		return
+	}
+	_ = store.Save()
+}
+
+func validateAPIKey(cmd *cobra.Command, args []string) error {
+	apiClient, err := getClient()
+	if err != nil {
+		return err
+	}
+
+	// Test API key by making a simple request
+	_, err = apiClient.Models().List()
+	if err != nil {
+		return fmt.Errorf("invalid API key: %w", err)
+	}
+
+	fmt.Println("✓ API key is valid")
+	return nil
+}
+
+func outputJSON(v interface{}) error {
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(v)
+}

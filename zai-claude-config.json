@@ -1,0 +1,13 @@
+{
+  "_readme": "What `zai-client coding load claude-code` writes to ~/.claude/settings.json by default (it also sets hasCompletedOnboarding:true in ~/.claude.json). Base env vars match @z_ai/coding-helper; the model mapping + auto-compact window are enhancements. Override with --haiku/--sonnet/--opus/--auto-compact-window, or --no-model-mapping for the bare helper format.",
+  "env": {
+    "ANTHROPIC_AUTH_TOKEN": "your-zai-api-key-here",
+    "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
+    "API_TIMEOUT_MS": "3000000",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": 1,
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.5-air",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-4.7",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-4.7",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "1000000"
+  }
+}
