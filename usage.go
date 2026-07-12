@@ -269,28 +269,6 @@ func runUsageWatch(ctx context.Context) error {
 	}
 }
 
-func outputQuota(quota interface{}, format string) error {
-	switch format {
-	case "json":
-		return outputJSON(quota)
-	default:
-		fmt.Println("📊 Client-Side Usage Tracking")
-		fmt.Printf("%v\n", quota)
-		return nil
-	}
-}
-
-func outputUsageSummary(summary interface{}, format string) error {
-	switch format {
-	case "json":
-		return outputJSON(summary)
-	default:
-		fmt.Println("📊 Usage Summary")
-		fmt.Printf("%v\n", summary)
-		return nil
-	}
-}
-
 func outputAccountStatus(status *client.AccountStatus, format string) error {
 	switch format {
 	case "json":
@@ -306,49 +284,6 @@ func outputAccountStatus(status *client.AccountStatus, format string) error {
 	}
 }
 
-func outputAccount(account interface{}, format string) error {
-	switch format {
-	case "json":
-		return outputJSON(account)
-	default:
-		fmt.Printf("👤 Account Information\n\n")
-		fmt.Printf("%v\n", account)
-		return nil
-	}
-}
-
-func outputBilling(billing *client.BillingInfo, format string) error {
-	switch format {
-	case "json":
-		return outputJSON(billing)
-	default:
-		return outputBillingTable(billing)
-	}
-}
-
-func outputQuotaTable(quota interface{}) error {
-	fmt.Printf("📊 Usage Information\n\n")
-	fmt.Printf("%v\n", quota)
-	return nil
-}
-
-func outputUsageSummaryTable(summary interface{}) error {
-	fmt.Printf("📊 Usage Summary\n\n")
-	fmt.Printf("%v\n", summary)
-	return nil
-}
-
-func outputAccountTable(account interface{}) error {
-	fmt.Printf("👤 Account Information\n\n")
-	fmt.Printf("%v\n", account)
-	return nil
-}
-
-func outputBillingTable(billing interface{}) error {
-	fmt.Printf("💳 Billing Information\n\n")
-	fmt.Printf("%v\n", billing)
-	return nil
-}
 func runUsageDetect(cmd *cobra.Command, args []string) error {
 	apiClient, err := getClient()
 	if err != nil {

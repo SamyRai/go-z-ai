@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -64,8 +65,7 @@ func TestEmbeddingsCreate(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		gotAuth = r.Header.Get("Authorization")
-		buf := make([]byte, r.ContentLength)
-		r.Body.Read(buf)
+		buf, _ := io.ReadAll(r.Body)
 		gotBody = string(buf)
 		writeJSON(w, http.StatusOK, `{"object":"list","model":"embedding-3","data":[{"index":0,"object":"embedding","embedding":[0.1,0.2,0.3]}],"usage":{"prompt_tokens":5,"completion_tokens":0,"total_tokens":5}}`)
 	}))
@@ -100,8 +100,7 @@ func TestEmbeddingsCreate(t *testing.T) {
 func TestEmbeddingsCreateBatchedInput(t *testing.T) {
 	var gotBody string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		buf := make([]byte, r.ContentLength)
-		r.Body.Read(buf)
+		buf, _ := io.ReadAll(r.Body)
 		gotBody = string(buf)
 		writeJSON(w, http.StatusOK, `{"object":"list","model":"embedding-2","data":[],"usage":{"prompt_tokens":1,"completion_tokens":0,"total_tokens":1}}`)
 	}))
