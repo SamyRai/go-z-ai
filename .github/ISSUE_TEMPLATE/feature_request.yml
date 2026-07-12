@@ -1,0 +1,31 @@
+name: Feature request
+description: Propose a new command, client method, or API surface to cover
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The task or workflow this would unblock.
+    validations:
+      required: true
+
+  - type: textarea
+    id: api-reference
+    attributes:
+      label: Z.AI API reference (if applicable)
+      description: >
+        Link to the relevant docs.z.ai or docs.bigmodel.cn page, or paste the
+        OpenAPI schema fragment if you have it. This project verifies request/
+        response shapes against real API calls before shipping a service, so
+        the more concrete the reference, the faster this can land.
+    validations:
+      required: false
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed shape
+      description: Rough CLI command and/or Go method signature, if you have one in mind.
+    validations:
+      required: false
