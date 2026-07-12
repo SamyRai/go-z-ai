@@ -12,11 +12,16 @@ type ImagesService struct {
 
 // ImageGenerationRequest is the request body for image generation.
 type ImageGenerationRequest struct {
-	Model   string `json:"model"` // glm-image | cogview-4-250304
+	Model   string `json:"model"` // glm-image | cogview-4-250304 | cogview-4 | cogview-3-flash
 	Prompt  string `json:"prompt"`
 	Quality string `json:"quality,omitempty"` // hd (default) | standard
 	Size    string `json:"size,omitempty"`    // default 1280x1280
 	UserID  string `json:"user_id,omitempty"`
+	// WatermarkEnabled controls the AI-generated watermark (both a visible
+	// mark and an embedded digital one), which the API defaults to true. A
+	// pointer so an explicit false survives — omitempty on a plain bool
+	// would silently drop it and let the API's true default apply instead.
+	WatermarkEnabled *bool `json:"watermark_enabled,omitempty"`
 }
 
 // ImageGenerationResponse is the response from a synchronous (or completed

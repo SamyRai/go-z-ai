@@ -29,6 +29,29 @@ func (s *ChatService) Create(ctx context.Context, req ChatRequest) (*ChatRespons
 	return &response, nil
 }
 
+// CreateAsync submits a chat completion request and returns immediately
+// with a task to poll via Client.GetAsyncResult/WaitForResult — useful for
+// long-running generations where you don't want to hold a connection open.
+// The request shape is identical to Create; only the endpoint and response
+// differ (confirmed against docs.bigmodel.cn's live OpenAPI spec,
+// POST /paas/v4/async/chat/completions -> AsyncResponse). Poll the
+// returned ID with GetAsyncResult, whose AsyncResultResponse now also
+// carries Choices/Usage for a completed chat task (see async.go).
+func (s *ChatService) CreateAsync(ctx context.Context, req ChatRequest) (*AsyncTaskResponse, error) {
+	if err := validateChatRequest(&req); err != nil {
+		return nil, fmt.Errorf("invalid chat request: %w", err)
+	}
+	if req.Stream {
+		return nil, fmt.Errorf("stream is not supported for async chat completions")
+	}
+
+	var response AsyncTaskResponse
+	if err := s.client.doRequest(ctx, "POST", "/async/chat/completions", req, &response); err != nil {
+		return nil, fmt.Errorf("failed to submit async chat completion: %w", err)
+	}
+	return &response, nil
+}
+
 // CreateSimple creates a simple chat completion with basic parameters
 func (s *ChatService) CreateSimple(ctx context.Context, model, userMessage string, messages []Message) (*ChatResponse, error) {
 	if len(messages) == 0 {
@@ -73,7 +96,7 @@ func (s *ChatService) CreateStream(ctx context.Context, req ChatRequest, onChunk
 			return err
 		}
 
-		resp, err := s.client.send(ctx, s.client.config.BaseURL, "POST", "/chat/completions", req)
+		resp, err := s.client.send(ctx, s.client.config.BaseURL, s.client.config.APIKey, "POST", "/chat/completions", req)
 		if err != nil {
 			lastErr = fmt.Errorf("failed to execute request: %w", err)
 			if attempt < maxRetries {

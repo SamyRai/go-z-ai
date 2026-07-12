@@ -9,10 +9,9 @@ import (
 
 // ModelsService handles model-related operations
 type ModelsService struct {
-	client    *Client
-	cache     *ModelsInfo
-	cacheMu   sync.RWMutex
-	cacheOnce sync.Once
+	client  *Client
+	cache   *ModelsInfo
+	cacheMu sync.RWMutex
 }
 
 // List returns all available models
@@ -68,55 +67,39 @@ func (s *ModelsService) Get(ctx context.Context, modelID string) (*ModelDetails,
 	return nil, fmt.Errorf("model not found: %s", modelID)
 }
 
-// GetTextModels returns all text-only models
-func (s *ModelsService) GetTextModels(ctx context.Context) ([]ModelDetails, error) {
+// filterModels lists all models and returns those matching keep — shared by
+// GetTextModels/GetVisionModels/GetFreeModels so the list-then-filter shape
+// lives in one place.
+func (s *ModelsService) filterModels(ctx context.Context, keep func(ModelDetails) bool) ([]ModelDetails, error) {
 	models, err := s.List(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var textModels []ModelDetails
+	var result []ModelDetails
 	for _, model := range models.Models {
-		if isTextModel(model.ID) {
-			textModels = append(textModels, model)
+		if keep(model) {
+			result = append(result, model)
 		}
 	}
+	return result, nil
+}
 
-	return textModels, nil
+// GetTextModels returns all text-only models
+func (s *ModelsService) GetTextModels(ctx context.Context) ([]ModelDetails, error) {
+	return s.filterModels(ctx, func(m ModelDetails) bool { return isTextModel(m.ID) })
 }
 
 // GetVisionModels returns all vision-capable models
 func (s *ModelsService) GetVisionModels(ctx context.Context) ([]ModelDetails, error) {
-	models, err := s.List(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var visionModels []ModelDetails
-	for _, model := range models.Models {
-		if isVisionModel(model.ID) {
-			visionModels = append(visionModels, model)
-		}
-	}
-
-	return visionModels, nil
+	return s.filterModels(ctx, func(m ModelDetails) bool { return isVisionModel(m.ID) })
 }
 
 // GetFreeModels returns all free models
 func (s *ModelsService) GetFreeModels(ctx context.Context) ([]ModelDetails, error) {
-	models, err := s.List(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var freeModels []ModelDetails
-	for _, model := range models.Models {
-		if model.Pricing != nil && model.Pricing.Input == 0 && model.Pricing.Output == 0 {
-			freeModels = append(freeModels, model)
-		}
-	}
-
-	return freeModels, nil
+	return s.filterModels(ctx, func(m ModelDetails) bool {
+		return m.Pricing != nil && m.Pricing.Input == 0 && m.Pricing.Output == 0
+	})
 }
 
 // RefreshCache clears and refreshes the models cache
@@ -129,23 +112,21 @@ func (s *ModelsService) RefreshCache(ctx context.Context) error {
 	return err
 }
 
-// Helper functions to categorize models
-func isTextModel(modelID string) bool {
-	visionModels := []string{"glm-5v", "glm-4.6v", "glm-4.5v", "glm-ocr"}
-	for _, vm := range visionModels {
-		if strings.Contains(modelID, vm) {
-			return false
-		}
-	}
-	return true
-}
+// visionModelMarkers are substrings identifying vision-capable model IDs —
+// the single source of truth isTextModel/isVisionModel both read, so the
+// two categorizations can never drift out of sync with each other (they
+// previously each hardcoded their own copy of this list).
+var visionModelMarkers = []string{"glm-5v", "glm-4.6v", "glm-4.5v", "glm-ocr"}
 
 func isVisionModel(modelID string) bool {
-	visionModels := []string{"glm-5v", "glm-4.6v", "glm-4.5v", "glm-ocr"}
-	for _, vm := range visionModels {
+	for _, vm := range visionModelMarkers {
 		if strings.Contains(modelID, vm) {
 			return true
 		}
 	}
 	return false
+}
+
+func isTextModel(modelID string) bool {
+	return !isVisionModel(modelID)
 }

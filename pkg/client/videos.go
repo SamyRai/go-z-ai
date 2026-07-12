@@ -32,6 +32,11 @@ type VideoGenerationRequest struct {
 	Quality           string `json:"quality,omitempty"`            // cogvideox-3 only: speed | quality
 	MovementAmplitude string `json:"movement_amplitude,omitempty"` // auto | small | medium | large
 	WithAudio         bool   `json:"with_audio,omitempty"`
+	// WatermarkEnabled controls the AI-generated watermark, which the API
+	// defaults to true. A pointer so an explicit false survives — see
+	// ImageGenerationRequest.WatermarkEnabled for why (omitempty would
+	// silently drop a false zero value and let the API's true default apply).
+	WatermarkEnabled *bool `json:"watermark_enabled,omitempty"`
 }
 
 // Generate submits a video generation task and returns immediately; poll

@@ -21,7 +21,28 @@ const (
 	AnthropicBaseURL = "https://api.z.ai/api/anthropic"
 	MonitorBaseURL   = "https://api.z.ai/api/monitor"
 	BizBaseURL       = "https://api.z.ai/api/biz"
-	ToolsBaseURL     = "https://api.z.ai/api/tools"
+
+	// BigModelBaseURL is Z.AI's China-mainland mirror (Zhipu's open.bigmodel.cn
+	// platform, run under the same "ZHIPU AI API" OpenAPI spec as api.z.ai.
+	// LIVE-VERIFIED 2026-07-11: a single z.ai API key authenticates
+	// identically on both platforms (GET /models returns the exact same
+	// 8-model chat catalog on both; POST /chat/completions clears auth and
+	// reaches the same billing-level error, HTTP 400 code 1113 insufficient
+	// balance, on both) — this is NOT a separate account/billing system per
+	// platform, despite ZaiClient/ZhipuAiClient naming conventions in some
+	// SDKs suggesting otherwise. What IS platform-specific is
+	// documentation coverage: docs.z.ai's complete doc index never
+	// mentions Embeddings, Moderations, or Assistant, while
+	// docs.bigmodel.cn documents all three (Assistant's paths marked
+	// "deprecated": true in the live spec at
+	// https://docs.bigmodel.cn/openapi/openapi.json — hence not
+	// implemented; see EmbeddingsService/ModerationsService for the other
+	// two). Calling those two here still returns 400 "Unknown Model" (code
+	// 1211) with this account's key on either platform — live-verified
+	// that's an account/plan-entitlement gate (this account's model
+	// catalog, per /models, is chat-only), not a platform-routing issue.
+	// See docs/accounts-and-quota.md for the user-facing explanation.
+	BigModelBaseURL = "https://open.bigmodel.cn/api/paas/v4"
 
 	// Monitor usage endpoints
 	QuotaLimitEndpoint = "/usage/quota/limit"
@@ -51,26 +72,39 @@ type Config struct {
 	MaxRetries int
 	// RetryDelay is the base delay for exponential backoff. Defaults to 200ms.
 	RetryDelay time.Duration
+	// ChinaAPIKey authenticates against BigModelBaseURL (open.bigmodel.cn),
+	// used by EmbeddingsService and ModerationsService. Falls back to
+	// APIKey when empty — live-verified 2026-07-11 that a z.ai key
+	// authenticates identically on both api.z.ai and open.bigmodel.cn (same
+	// /models catalog, same billing-level errors on chat/completions), so
+	// the fallback is the common case, not a fringe one. Set this
+	// separately only if you hold a distinct bigmodel.cn-only credential.
+	ChinaAPIKey string
 }
 
 // Client represents the Z.AI API client
 type Client struct {
-	config     Config
-	httpClient *http.Client
-	chat       *ChatService
-	models     *ModelsService
-	usage      *UsageService
-	detection  *DetectionService
-	quota      *QuotaService
-	account    *AccountService
-	tools      *ToolsService
-	images     *ImagesService
-	videos     *VideosService
-	audio      *AudioService
-	layout     *LayoutService
-	files      *FilesService
-	batch      *BatchService
-	agents     *AgentsService
+	config      Config
+	httpClient  *http.Client
+	chat        *ChatService
+	models      *ModelsService
+	usage       *UsageService
+	detection   *DetectionService
+	quota       *QuotaService
+	account     *AccountService
+	tools       *ToolsService
+	images      *ImagesService
+	videos      *VideosService
+	audio       *AudioService
+	layout      *LayoutService
+	files       *FilesService
+	batch       *BatchService
+	agents      *AgentsService
+	embeddings  *EmbeddingsService
+	moderations *ModerationsService
+	rerank      *RerankService
+	voice       *VoiceService
+	fileParser  *FileParserService
 }
 
 // NewClient creates a new Z.AI API client with the given configuration
@@ -141,8 +175,23 @@ func NewClient(config Config) (*Client, error) {
 	client.files = &FilesService{client: client}
 	client.batch = &BatchService{client: client}
 	client.agents = &AgentsService{client: client}
+	client.embeddings = &EmbeddingsService{client: client}
+	client.moderations = &ModerationsService{client: client}
+	client.rerank = &RerankService{client: client}
+	client.voice = &VoiceService{client: client}
+	client.fileParser = &FileParserService{client: client}
 
 	return client, nil
+}
+
+// chinaAPIKey returns the credential for BigModelBaseURL calls: ChinaAPIKey
+// when set, otherwise APIKey (which only authenticates there if the same key
+// happens to be valid on both platforms — see Config.ChinaAPIKey).
+func (c *Client) chinaAPIKey() string {
+	if c.config.ChinaAPIKey != "" {
+		return c.config.ChinaAPIKey
+	}
+	return c.config.APIKey
 }
 
 // NewClientFromEnv creates a new client from environment variables
@@ -214,6 +263,13 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body in
 // Every service goes through this (or doRequest) — no service should build
 // its own http.Client, which would bypass retry, timeout, and error parsing.
 func (c *Client) doRequestBase(ctx context.Context, baseURL, method, endpoint string, body interface{}, result interface{}) error {
+	return c.doRequestBaseKey(ctx, baseURL, c.config.APIKey, method, endpoint, body, result)
+}
+
+// doRequestBaseKey is doRequestBase with an explicit bearer credential,
+// for platforms that authenticate separately from Config.APIKey (currently
+// BigModelBaseURL — see Config.ChinaAPIKey).
+func (c *Client) doRequestBaseKey(ctx context.Context, baseURL, apiKey, method, endpoint string, body interface{}, result interface{}) error {
 	maxRetries := c.config.MaxRetries
 	if maxRetries < 0 {
 		maxRetries = 0
@@ -225,7 +281,7 @@ func (c *Client) doRequestBase(ctx context.Context, baseURL, method, endpoint st
 			return err
 		}
 
-		resp, err := c.send(ctx, baseURL, method, endpoint, body)
+		resp, err := c.send(ctx, baseURL, apiKey, method, endpoint, body)
 		if err != nil {
 			// Transport-level failure: no server response was produced, so the
 			// request is safe to retry (the server never answered).
@@ -263,9 +319,9 @@ func (c *Client) doRequestBase(ctx context.Context, baseURL, method, endpoint st
 	return lastErr
 }
 
-// send builds and issues a single HTTP request against baseURL+endpoint.
-// The caller owns resp.Body.
-func (c *Client) send(ctx context.Context, baseURL, method, endpoint string, body interface{}) (*http.Response, error) {
+// send builds and issues a single HTTP request against baseURL+endpoint,
+// authenticating with apiKey. The caller owns resp.Body.
+func (c *Client) send(ctx context.Context, baseURL, apiKey, method, endpoint string, body interface{}) (*http.Response, error) {
 	url := baseURL + endpoint
 
 	var bodyReader io.Reader
@@ -282,7 +338,7 @@ func (c *Client) send(ctx context.Context, baseURL, method, endpoint string, bod
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("Authorization", "Bearer "+c.config.APIKey)
+	req.Header.Set("Authorization", "Bearer "+apiKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept-Language", "en-US,en")
 	if body != nil {
@@ -402,4 +458,32 @@ func (c *Client) Batch() *BatchService {
 // Agents returns the agents (specialized-agent invocation) service
 func (c *Client) Agents() *AgentsService {
 	return c.agents
+}
+
+// Embeddings returns the text-embeddings service. It calls BigModelBaseURL
+// (open.bigmodel.cn), not Config.BaseURL — see Config.ChinaAPIKey.
+func (c *Client) Embeddings() *EmbeddingsService {
+	return c.embeddings
+}
+
+// Moderations returns the content-moderation service. It calls
+// BigModelBaseURL (open.bigmodel.cn), not Config.BaseURL — see
+// Config.ChinaAPIKey.
+func (c *Client) Moderations() *ModerationsService {
+	return c.moderations
+}
+
+// Rerank returns the document-reranking service.
+func (c *Client) Rerank() *RerankService {
+	return c.rerank
+}
+
+// Voice returns the voice-cloning service.
+func (c *Client) Voice() *VoiceService {
+	return c.voice
+}
+
+// FileParser returns the document-parsing service.
+func (c *Client) FileParser() *FileParserService {
+	return c.fileParser
 }

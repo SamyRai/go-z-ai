@@ -18,10 +18,20 @@ type BatchService struct {
 // BatchEndpoint is the API endpoint a batch's requests target.
 type BatchEndpoint string
 
-const (
-	BatchEndpointChatCompletions BatchEndpoint = "/v1/chat/completions"
-	BatchEndpointEmbeddings      BatchEndpoint = "/v1/embeddings"
-)
+// BatchEndpointChatCompletions is currently the API's only valid value for
+// BatchCreateRequest.Endpoint — confirmed both by the live OpenAPI spec's
+// enum (docs.bigmodel.cn/openapi/openapi.json, BatchCreateRequest.endpoint)
+// and by the official Python SDK's own integration-test usage + a real
+// captured response in its comment (tests/integration_tests/test_batches.py,
+// endpoint='/v4/chat/completions'). This corrects an earlier "/v1/chat/
+// completions" value in this file, which matched only the Python SDK's
+// stale type-hint stub (types/batch/batch_create_params.py's
+// Literal['/v1/chat/completions', '/v1/embeddings']) — that stub disagrees
+// with the SDK's own real usage and the live spec, so it was wrong. There
+// is no batch-embeddings endpoint in the current spec at all, so the
+// former BatchEndpointEmbeddings constant (also "/v1/embeddings", also
+// unconfirmed) was removed rather than corrected.
+const BatchEndpointChatCompletions BatchEndpoint = "/v4/chat/completions"
 
 // defaultCompletionWindow is the only value the API currently supports.
 const defaultCompletionWindow = "24h"
@@ -138,7 +148,7 @@ func (s *BatchService) Retrieve(ctx context.Context, batchID string) (*Batch, er
 		return nil, fmt.Errorf("batch id is required")
 	}
 	var result Batch
-	if err := s.client.doRequest(ctx, "GET", "/batches/"+batchID, nil, &result); err != nil {
+	if err := s.client.doRequest(ctx, "GET", "/batches/"+url.PathEscape(batchID), nil, &result); err != nil {
 		return nil, fmt.Errorf("failed to retrieve batch: %w", err)
 	}
 	return &result, nil
@@ -172,7 +182,7 @@ func (s *BatchService) Cancel(ctx context.Context, batchID string) (*Batch, erro
 		return nil, fmt.Errorf("batch id is required")
 	}
 	var result Batch
-	if err := s.client.doRequest(ctx, "POST", "/batches/"+batchID+"/cancel", nil, &result); err != nil {
+	if err := s.client.doRequest(ctx, "POST", "/batches/"+url.PathEscape(batchID)+"/cancel", nil, &result); err != nil {
 		return nil, fmt.Errorf("failed to cancel batch: %w", err)
 	}
 	return &result, nil

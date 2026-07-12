@@ -11,18 +11,25 @@ import (
 )
 
 // FilesService manages files uploaded for use in other API calls (batch
-// input, fine-tuning, retrieval, voice-clone input).
+// input, code-interpreter sandbox input, agent file upload, voice-clone
+// input).
 type FilesService struct {
 	client *Client
 }
 
-// FilePurpose is the intended use of an uploaded file.
+// FilePurpose is the intended use of an uploaded file. Values confirmed
+// 2026-07-11 against docs.bigmodel.cn's live OpenAPI spec
+// (FileUploadRequest.purpose enum) — this replaced FilePurposeFineTune
+// ("fine-tune") and FilePurposeRetrieval ("retrieval"), OpenAI-Files-API
+// values that appear nowhere in Z.AI's real enum, with the two purposes
+// that are actually documented (CodeInterpreter, Agent) and previously
+// missing entirely.
 type FilePurpose string
 
 const (
-	FilePurposeFineTune        FilePurpose = "fine-tune"
-	FilePurposeRetrieval       FilePurpose = "retrieval"
 	FilePurposeBatch           FilePurpose = "batch"
+	FilePurposeCodeInterpreter FilePurpose = "code-interpreter"
+	FilePurposeAgent           FilePurpose = "agent"
 	FilePurposeVoiceCloneInput FilePurpose = "voice-clone-input"
 )
 
@@ -120,7 +127,7 @@ func (s *FilesService) Delete(ctx context.Context, fileID string) (*FileDeletedR
 		return nil, fmt.Errorf("file id is required")
 	}
 	var result FileDeletedResponse
-	if err := s.client.doRequest(ctx, "DELETE", "/files/"+fileID, nil, &result); err != nil {
+	if err := s.client.doRequest(ctx, "DELETE", "/files/"+url.PathEscape(fileID), nil, &result); err != nil {
 		return nil, fmt.Errorf("failed to delete file: %w", err)
 	}
 	return &result, nil
@@ -132,7 +139,7 @@ func (s *FilesService) Content(ctx context.Context, fileID string) ([]byte, erro
 	if fileID == "" {
 		return nil, fmt.Errorf("file id is required")
 	}
-	resp, err := s.client.send(ctx, s.client.config.BaseURL, "GET", "/files/"+fileID+"/content", nil)
+	resp, err := s.client.send(ctx, s.client.config.BaseURL, s.client.config.APIKey, "GET", "/files/"+url.PathEscape(fileID)+"/content", nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download file content: %w", err)
 	}

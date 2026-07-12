@@ -122,3 +122,94 @@ func (s *AgentsService) Invoke(ctx context.Context, req AgentInvokeRequest) (*Ag
 	}
 	return &resp, nil
 }
+
+// Async agent task status values (AgentAsyncResultResponse.Status).
+const (
+	AgentAsyncStatusSuccess = "success"
+	AgentAsyncStatusFailed  = "failed"
+	AgentAsyncStatusPending = "pending"
+)
+
+// AgentAsyncResultRequest polls the result of an async agent task (e.g.
+// "intelligent_education_correction_polling"). Both fields are required.
+type AgentAsyncResultRequest struct {
+	AgentID string `json:"agent_id"`
+	AsyncID string `json:"async_id"`
+}
+
+// AgentAsyncContent is one content item in an async agent result message.
+// Confirmed against docs.bigmodel.cn's live OpenAPI spec: currently only
+// file outputs ("file_url"), unlike AgentContent's plain text on the
+// synchronous Invoke path — async agents (e.g. document correction) return
+// generated files rather than inline text.
+type AgentAsyncContent struct {
+	Type    string `json:"type"` // currently only "file_url"
+	FileURL string `json:"file_url,omitempty"`
+	TagCN   string `json:"tag_cn,omitempty"`
+	TagEN   string `json:"tag_en,omitempty"`
+}
+
+// AgentAsyncMessage is one message in an AgentAsyncChoice.
+type AgentAsyncMessage struct {
+	Role    string              `json:"role"`
+	Content []AgentAsyncContent `json:"content"`
+}
+
+// AgentAsyncChoice is one choice in AgentAsyncResultResponse.Choices.
+type AgentAsyncChoice struct {
+	Messages []AgentAsyncMessage `json:"messages"`
+}
+
+// AgentAsyncUsage is token usage for an async agent task.
+type AgentAsyncUsage struct {
+	TotalTokens int `json:"total_tokens"`
+}
+
+// AgentAsyncResultResponse is the result of AgentsService.AsyncResult.
+// Error was added and live-verified 2026-07-11: not in the documented
+// schema (docs.bigmodel.cn's OpenAPI spec declares only
+// agent_id/async_id/status/choices/usage), but a real call with an
+// otherwise-valid agent_id and a bogus async_id returned HTTP 200 with
+// {"status":"failed","error":{"code":"400","message":"custom_variables is
+// required"}} — the exact same 200-with-embedded-failure pattern
+// AgentResponse.Failed() exists to handle on the synchronous Invoke path.
+type AgentAsyncResultResponse struct {
+	AgentID string             `json:"agent_id"`
+	AsyncID string             `json:"async_id"`
+	Status  string             `json:"status"` // AgentAsyncStatusSuccess/Failed/Pending
+	Choices []AgentAsyncChoice `json:"choices,omitempty"`
+	Usage   *AgentAsyncUsage   `json:"usage,omitempty"`
+	Error   *AgentError        `json:"error,omitempty"`
+}
+
+// Done reports whether the async task has reached a terminal state
+// (success or failed) — callers should keep polling while status is
+// AgentAsyncStatusPending.
+func (r *AgentAsyncResultResponse) Done() bool {
+	return r.Status == AgentAsyncStatusSuccess || r.Status == AgentAsyncStatusFailed
+}
+
+// Failed reports whether the async task failed — like AgentResponse.Failed,
+// this can be true on an HTTP 200 response (see AgentAsyncResultResponse's
+// doc comment), so callers must check this rather than relying on
+// AsyncResult returning a non-nil error.
+func (r *AgentAsyncResultResponse) Failed() bool {
+	return r.Status == AgentAsyncStatusFailed || r.Error != nil
+}
+
+// AsyncResult polls the result of an async agent invocation. Both
+// req.AgentID and req.AsyncID are required.
+func (s *AgentsService) AsyncResult(ctx context.Context, req AgentAsyncResultRequest) (*AgentAsyncResultResponse, error) {
+	if req.AgentID == "" {
+		return nil, fmt.Errorf("agent_id is required")
+	}
+	if req.AsyncID == "" {
+		return nil, fmt.Errorf("async_id is required")
+	}
+
+	var resp AgentAsyncResultResponse
+	if err := s.client.doRequestBase(ctx, AgentsBaseURL, "POST", "/v1/agents/async-result", req, &resp); err != nil {
+		return nil, fmt.Errorf("failed to get agent async result: %w", err)
+	}
+	return &resp, nil
+}
