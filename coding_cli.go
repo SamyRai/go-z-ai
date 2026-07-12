@@ -73,10 +73,40 @@ var codingDoctorCmd = &cobra.Command{
 	RunE:  runCodingDoctor,
 }
 
+var codingMcpCmd = &cobra.Command{
+	Use:   "mcp",
+	Short: "Manage Z.AI's Vision MCP server in a coding tool",
+	Long: `Register or remove Z.AI's official Vision MCP Server (@z_ai/mcp-server) —
+screenshot OCR, error-screenshot diagnosis, diagram/chart understanding, and
+image/video analysis via GLM-4.6V — in a supported coding tool. Requires
+Node.js (npx) to actually run the server; this only writes the config.`,
+}
+
+var codingMcpAddCmd = &cobra.Command{
+	Use:   "add <tool>",
+	Short: "Register the Vision MCP server for a tool",
+	Args:  cobra.ExactArgs(1),
+	RunE:  runCodingMcpAdd,
+}
+
+var codingMcpRemoveCmd = &cobra.Command{
+	Use:   "remove <tool>",
+	Short: "Remove the Vision MCP server entry from a tool",
+	Args:  cobra.ExactArgs(1),
+	RunE:  runCodingMcpRemove,
+}
+
+var codingMcpStatusCmd = &cobra.Command{
+	Use:   "status",
+	Short: "Show which tools have the Vision MCP server registered",
+	RunE:  runCodingMcpStatus,
+}
+
 var (
 	codingNoValidate  bool
 	codingPlanFlag    string
 	codingKeyFlag     string
+	codingMcpKeyFlag  string
 	codingNoModelMap  bool
 	codingHaikuModel  string
 	codingSonnetModel string
@@ -88,11 +118,13 @@ var (
 
 func init() {
 	rootCmd.AddCommand(codingCmd)
-	codingCmd.AddCommand(codingAuthCmd, codingLoadCmd, codingUnloadCmd, codingStatusCmd, codingToolsCmd, codingDoctorCmd)
+	codingCmd.AddCommand(codingAuthCmd, codingLoadCmd, codingUnloadCmd, codingStatusCmd, codingToolsCmd, codingDoctorCmd, codingMcpCmd)
+	codingMcpCmd.AddCommand(codingMcpAddCmd, codingMcpRemoveCmd, codingMcpStatusCmd)
 
 	codingAuthCmd.Flags().BoolVar(&codingNoValidate, "no-validate", false, "Store the key without validating against the API")
 	codingLoadCmd.Flags().StringVar(&codingPlanFlag, "plan", "", "Plan override (glm_coding_plan_global | glm_coding_plan_china)")
 	codingLoadCmd.Flags().StringVar(&codingKeyFlag, "key", "", "API key override (uses stored creds if omitted)")
+	codingMcpAddCmd.Flags().StringVar(&codingMcpKeyFlag, "key", "", "API key override (uses stored creds if omitted)")
 
 	// Claude Code tuning — persistent so 'auth reload' shares the same defaults.
 	// Defaults match Z.AI's recommended integration; flags override / disable.
@@ -219,6 +251,9 @@ func runCodingStatus(cmd *cobra.Command, args []string) error {
 				status = "Z.AI · " + coding.DisplayName(d.Plan)
 			}
 		}
+		if mcpConfigured, err := coding.DetectMCPConfigured(home, t.ID); err == nil && mcpConfigured {
+			status += " · vision-mcp"
+		}
 		fmt.Printf("  %-14s %-15s %s\n", t.DisplayName, installed, status)
 		if d.ModelMap != nil {
 			fmt.Printf("                  models: haiku=%s sonnet=%s opus=%s\n", d.ModelMap.Haiku, d.ModelMap.Sonnet, d.ModelMap.Opus)
@@ -264,6 +299,9 @@ func runCodingDoctor(cmd *cobra.Command, args []string) error {
 			if d.Configured {
 				tag = "configured for Z.AI"
 			}
+			if mcpConfigured, err := coding.DetectMCPConfigured(home, t.ID); err == nil && mcpConfigured {
+				tag += ", vision-mcp configured"
+			}
 			fmt.Printf("✓ %s installed (%s)\n", t.DisplayName, tag)
 		}
 	}
@@ -271,10 +309,96 @@ func runCodingDoctor(cmd *cobra.Command, args []string) error {
 		fmt.Println("⚠  No supported coding tools detected on PATH")
 		allGood = false
 	}
+	if !coding.HasNPX() {
+		fmt.Println("⚠  npx not found on PATH — Vision MCP registration would write config, but the server itself needs Node.js to run")
+	}
 	if allGood {
 		fmt.Println("\nAll good.")
 	}
 	return nil
+}
+
+func runCodingMcpAdd(cmd *cobra.Command, args []string) error {
+	store, err := coding.NewStore()
+	if err != nil {
+		return err
+	}
+	key, err := resolveMcpKey(store)
+	if err != nil {
+		return err
+	}
+	tool, err := coding.FindTool(args[0])
+	if err != nil {
+		return err
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	if err := coding.LoadMCP(home, args[0], key); err != nil {
+		return err
+	}
+	fmt.Printf("✓ Registered Z.AI Vision MCP server for %s\n", tool.DisplayName)
+	if !coding.HasNPX() {
+		fmt.Println("⚠  npx not found on PATH — install Node.js before the server can actually run")
+	}
+	return nil
+}
+
+func runCodingMcpRemove(cmd *cobra.Command, args []string) error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	tool, err := coding.FindTool(args[0])
+	if err != nil {
+		return err
+	}
+	if err := coding.UnloadMCP(home, args[0]); err != nil {
+		return err
+	}
+	fmt.Printf("✓ Removed the Vision MCP server entry from %s\n", tool.DisplayName)
+	return nil
+}
+
+func runCodingMcpStatus(cmd *cobra.Command, args []string) error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%-14s %s\n", "TOOL", "VISION MCP")
+	for _, t := range coding.Tools {
+		configured, err := coding.DetectMCPConfigured(home, t.ID)
+		if err != nil {
+			return err
+		}
+		status := "not configured"
+		if configured {
+			status = "configured"
+		}
+		fmt.Printf("%-14s %s\n", t.DisplayName, status)
+	}
+	if !coding.HasNPX() {
+		fmt.Println("\n⚠  npx not found on PATH — install Node.js to actually run the server")
+	}
+	return nil
+}
+
+// resolveMcpKey returns the API key for MCP registration: --key override,
+// else the stored chelper credential. Unlike resolveCodingCreds, this
+// doesn't require a plan — the Vision MCP server isn't plan-routed.
+func resolveMcpKey(store *coding.Store) (string, error) {
+	if codingMcpKeyFlag != "" {
+		return codingMcpKeyFlag, nil
+	}
+	c, err := store.Load()
+	if err != nil {
+		return "", err
+	}
+	if c.APIKey == "" {
+		return "", fmt.Errorf("no API key configured (run 'zai-client coding auth <plan> <key>' or pass --key)")
+	}
+	return c.APIKey, nil
 }
 
 // loadToolInto resolves credentials (flags override, else stored) and writes them

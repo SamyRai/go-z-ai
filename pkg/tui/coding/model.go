@@ -154,6 +154,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if it, ok := m.selected(); ok {
 				return m, m.unloadTool(it.tool.ID)
 			}
+		case "m":
+			if it, ok := m.selected(); ok {
+				return m, m.mcpTool(it.tool.ID)
+			}
 		case "r":
 			return m, refresh()
 		}
@@ -235,6 +239,27 @@ func (m Model) unloadTool(toolID string) tea.Cmd {
 	}
 }
 
+// mcpTool registers Z.AI's Vision MCP server for toolID, using the stored
+// API key — unlike loadTool this doesn't need a plan, since the MCP server
+// isn't plan-routed.
+func (m Model) mcpTool(toolID string) tea.Cmd {
+	store := m.store
+	return func() tea.Msg {
+		c, err := store.Load()
+		if err != nil {
+			return actionDoneMsg{err: err}
+		}
+		if c.APIKey == "" {
+			return actionDoneMsg{err: fmt.Errorf("no credentials stored — press 'a' to auth first")}
+		}
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return actionDoneMsg{err: err}
+		}
+		return actionDoneMsg{err: coding.LoadMCP(home, toolID, c.APIKey)}
+	}
+}
+
 func (m Model) View() tea.View {
 	if m.mode == modeAuth {
 		return tea.NewView(m.form.View())
@@ -248,6 +273,7 @@ func (m Model) ShortHelp() []key.Binding {
 		key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "auth")),
 		key.NewBinding(key.WithKeys("l"), key.WithHelp("l", "load")),
 		key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "unload")),
+		key.NewBinding(key.WithKeys("m"), key.WithHelp("m", "vision mcp")),
 		key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "refresh")),
 	}
 }

@@ -75,13 +75,20 @@ var Tools = []Tool{
 // stores it under Application Support, Linux/Windows under ~/.cursor with a
 // ~/.config/Cursor fallback if that doesn't exist yet.
 func cursorConfigPath(home string) string {
+	return filepath.Join(cursorConfigDir(home), "settings.json")
+}
+
+// cursorConfigDir resolves the directory settings.json (and, for MCP,
+// mcp.json) live in — shared so both files agree on the same per-OS
+// resolution instead of duplicating the runtime.GOOS switch.
+func cursorConfigDir(home string) string {
 	switch runtime.GOOS {
 	case "darwin":
-		return filepath.Join(home, "Library", "Application Support", "Cursor", "User", "settings.json")
+		return filepath.Join(home, "Library", "Application Support", "Cursor", "User")
 	default:
-		p := filepath.Join(home, ".cursor", "settings.json")
-		if _, err := os.Stat(p); os.IsNotExist(err) {
-			return filepath.Join(home, ".config", "Cursor", "User", "settings.json")
+		p := filepath.Join(home, ".cursor")
+		if _, err := os.Stat(filepath.Join(p, "settings.json")); os.IsNotExist(err) {
+			return filepath.Join(home, ".config", "Cursor", "User")
 		}
 		return p
 	}
