@@ -55,6 +55,10 @@ tmp/
 temp/
 *.tmp
 
+# Personal scratch/exploration tools (own go.mod, not part of the public
+# module or its CI) — kept locally, never shipped.
+.scratch/
+
 # Logs
 *.log
 
