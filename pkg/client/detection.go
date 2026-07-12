@@ -40,7 +40,6 @@ type DetectionService struct {
 	client *Client
 	mu     sync.RWMutex
 	cache  *DetectedAccount
-	once   sync.Once
 }
 
 // NewDetectionService creates a new detection service

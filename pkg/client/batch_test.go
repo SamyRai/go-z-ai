@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -16,8 +17,7 @@ func TestBatchCreateDefaultsCompletionWindow(t *testing.T) {
 		if r.URL.Path != "/batches" || r.Method != http.MethodPost {
 			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
-		buf := make([]byte, r.ContentLength)
-		r.Body.Read(buf)
+		buf, _ := io.ReadAll(r.Body)
 		gotBody = string(buf)
 		writeJSON(w, http.StatusOK, `{"id":"batch-1","object":"batch","endpoint":"/v4/chat/completions","input_file_id":"file-1","completion_window":"24h","status":"validating","created_at":123}`)
 	}))
