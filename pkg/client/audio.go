@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"net/http"
 )
 
-// AudioService handles audio transcription.
+// AudioService handles audio transcription and text-to-speech.
 type AudioService struct {
 	client *Client
 }
@@ -96,4 +97,68 @@ func (s *AudioService) Transcribe(ctx context.Context, req AudioTranscriptionReq
 		return nil, err
 	}
 	return &result, nil
+}
+
+const audioSpeechModel = "glm-tts"
+
+// GLM-TTS system voice choices for AudioSpeechRequest.Voice. Cloned voices
+// (VoiceService.Clone) are also valid — pass the clone's Voice ID instead
+// of one of these constants.
+const (
+	VoiceTongtong = "tongtong" // API default
+	VoiceChuichui = "chuichui"
+	VoiceXiaochen = "xiaochen"
+	VoiceJam      = "jam"
+	VoiceKazi     = "kazi"
+	VoiceDouji    = "douji"
+	VoiceLuodo    = "luodo"
+)
+
+// AudioSpeechRequest requests text-to-speech synthesis (GLM-TTS). Model,
+// Input, and Voice are required by the API; Model/Voice default when empty.
+type AudioSpeechRequest struct {
+	Model          string  `json:"model"`                     // defaults to glm-tts
+	Input          string  `json:"input"`                     // text to synthesize, max 1024 chars
+	Voice          string  `json:"voice"`                     // defaults to VoiceTongtong; or a VoiceService.Clone result
+	Speed          float64 `json:"speed,omitempty"`           // 0.5-2, API default 1.0
+	Volume         float64 `json:"volume,omitempty"`          // (0,10], API default 1.0
+	ResponseFormat string  `json:"response_format,omitempty"` // "wav" or "pcm" (API default)
+	// WatermarkEnabled controls the AI-generated audio watermark, API
+	// default true. A pointer for the same reason as
+	// ImageGenerationRequest.WatermarkEnabled — omitempty on a plain bool
+	// would silently drop an explicit false.
+	WatermarkEnabled *bool `json:"watermark_enabled,omitempty"`
+}
+
+// Speech synthesizes req.Input as audio and returns the raw bytes in
+// req.ResponseFormat (the API's own default is "pcm"). This is the
+// non-streaming variant only, matching Transcribe's precedent — streaming
+// TTS (SSE-chunked audio) can be added later if needed. req.Model and
+// req.Voice default when empty.
+func (s *AudioService) Speech(ctx context.Context, req AudioSpeechRequest) ([]byte, error) {
+	if req.Model == "" {
+		req.Model = audioSpeechModel
+	}
+	if req.Input == "" {
+		return nil, fmt.Errorf("input is required")
+	}
+	if req.Voice == "" {
+		req.Voice = VoiceTongtong
+	}
+
+	resp, err := s.client.send(ctx, s.client.config.BaseURL, s.client.config.APIKey, "POST", "/audio/speech", req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, parseAPIError(resp)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read audio data: %w", err)
+	}
+	return data, nil
 }

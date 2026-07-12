@@ -23,10 +23,16 @@ type AsyncTaskResponse struct {
 	TaskStatus string `json:"task_status"`
 }
 
-// AsyncResultResponse is the result of polling GetAsyncResult. Data is
-// populated for image tasks, VideoResult for video tasks — only one is set,
-// depending on what kind of task ID was polled.
+// AsyncResultResponse is the result of polling GetAsyncResult. Exactly one
+// of Data (image tasks), VideoResult (video tasks), or Choices (chat
+// completion tasks, via ChatService.CreateAsync) is populated, depending on
+// what kind of task ID was polled — confirmed against docs.bigmodel.cn's
+// live OpenAPI spec, whose GET /paas/v4/async-result/{id} response is a
+// oneOf across ChatCompletionResponse/AsyncVideoGenerationResponse/
+// AsyncImageGenerationResponse.
 type AsyncResultResponse struct {
+	ID         string `json:"id,omitempty"`
+	Created    int64  `json:"created,omitempty"`
 	Model      string `json:"model"`
 	TaskStatus string `json:"task_status"`
 	RequestID  string `json:"request_id"`
@@ -37,6 +43,8 @@ type AsyncResultResponse struct {
 		URL           string `json:"url"`
 		CoverImageURL string `json:"cover_image_url"`
 	} `json:"video_result,omitempty"`
+	Choices []Choice `json:"choices,omitempty"`
+	Usage   *Usage   `json:"usage,omitempty"`
 }
 
 // GetAsyncResult polls the shared async-result endpoint used by both image

@@ -228,37 +228,3 @@ func parseAPIError(resp *http.Response) error {
 
 	return createAPIError(code, resp.StatusCode, errorResp.Error.Message)
 }
-
-// Legacy error types for backward compatibility
-var (
-	ErrInvalidAPIKey      = fmt.Errorf("invalid API key")
-	ErrMissingAPIKey      = fmt.Errorf("API key is required")
-	ErrInvalidModel       = fmt.Errorf("invalid model")
-	ErrInvalidRequest     = fmt.Errorf("invalid request")
-	ErrRateLimitExceeded  = fmt.Errorf("rate limit exceeded")
-	ErrQuotaExceeded      = fmt.Errorf("quota exceeded")
-	ErrUnauthorized       = fmt.Errorf("unauthorized access")
-	ErrNetworkError       = fmt.Errorf("network error")
-	ErrInvalidResponse    = fmt.Errorf("invalid response")
-	ErrServiceUnavailable = fmt.Errorf("service unavailable")
-)
-
-// NewAPIError creates a new API error (legacy compatibility)
-func NewAPIError(statusCode int, message string) *APIError {
-	return &APIError{
-		HTTPStatus:  statusCode,
-		Message:     message,
-		Category:    ErrorCategoryServer,
-		IsRetriable: statusCode >= 500,
-	}
-}
-
-// WrapAPIError wraps an existing error with API context (legacy compatibility)
-func WrapAPIError(err error, message string) *APIError {
-	return &APIError{
-		Message:     message,
-		Err:         err,
-		Category:    ErrorCategoryServer,
-		IsRetriable: true,
-	}
-}
