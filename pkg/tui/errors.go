@@ -3,8 +3,8 @@ package tui
 import (
 	"errors"
 
-	"zai-api-client/pkg/client"
-	"zai-api-client/pkg/tui/uistyle"
+	"github.com/SamyRai/go-z-ai/pkg/client"
+	"github.com/SamyRai/go-z-ai/pkg/tui/uistyle"
 )
 
 // toastLevel controls how an errMsg is styled on the status line.

@@ -1,4 +1,4 @@
-module zai-api-client
+module github.com/SamyRai/go-z-ai
 
 go 1.26.4
 

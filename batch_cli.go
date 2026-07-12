@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
-	"zai-api-client/pkg/client"
 )
 
 var batchCmd = &cobra.Command{
@@ -48,7 +48,7 @@ func init() {
 	rootCmd.AddCommand(batchCmd)
 	batchCmd.AddCommand(batchCreateCmd, batchStatusCmd, batchListCmd, batchCancelCmd)
 
-	batchCreateCmd.Flags().String("endpoint", "/v1/chat/completions", "Target endpoint: /v1/chat/completions or /v1/embeddings")
+	batchCreateCmd.Flags().String("endpoint", string(client.BatchEndpointChatCompletions), "Target endpoint (currently the API's only supported value)")
 	batchListCmd.Flags().String("after", "", "Cursor: list batches after this batch ID")
 	batchListCmd.Flags().Int("limit", 0, "Max batches to return (0 = server default)")
 }

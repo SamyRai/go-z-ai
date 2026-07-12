@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
-	"zai-api-client/pkg/client"
 )
 
 var imageCmd = &cobra.Command{

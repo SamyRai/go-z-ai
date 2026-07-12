@@ -5,7 +5,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"zai-api-client/pkg/client"
+	"github.com/SamyRai/go-z-ai/pkg/client"
 )
 
 // chunkMsg carries one streamed delta.

@@ -14,8 +14,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/glamour/v2"
 
-	"zai-api-client/pkg/client"
-	"zai-api-client/pkg/tui/uimsg"
+	"github.com/SamyRai/go-z-ai/pkg/client"
+	"github.com/SamyRai/go-z-ai/pkg/tui/uimsg"
 )
 
 const defaultModel = "glm-5.2"

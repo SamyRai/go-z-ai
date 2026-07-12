@@ -14,8 +14,8 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 
-	"zai-api-client/pkg/client"
-	"zai-api-client/pkg/tui/uistyle"
+	"github.com/SamyRai/go-z-ai/pkg/client"
+	"github.com/SamyRai/go-z-ai/pkg/tui/uistyle"
 )
 
 type form int
@@ -118,39 +118,45 @@ func (m Model) submit() tea.Cmd {
 	case formSearch:
 		q := m.inputs[formSearch].Value()
 		return func() tea.Msg {
-			resp, err := c.Tools().WebSearch(context.Background(), q, 5)
+			resp, err := c.Tools().WebSearch(context.Background(), client.WebSearchRequest{
+				SearchQuery:  q,
+				SearchEngine: client.SearchEnginePro,
+			})
 			if err != nil {
 				return resultMsg{err: err}
 			}
 			var text string
-			for _, r := range resp.Data {
-				text += fmt.Sprintf("%s\n%s\n\n", r.Title, r.URL)
+			for _, r := range resp.SearchResult {
+				text += fmt.Sprintf("%s\n%s\n\n", r.Title, r.Link)
 			}
 			return resultMsg{text: text}
 		}
 	case formReader:
 		url := m.inputs[formReader].Value()
 		return func() tea.Msg {
-			resp, err := c.Tools().WebReader(context.Background(), url, false, true)
+			resp, err := c.Tools().WebReader(context.Background(), client.WebReaderRequest{URL: url, WithImagesSummary: true})
 			if err != nil {
 				return resultMsg{err: err}
 			}
-			if resp.Data == nil {
-				return resultMsg{err: fmt.Errorf("empty response (code %d: %s)", resp.Code, resp.Msg)}
+			if resp.ReaderResult == nil {
+				return resultMsg{err: fmt.Errorf("empty response (id %s)", resp.ID)}
 			}
-			return resultMsg{text: resp.Data.Content}
+			return resultMsg{text: resp.ReaderResult.Content}
 		}
 	default:
 		text := m.inputs[formTokenize].Value()
 		return func() tea.Msg {
-			resp, err := c.Tools().Tokenize(context.Background(), text, "")
+			resp, err := c.Tools().Tokenize(context.Background(), client.TokenizerRequest{
+				Model:    "glm-4.7",
+				Messages: []client.Message{{Role: "user", Content: text}},
+			})
 			if err != nil {
 				return resultMsg{err: err}
 			}
-			if resp.Data == nil {
-				return resultMsg{err: fmt.Errorf("empty response (code %d: %s)", resp.Code, resp.Msg)}
+			if resp.Usage == nil {
+				return resultMsg{err: fmt.Errorf("empty response (id %s)", resp.ID)}
 			}
-			return resultMsg{text: fmt.Sprintf("tokens: %d", resp.Data.TokenCount)}
+			return resultMsg{text: fmt.Sprintf("tokens: %d", resp.Usage.TotalTokens)}
 		}
 	}
 }

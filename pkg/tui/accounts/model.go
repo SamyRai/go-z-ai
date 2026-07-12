@@ -13,9 +13,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 
-	"zai-api-client/pkg/accounts"
-	"zai-api-client/pkg/tui/uimsg"
-	"zai-api-client/pkg/usageview"
+	"github.com/SamyRai/go-z-ai/pkg/accounts"
+	"github.com/SamyRai/go-z-ai/pkg/tui/uimsg"
+	"github.com/SamyRai/go-z-ai/pkg/usageview"
 )
 
 type item struct{ accounts.Account }

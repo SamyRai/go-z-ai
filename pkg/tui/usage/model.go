@@ -15,11 +15,11 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
-	"zai-api-client/pkg/accounts"
-	"zai-api-client/pkg/client"
-	"zai-api-client/pkg/tui/uimsg"
-	"zai-api-client/pkg/tui/uistyle"
-	"zai-api-client/pkg/usageview"
+	"github.com/SamyRai/go-z-ai/pkg/accounts"
+	"github.com/SamyRai/go-z-ai/pkg/client"
+	"github.com/SamyRai/go-z-ai/pkg/tui/uimsg"
+	"github.com/SamyRai/go-z-ai/pkg/tui/uistyle"
+	"github.com/SamyRai/go-z-ai/pkg/usageview"
 )
 
 const (

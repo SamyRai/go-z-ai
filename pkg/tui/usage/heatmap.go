@@ -5,7 +5,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 
-	"zai-api-client/pkg/usageview"
+	"github.com/SamyRai/go-z-ai/pkg/usageview"
 )
 
 // heatmapRampColors maps each usageview.HeatmapLevels index to a color of

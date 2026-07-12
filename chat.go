@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
-	"zai-api-client/pkg/client"
 )
 
 var chatCmd = &cobra.Command{
@@ -26,6 +26,7 @@ var (
 	chatMaxTokens   int
 	chatSystemMsg   string
 	chatStream      bool
+	chatAsync       bool
 	chatFormat      string
 
 	// Advanced completion controls (structured output, thinking, tools).
@@ -63,16 +64,26 @@ var chatSimpleCmd = &cobra.Command{
 	RunE:  runChatSimple,
 }
 
+var chatAsyncResultCmd = &cobra.Command{
+	Use:   "async-result [task-id]",
+	Short: "Poll the result of an async chat completion",
+	Long:  `Poll the result of a task submitted via "chat create --async".`,
+	Args:  cobra.ExactArgs(1),
+	RunE:  runChatAsyncResult,
+}
+
 func init() {
 	rootCmd.AddCommand(chatCmd)
 	chatCmd.AddCommand(chatCreateCmd)
 	chatCmd.AddCommand(chatSimpleCmd)
+	chatCmd.AddCommand(chatAsyncResultCmd)
 
 	chatCreateCmd.Flags().StringVar(&chatModel, "model", "glm-5.2", "Model to use")
 	chatCreateCmd.Flags().Float64Var(&chatTemperature, "temperature", 0.7, "Sampling temperature (0.0-1.0)")
 	chatCreateCmd.Flags().IntVar(&chatMaxTokens, "max-tokens", 4096, "Maximum tokens to generate")
 	chatCreateCmd.Flags().StringVar(&chatSystemMsg, "system", "You are a helpful AI assistant.", "System message")
 	chatCreateCmd.Flags().BoolVar(&chatStream, "stream", false, "Stream the response token-by-token")
+	chatCreateCmd.Flags().BoolVar(&chatAsync, "async", false, "Submit without waiting; prints a task ID to poll with 'chat async-result'")
 	chatCreateCmd.Flags().StringVar(&chatFormat, "format", "text", "Output format (text, json)")
 
 	chatCreateCmd.Flags().Float64Var(&chatTopP, "top-p", 0.95, "Nucleus sampling probability (0.01-1.0)")
@@ -111,6 +122,15 @@ func runChatCreate(cmd *cobra.Command, args []string) error {
 
 	if chatStream {
 		return runChatStream(apiClient, cmd.Context(), req)
+	}
+
+	if chatAsync {
+		task, err := apiClient.Chat().CreateAsync(cmd.Context(), *req)
+		if err != nil {
+			return fmt.Errorf("failed to submit async chat completion: %w", err)
+		}
+		fmt.Printf("Task submitted: %s (poll with 'zai-client chat async-result %s')\n", task.ID, task.ID)
+		return nil
 	}
 
 	resp, err := apiClient.Chat().Create(cmd.Context(), *req)
@@ -261,6 +281,29 @@ func runChatSimple(cmd *cobra.Command, args []string) error {
 	}
 
 	return outputChatResponse(response, chatFormat)
+}
+
+func runChatAsyncResult(cmd *cobra.Command, args []string) error {
+	apiClient, err := getClient()
+	if err != nil {
+		return err
+	}
+
+	resp, err := apiClient.GetAsyncResult(cmd.Context(), args[0])
+	if err != nil {
+		return fmt.Errorf("failed to get async result: %w", err)
+	}
+
+	if resp.TaskStatus == client.TaskStatusProcessing {
+		fmt.Println("⏳ Still processing, try again shortly")
+		return nil
+	}
+	if len(resp.Choices) == 0 {
+		fmt.Printf("status: %s\n", resp.TaskStatus)
+		return nil
+	}
+	fmt.Println(resp.Choices[0].Message.Content)
+	return nil
 }
 
 func outputChatResponse(response *client.ChatResponse, format string) error {
