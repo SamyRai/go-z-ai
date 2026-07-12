@@ -1,0 +1,49 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 24
+        host: api.z.ai
+        body: '{"url":"https://go.dev"}'
+        headers:
+            Accept:
+                - application/json
+            Accept-Language:
+                - en-US,en
+            Authorization:
+                - Bearer REDACTED
+            Content-Type:
+                - application/json
+        url: https://api.z.ai/api/paas/v4/reader
+        method: POST
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: -1
+        body: '{"error":{"code":"1113","message":"Insufficient balance or no resource package. Please recharge."}}'
+        headers:
+            Content-Type:
+                - application/json; charset=UTF-8
+            Date:
+                - Fri, 10 Jul 2026 23:15:42 GMT
+            Server:
+                - nginx
+            Strict-Transport-Security:
+                - max-age=31536000; includeSubDomains
+            Vary:
+                - Origin
+                - Access-Control-Request-Method
+                - Access-Control-Request-Headers
+                - Origin
+                - Access-Control-Request-Method
+                - Access-Control-Request-Headers
+            X-Log-Id:
+                - 20260711071542677b07f5012b489e
+        status: 429 Too Many Requests
+        code: 429
+        duration: 825.5745ms

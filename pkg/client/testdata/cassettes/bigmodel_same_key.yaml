@@ -1,0 +1,186 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        host: open.bigmodel.cn
+        headers:
+            Accept-Language:
+                - en-US,en
+            Authorization:
+                - Bearer REDACTED
+            Content-Type:
+                - application/json
+        url: https://open.bigmodel.cn/api/paas/v4/models
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: -1
+        uncompressed: true
+        body: '{"object":"list","data":[{"id":"glm-4.5","object":"model","created":1753632000,"owned_by":"z-ai"},{"id":"glm-4.5-air","object":"model","created":1753632000,"owned_by":"z-ai"},{"id":"glm-4.6","object":"model","created":1759276800,"owned_by":"z-ai"},{"id":"glm-4.7","object":"model","created":1766332800,"owned_by":"z-ai"},{"id":"glm-5","object":"model","created":1770739200,"owned_by":"z-ai"},{"id":"glm-5-turbo","object":"model","created":1773504000,"owned_by":"z-ai"},{"id":"glm-5.1","object":"model","created":1774620000,"owned_by":"z-ai"},{"id":"glm-5.2","object":"model","created":1781625600,"owned_by":"z-ai"}]}'
+        headers:
+            Content-Type:
+                - application/json;charset=UTF-8
+            Date:
+                - Fri, 10 Jul 2026 23:00:14 GMT
+            Set-Cookie:
+                - acw_tc=276082b517837244142317353e7e5df3f670ed4858537a3082275c2085a483;path=/;HttpOnly;Max-Age=1800
+            Strict-Transport-Security:
+                - max-age=31536000; includeSubDomains
+            Vary:
+                - Accept-Encoding
+                - Origin
+                - Access-Control-Request-Method
+                - Access-Control-Request-Headers
+                - Origin
+                - Access-Control-Request-Method
+                - Access-Control-Request-Headers
+            X-Log-Id:
+                - 202607110700141b16de2d1d564b83
+        status: 200 OK
+        code: 200
+        duration: 810.932917ms
+    - id: 1
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 63
+        host: open.bigmodel.cn
+        body: '{"messages":[{"content":"hi","role":"user"}],"model":"glm-4.6"}'
+        headers:
+            Accept:
+                - application/json
+            Accept-Language:
+                - en-US,en
+            Authorization:
+                - Bearer REDACTED
+            Content-Type:
+                - application/json
+        url: https://open.bigmodel.cn/api/paas/v4/chat/completions
+        method: POST
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: -1
+        body: '{"error":{"code":"1113","message":"Insufficient balance or no resource package. Please recharge."}}'
+        headers:
+            Content-Type:
+                - application/json; charset=UTF-8
+            Date:
+                - Fri, 10 Jul 2026 23:00:15 GMT
+            Set-Cookie:
+                - acw_tc=276082b517837244153087369e7e5d88bce9dd246834468054611d5325b039;path=/;HttpOnly;Max-Age=1800
+            Strict-Transport-Security:
+                - max-age=31536000; includeSubDomains
+            Vary:
+                - Origin
+                - Access-Control-Request-Method
+                - Access-Control-Request-Headers
+                - Origin
+                - Access-Control-Request-Method
+                - Access-Control-Request-Headers
+            X-Log-Id:
+                - 2026071107001517f0ab19f8cb470c
+        status: 429 Too Many Requests
+        code: 429
+        duration: 286.915292ms
+    - id: 2
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 45
+        host: open.bigmodel.cn
+        body: '{"input":"hello world","model":"embedding-3"}'
+        headers:
+            Accept:
+                - application/json
+            Accept-Language:
+                - en-US,en
+            Authorization:
+                - Bearer REDACTED
+            Content-Type:
+                - application/json
+        url: https://open.bigmodel.cn/api/paas/v4/embeddings
+        method: POST
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: -1
+        body: '{"error":{"code":"1211","message":"Unknown Model, please check the model code."}}'
+        headers:
+            Content-Type:
+                - application/json; charset=UTF-8
+            Date:
+                - Fri, 10 Jul 2026 23:00:15 GMT
+            Set-Cookie:
+                - acw_tc=276082b517837244159087376e7e5d4a1748b3da882a3cac4d12b21986400f;path=/;HttpOnly;Max-Age=1800
+            Strict-Transport-Security:
+                - max-age=31536000; includeSubDomains
+            Vary:
+                - Origin
+                - Access-Control-Request-Method
+                - Access-Control-Request-Headers
+                - Origin
+                - Access-Control-Request-Method
+                - Access-Control-Request-Headers
+            X-Log-Id:
+                - 20260711070015d293d0266d214566
+        status: 400 Bad Request
+        code: 400
+        duration: 287.799833ms
+    - id: 3
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 44
+        host: open.bigmodel.cn
+        body: '{"input":"hello world","model":"moderation"}'
+        headers:
+            Accept:
+                - application/json
+            Accept-Language:
+                - en-US,en
+            Authorization:
+                - Bearer REDACTED
+            Content-Type:
+                - application/json
+        url: https://open.bigmodel.cn/api/paas/v4/moderations
+        method: POST
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: -1
+        body: '{"error":{"code":"1211","message":"Unknown Model, please check the model code."}}'
+        headers:
+            Content-Type:
+                - application/json; charset=UTF-8
+            Date:
+                - Fri, 10 Jul 2026 23:00:16 GMT
+            Set-Cookie:
+                - acw_tc=276082b517837244164667385e7e5d8faaefcabc1b4b2714ac16dcf5095982;path=/;HttpOnly;Max-Age=1800
+            Strict-Transport-Security:
+                - max-age=31536000; includeSubDomains
+            Vary:
+                - Origin
+                - Access-Control-Request-Method
+                - Access-Control-Request-Headers
+                - Origin
+                - Access-Control-Request-Method
+                - Access-Control-Request-Headers
+            X-Log-Id:
+                - 2026071107001663192c9cc4d7489c
+        status: 400 Bad Request
+        code: 400
+        duration: 270.404458ms

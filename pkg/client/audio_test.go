@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -87,5 +88,61 @@ func TestAudioTranscribeAPIError(t *testing.T) {
 	_, err := c.Audio().Transcribe(context.Background(), AudioTranscriptionRequest{FileName: "x.wav", FileData: []byte("x")})
 	if err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+// Speech posts JSON (not multipart) to /audio/speech and returns the raw
+// audio bytes from the response body, defaulting Model/Voice when unset.
+func TestAudioSpeech(t *testing.T) {
+	var gotPath, gotBody, gotContentType string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotContentType = r.Header.Get("Content-Type")
+		buf := make([]byte, r.ContentLength)
+		r.Body.Read(buf)
+		gotBody = string(buf)
+		w.Header().Set("Content-Type", "audio/wav")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("fake-audio-bytes"))
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL, Config{MaxRetries: 0})
+	data, err := c.Audio().Speech(context.Background(), AudioSpeechRequest{Input: "hello"})
+	if err != nil {
+		t.Fatalf("Speech: %v", err)
+	}
+	if gotPath != "/audio/speech" {
+		t.Errorf("expected path /audio/speech, got %q", gotPath)
+	}
+	if gotContentType != "application/json" {
+		t.Errorf("expected JSON request (not multipart), got content-type %q", gotContentType)
+	}
+	if !strings.Contains(gotBody, `"model":"glm-tts"`) || !strings.Contains(gotBody, `"voice":"tongtong"`) {
+		t.Errorf("expected default model/voice in request body, got: %s", gotBody)
+	}
+	if string(data) != "fake-audio-bytes" {
+		t.Errorf("expected raw audio bytes, got %q", data)
+	}
+}
+
+// Missing input must fail before any request is sent.
+func TestAudioSpeechValidation(t *testing.T) {
+	c := newTestClient(t, "http://unused", Config{})
+	if _, err := c.Audio().Speech(context.Background(), AudioSpeechRequest{}); err == nil {
+		t.Error("expected error for missing input")
+	}
+}
+
+// A non-200 response must surface as a structured APIError, not raw bytes.
+func TestAudioSpeechAPIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusBadRequest, `{"error":{"code":"1210","message":"invalid parameter"}}`)
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL, Config{MaxRetries: 0})
+	if _, err := c.Audio().Speech(context.Background(), AudioSpeechRequest{Input: "hi"}); err == nil {
+		t.Error("expected error")
 	}
 }

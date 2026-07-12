@@ -1,0 +1,44 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        host: api.z.ai
+        headers:
+            Accept-Language:
+                - en-US,en
+            Authorization:
+                - Bearer REDACTED
+            Content-Type:
+                - application/json
+        url: https://api.z.ai/api/paas/v4/voice/list
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: -1
+        body: '{"voice_list":[{"create_time":"2025-09-08 19:40:18","voice":"abcf4765-0d08-5cbd-8bd8-6867f76166cc","voice_name":"jam1","voice_type":"OFFICIAL"},{"create_time":"2025-09-08 18:32:17","voice":"cea88155-a841-5d00-a70e-cf08c140939d","voice_name":"luodo","voice_type":"OFFICIAL"},{"create_time":"2025-09-08 18:31:14","voice":"0df8fcb4-9c9f-5d93-9d6b-5cf730cd7dd1","voice_name":"kazi","voice_type":"OFFICIAL"},{"create_time":"2025-09-08 18:27:14","voice":"063c5163-7624-50f3-85e4-cdde2786ac3c","voice_name":"douji","voice_type":"OFFICIAL"},{"create_time":"2025-09-08 18:25:33","voice":"d57d0230-1fdf-534e-8997-6d1424e460ee","voice_name":"jam","voice_type":"OFFICIAL"},{"create_time":"2025-09-08 18:23:10","voice":"cd550321-41ae-56fb-935e-1488930a49c7","voice_name":"tongtong","voice_type":"OFFICIAL"},{"create_time":"2025-09-08 18:22:21","voice":"23924981-22fd-5e40-b06b-32572e3e884b","voice_name":"xiaochen","voice_type":"OFFICIAL"},{"create_time":"2025-09-08 18:20:49","voice":"3a04b6b3-8ace-5c1b-ab21-9e391b4ea0ef","voice_name":"chuichui","voice_type":"OFFICIAL"},{"create_time":"2025-07-28 18:23:51","voice":"test1","voice_name":"测试1","voice_type":"OFFICIAL"},{"create_time":"2025-07-28 18:11:04","voice":"test","voice_name":"测试","voice_type":"OFFICIAL"},{"create_time":"2025-07-28 17:13:12","voice":"douxin","voice_name":"窦老师音色","voice_type":"OFFICIAL"},{"create_time":"2025-07-16 11:29:14","voice":"doushen_teacher_4","voice_name":"教师音色4","voice_type":"OFFICIAL"},{"create_time":"2025-07-16 11:29:14","voice":"doushen_teacher_3","voice_name":"教师音色3","voice_type":"OFFICIAL"},{"create_time":"2025-07-16 11:29:14","voice":"doushen_teacher_2","voice_name":"教师音色2","voice_type":"OFFICIAL"},{"create_time":"2025-07-16 11:29:14","voice":"doushen_teacher_1","voice_name":"教师音色1","voice_type":"OFFICIAL"},{"create_time":"2025-07-16 11:29:14","voice":"doushen_teacher_0","voice_name":"教师音色0","voice_type":"OFFICIAL"},{"create_time":"2025-07-15 17:54:58","voice":"streamer","voice_name":"标准女声","voice_type":"OFFICIAL"},{"create_time":"2025-07-15 17:54:58","voice":"streamer_male","voice_name":"标准男声","voice_type":"OFFICIAL"}]}'
+        headers:
+            Date:
+                - Fri, 10 Jul 2026 23:32:12 GMT
+            Server:
+                - nginx
+            Strict-Transport-Security:
+                - max-age=31536000; includeSubDomains
+            Vary:
+                - Origin
+                - Access-Control-Request-Method
+                - Access-Control-Request-Headers
+                - Origin
+                - Access-Control-Request-Method
+                - Access-Control-Request-Headers
+            X-Log-Id:
+                - 20260711073212097e10bd995f4190
+        status: 200 OK
+        code: 200
+        duration: 509.435792ms

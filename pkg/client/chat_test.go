@@ -237,3 +237,66 @@ func TestCreateStreamContextCancel(t *testing.T) {
 		t.Fatal("expected cancellation error")
 	}
 }
+
+// CreateAsync posts to /async/chat/completions (not /chat/completions) and
+// returns the task immediately, without a completion body.
+func TestChatCreateAsync(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		writeJSON(w, http.StatusOK, `{"model":"glm-4.6","id":"task-1","request_id":"req-1","task_status":"PROCESSING"}`)
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL, Config{MaxRetries: 0})
+	resp, err := c.Chat().CreateAsync(context.Background(), ChatRequest{
+		Model:    "glm-4.6",
+		Messages: []Message{{Role: "user", Content: "hi"}},
+		TopP:     0.95,
+	})
+	if err != nil {
+		t.Fatalf("CreateAsync: %v", err)
+	}
+	if gotPath != "/async/chat/completions" {
+		t.Errorf("expected path /async/chat/completions, got %q", gotPath)
+	}
+	if resp.ID != "task-1" || resp.TaskStatus != TaskStatusProcessing {
+		t.Fatalf("unexpected response: %+v", resp)
+	}
+}
+
+// CreateAsync rejects Stream: true — streaming isn't meaningful for a
+// fire-and-forget async submission.
+func TestChatCreateAsyncRejectsStream(t *testing.T) {
+	c := newTestClient(t, "http://unused", Config{})
+	_, err := c.Chat().CreateAsync(context.Background(), ChatRequest{
+		Model:    "glm-4.6",
+		Messages: []Message{{Role: "user", Content: "hi"}},
+		TopP:     0.95,
+		Stream:   true,
+	})
+	if err == nil {
+		t.Error("expected error when Stream is true")
+	}
+}
+
+// GetAsyncResult parses Choices/Usage when polling a completed async chat
+// completion task (not Data/VideoResult, which are for image/video tasks).
+func TestGetAsyncResultParsesChatCompletion(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, `{"id":"task-1","model":"glm-4.6","task_status":"SUCCESS","choices":[{"index":0,"message":{"role":"assistant","content":"hi there"}}],"usage":{"prompt_tokens":3,"completion_tokens":2,"total_tokens":5}}`)
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL, Config{MaxRetries: 0})
+	resp, err := c.GetAsyncResult(context.Background(), "task-1")
+	if err != nil {
+		t.Fatalf("GetAsyncResult: %v", err)
+	}
+	if len(resp.Choices) != 1 || resp.Choices[0].Message.Content != "hi there" {
+		t.Fatalf("unexpected choices: %+v", resp.Choices)
+	}
+	if resp.Usage == nil || resp.Usage.TotalTokens != 5 {
+		t.Fatalf("unexpected usage: %+v", resp.Usage)
+	}
+}
