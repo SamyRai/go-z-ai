@@ -4,6 +4,19 @@ Notable changes to this project, loosely following
 [Keep a Changelog](https://keepachangelog.com/). This project doesn't cut
 version tags yet — entries are grouped by date.
 
+## 2026-07-12
+
+### Added
+- `coding mcp add/remove/status`: registers Z.AI's official Vision MCP Server
+  (`@z_ai/mcp-server` — screenshot OCR, error-screenshot diagnosis,
+  diagram/chart understanding, image/video analysis via GLM-4.6V) into any of
+  the five supported coding tools, matching the "manage MCP services" step of
+  the official `@z_ai/coding-helper` wizard that this client otherwise ports
+  in full. Each tool gets its correct file and JSON shape — notably, Claude
+  Code and Factory Droid keep MCP config in a different file than their
+  provider/credential config. Available from the CLI and the TUI's Coding tab
+  (`m` key).
+
 ## 2026-07-11
 
 ### Added

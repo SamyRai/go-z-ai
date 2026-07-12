@@ -102,6 +102,45 @@ By default, `coding auth` validates a new key against the API before storing
 it (a real `/models` call). Skip that with `--no-validate` if you want to
 store a key offline (e.g. scripting a machine you haven't network-tested yet).
 
+## Vision MCP server
+
+The official `@z_ai/coding-helper` wizard has a "manage MCP services" step
+that this client didn't replicate until now: Z.AI ships its own
+[Vision MCP Server](https://docs.z.ai/devpack/mcp/vision-mcp-server)
+(`@z_ai/mcp-server`) — screenshot OCR, error-screenshot diagnosis,
+diagram/chart understanding, and general image/video analysis via GLM-4.6V,
+launched on demand via `npx`. `coding mcp` registers it in whichever tool
+you're using:
+
+```bash
+zai-client coding mcp add claude-code     # uses the stored API key
+zai-client coding mcp add crush --key OTHER_KEY
+zai-client coding mcp status              # which tools have it configured
+zai-client coding mcp remove claude-code
+```
+
+**Requires Node.js.** The server itself runs via `npx -y @z_ai/mcp-server` —
+Z.AI's own docs currently recommend Node.js 22+, though the npm package only
+declares an 18+ requirement. `coding mcp add`/`doctor` warn (don't block) if
+`npx` isn't found on `PATH`, since the config is valid the moment Node.js
+becomes available.
+
+**The MCP config file often isn't the same file as your GLM credential.**
+Two of the five tools keep MCP servers in a separate file from provider/API
+settings:
+
+| Tool | Credential config | MCP config |
+|---|---|---|
+| Claude Code | `~/.claude/settings.json` | `~/.claude.json` |
+| OpenCode | `opencode.json` | same file, `mcp` key |
+| Crush | `crush.json` | same file, `mcp` key |
+| Factory Droid | `~/.factory/settings.json` | `~/.factory/mcp.json` |
+| Cursor | OS-specific `settings.json` | sibling `mcp.json`, same directory |
+
+Cursor isn't explicitly listed as a supported Vision MCP client in Z.AI's own
+docs — this uses the generic MCP shape Cursor documents for any server, which
+should work but hasn't been Z.AI-confirmed for this specific server.
+
 ## Doctor
 
 ```bash
@@ -110,4 +149,5 @@ zai-client coding doctor
 
 Checks: is a credential stored, does it look well-formed, which supported
 tools are installed on `PATH`, and which of those already have a Z.AI
-configuration. Good first step when something isn't working.
+configuration (including the Vision MCP server, if registered). Good first
+step when something isn't working.

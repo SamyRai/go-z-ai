@@ -93,6 +93,10 @@ zai-client coding unload <tool>
 zai-client coding status
 zai-client coding tools                  # list supported tools + install status
 zai-client coding doctor                 # health check
+
+zai-client coding mcp add <tool>         # register Z.AI's Vision MCP server
+zai-client coding mcp status
+zai-client coding mcp remove <tool>
 ```
 
 ## Files & batch
