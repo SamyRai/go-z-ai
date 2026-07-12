@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/SamyRai/go-z-ai/pkg/accounts"
+	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"zai-api-client/pkg/accounts"
-	"zai-api-client/pkg/client"
 )
 
 func getClient() (*client.Client, error) {
@@ -27,15 +27,9 @@ func getClient() (*client.Client, error) {
 		if err != nil {
 			return nil, err
 		}
-		apiKey = acct.APIKey
-		if baseURL == "" {
-			resolvedURL, err := acct.ResolvedBaseURL()
-			if err != nil {
-				return nil, err
-			}
-			baseURL = resolvedURL
+		if err := applyAccount(acct, &apiKey, &baseURL); err != nil {
+			return nil, err
 		}
-		markAccountUsed(acct.Name)
 	default:
 		apiKey = os.Getenv("ZAI_API_KEY")
 		if apiKey == "" {
@@ -53,15 +47,9 @@ func getClient() (*client.Client, error) {
 		if acct, ok, err := activeAccount(); err != nil {
 			return nil, err
 		} else if ok {
-			apiKey = acct.APIKey
-			if baseURL == "" {
-				resolvedURL, err := acct.ResolvedBaseURL()
-				if err != nil {
-					return nil, err
-				}
-				baseURL = resolvedURL
+			if err := applyAccount(acct, &apiKey, &baseURL); err != nil {
+				return nil, err
 			}
-			markAccountUsed(acct.Name)
 		}
 	}
 
@@ -69,9 +57,15 @@ func getClient() (*client.Client, error) {
 		return nil, fmt.Errorf("API key is required. Set it via --api-key flag, ZAI_API_KEY environment variable, KEY environment variable, 'zai-client accounts use <name>', or --account <name>")
 	}
 
+	chinaAPIKey := viper.GetString("china-api-key")
+	if chinaAPIKey == "" {
+		chinaAPIKey = os.Getenv("ZAI_CHINA_API_KEY")
+	}
+
 	config := client.Config{
-		APIKey:  apiKey,
-		BaseURL: baseURL,
+		APIKey:      apiKey,
+		BaseURL:     baseURL,
+		ChinaAPIKey: chinaAPIKey,
 	}
 
 	return client.NewClient(config)
@@ -90,6 +84,23 @@ func lookupAccount(name string) (accounts.Account, error) {
 		return accounts.Account{}, fmt.Errorf("account %q not found (run 'zai-client accounts list')", name)
 	}
 	return acct, nil
+}
+
+// applyAccount fills *apiKey with acct's credential and, when *baseURL is
+// still unset, resolves acct's base URL into it — the "use this account's
+// credentials" step shared by the --account flag path and the accounts-store
+// active-account fallback in getClient. Also marks acct as used.
+func applyAccount(acct accounts.Account, apiKey, baseURL *string) error {
+	*apiKey = acct.APIKey
+	if *baseURL == "" {
+		resolvedURL, err := acct.ResolvedBaseURL()
+		if err != nil {
+			return err
+		}
+		*baseURL = resolvedURL
+	}
+	markAccountUsed(acct.Name)
+	return nil
 }
 
 // activeAccount returns the accounts store's active account, if any. ok is

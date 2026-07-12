@@ -3,7 +3,7 @@ package accounts
 import (
 	"context"
 
-	"zai-api-client/pkg/client"
+	"github.com/SamyRai/go-z-ai/pkg/client"
 )
 
 // ProbeType classifies an API key's account type with a single free

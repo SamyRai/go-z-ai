@@ -7,9 +7,9 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
-	"zai-api-client/pkg/accounts"
-	"zai-api-client/pkg/coding"
-	"zai-api-client/pkg/tui"
+	"github.com/SamyRai/go-z-ai/pkg/accounts"
+	"github.com/SamyRai/go-z-ai/pkg/coding"
+	"github.com/SamyRai/go-z-ai/pkg/tui"
 )
 
 var tuiCmd = &cobra.Command{

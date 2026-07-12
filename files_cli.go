@@ -5,14 +5,14 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
-	"zai-api-client/pkg/client"
 )
 
 var filesCmd = &cobra.Command{
 	Use:   "files",
 	Short: "File upload and management",
-	Long:  `Upload files for use in other API calls (batch input, fine-tuning, retrieval, voice-clone input).`,
+	Long:  `Upload files for use in other API calls (batch input, code-interpreter sandbox input, agent file upload, voice-clone input).`,
 }
 
 var filesUploadCmd = &cobra.Command{
@@ -47,7 +47,7 @@ func init() {
 	rootCmd.AddCommand(filesCmd)
 	filesCmd.AddCommand(filesUploadCmd, filesListCmd, filesDeleteCmd, filesDownloadCmd)
 
-	filesUploadCmd.Flags().String("purpose", "batch", "File purpose: fine-tune, retrieval, batch, or voice-clone-input")
+	filesUploadCmd.Flags().String("purpose", "batch", "File purpose: batch, code-interpreter, agent, or voice-clone-input")
 	filesListCmd.Flags().String("purpose", "", "Filter by purpose (omit for all)")
 }
 

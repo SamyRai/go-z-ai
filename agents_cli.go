@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
-	"zai-api-client/pkg/client"
 )
 
 var agentsCmd = &cobra.Command{
@@ -25,9 +25,17 @@ var agentsInvokeCmd = &cobra.Command{
 	RunE:  runAgentsInvoke,
 }
 
+var agentsAsyncResultCmd = &cobra.Command{
+	Use:   "async-result [agent-id] [async-id]",
+	Short: "Poll the result of an async agent task",
+	Long:  `Poll the result of a long-running async agent task (e.g. intelligent_education_correction_polling).`,
+	Args:  cobra.ExactArgs(2),
+	RunE:  runAgentsAsyncResult,
+}
+
 func init() {
 	rootCmd.AddCommand(agentsCmd)
-	agentsCmd.AddCommand(agentsInvokeCmd)
+	agentsCmd.AddCommand(agentsInvokeCmd, agentsAsyncResultCmd)
 
 	agentsInvokeCmd.Flags().String("source-lang", "", "Source language (translation agents, e.g. 'auto')")
 	agentsInvokeCmd.Flags().String("target-lang", "", "Target language (translation agents, e.g. 'zh-CN')")
@@ -72,6 +80,50 @@ func runAgentsInvoke(cmd *cobra.Command, args []string) error {
 
 	for _, choice := range resp.Choices {
 		fmt.Println(choice.Messages.Content.Text)
+	}
+	return nil
+}
+
+func runAgentsAsyncResult(cmd *cobra.Command, args []string) error {
+	apiClient, err := getClient()
+	if err != nil {
+		return err
+	}
+
+	agentID, asyncID := args[0], args[1]
+
+	resp, err := apiClient.Agents().AsyncResult(cmd.Context(), client.AgentAsyncResultRequest{
+		AgentID: agentID,
+		AsyncID: asyncID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to get async result: %w", err)
+	}
+
+	if resp.Failed() {
+		msg := "unknown error"
+		if resp.Error != nil {
+			msg = resp.Error.Message
+		}
+		return fmt.Errorf("agent task failed: %s", msg)
+	}
+
+	if !resp.Done() {
+		fmt.Println("⏳ Task still pending, try again shortly")
+		return nil
+	}
+
+	for _, choice := range resp.Choices {
+		for _, msg := range choice.Messages {
+			for _, part := range msg.Content {
+				if part.FileURL != "" {
+					fmt.Printf("%s: %s\n", part.TagEN, part.FileURL)
+				}
+			}
+		}
+	}
+	if resp.Usage != nil {
+		fmt.Printf("Total tokens: %d\n", resp.Usage.TotalTokens)
 	}
 	return nil
 }

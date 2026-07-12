@@ -1,14 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"time"
 
+	"github.com/SamyRai/go-z-ai/pkg/accounts"
+	"github.com/SamyRai/go-z-ai/pkg/client"
+	"github.com/SamyRai/go-z-ai/pkg/usageview"
 	"github.com/spf13/cobra"
-	"zai-api-client/pkg/accounts"
-	"zai-api-client/pkg/client"
-	"zai-api-client/pkg/usageview"
 )
 
 var accountsCmd = &cobra.Command{
@@ -300,6 +301,52 @@ type accountQuotaResult struct {
 	Type    client.AccountType         `json:"type"`
 	Skipped string                     `json:"skipped,omitempty"`
 	Quota   *client.QuotaLimitResponse `json:"quota,omitempty"`
+	// notApplicable mirrors accountUsageResult's field of the same name —
+	// see its doc comment.
+	notApplicable bool
+}
+
+// fetchAccountQuota fetches quota for one account, isolating the
+// per-account branching (monitor-endpoint support, client construction,
+// the fetch itself) out of runAccountsQuota's loop. A non-nil error means
+// client construction failed, which aborts the whole command (matching the
+// pre-refactor behavior); a populated result.Skipped with a nil error is a
+// per-account skip that does not abort the batch.
+func fetchAccountQuota(ctx context.Context, acct accounts.Account) (accountQuotaResult, error) {
+	result := accountQuotaResult{Name: acct.Name, Type: acct.Type}
+
+	if !acct.SupportsMonitorEndpoints() {
+		result.Skipped = fmt.Sprintf("quota endpoint doesn't apply to %s accounts", acct.Type)
+		result.notApplicable = true
+		return result, nil
+	}
+
+	apiClient, err := client.NewClient(client.Config{APIKey: acct.APIKey})
+	if err != nil {
+		return accountQuotaResult{}, fmt.Errorf("account %q: %w", acct.Name, err)
+	}
+
+	quota, err := apiClient.Quota().GetQuotaLimit(ctx)
+	if err != nil {
+		result.Skipped = err.Error()
+		return result, nil
+	}
+	result.Quota = quota
+	return result, nil
+}
+
+// printAccountQuotaResult renders one account's quota result in text mode.
+func printAccountQuotaResult(result accountQuotaResult) error {
+	if result.notApplicable {
+		fmt.Printf("=== %s ===\n⏭️  Skipped: %s\n\n", result.Name, result.Skipped)
+		return nil
+	}
+	fmt.Printf("=== %s ===\n", result.Name)
+	if result.Quota == nil {
+		fmt.Printf("❌ Failed to fetch quota: %s\n\n", result.Skipped)
+		return nil
+	}
+	return outputQuotaLimit(result.Quota)
 }
 
 func runAccountsQuota(cmd *cobra.Command, args []string) error {
@@ -320,36 +367,15 @@ func runAccountsQuota(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	var results []accountQuotaResult
-
+	results := make([]accountQuotaResult, 0, len(targets))
 	for _, acct := range targets {
-		if !acct.SupportsMonitorEndpoints() {
-			reason := fmt.Sprintf("quota endpoint doesn't apply to %s accounts", acct.Type)
-			results = append(results, accountQuotaResult{Name: acct.Name, Type: acct.Type, Skipped: reason})
-			if format != "json" {
-				fmt.Printf("=== %s ===\n⏭️  Skipped: %s\n\n", acct.Name, reason)
-			}
-			continue
-		}
-
-		apiClient, err := client.NewClient(client.Config{APIKey: acct.APIKey})
+		result, err := fetchAccountQuota(cmd.Context(), acct)
 		if err != nil {
-			return fmt.Errorf("account %q: %w", acct.Name, err)
+			return err
 		}
-
-		quota, err := apiClient.Quota().GetQuotaLimit(cmd.Context())
-		if err != nil {
-			results = append(results, accountQuotaResult{Name: acct.Name, Type: acct.Type, Skipped: err.Error()})
-			if format != "json" {
-				fmt.Printf("=== %s ===\n❌ Failed to fetch quota: %v\n\n", acct.Name, err)
-			}
-			continue
-		}
-
-		results = append(results, accountQuotaResult{Name: acct.Name, Type: acct.Type, Quota: quota})
+		results = append(results, result)
 		if format != "json" {
-			fmt.Printf("=== %s ===\n", acct.Name)
-			if err := outputQuotaLimit(quota); err != nil {
+			if err := printAccountQuotaResult(result); err != nil {
 				return err
 			}
 		}
@@ -368,6 +394,72 @@ type accountUsageResult struct {
 	Skipped string                     `json:"skipped,omitempty"`
 	Models  *client.ModelUsageResponse `json:"models,omitempty"`
 	Tools   *client.ToolUsageResponse  `json:"tools,omitempty"`
+	// notApplicable distinguishes "this account type doesn't support usage
+	// endpoints at all" from "the fetch failed" for printAccountUsageResult's
+	// benefit — both set Skipped, but read differently in text mode (⏭️ vs
+	// ❌). Excluded from JSON: the Skipped message text already carries the
+	// distinction there.
+	notApplicable bool
+}
+
+// fetchAccountUsage fetches model/tool usage for one account, isolating the
+// per-account fetch branching (monitor-endpoint support, client
+// construction, per-metric requests) out of runAccountsUsage's loop. A
+// non-nil error means client construction itself failed, which — matching
+// the pre-refactor behavior exactly — aborts the whole command rather than
+// being recorded as a per-account skip; a populated result.Skipped with a
+// nil error is a per-account skip (unsupported account type or a fetch
+// failure), which does not abort the batch.
+func fetchAccountUsage(ctx context.Context, acct accounts.Account, metric string, start, end time.Time) (accountUsageResult, error) {
+	result := accountUsageResult{Name: acct.Name, Type: acct.Type}
+
+	if !acct.SupportsMonitorEndpoints() {
+		result.Skipped = fmt.Sprintf("usage endpoint doesn't apply to %s accounts", acct.Type)
+		result.notApplicable = true
+		return result, nil
+	}
+
+	apiClient, err := client.NewClient(client.Config{APIKey: acct.APIKey})
+	if err != nil {
+		return accountUsageResult{}, fmt.Errorf("account %q: %w", acct.Name, err)
+	}
+
+	if metric == "model" || metric == "both" {
+		models, err := apiClient.Quota().GetModelUsage(ctx, start, end)
+		if err != nil {
+			result.Skipped = fmt.Sprintf("failed to fetch model usage: %v", err)
+			return result, nil
+		}
+		result.Models = models
+	}
+	if metric == "tool" || metric == "both" {
+		tools, err := apiClient.Quota().GetToolUsage(ctx, start, end)
+		if err != nil {
+			result.Skipped = fmt.Sprintf("failed to fetch tool usage: %v", err)
+			return result, nil
+		}
+		result.Tools = tools
+	}
+	return result, nil
+}
+
+// printAccountUsageResult renders one account's usage result in text mode.
+func printAccountUsageResult(result accountUsageResult) {
+	if result.notApplicable {
+		fmt.Printf("=== %s ===\n⏭️  Skipped: %s\n\n", result.Name, result.Skipped)
+		return
+	}
+	fmt.Printf("=== %s ===\n", result.Name)
+	if result.Skipped != "" {
+		fmt.Printf("❌ %s\n\n", result.Skipped)
+		return
+	}
+	if result.Models != nil {
+		printModelHeatmap(result.Models)
+	}
+	if result.Tools != nil {
+		printToolHeatmap(result.Tools)
+	}
 }
 
 func runAccountsUsage(cmd *cobra.Command, args []string) error {
@@ -404,66 +496,21 @@ func runAccountsUsage(cmd *cobra.Command, args []string) error {
 		fmt.Println()
 	}
 
-	var results []accountUsageResult
-
+	results := make([]accountUsageResult, 0, len(targets))
 	for _, acct := range targets {
-		if !acct.SupportsMonitorEndpoints() {
-			reason := fmt.Sprintf("usage endpoint doesn't apply to %s accounts", acct.Type)
-			results = append(results, accountUsageResult{Name: acct.Name, Type: acct.Type, Skipped: reason})
-			if format != "json" {
-				fmt.Printf("=== %s ===\n⏭️  Skipped: %s\n\n", acct.Name, reason)
-			}
-			continue
-		}
-
-		apiClient, err := client.NewClient(client.Config{APIKey: acct.APIKey})
+		result, err := fetchAccountUsage(cmd.Context(), acct, metric, start, end)
 		if err != nil {
-			return fmt.Errorf("account %q: %w", acct.Name, err)
+			return err
 		}
-
-		result := accountUsageResult{Name: acct.Name, Type: acct.Type}
-		failed := false
-
-		if metric == "model" || metric == "both" {
-			models, err := apiClient.Quota().GetModelUsage(cmd.Context(), start, end)
-			if err != nil {
-				result.Skipped = fmt.Sprintf("failed to fetch model usage: %v", err)
-				failed = true
-			} else {
-				result.Models = models
-			}
-		}
-		if !failed && (metric == "tool" || metric == "both") {
-			tools, err := apiClient.Quota().GetToolUsage(cmd.Context(), start, end)
-			if err != nil {
-				result.Skipped = fmt.Sprintf("failed to fetch tool usage: %v", err)
-				failed = true
-			} else {
-				result.Tools = tools
-			}
-		}
-
 		results = append(results, result)
-
 		if format != "json" {
-			fmt.Printf("=== %s ===\n", acct.Name)
-			if failed {
-				fmt.Printf("❌ %s\n\n", result.Skipped)
-				continue
-			}
-			if result.Models != nil {
-				printModelHeatmap(result.Models)
-			}
-			if result.Tools != nil {
-				printToolHeatmap(result.Tools)
-			}
+			printAccountUsageResult(result)
 		}
 	}
 
 	if format == "json" {
 		return outputJSON(results)
 	}
-
 	return nil
 }
 

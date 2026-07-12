@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
-	"zai-api-client/pkg/client"
 )
 
 var ocrCmd = &cobra.Command{

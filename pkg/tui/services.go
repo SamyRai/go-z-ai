@@ -1,9 +1,9 @@
 package tui
 
 import (
-	"zai-api-client/pkg/accounts"
-	"zai-api-client/pkg/client"
-	"zai-api-client/pkg/coding"
+	"github.com/SamyRai/go-z-ai/pkg/accounts"
+	"github.com/SamyRai/go-z-ai/pkg/client"
+	"github.com/SamyRai/go-z-ai/pkg/coding"
 )
 
 // Config bundles the already-constructed service clients that every screen

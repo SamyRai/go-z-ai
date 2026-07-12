@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
-	"zai-api-client/pkg/client"
 )
 
 var usageCmd = &cobra.Command{

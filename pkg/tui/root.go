@@ -8,15 +8,15 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
-	"zai-api-client/pkg/tui/accounts"
-	"zai-api-client/pkg/tui/chat"
-	"zai-api-client/pkg/tui/coding"
-	"zai-api-client/pkg/tui/media"
-	"zai-api-client/pkg/tui/models"
-	"zai-api-client/pkg/tui/tools"
-	"zai-api-client/pkg/tui/uimsg"
-	"zai-api-client/pkg/tui/uistyle"
-	"zai-api-client/pkg/tui/usage"
+	"github.com/SamyRai/go-z-ai/pkg/tui/accounts"
+	"github.com/SamyRai/go-z-ai/pkg/tui/chat"
+	"github.com/SamyRai/go-z-ai/pkg/tui/coding"
+	"github.com/SamyRai/go-z-ai/pkg/tui/media"
+	"github.com/SamyRai/go-z-ai/pkg/tui/models"
+	"github.com/SamyRai/go-z-ai/pkg/tui/tools"
+	"github.com/SamyRai/go-z-ai/pkg/tui/uimsg"
+	"github.com/SamyRai/go-z-ai/pkg/tui/uistyle"
+	"github.com/SamyRai/go-z-ai/pkg/tui/usage"
 )
 
 // chrome rows: header line + tab bar + footer, plus the bordered panel's own

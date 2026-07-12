@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +32,7 @@ var toolsWebReaderCmd = &cobra.Command{
 var toolsTokenizerCmd = &cobra.Command{
 	Use:   "tokenizer [text]",
 	Short: "Count tokens",
-	Long:  `Count tokens for text using Z.AI's tokenizer.`,
+	Long:  `Count tokens for a single-message chat request using Z.AI's tokenizer.`,
 	Args:  cobra.ExactArgs(1),
 	RunE:  runTokenizer,
 }
@@ -41,9 +43,9 @@ func init() {
 	toolsCmd.AddCommand(toolsWebReaderCmd)
 	toolsCmd.AddCommand(toolsTokenizerCmd)
 
-	toolsWebSearchCmd.Flags().Int("top-k", 5, "Number of results to return")
-	toolsWebReaderCmd.Flags().Bool("images", false, "Include images in output")
-	toolsWebReaderCmd.Flags().Bool("summary", true, "Include summary in output")
+	toolsWebSearchCmd.Flags().String("engine", client.SearchEnginePro, "Search engine: search_std, search_pro, search_pro_sogou, search_pro_quark")
+	toolsWebSearchCmd.Flags().Int("count", 10, "Number of results to return (1-50)")
+	toolsWebReaderCmd.Flags().Bool("no-images", false, "Strip images from the parsed content")
 	toolsTokenizerCmd.Flags().String("model", "glm-4.7", "Model to use for tokenization")
 }
 
@@ -53,39 +55,35 @@ func runWebSearch(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	query := args[0]
-	topK, _ := cmd.Flags().GetInt("top-k")
+	engine, _ := cmd.Flags().GetString("engine")
+	count, _ := cmd.Flags().GetInt("count")
 
-	fmt.Printf("🔍 Searching for: %s\n", query)
-	fmt.Printf("Top %d results requested\n\n", topK)
+	fmt.Printf("🔍 Searching for: %s\n\n", args[0])
 
-	result, err := apiClient.Tools().WebSearch(cmd.Context(), query, topK)
+	result, err := apiClient.Tools().WebSearch(cmd.Context(), client.WebSearchRequest{
+		SearchQuery:  args[0],
+		SearchEngine: engine,
+		Count:        count,
+	})
 	if err != nil {
 		return fmt.Errorf("web search failed: %w", err)
 	}
 
-	if !result.Success {
-		return fmt.Errorf("search API error: %s (code: %d)", result.Msg, result.Code)
-	}
-
-	if len(result.Data) == 0 {
+	if len(result.SearchResult) == 0 {
 		fmt.Println("No results found")
 		return nil
 	}
 
-	fmt.Printf("✅ Found %d results:\n\n", len(result.Data))
-	for i, item := range result.Data {
+	fmt.Printf("✅ Found %d results:\n\n", len(result.SearchResult))
+	for i, item := range result.SearchResult {
 		fmt.Printf("%d. %s\n", i+1, item.Title)
-		fmt.Printf("   URL: %s\n", item.URL)
+		fmt.Printf("   URL: %s\n", item.Link)
 		if item.Content != "" {
 			preview := item.Content
 			if len(preview) > 150 {
 				preview = preview[:150] + "..."
 			}
 			fmt.Printf("   Content: %s\n", preview)
-		}
-		if item.Score > 0 {
-			fmt.Printf("   Score: %.2f\n", item.Score)
 		}
 		fmt.Println()
 	}
@@ -100,56 +98,40 @@ func runWebReader(cmd *cobra.Command, args []string) error {
 	}
 
 	url := args[0]
-	withImages, _ := cmd.Flags().GetBool("images")
-	withSummary, _ := cmd.Flags().GetBool("summary")
+	noImages, _ := cmd.Flags().GetBool("no-images")
 
-	fmt.Printf("📖 Reading: %s\n", url)
-	fmt.Printf("Images: %t, Summary: %t\n\n", withImages, withSummary)
+	fmt.Printf("📖 Reading: %s\n\n", url)
 
-	result, err := apiClient.Tools().WebReader(cmd.Context(), url, withImages, withSummary)
+	req := client.WebReaderRequest{URL: url, WithImagesSummary: true, WithLinksSummary: true}
+	if noImages {
+		retain := false
+		req.RetainImages = &retain
+	}
+
+	result, err := apiClient.Tools().WebReader(cmd.Context(), req)
 	if err != nil {
 		return fmt.Errorf("web reader failed: %w", err)
 	}
 
-	if !result.Success {
-		return fmt.Errorf("reader API error: %s (code: %d)", result.Msg, result.Code)
-	}
-
-	if result.Data == nil {
+	if result.ReaderResult == nil {
 		fmt.Println("No data returned")
 		return nil
 	}
 
 	fmt.Println("✅ Page Parsed Successfully:")
-	fmt.Printf("Title: %s\n", result.Data.Title)
-	fmt.Printf("URL: %s\n", result.Data.URL)
+	fmt.Printf("Title: %s\n", result.ReaderResult.Title)
+	fmt.Printf("URL: %s\n", result.ReaderResult.URL)
 
-	if result.Data.Summary != "" {
-		fmt.Printf("\n📝 Summary:\n%s\n", result.Data.Summary)
+	if result.ReaderResult.Description != "" {
+		fmt.Printf("\n📝 Description:\n%s\n", result.ReaderResult.Description)
 	}
 
-	if result.Data.Content != "" {
-		preview := result.Data.Content
+	if result.ReaderResult.Content != "" {
+		preview := result.ReaderResult.Content
 		if len(preview) > 300 {
 			preview = preview[:300] + "..."
 		}
 		fmt.Printf("\n📄 Content Preview:\n%s\n", preview)
-	}
-
-	if len(result.Data.Images) > 0 {
-		fmt.Printf("\n🖼️  Images: %d found\n", len(result.Data.Images))
-		for i, img := range result.Data.Images {
-			fmt.Printf("   %d. %s\n", i+1, img)
-		}
-	}
-
-	if len(result.Data.Links) > 0 {
-		fmt.Printf("\n🔗 Links: %d found\n", len(result.Data.Links))
-		for i, link := range result.Data.Links {
-			if i < 5 { // Show first 5 links
-				fmt.Printf("   %d. %s\n", i+1, link)
-			}
-		}
 	}
 
 	return nil
@@ -167,34 +149,17 @@ func runTokenizer(cmd *cobra.Command, args []string) error {
 	fmt.Printf("🔢 Tokenizing text with %s...\n", model)
 	fmt.Printf("Text length: %d characters\n\n", len(text))
 
-	result, err := apiClient.Tools().Tokenize(cmd.Context(), text, model)
+	result, err := apiClient.Tools().Tokenize(cmd.Context(), client.TokenizerRequest{
+		Model:    model,
+		Messages: []client.Message{{Role: "user", Content: text}},
+	})
 	if err != nil {
 		return fmt.Errorf("tokenizer failed: %w", err)
 	}
 
-	if !result.Success {
-		return fmt.Errorf("tokenizer API error: %s (code: %d)", result.Msg, result.Code)
-	}
-
-	if result.Data != nil {
-		fmt.Printf("✅ Token Count: %d tokens\n", result.Data.TokenCount)
-
-		if len(result.Data.Tokens) > 0 {
-			fmt.Printf("\n📝 Token Breakdown (first 20):\n")
-			for i, token := range result.Data.Tokens {
-				if i < 20 {
-					fmt.Printf("   %d. %s\n", i+1, token)
-				}
-			}
-			if len(result.Data.Tokens) > 20 {
-				fmt.Printf("   ... and %d more tokens\n", len(result.Data.Tokens)-20)
-			}
-		}
-
-		fmt.Printf("\n💡 Estimated cost for %s:\n", model)
-		// Rough cost estimation (will vary by actual pricing)
-		estimatedCost := float64(result.Data.TokenCount) / 1000000.0 * 0.5 // rough estimate
-		fmt.Printf("   ~$%.6f per 1M tokens (estimate)\n", estimatedCost)
+	if result.Usage != nil {
+		fmt.Printf("✅ Token Count: %d tokens (prompt: %d, image: %d, video: %d)\n",
+			result.Usage.TotalTokens, result.Usage.PromptTokens, result.Usage.ImageTokens, result.Usage.VideoTokens)
 	}
 
 	return nil

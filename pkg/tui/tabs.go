@@ -1,6 +1,6 @@
 package tui
 
-import "zai-api-client/pkg/tui/uistyle"
+import "github.com/SamyRai/go-z-ai/pkg/tui/uistyle"
 
 // tab identifies one of the top-level screens.
 type tab int

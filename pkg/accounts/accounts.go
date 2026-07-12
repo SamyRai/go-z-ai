@@ -11,7 +11,7 @@ import (
 	"sort"
 	"time"
 
-	"zai-api-client/pkg/client"
+	"github.com/SamyRai/go-z-ai/pkg/client"
 )
 
 // Account is one named Z.AI credential.

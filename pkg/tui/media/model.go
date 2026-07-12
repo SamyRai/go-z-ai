@@ -19,8 +19,8 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 
-	"zai-api-client/pkg/client"
-	"zai-api-client/pkg/tui/uistyle"
+	"github.com/SamyRai/go-z-ai/pkg/client"
+	"github.com/SamyRai/go-z-ai/pkg/tui/uistyle"
 )
 
 type form int

@@ -5,6 +5,7 @@
 package coding
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -13,8 +14,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 
-	"zai-api-client/pkg/coding"
-	"zai-api-client/pkg/tui/uimsg"
+	"github.com/SamyRai/go-z-ai/pkg/coding"
+	"github.com/SamyRai/go-z-ai/pkg/tui/uimsg"
 )
 
 type item struct {
@@ -193,7 +194,7 @@ func (m Model) submitAuth() tea.Cmd {
 	key := m.formKey
 	store := m.store
 	return func() tea.Msg {
-		if err := coding.ValidateAPIKey(plan, key); err != nil {
+		if err := coding.ValidateAPIKey(context.Background(), plan, key); err != nil {
 			return actionDoneMsg{err: err}
 		}
 		if err := store.SetPlan(plan); err != nil {

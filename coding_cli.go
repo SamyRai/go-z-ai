@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/SamyRai/go-z-ai/pkg/coding"
 	"github.com/spf13/cobra"
-	"zai-api-client/pkg/coding"
 )
 
 // codingCmd ports Z.AI's official @z_ai/coding-helper ("chelper") Node CLI to
@@ -141,7 +141,7 @@ func runCodingAuth(cmd *cobra.Command, args []string) error {
 
 	if !codingNoValidate {
 		fmt.Println("Validating API key…")
-		if err := coding.ValidateAPIKey(plan, key); err != nil {
+		if err := coding.ValidateAPIKey(cmd.Context(), plan, key); err != nil {
 			if errors.Is(err, coding.ErrInvalidAPIKey) {
 				return fmt.Errorf("Z.AI rejected the key (401); pass --no-validate to store it anyway")
 			}
