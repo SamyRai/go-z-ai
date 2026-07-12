@@ -72,14 +72,11 @@ func readJSONMap(path string) (map[string]interface{}, error) {
 }
 
 func writeJSONMap(path string, m map[string]interface{}) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		return err
-	}
 	data, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0o600)
+	return atomicWriteFile(path, data, 0o600)
 }
 
 // objectField returns the child object at key, creating an empty one if missing

@@ -1,6 +1,7 @@
 package coding
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -24,7 +25,7 @@ func TestValidateKeyValid(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	if err := validateKeyAt(srv.URL, "good", &http.Client{Timeout: 5 * time.Second}); err != nil {
+	if err := validateKeyAt(context.Background(), srv.URL, "good", &http.Client{Timeout: 5 * time.Second}); err != nil {
 		t.Fatalf("expected valid, got %v", err)
 	}
 }
@@ -35,7 +36,7 @@ func TestValidateKeyInvalid(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	err := validateKeyAt(srv.URL, "bad", &http.Client{Timeout: 5 * time.Second})
+	err := validateKeyAt(context.Background(), srv.URL, "bad", &http.Client{Timeout: 5 * time.Second})
 	if !errors.Is(err, ErrInvalidAPIKey) {
 		t.Fatalf("expected ErrInvalidAPIKey, got %v", err)
 	}
@@ -47,7 +48,7 @@ func TestValidateKeyUnexpectedStatus(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	err := validateKeyAt(srv.URL, "k", &http.Client{Timeout: 5 * time.Second})
+	err := validateKeyAt(context.Background(), srv.URL, "k", &http.Client{Timeout: 5 * time.Second})
 	if err == nil {
 		t.Fatal("expected error for 500")
 	}
