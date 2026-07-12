@@ -19,7 +19,7 @@ func TestBatchCreateDefaultsCompletionWindow(t *testing.T) {
 		buf := make([]byte, r.ContentLength)
 		r.Body.Read(buf)
 		gotBody = string(buf)
-		writeJSON(w, http.StatusOK, `{"id":"batch-1","object":"batch","endpoint":"/v1/chat/completions","input_file_id":"file-1","completion_window":"24h","status":"validating","created_at":123}`)
+		writeJSON(w, http.StatusOK, `{"id":"batch-1","object":"batch","endpoint":"/v4/chat/completions","input_file_id":"file-1","completion_window":"24h","status":"validating","created_at":123}`)
 	}))
 	defer srv.Close()
 

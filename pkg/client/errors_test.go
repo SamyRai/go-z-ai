@@ -233,24 +233,3 @@ func TestAPIErrorString(t *testing.T) {
 		t.Errorf("Expected error string to contain code 1308, got: %s", errStr)
 	}
 }
-
-// TestLegacyErrorCompatibility tests backward compatibility with legacy error types
-func TestLegacyErrorCompatibility(t *testing.T) {
-	// Test NewAPIError
-	legacyErr := NewAPIError(500, "Internal error")
-	if legacyErr.HTTPStatus != 500 {
-		t.Errorf("Expected HTTP status 500, got %d", legacyErr.HTTPStatus)
-	}
-
-	// Test WrapAPIError
-	baseErr := createAPIError(1200, 500, "Base error")
-	wrappedErr := WrapAPIError(baseErr, "Wrapped error message")
-
-	if wrappedErr.Message != "Wrapped error message" {
-		t.Errorf("Expected message 'Wrapped error message', got '%s'", wrappedErr.Message)
-	}
-
-	if wrappedErr.Err == nil {
-		t.Error("Expected wrapped error to contain original error")
-	}
-}

@@ -37,7 +37,7 @@ func TestTestBalanceDetectsInsufficientBalanceMidString(t *testing.T) {
 // so the raw "429"/"1113" markers never reach GetAccountStatus's
 // classification. This locks in the real (if debatably imperfect —
 // APIAccessible ends up false, though the API did respond) current
-// behavior; see todo.md for the follow-up.
+// behavior; see docs/roadmap.md for the follow-up.
 func TestGetAccountStatusInsufficientBalanceViaTestBalanceShortcut(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusTooManyRequests, `{"error":{"code":"1113","message":"Insufficient balance or no active resource package"}}`)
