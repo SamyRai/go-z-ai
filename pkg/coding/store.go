@@ -61,16 +61,13 @@ func (s *Store) Load() (*StoredConfig, error) {
 }
 
 // Save writes the config, creating the .chelper directory. The file holds an
-// API key, so it is created 0600.
+// API key, so it is created 0600, via an atomic temp-file-then-rename.
 func (s *Store) Save(c *StoredConfig) error {
-	if err := os.MkdirAll(filepath.Dir(s.Path()), 0o700); err != nil {
-		return err
-	}
 	data, err := yaml.Marshal(c)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(s.Path(), data, 0o600)
+	return atomicWriteFile(s.Path(), data, 0o600)
 }
 
 // SetPlan records the plan choice.
