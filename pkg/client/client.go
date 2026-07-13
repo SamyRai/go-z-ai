@@ -80,6 +80,13 @@ type Config struct {
 	// the fallback is the common case, not a fringe one. Set this
 	// separately only if you hold a distinct bigmodel.cn-only credential.
 	ChinaAPIKey string
+	// DisableToolSchemaCompat turns off automatic normalization of tool
+	// (function) parameter schemas before they are sent. By default the
+	// client rewrites the JSON Schema constructs GLM's chat/completions
+	// parser rejects with HTTP 500 — `anyOf`, `oneOf`, `allOf`, and
+	// `$ref`/`$defs` — into the flat subset it accepts (see
+	// SanitizeToolSchemas). Set this to send tool schemas through untouched.
+	DisableToolSchemaCompat bool
 }
 
 // Client represents the Z.AI API client
@@ -105,6 +112,7 @@ type Client struct {
 	rerank      *RerankService
 	voice       *VoiceService
 	fileParser  *FileParserService
+	anthropic   *AnthropicService
 }
 
 // NewClient creates a new Z.AI API client with the given configuration
@@ -180,6 +188,7 @@ func NewClient(config Config) (*Client, error) {
 	client.rerank = &RerankService{client: client}
 	client.voice = &VoiceService{client: client}
 	client.fileParser = &FileParserService{client: client}
+	client.anthropic = &AnthropicService{client: client}
 
 	return client, nil
 }
@@ -270,6 +279,13 @@ func (c *Client) doRequestBase(ctx context.Context, baseURL, method, endpoint st
 // for platforms that authenticate separately from Config.APIKey (currently
 // BigModelBaseURL — see Config.ChinaAPIKey).
 func (c *Client) doRequestBaseKey(ctx context.Context, baseURL, apiKey, method, endpoint string, body interface{}, result interface{}) error {
+	return c.doRequestBaseKeyHeaders(ctx, baseURL, apiKey, method, endpoint, body, result, nil)
+}
+
+// doRequestBaseKeyHeaders is doRequestBaseKey with additional request headers,
+// for endpoints (currently the Anthropic-compatible surface) that require a
+// header the shared defaults don't set.
+func (c *Client) doRequestBaseKeyHeaders(ctx context.Context, baseURL, apiKey, method, endpoint string, body interface{}, result interface{}, headers map[string]string) error {
 	maxRetries := c.config.MaxRetries
 	if maxRetries < 0 {
 		maxRetries = 0
@@ -281,7 +297,7 @@ func (c *Client) doRequestBaseKey(ctx context.Context, baseURL, apiKey, method, 
 			return err
 		}
 
-		resp, err := c.send(ctx, baseURL, apiKey, method, endpoint, body)
+		resp, err := c.sendHeaders(ctx, baseURL, apiKey, method, endpoint, body, headers)
 		if err != nil {
 			// Transport-level failure: no server response was produced, so the
 			// request is safe to retry (the server never answered).
@@ -322,6 +338,13 @@ func (c *Client) doRequestBaseKey(ctx context.Context, baseURL, apiKey, method, 
 // send builds and issues a single HTTP request against baseURL+endpoint,
 // authenticating with apiKey. The caller owns resp.Body.
 func (c *Client) send(ctx context.Context, baseURL, apiKey, method, endpoint string, body interface{}) (*http.Response, error) {
+	return c.sendHeaders(ctx, baseURL, apiKey, method, endpoint, body, nil)
+}
+
+// sendHeaders is send with additional request headers (set after the defaults,
+// so they can override them). Used by the Anthropic-compatible surface, which
+// needs an anthropic-version header the OpenAI-style endpoints don't.
+func (c *Client) sendHeaders(ctx context.Context, baseURL, apiKey, method, endpoint string, body interface{}, headers map[string]string) (*http.Response, error) {
 	url := baseURL + endpoint
 
 	var bodyReader io.Reader
@@ -343,6 +366,9 @@ func (c *Client) send(ctx context.Context, baseURL, apiKey, method, endpoint str
 	req.Header.Set("Accept-Language", "en-US,en")
 	if body != nil {
 		req.Header.Set("Accept", "application/json")
+	}
+	for k, v := range headers {
+		req.Header.Set(k, v)
 	}
 
 	return c.httpClient.Do(req)
@@ -486,4 +512,11 @@ func (c *Client) Voice() *VoiceService {
 // FileParser returns the document-parsing service.
 func (c *Client) FileParser() *FileParserService {
 	return c.fileParser
+}
+
+// Anthropic returns the Anthropic-compatible Messages service. It calls Z.AI's
+// /api/anthropic surface (AnthropicBaseURL), not Config.BaseURL — see
+// AnthropicService.
+func (c *Client) Anthropic() *AnthropicService {
+	return c.anthropic
 }

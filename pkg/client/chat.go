@@ -14,11 +14,23 @@ type ChatService struct {
 	client *Client
 }
 
+// compatTools normalizes tool parameter schemas for GLM's strict parser unless
+// the caller opted out via Config.DisableToolSchemaCompat. It is a no-op for
+// requests without tools or with already-flat schemas, and never mutates the
+// caller's tool slice (SanitizeToolSchemas returns fresh copies).
+func (s *ChatService) compatTools(tools []Tool) []Tool {
+	if s.client.config.DisableToolSchemaCompat {
+		return tools
+	}
+	return SanitizeToolSchemas(tools)
+}
+
 // Create creates a chat completion
 func (s *ChatService) Create(ctx context.Context, req ChatRequest) (*ChatResponse, error) {
 	if err := validateChatRequest(&req); err != nil {
 		return nil, fmt.Errorf("invalid chat request: %w", err)
 	}
+	req.Tools = s.compatTools(req.Tools)
 
 	var response ChatResponse
 	err := s.client.doRequest(ctx, "POST", "/chat/completions", req, &response)
@@ -44,6 +56,7 @@ func (s *ChatService) CreateAsync(ctx context.Context, req ChatRequest) (*AsyncT
 	if req.Stream {
 		return nil, fmt.Errorf("stream is not supported for async chat completions")
 	}
+	req.Tools = s.compatTools(req.Tools)
 
 	var response AsyncTaskResponse
 	if err := s.client.doRequest(ctx, "POST", "/async/chat/completions", req, &response); err != nil {
@@ -84,6 +97,7 @@ func (s *ChatService) CreateStream(ctx context.Context, req ChatRequest, onChunk
 		return fmt.Errorf("invalid chat request: %w", err)
 	}
 	req.Stream = true
+	req.Tools = s.compatTools(req.Tools)
 
 	maxRetries := s.client.config.MaxRetries
 	if maxRetries < 0 {
