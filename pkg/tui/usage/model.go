@@ -165,8 +165,16 @@ func (m Model) renderQuotaPanel() string {
 		if i < len(m.bars) {
 			bar = m.bars[i].ViewAs(limit.Percentage / 100)
 		}
-		body += fmt.Sprintf("%s\n%s %5.1f%%  (remaining %s)\n\n",
+		body += fmt.Sprintf("%s\n%s %5.1f%%  (remaining %s)\n",
 			limit.WindowDescription(), bar, limit.Percentage, usageview.FormatCount(int64(limit.Remaining)))
+		if limit.IsTokenLimit() {
+			if start := limit.WindowStart(); !start.IsZero() {
+				if pace, ok := usageview.Pace(limit.Percentage/100, start, limit.ResetTime(), time.Now()); ok {
+					body += uistyle.Subtle.Render(usageview.FormatPace(pace)) + "\n"
+				}
+			}
+		}
+		body += "\n"
 	}
 	if m.status != nil {
 		body += fmt.Sprintf("Account: %s\n", m.status.Message)

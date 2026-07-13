@@ -96,6 +96,95 @@ func FormatRelativeTime(t time.Time) string {
 	}
 }
 
+// QuotaPace describes how fast a rolling quota window is being consumed
+// relative to how much of the window has elapsed — the "am I burning too fast?"
+// question behind the common complaint that Coding Plan limits run out sooner
+// than expected. It is a straight-line extrapolation of the window's own
+// reported usage; it makes no assumption about peak/off-peak pricing.
+type QuotaPace struct {
+	WindowElapsed  float64       // fraction of the window elapsed, [0,1]
+	Used           float64       // fraction of the quota consumed, [0,1+]
+	Projected      float64       // usage extrapolated to the window end at the current pace
+	ExhaustsEarly  bool          // true when the quota is projected to run out before reset
+	ExhaustsBefore time.Duration // how long before reset it runs out (only when ExhaustsEarly)
+}
+
+// Pace projects a rolling window's consumption to its reset. usedFraction is
+// the window's reported usage in [0,1] (e.g. Percentage/100). It returns false
+// when the window bounds are unusable (zero/inverted), so callers can skip the
+// line entirely.
+func Pace(usedFraction float64, windowStart, windowEnd, now time.Time) (QuotaPace, bool) {
+	total := windowEnd.Sub(windowStart)
+	if windowStart.IsZero() || windowEnd.IsZero() || total <= 0 {
+		return QuotaPace{}, false
+	}
+
+	elapsed := now.Sub(windowStart)
+	if elapsed < 0 {
+		elapsed = 0
+	}
+	if elapsed > total {
+		elapsed = total
+	}
+
+	p := QuotaPace{
+		WindowElapsed: float64(elapsed) / float64(total),
+		Used:          usedFraction,
+	}
+	if elapsed <= 0 {
+		return p, true // no time elapsed yet — nothing to project
+	}
+
+	p.Projected = usedFraction / p.WindowElapsed
+	// The window runs out early exactly when the projected end-of-window usage
+	// exceeds 100%. Deriving the lead time as a fraction of the window (rather
+	// than elapsed/usedFraction) avoids a time.Duration overflow when
+	// usedFraction is tiny.
+	if p.Projected > 1 {
+		p.ExhaustsEarly = true
+		// Usage hits 100% at elapsed-fraction WindowElapsed/usedFraction of the
+		// window; the remainder is how long before reset it runs out.
+		p.ExhaustsBefore = time.Duration((1 - p.WindowElapsed/usedFraction) * float64(total))
+	}
+	return p, true
+}
+
+// FormatPace renders a QuotaPace as a single compact line.
+func FormatPace(p QuotaPace) string {
+	if p.WindowElapsed <= 0 {
+		return "— (window just started)"
+	}
+	head := fmt.Sprintf("%.0f%% used at %.0f%% of window elapsed", p.Used*100, p.WindowElapsed*100)
+	switch {
+	case p.ExhaustsEarly:
+		return head + fmt.Sprintf(" — on pace to run out ~%s before reset", compactDuration(p.ExhaustsBefore))
+	case p.Projected > 0:
+		return head + fmt.Sprintf(" — on track (~%.0f%% projected by reset)", p.Projected*100)
+	default:
+		return head
+	}
+}
+
+// compactDuration renders a positive duration as "3d", "5h", "2h 30m", or
+// "45m" — coarse enough for a pace hint, never seconds.
+func compactDuration(d time.Duration) string {
+	if d < time.Minute {
+		return "under 1m"
+	}
+	if d >= 24*time.Hour {
+		return fmt.Sprintf("%dd", int(d.Hours()/24))
+	}
+	if d >= time.Hour {
+		h := int(d.Hours())
+		m := int(d.Minutes()) % 60
+		if m == 0 {
+			return fmt.Sprintf("%dh", h)
+		}
+		return fmt.Sprintf("%dh %dm", h, m)
+	}
+	return fmt.Sprintf("%dm", int(d.Minutes()))
+}
+
 // FormatCount renders large counters compactly (e.g. 159454762 -> "159.5M").
 func FormatCount(n int64) string {
 	switch {

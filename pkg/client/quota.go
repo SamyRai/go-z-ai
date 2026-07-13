@@ -156,6 +156,40 @@ func (q *QuotaLimit) ResetTime() time.Time {
 	return time.UnixMilli(q.NextResetTime)
 }
 
+// WindowDuration returns the length of this quota's rolling window (5 hours,
+// one week, ...), derived from the Unit/Number codes. Returns 0 for an unknown
+// unit code, in which case the window start can't be computed.
+func (q *QuotaLimit) WindowDuration() time.Duration {
+	var unit time.Duration
+	switch q.Unit {
+	case UnitCodeHourly:
+		unit = time.Hour
+	case UnitCodeWeekly:
+		unit = 7 * 24 * time.Hour
+	case UnitCodeMonthly:
+		unit = 30 * 24 * time.Hour
+	default:
+		return 0
+	}
+	n := q.Number
+	if n <= 0 {
+		n = 1
+	}
+	return time.Duration(n) * unit
+}
+
+// WindowStart returns when the current rolling window began, i.e. the reset
+// time minus the window duration. Returns the zero time when either the reset
+// time or the window duration is unknown.
+func (q *QuotaLimit) WindowStart() time.Time {
+	reset := q.ResetTime()
+	d := q.WindowDuration()
+	if reset.IsZero() || d == 0 {
+		return time.Time{}
+	}
+	return reset.Add(-d)
+}
+
 // ModelUsageResponse represents model usage statistics for a time window,
 // bucketed daily or hourly depending on the requested range (see
 // ModelUsageData.Granularity). Verified against the live API — the response
