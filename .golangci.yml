@@ -1,0 +1,30 @@
+# golangci-lint configuration.
+#
+# Enforces the default linter set (errcheck, govet, ineffassign, staticcheck,
+# unused) — the set that already caught real bugs in this repo: unused dead
+# code, a staticcheck empty branch, and short-read test bugs. Run locally and
+# in CI with `golangci-lint run ./...`.
+version: "2"
+
+linters:
+  settings:
+    errcheck:
+      # Functions whose returned error is genuinely not actionable here, so
+      # checking it would only add noise. Everything else stays checked —
+      # notably io.Reader.Read, so the short-read pattern that recurred in
+      # tests keeps getting flagged.
+      exclude-functions:
+        # Best-effort cleanup on an error path, and Close in a deferred read.
+        - (io.Closer).Close
+        - (*os.File).Close
+        - os.Remove
+        # Writes to os.Stdout/os.Stderr or an httptest recorder — a failed
+        # write to those has nothing to recover to.
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - (net/http.ResponseWriter).Write
+        # CLI wiring in init(): these only fail on a programmer error (an
+        # unknown flag name), which a passing build already rules out.
+        - github.com/spf13/viper.BindPFlag
+        - (*github.com/spf13/cobra.Command).MarkFlagRequired

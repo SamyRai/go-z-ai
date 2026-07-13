@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,8 +14,7 @@ func TestRerankCreateDefaultsModel(t *testing.T) {
 	var gotPath, gotBody string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
-		buf := make([]byte, r.ContentLength)
-		r.Body.Read(buf)
+		buf, _ := io.ReadAll(r.Body)
 		gotBody = string(buf)
 		writeJSON(w, http.StatusOK, `{"id":"rr-1","created":123,"request_id":"req-1","results":[{"document":"doc A","index":0,"relevance_score":0.98}],"usage":{"prompt_tokens":10,"total_tokens":10}}`)
 	}))

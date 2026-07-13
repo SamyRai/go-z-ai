@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -16,8 +17,7 @@ func TestLayoutParseDefaultsModel(t *testing.T) {
 		if r.URL.Path != "/layout_parsing" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		buf := make([]byte, r.ContentLength)
-		_, _ = r.Body.Read(buf)
+		buf, _ := io.ReadAll(r.Body)
 		gotBody = string(buf)
 		writeJSON(w, http.StatusOK, `{"id":"1","md_results":"# Hello"}`)
 	}))

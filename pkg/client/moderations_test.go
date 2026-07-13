@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,8 +16,7 @@ func TestModerationsCreateDefaultsModel(t *testing.T) {
 	var gotPath, gotBody string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
-		buf := make([]byte, r.ContentLength)
-		r.Body.Read(buf)
+		buf, _ := io.ReadAll(r.Body)
 		gotBody = string(buf)
 		writeJSON(w, http.StatusOK, `{"id":"mod-1","created":123,"request_id":"req-1","result_list":[{"content_type":"text","risk_level":"PASS","risk_type":[]}],"usage":{"moderation_text":{"call_count":1}}}`)
 	}))
@@ -47,8 +47,7 @@ func TestModerationsCreateDefaultsModel(t *testing.T) {
 func TestModerationsCreateMultimodalInput(t *testing.T) {
 	var gotBody string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		buf := make([]byte, r.ContentLength)
-		r.Body.Read(buf)
+		buf, _ := io.ReadAll(r.Body)
 		gotBody = string(buf)
 		writeJSON(w, http.StatusOK, `{"id":"mod-2","result_list":[{"content_type":"image","risk_level":"REJECT","risk_type":["porn"]}],"usage":{"moderation_text":{"call_count":1}}}`)
 	}))

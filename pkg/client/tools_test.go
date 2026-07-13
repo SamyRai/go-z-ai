@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,8 +16,7 @@ func TestToolsWebSearch(t *testing.T) {
 	var gotPath, gotBody string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
-		buf := make([]byte, r.ContentLength)
-		r.Body.Read(buf)
+		buf, _ := io.ReadAll(r.Body)
 		gotBody = string(buf)
 		writeJSON(w, http.StatusOK, `{"id":"ws-1","created":123,"request_id":"req-1","search_result":[{"title":"Example","link":"https://example.com","content":"hi"}]}`)
 	}))
@@ -58,8 +58,7 @@ func TestToolsWebReaderRetainImagesFalse(t *testing.T) {
 	var gotPath, gotBody string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
-		buf := make([]byte, r.ContentLength)
-		r.Body.Read(buf)
+		buf, _ := io.ReadAll(r.Body)
 		gotBody = string(buf)
 		writeJSON(w, http.StatusOK, `{"id":"r-1","reader_result":{"content":"body","title":"T","url":"https://example.com"}}`)
 	}))
@@ -87,8 +86,7 @@ func TestToolsWebReaderRetainImagesFalse(t *testing.T) {
 func TestToolsWebReaderRetainImagesOmittedByDefault(t *testing.T) {
 	var gotBody string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		buf := make([]byte, r.ContentLength)
-		r.Body.Read(buf)
+		buf, _ := io.ReadAll(r.Body)
 		gotBody = string(buf)
 		writeJSON(w, http.StatusOK, `{"id":"r-2","reader_result":{"content":"body"}}`)
 	}))
@@ -116,8 +114,7 @@ func TestToolsTokenize(t *testing.T) {
 	var gotPath, gotBody string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
-		buf := make([]byte, r.ContentLength)
-		r.Body.Read(buf)
+		buf, _ := io.ReadAll(r.Body)
 		gotBody = string(buf)
 		writeJSON(w, http.StatusOK, `{"id":"t-1","usage":{"prompt_tokens":5,"total_tokens":5}}`)
 	}))

@@ -53,11 +53,9 @@ func initConfig() {
 		viper.SetConfigName(".env")
 	}
 
-	// Try to read config, but don't fail if .env doesn't exist
-	if err := viper.ReadInConfig(); err != nil {
-		// .env file not found or error reading it - this is OK
-		// The application will fall back to environment variables
-	}
+	// Try to read config, but don't fail if .env doesn't exist — the
+	// application falls back to environment variables in that case.
+	_ = viper.ReadInConfig()
 }
 
 func main() {

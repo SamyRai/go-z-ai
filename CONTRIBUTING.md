@@ -38,10 +38,17 @@ go build ./...
 go vet ./...
 gofmt -l .          # must be empty
 go test -race ./...
+golangci-lint run ./...
 go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 ```
 
 All of the above run in CI; a green PR is a merged PR.
+[golangci-lint](https://golangci-lint.run) config lives in `.golangci.yml`;
+it runs the default linter set (errcheck, govet, ineffassign, staticcheck,
+unused) — the pass that has caught unused dead code and short-read test bugs
+here before. Read (`io.Reader.Read` / `r.Body.Read`) stays checked on purpose;
+drain a request body with `io.ReadAll`, never a single `Read` into a
+`ContentLength`-sized buffer.
 
 ## Code conventions
 
