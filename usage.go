@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/SamyRai/go-z-ai/pkg/client"
+	"github.com/SamyRai/go-z-ai/pkg/usageview"
 	"github.com/spf13/cobra"
 )
 
@@ -132,6 +133,15 @@ func outputQuotaLimit(quota *client.QuotaLimitResponse) error {
 		} else {
 			reset := time.UnixMilli(limit.NextResetTime)
 			fmt.Printf("  Resets: %s (in %s)\n", reset.Format("2006-01-02 15:04:05 MST"), formatDuration(reset.Sub(now)))
+		}
+
+		// Burn-rate pace for token windows: is usage outrunning the clock?
+		if limit.IsTokenLimit() {
+			if start := limit.WindowStart(); !start.IsZero() {
+				if pace, ok := usageview.Pace(limit.Percentage/100, start, limit.ResetTime(), now); ok {
+					fmt.Printf("  Pace: %s\n", usageview.FormatPace(pace))
+				}
+			}
 		}
 
 		// Display tool-specific breakdown for MCP tools usage (TIME_LIMIT)

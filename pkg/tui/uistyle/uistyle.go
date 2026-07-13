@@ -54,6 +54,10 @@ var (
 	// SectionTitle labels a sub-panel within a screen (e.g. "Model token
 	// usage" above the Usage tab's heatmap).
 	SectionTitle = lipgloss.NewStyle().Bold(true).Foreground(ColorAccent)
+
+	// Subtle renders secondary/supporting text (e.g. the quota burn-rate hint)
+	// in muted gray so it reads as annotation, not primary data.
+	Subtle = lipgloss.NewStyle().Foreground(ColorMuted)
 )
 
 // RenderPills renders names as a row of pill segments, highlighting active.
