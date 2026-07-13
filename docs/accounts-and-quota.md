@@ -56,10 +56,12 @@ Example `accounts quota` output:
 • 5-hour rolling token window
   Usage: 62%
   Resets: 2026-07-11 09:30:00 CEST (in 2h 14m)
+  Pace: 62% used at 55% of window elapsed — on pace to run out ~24m before reset
 
 • weekly token window
   Usage: 41%
   Resets: 2026-07-17 09:17:18 CEST (in 5d 22h)
+  Pace: 41% used at 15% of window elapsed — on pace to run out ~4d before reset
 
 • monthly MCP tools quota
   Usage: 574/1000 (57%) — 426 remaining
@@ -69,6 +71,12 @@ Example `accounts quota` output:
     - web-reader: 97
     - zread: 7
 ```
+
+The **Pace** line (token windows only) answers "am I burning too fast?" — it
+extrapolates the window's *own* reported usage against how much of the window
+has elapsed, so you find out you're on track to run out early *before* you
+actually hit the wall. It's straight-line math on the numbers the API returns
+(no assumption about peak/off-peak pricing).
 
 Not every account shows every window — plan tier and account type both affect
 which windows apply (`accounts show <name>` reports the account's type;

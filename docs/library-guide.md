@@ -141,6 +141,76 @@ cap. A tool executor error is reported back to the model as the tool's
 result (`"error: ..."`), not returned to your caller, so the model can
 recover instead of the whole exchange failing.
 
+#### Tool-schema compatibility
+
+GLM's chat endpoint uses a strict JSON-Schema parser for tool `parameters`:
+a schema containing `anyOf`, `oneOf`, `allOf`, or a `$ref`/`$defs` reference
+makes it return **HTTP 500** rather than a usable error. Those constructs are
+exactly what typed languages emit — a nullable field becomes
+`anyOf: [{…}, {"type":"null"}]`, a reused struct becomes a `$ref`.
+
+By default the client rewrites tool schemas into the flat subset GLM accepts
+before every chat request (nullable unions collapse to the underlying type,
+`allOf` merges, `$ref` inlines), keeping as much type/description information
+as possible. It's a no-op for schemas already in the supported subset and
+never mutates your `req.Tools`.
+
+- To normalize a schema yourself (e.g. you build requests elsewhere):
+  `client.SanitizeToolSchemas(tools)`.
+- To send schemas through untouched (debugging, or a future endpoint that
+  supports the full draft): set `Config.DisableToolSchemaCompat = true`.
+
+### Anthropic-compatible Messages API
+
+Z.AI also exposes an Anthropic-protocol surface at `/api/anthropic` — the same
+endpoint the GLM Coding Plan points Claude Code at. `c.Anthropic()` is a typed
+client for its `POST /v1/messages`, parallel to `c.Chat()` for the OpenAI-style
+surface. It authenticates with your z.ai key as a Bearer token (not Anthropic's
+`x-api-key`) and sends an `anthropic-version` header automatically.
+
+```go
+resp, err := c.Anthropic().Create(ctx, client.AnthropicMessageRequest{
+    Model:     "glm-4.6",
+    MaxTokens: 1024, // required by the Messages API
+    System:    "You are concise.",
+    Messages: []client.AnthropicMessage{
+        client.AnthropicTextMessage("user", "Explain goroutines in one line"),
+    },
+})
+fmt.Println(resp.Text()) // concatenated text blocks
+```
+
+Streaming delivers Anthropic's raw SSE events (`message_start`,
+`content_block_delta`, …) with the event name and JSON payload, which you
+unmarshal per event type:
+
+```go
+err := c.Anthropic().CreateStream(ctx, req, func(ev client.AnthropicStreamEvent) error {
+    if ev.Type == "content_block_delta" {
+        // ev.Data is {"delta":{"type":"text_delta","text":"…"}, …}
+    }
+    return nil
+})
+```
+
+Tools declared via `AnthropicTool.InputSchema` get the same GLM schema
+normalization as chat tools (see above). `Config.DisableToolSchemaCompat`
+disables it.
+
+Extended thinking (GLM models are reasoning models) is enabled per request and
+read back with `resp.Thinking()`:
+
+```go
+req.Thinking = &client.AnthropicThinking{Type: "enabled", BudgetTokens: 2048}
+resp, _ := c.Anthropic().Create(ctx, req)
+fmt.Println(resp.Thinking()) // thinking blocks, or reasoning_content if the
+                             // endpoint surfaces reasoning that way instead
+fmt.Println(resp.Text())     // the answer, without the reasoning mixed in
+```
+
+The success-path response shape is modeled from Anthropic's documented Messages
+API and is not yet live-verified here — see [Roadmap](roadmap.md).
+
 ## Error handling
 
 See [Error Handling](error-handling.md) for the full `APIError` reference,

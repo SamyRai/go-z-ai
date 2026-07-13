@@ -194,6 +194,21 @@ zai-client tools web-reader <url> [--no-images]
 zai-client tools tokenizer <text> [--model ...]
 ```
 
+## Anthropic-compatible endpoint
+
+```bash
+zai-client anthropic messages <prompt> [--model glm-4.6] [--max-tokens 1024] \
+    [--system ...] [--temperature ...] [--thinking-budget N] [--stream]
+```
+
+Calls Z.AI's Anthropic-protocol surface (`/api/anthropic/v1/messages`) — the
+same endpoint the GLM Coding Plan points Claude Code at — instead of the
+OpenAI-style `chat create`. Prints the message text (or streams text deltas
+with `--stream`); `--thinking-budget N` enables extended thinking and prints
+the reasoning to stderr. See the
+[Library Guide](library-guide.md#anthropic-compatible-messages-api) for the
+Go API.
+
 ## Terminal UI
 
 ```bash
