@@ -7,6 +7,60 @@ version tags yet — entries are grouped by date.
 ## 2026-07-12
 
 ### Added
+- Quota burn-rate ("Pace") indicator on token windows in `accounts quota` /
+  `usage quota` and the TUI Usage tab: extrapolates each rolling window's own
+  reported usage against elapsed window time to flag when you're on pace to run
+  out before reset (`62% used at 55% of window elapsed — on pace to run out
+  ~24m before reset`). Straight-line math on real API fields — no peak/off-peak
+  pricing assumptions. New `QuotaLimit.WindowDuration()`/`WindowStart()` and
+  `usageview.Pace`/`FormatPace` (the first tests for the previously
+  untested `usageview` package). Directly targets the common "limits run out
+  sooner than expected" complaint.
+- Anthropic-compatible Messages client (`AnthropicService`, `c.Anthropic()`) —
+  a typed Go client for Z.AI's `/api/anthropic` surface (`POST /v1/messages`),
+  the endpoint the GLM Coding Plan points Claude Code at, parallel to the
+  OpenAI-style `Chat` service. Covers `Create`, streaming `CreateStream` (raw
+  Anthropic SSE events), text/image/tool_use/tool_result content blocks, tools
+  (with the same schema-compat rewrite), and Bearer auth + `anthropic-version`
+  header. New CLI: `anthropic messages <prompt> [--stream ...]`. Routing/auth
+  are confirmed reaching the live endpoint (bogus key → clean HTTP 401); the
+  success-path body shape is documented, not yet live-verified (see
+  [Roadmap](docs/roadmap.md)).
+  - Extended thinking: `AnthropicThinking` request config, `thinking`/
+    `redacted_thinking` response blocks, and `resp.Thinking()` — which falls
+    back to an OpenAI-style `reasoning_content` field if GLM surfaces reasoning
+    that way instead of as a thinking block (the claude-code-router#1133 case).
+    CLI `--thinking-budget N` enables it and prints reasoning to stderr.
+- Tool-schema compatibility: chat requests now normalize tool (function)
+  `parameters` into the flat JSON-Schema subset GLM's parser accepts, instead
+  of letting `anyOf`/`oneOf`/`allOf`/`$ref`/`$defs` reach the endpoint and come
+  back as an opaque HTTP 500 (a pain point for tools generated from typed
+  languages — nullable fields, reused structs, composed types). Nullable
+  unions collapse to their underlying type, `allOf` merges, and local `$ref`s
+  inline (with cycle protection). Exposed as `client.SanitizeToolSchemas` for
+  explicit use, applied automatically before every chat request, and disablable
+  via `Config.DisableToolSchemaCompat`. See `pkg/client/toolschema.go` and
+  [Library Guide](docs/library-guide.md#tool-schema-compatibility). The exact
+  set of server-rejected constructs is drawn from community reports, not yet
+  reproduced live here (see [Roadmap](docs/roadmap.md)).
+
+### Changed
+- golangci-lint is now part of the gate: a checked-in `.golangci.yml` (default
+  linter set — errcheck, govet, ineffassign, staticcheck, unused), a
+  `golangci-lint` CI job on every push/PR, and a line in the CONTRIBUTING
+  pre-PR checklist. The config deliberately keeps `io.Reader.Read` checked so
+  the short-read pattern below can't come back unnoticed.
+
+### Fixed
+- Short-read bug in test HTTP servers — a single `r.Body.Read` into a
+  `ContentLength`-sized buffer (`Read` isn't guaranteed to fill the buffer in
+  one call, so body assertions could flake). A first pass fixed four files;
+  golangci-lint then surfaced eight more occurrences across the moderations,
+  rerank, tools, voice, and layout tests, now all on `io.ReadAll`.
+- `staticcheck` SA9003 empty `if` branch in `main.go`'s config load, collapsed
+  to the same `_ = ...` idiom already used for the `.env` load above it.
+
+### Added
 - `coding mcp add/remove/status`: registers Z.AI's official Vision MCP Server
   (`@z_ai/mcp-server` — screenshot OCR, error-screenshot diagnosis,
   diagram/chart understanding, image/video analysis via GLM-4.6V) into any of

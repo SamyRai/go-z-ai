@@ -53,12 +53,12 @@ fmt.Println(resp.Choices[0].Message.Content)
 ## What's covered
 
 Chat (streaming, structured output, deep thinking, function calling, vision),
-Models, Images, Video, Audio (transcription + TTS + voice cloning), OCR &
-document parsing, Embeddings, Moderations, Rerank, Agents, Files, Batch jobs,
-GLM Coding Plan usage/quota/multi-account management, and a full-screen
-terminal UI (`zai-client tui`). See [CLI Reference](docs/cli-reference.md) for
-the complete command list or [Library Guide](docs/library-guide.md) for the
-Go API.
+the Anthropic-compatible `/v1/messages` endpoint, Models, Images, Video, Audio
+(transcription + TTS + voice cloning), OCR & document parsing, Embeddings,
+Moderations, Rerank, Agents, Files, Batch jobs, GLM Coding Plan
+usage/quota/multi-account management, and a full-screen terminal UI
+(`zai-client tui`). See [CLI Reference](docs/cli-reference.md) for the complete
+command list or [Library Guide](docs/library-guide.md) for the Go API.
 
 ## Contributing
 
