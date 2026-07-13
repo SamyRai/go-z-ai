@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,8 +14,7 @@ func TestVoiceCloneDefaultsModel(t *testing.T) {
 	var gotPath, gotBody string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
-		buf := make([]byte, r.ContentLength)
-		r.Body.Read(buf)
+		buf, _ := io.ReadAll(r.Body)
 		gotBody = string(buf)
 		writeJSON(w, http.StatusOK, `{"voice":"voice_clone_001","file_id":"file-1","file_purpose":"voice-clone-output","request_id":"req-1"}`)
 	}))
@@ -58,8 +58,7 @@ func TestVoiceCloneValidation(t *testing.T) {
 func TestVoiceDelete(t *testing.T) {
 	var gotBody string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		buf := make([]byte, r.ContentLength)
-		r.Body.Read(buf)
+		buf, _ := io.ReadAll(r.Body)
 		gotBody = string(buf)
 		writeJSON(w, http.StatusOK, `{"voice":"voice_clone_001","update_time":"2026-07-11 12:00:00"}`)
 	}))
