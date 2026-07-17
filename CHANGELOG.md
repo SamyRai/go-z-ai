@@ -37,6 +37,25 @@ version tags yet — entries are grouped by date.
   formatting. `internal/fileinput.FileOrURL` de-duplicates the OCR file/URL
   handling previously copied between `ocr parse` and the TUI media tab.
 
+### Fixed
+- `accounts list/show/current --format json` masked the API key like the table
+  view does (it previously printed the raw key); `--reveal` opts into raw keys
+  for export/backup.
+- `usage`/account status now correctly reports an insufficient-balance account
+  as *accessible but out of balance* instead of *inaccessible*. It classifies
+  the failure from the structured `*APIError` (code/HTTP status) rather than
+  string-matching a message; distinguishes 401 (auth) and 429 (rate limit) too.
+- TUI: submitting a media job (esp. a multi-minute video) and switching tabs no
+  longer strands the result — async results are routed back to the originating
+  tab, with esc-to-cancel.
+
+### Testing / docs
+- First unit tests for the credential store (`internal/accounts`), every TUI
+  tab, and the CLI credential-precedence path. New opt-in live-verification
+  harness (`ZAI_RECORD=1`) records redacted cassettes for previously docs-only
+  success shapes (Anthropic Messages, Embeddings, Moderations, Agents). Noted
+  the vision + tool-calling 401 pitfall in the CLI reference.
+
 ## 2026-07-12
 
 ### Added
