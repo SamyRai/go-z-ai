@@ -92,11 +92,14 @@ func init() {
 	accountsAddCmd.MarkFlagRequired("api-key")
 
 	accountsListCmd.Flags().String("format", "table", "Output format (table, json)")
+	accountsListCmd.Flags().Bool("reveal", false, "Show full API keys instead of masking them (json format; for export/backup)")
 
 	accountsRemoveCmd.Flags().Bool("yes", false, "Confirm removal of the active account")
 
 	accountsShowCmd.Flags().String("format", "table", "Output format (table, json)")
+	accountsShowCmd.Flags().Bool("reveal", false, "Show the full API key instead of masking it (json format; for export/backup)")
 	accountsCurrentCmd.Flags().String("format", "table", "Output format (table, json)")
+	accountsCurrentCmd.Flags().Bool("reveal", false, "Show the full API key instead of masking it (json format; for export/backup)")
 
 	accountsQuotaCmd.Flags().StringArray("only", nil, "Limit to specific account names (repeatable; default: all accounts)")
 	accountsQuotaCmd.Flags().String("format", "table", "Output format (table, json)")
@@ -167,6 +170,38 @@ func runAccountsAdd(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// accountView is the JSON shape of a stored account for `accounts` command
+// output. It mirrors accounts.Account (the on-disk store shape) but routes the
+// API key through maskAPIKey by default, so `accounts list/show --format json`
+// doesn't spill raw secrets into shell history, logs, or pipelines the way
+// serializing accounts.Account directly did. Pass --reveal to emit the real
+// key (for export/backup). The on-disk store format is untouched — this masking
+// lives purely in the CLI presentation layer.
+type accountView struct {
+	Name            string             `json:"name"`
+	APIKey          string             `json:"api_key"`
+	Type            client.AccountType `json:"type"`
+	BaseURLOverride string             `json:"base_url_override,omitempty"`
+	CreatedAt       time.Time          `json:"created_at"`
+	LastUsedAt      time.Time          `json:"last_used_at"`
+}
+
+// newAccountView builds an accountView, masking the API key unless reveal.
+func newAccountView(a accounts.Account, reveal bool) accountView {
+	key := a.APIKey
+	if !reveal {
+		key = maskAPIKey(a.APIKey)
+	}
+	return accountView{
+		Name:            a.Name,
+		APIKey:          key,
+		Type:            a.Type,
+		BaseURLOverride: a.BaseURLOverride,
+		CreatedAt:       a.CreatedAt,
+		LastUsedAt:      a.LastUsedAt,
+	}
+}
+
 func runAccountsList(cmd *cobra.Command, args []string) error {
 	store, err := accounts.Load()
 	if err != nil {
@@ -177,7 +212,12 @@ func runAccountsList(cmd *cobra.Command, args []string) error {
 	list := store.List()
 
 	if format == "json" {
-		return outputJSON(list)
+		reveal, _ := cmd.Flags().GetBool("reveal")
+		views := make([]accountView, len(list))
+		for i, acct := range list {
+			views[i] = newAccountView(acct, reveal)
+		}
+		return outputJSON(views)
 	}
 
 	if len(list) == 0 {
@@ -260,7 +300,8 @@ func runAccountsShow(cmd *cobra.Command, args []string) error {
 
 	format, _ := cmd.Flags().GetString("format")
 	if format == "json" {
-		return outputJSON(acct)
+		reveal, _ := cmd.Flags().GetBool("reveal")
+		return outputJSON(newAccountView(acct, reveal))
 	}
 
 	baseURL, err := acct.ResolvedBaseURL()
