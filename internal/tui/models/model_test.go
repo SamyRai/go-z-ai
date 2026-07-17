@@ -14,7 +14,7 @@ func keyRune(r rune) tea.KeyPressMsg { return tea.KeyPressMsg{Code: r, Text: str
 
 // A successful fetch clears loading and populates the table filter set.
 func TestFetchedPopulates(t *testing.T) {
-	m := New(nil)
+	m := New(nil, 5)
 	m.loading = true
 
 	next, _ := m.Update(fetchedMsg{models: []client.ModelDetails{
@@ -32,7 +32,7 @@ func TestFetchedPopulates(t *testing.T) {
 
 // A fetch error is surfaced to the root as a uimsg.Err toast, not a crash.
 func TestFetchedErrorRaisesToast(t *testing.T) {
-	m := New(nil)
+	m := New(nil, 5)
 	m.loading = true
 
 	next, cmd := m.Update(fetchedMsg{err: errors.New("boom")})
@@ -49,7 +49,7 @@ func TestFetchedErrorRaisesToast(t *testing.T) {
 
 // Number keys switch the active filter.
 func TestFilterKeys(t *testing.T) {
-	m := New(nil)
+	m := New(nil, 5)
 	for key, want := range map[rune]filter{'2': filterText, '3': filterVision, '4': filterFree, '1': filterAll} {
 		next, _ := m.Update(keyRune(key))
 		if got := next.(Model).filter; got != want {
@@ -58,9 +58,25 @@ func TestFilterKeys(t *testing.T) {
 	}
 }
 
+// route addresses the fetch result to this tab so it survives a tab switch.
+func TestRouteWrapsToSelfTab(t *testing.T) {
+	m := New(nil, 3)
+	msg := m.route(func() tea.Msg { return fetchedMsg{} })()
+	routed, ok := msg.(uimsg.Routed)
+	if !ok {
+		t.Fatalf("expected uimsg.Routed, got %T", msg)
+	}
+	if routed.Tab != 3 {
+		t.Errorf("expected fetch result routed to tab 3, got %d", routed.Tab)
+	}
+	if _, ok := routed.Msg.(fetchedMsg); !ok {
+		t.Errorf("expected wrapped fetchedMsg, got %T", routed.Msg)
+	}
+}
+
 // 'r' triggers a reload (loading + a fetch command).
 func TestReloadKey(t *testing.T) {
-	m := New(nil)
+	m := New(nil, 5)
 	next, cmd := m.Update(keyRune('r'))
 	if !next.(Model).loading {
 		t.Error("expected loading set on reload")

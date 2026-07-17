@@ -42,6 +42,7 @@ type fetchedMsg struct {
 // Model is the Usage tab's screen model.
 type Model struct {
 	client   *client.Client
+	selfTab  int // this screen's tab index, used to route the fetch result back
 	accounts *accounts.Store
 
 	quota  *client.QuotaLimitResponse
@@ -55,13 +56,14 @@ type Model struct {
 }
 
 // New builds the Usage screen. c must be non-nil; store may be nil if no
-// account store is available.
-func New(c *client.Client, store *accounts.Store) Model {
-	return Model{client: c, accounts: store}
+// account store is available. selfTab is this screen's tab index in the root
+// model, so a fetch result routes back here even if the user switched away.
+func New(c *client.Client, store *accounts.Store, selfTab int) Model {
+	return Model{client: c, selfTab: selfTab, accounts: store}
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(m.fetch(), tick())
+	return tea.Batch(m.route(m.fetch()), tick())
 }
 
 func tick() tea.Cmd {
@@ -97,6 +99,13 @@ func (m Model) fetch() tea.Cmd {
 	}
 }
 
+// route wraps cmd so its fetch result is delivered back to this tab even if the
+// user switched away before it completed. Same mechanism as the media tab.
+func (m Model) route(cmd tea.Cmd) tea.Cmd {
+	self := m.selfTab
+	return func() tea.Msg { return uimsg.Routed{Tab: self, Msg: cmd()} }
+}
+
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -104,7 +113,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tickMsg:
-		return m, tea.Batch(m.fetch(), tick())
+		return m, tea.Batch(m.route(m.fetch()), tick())
 
 	case fetchedMsg:
 		m.loading = false
@@ -118,7 +127,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		if msg.String() == "r" {
 			m.loading = true
-			return m, m.fetch()
+			return m, m.route(m.fetch())
 		}
 	}
 	return m, nil

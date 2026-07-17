@@ -14,6 +14,7 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
 	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
 	"github.com/SamyRai/go-z-ai/pkg/client"
 )
@@ -36,16 +37,19 @@ type resultMsg struct {
 
 // Model is the Tools tab's screen model.
 type Model struct {
-	client *client.Client
-	active form
-	inputs [formCount]textinput.Model
-	result viewport.Model
-	spin   spinner.Model
-	busy   bool
+	client  *client.Client
+	selfTab int // this screen's tab index, used to route async results back
+	active  form
+	inputs  [formCount]textinput.Model
+	result  viewport.Model
+	spin    spinner.Model
+	busy    bool
 }
 
-// New builds the Tools screen. c must be non-nil.
-func New(c *client.Client) Model {
+// New builds the Tools screen. c must be non-nil. selfTab is this screen's tab
+// index in the root model, so a result routes back here even if the user has
+// switched to another tab while the request was in flight.
+func New(c *client.Client, selfTab int) Model {
 	search := textinput.New()
 	search.Placeholder = "search query"
 	reader := textinput.New()
@@ -57,11 +61,19 @@ func New(c *client.Client) Model {
 	sp := spinner.New()
 
 	return Model{
-		client: c,
-		inputs: [formCount]textinput.Model{formSearch: search, formReader: reader, formTokenize: tokenize},
-		result: vp,
-		spin:   sp,
+		client:  c,
+		selfTab: selfTab,
+		inputs:  [formCount]textinput.Model{formSearch: search, formReader: reader, formTokenize: tokenize},
+		result:  vp,
+		spin:    sp,
 	}
+}
+
+// route wraps cmd so its result message is delivered back to this tab even if
+// the user has switched away — the same mechanism the media tab uses.
+func (m Model) route(cmd tea.Cmd) tea.Cmd {
+	self := m.selfTab
+	return func() tea.Msg { return uimsg.Routed{Tab: self, Msg: cmd()} }
 }
 
 func (m Model) Init() tea.Cmd { return nil }
@@ -103,7 +115,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			m.busy = true
-			return m, tea.Batch(m.submit(), m.spin.Tick)
+			return m, tea.Batch(m.route(m.submit()), m.spin.Tick)
 		}
 	}
 

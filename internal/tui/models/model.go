@@ -35,6 +35,7 @@ type fetchedMsg struct {
 // Model is the Models tab's screen model.
 type Model struct {
 	client  *client.Client
+	selfTab int // this screen's tab index, used to route the fetch result back
 	table   table.Model
 	filter  filter
 	all     []client.ModelDetails
@@ -43,8 +44,10 @@ type Model struct {
 	loading bool
 }
 
-// New builds the Models screen. c must be non-nil.
-func New(c *client.Client) Model {
+// New builds the Models screen. c must be non-nil. selfTab is this screen's tab
+// index in the root model, so a fetch result routes back here even if the user
+// has switched away while it was loading.
+func New(c *client.Client, selfTab int) Model {
 	t := table.New(
 		table.WithColumns([]table.Column{
 			{Title: "ID", Width: 28},
@@ -55,11 +58,11 @@ func New(c *client.Client) Model {
 		}),
 		table.WithFocused(true),
 	)
-	return Model{client: c, table: t}
+	return Model{client: c, selfTab: selfTab, table: t}
 }
 
 func (m Model) Init() tea.Cmd {
-	return m.fetch()
+	return m.route(m.fetch())
 }
 
 func (m Model) fetch() tea.Cmd {
@@ -70,6 +73,14 @@ func (m Model) fetch() tea.Cmd {
 		}
 		return fetchedMsg{models: info.Models}
 	}
+}
+
+// route wraps cmd so its result is delivered back to this tab even if the user
+// switched away mid-load (otherwise the fetch result is lost and the tab stays
+// stuck "loading"). Same mechanism as the media tab.
+func (m Model) route(cmd tea.Cmd) tea.Cmd {
+	self := m.selfTab
+	return func() tea.Msg { return uimsg.Routed{Tab: self, Msg: cmd()} }
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -93,7 +104,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "r":
 			m.loading = true
-			return m, m.fetch()
+			return m, m.route(m.fetch())
 		case "1":
 			m.filter = filterAll
 			m.applyFilter()
