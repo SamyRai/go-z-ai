@@ -2,7 +2,9 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -88,16 +90,13 @@ func (s *UsageService) TestBalance(ctx context.Context) error {
 		TopP:        0.95,
 	}
 
+	// Return the underlying error unchanged (it carries a structured *APIError
+	// with the business Code and HTTP status). GetAccountStatus classifies it
+	// via errors.As — earlier this method flattened a 1113 balance error into a
+	// plain string with fmt.Errorf, which dropped the markers GetAccountStatus
+	// then tried to match, making its insufficient-balance branch unreachable.
 	_, err := s.client.Chat().Create(ctx, testReq)
-	if err != nil {
-		// Check if it's a balance error
-		if strings.Contains(err.Error(), "1113") || strings.Contains(err.Error(), "Insufficient balance") {
-			return fmt.Errorf("insufficient balance: please recharge your account at https://z.ai")
-		}
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // GetClientSideUsage returns client-side tracked usage information
@@ -164,29 +163,35 @@ func (s *UsageService) GetAccountStatus(ctx context.Context) (*AccountStatus, er
 		WebDashboard: "https://z.ai",
 	}
 
-	// Test API accessibility and balance
+	// Test API accessibility and balance. Classify the failure from the
+	// structured *APIError (business Code + HTTP status) via errors.As rather
+	// than string-matching a message we don't fully control.
 	err := s.TestBalance(ctx)
 	if err != nil {
-		errMsg := err.Error()
+		// Any error means we can't confirm balance.
+		status.APIAccessible = false
+		status.HasBalance = false
 
-		// Check for specific error patterns
-		if strings.Contains(errMsg, "429") && (strings.Contains(errMsg, "1113") || strings.Contains(errMsg, "Insufficient balance")) {
-			status.APIAccessible = true
-			status.HasBalance = false
-			status.Message = "API accessible but insufficient balance - please recharge at https://z.ai"
-		} else if strings.Contains(errMsg, "401") || strings.Contains(errMsg, "token expired") || strings.Contains(errMsg, "unauthorized") {
-			status.APIAccessible = false
-			status.HasBalance = false
-			status.Message = "API key authentication failed - check your API key"
-		} else if strings.Contains(errMsg, "429") {
-			status.APIAccessible = true
-			status.HasBalance = false
-			status.Message = "API accessible but rate limited - try again later"
-		} else {
-			status.APIAccessible = false
-			status.HasBalance = false
-			status.Message = extractCleanError(errMsg)
+		if apiErr, ok := errors.AsType[*APIError](err); ok {
+			switch {
+			case isBalanceCode(apiErr.Code):
+				// Auth succeeded and the request reached billing — the key
+				// works, there's just no balance/quota to spend.
+				status.APIAccessible = true
+				status.Message = "API accessible but insufficient balance - please recharge at https://z.ai"
+			case apiErr.HTTPStatus == http.StatusUnauthorized:
+				status.Message = "API key authentication failed - check your API key"
+			case apiErr.HTTPStatus == http.StatusTooManyRequests:
+				status.APIAccessible = true
+				status.Message = "API accessible but rate limited - try again later"
+			default:
+				status.Message = extractCleanError(err.Error())
+			}
+			return status, nil
 		}
+
+		// Non-API error (network, timeout, etc.).
+		status.Message = extractCleanError(err.Error())
 		return status, nil
 	}
 
@@ -194,6 +199,18 @@ func (s *UsageService) GetAccountStatus(ctx context.Context) (*AccountStatus, er
 	status.HasBalance = true
 	status.Message = "Account is healthy and has balance"
 	return status, nil
+}
+
+// isBalanceCode reports whether code is one of Z.AI's "authenticated but out of
+// balance/quota" business codes — the account key is valid, there's just
+// nothing to spend, so callers should treat the API as accessible.
+func isBalanceCode(code int) bool {
+	switch code {
+	case ErrCodeInsufficientBalance, ErrCodeHourlyLimitNoBalance, ErrCodeWeeklyLimitNoBalance:
+		return true
+	default:
+		return false
+	}
 }
 
 // GetWebDashboardURL returns the URL for the web dashboard

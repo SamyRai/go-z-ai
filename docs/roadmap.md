@@ -1,23 +1,5 @@
 # Roadmap & Known Limitations
 
-## Known bug
-
-**`GetAccountStatus`'s insufficient-balance branch is unreachable.**
-`GetAccountStatus` calls `TestBalance` first, which already intercepts the
-1113 (insufficient balance) case and returns its own cleaned-up message — by
-the time `GetAccountStatus` inspects the resulting error string, the "1113"
-marker its own classification looks for is already gone, so that branch can
-never match. Net effect: this case falls through to
-`APIAccessible=false` instead of the intended `APIAccessible=true,
-HasBalance=false`. Current (wrong) behavior is locked in by
-`TestGetAccountStatusInsufficientBalanceViaTestBalanceShortcut` in
-`pkg/client/usage_test.go` so it doesn't get accidentally "fixed" into a
-third behavior — the actual fix needs a design call: either stop
-`TestBalance` from transforming the message before `GetAccountStatus`
-classifies it, or have `GetAccountStatus` inspect the underlying `*APIError`
-via `errors.As` instead of string-matching a message it doesn't fully
-control. [Contributions welcome](../CONTRIBUTING.md).
-
 ## Unverified live
 
 A few services are implemented from Z.AI's documented OpenAPI spec but their
