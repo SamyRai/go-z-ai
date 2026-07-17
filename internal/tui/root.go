@@ -49,12 +49,12 @@ type rootModel struct {
 func newRootModel(cfg Config) *rootModel {
 	m := &rootModel{cfg: cfg, keys: defaultKeyMap(), help: help.New()}
 	m.screens[tabChat] = chat.New(cfg.Client)
-	m.screens[tabModels] = models.New(cfg.Client)
-	m.screens[tabUsage] = usage.New(cfg.Client, cfg.Accounts)
+	m.screens[tabModels] = models.New(cfg.Client, int(tabModels))
+	m.screens[tabUsage] = usage.New(cfg.Client, cfg.Accounts, int(tabUsage))
 	m.screens[tabAccounts] = accounts.New(cfg.Accounts)
 	m.screens[tabCoding] = coding.New(cfg.Coding)
 	m.screens[tabMedia] = media.New(cfg.Client, int(tabMedia))
-	m.screens[tabTools] = tools.New(cfg.Client)
+	m.screens[tabTools] = tools.New(cfg.Client, int(tabTools))
 	return m
 }
 
