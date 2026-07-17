@@ -27,7 +27,7 @@ var moderationsCheckCmd = &cobra.Command{
 	Use:   "check [text]",
 	Short: "Check a text input for policy violations",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runModerationsCheck,
+	RunE:  runWithClient(runModerationsCheck),
 }
 
 func init() {
@@ -35,12 +35,7 @@ func init() {
 	moderationsCmd.AddCommand(moderationsCheckCmd)
 }
 
-func runModerationsCheck(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runModerationsCheck(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	resp, err := apiClient.Moderations().Create(cmd.Context(), client.ModerationRequest{
 		Input: args[0],
 	})

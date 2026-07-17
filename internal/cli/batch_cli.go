@@ -20,28 +20,28 @@ var batchCreateCmd = &cobra.Command{
 	Use:   "create [input-file-id]",
 	Short: "Submit a new batch job",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runBatchCreate,
+	RunE:  runWithClient(runBatchCreate),
 }
 
 var batchStatusCmd = &cobra.Command{
 	Use:   "status [batch-id]",
 	Short: "Check a batch job's status",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runBatchStatus,
+	RunE:  runWithClient(runBatchStatus),
 }
 
 var batchListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List batch jobs",
 	Args:  cobra.NoArgs,
-	RunE:  runBatchList,
+	RunE:  runWithClient(runBatchList),
 }
 
 var batchCancelCmd = &cobra.Command{
 	Use:   "cancel [batch-id]",
 	Short: "Cancel an in-progress batch job",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runBatchCancel,
+	RunE:  runWithClient(runBatchCancel),
 }
 
 func init() {
@@ -53,12 +53,7 @@ func init() {
 	batchListCmd.Flags().Int("limit", 0, "Max batches to return (0 = server default)")
 }
 
-func runBatchCreate(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runBatchCreate(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	endpoint, _ := cmd.Flags().GetString("endpoint")
 
 	b, err := apiClient.Batch().Create(cmd.Context(), client.BatchCreateRequest{
@@ -74,12 +69,7 @@ func runBatchCreate(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runBatchStatus(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runBatchStatus(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	b, err := apiClient.Batch().Retrieve(cmd.Context(), args[0])
 	if err != nil {
 		return fmt.Errorf("failed to check batch status: %w", err)
@@ -98,12 +88,7 @@ func runBatchStatus(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runBatchList(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runBatchList(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	after, _ := cmd.Flags().GetString("after")
 	limit, _ := cmd.Flags().GetInt("limit")
 
@@ -125,12 +110,7 @@ func runBatchList(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runBatchCancel(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runBatchCancel(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	b, err := apiClient.Batch().Cancel(cmd.Context(), args[0])
 	if err != nil {
 		return fmt.Errorf("failed to cancel batch: %w", err)

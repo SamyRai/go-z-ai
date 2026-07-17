@@ -21,28 +21,28 @@ var usageQuotaCmd = &cobra.Command{
 	Use:   "quota",
 	Short: "Get current quota and usage",
 	Long:  `Get current usage and quota information including remaining tokens and reset time.`,
-	RunE:  runUsageQuota,
+	RunE:  runWithClient(runUsageQuota),
 }
 
 var usageSummaryCmd = &cobra.Command{
 	Use:   "summary",
 	Short: "Get usage summary",
 	Long:  `Get a comprehensive summary of your usage including quota, account info, and statistics.`,
-	RunE:  runUsageSummary,
+	RunE:  runWithClient(runUsageSummary),
 }
 
 var usageAccountCmd = &cobra.Command{
 	Use:   "account",
 	Short: "Get account information",
 	Long:  `Get detailed account information including plan type and status.`,
-	RunE:  runUsageAccount,
+	RunE:  runWithClient(runUsageAccount),
 }
 
 var usageBillingCmd = &cobra.Command{
 	Use:   "billing",
 	Short: "Get billing information",
 	Long:  `Get billing information including cycle, next bill date, and last bill amount.`,
-	RunE:  runUsageBilling,
+	RunE:  runWithClient(runUsageBilling),
 }
 
 var usageCheckCmd = &cobra.Command{
@@ -56,7 +56,7 @@ var usageDetectCmd = &cobra.Command{
 	Use:   "detect",
 	Short: "Detect account type",
 	Long:  `Detect your Z.AI account type and working endpoint automatically.`,
-	RunE:  runUsageDetect,
+	RunE:  runWithClient(runUsageDetect),
 }
 
 var (
@@ -81,12 +81,7 @@ func init() {
 	usageDetectCmd.Flags().StringVar(&usageFormat, "format", "table", "Output format (table, json)")
 }
 
-func runUsageQuota(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runUsageQuota(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	quota, err := apiClient.Quota().GetQuotaLimit(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to get quota limit: %w", err)
@@ -174,12 +169,7 @@ func formatDuration(d time.Duration) string {
 	}
 }
 
-func runUsageSummary(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runUsageSummary(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	status, err := apiClient.Usage().GetAccountStatus(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to get account status: %w", err)
@@ -188,12 +178,7 @@ func runUsageSummary(cmd *cobra.Command, args []string) error {
 	return outputAccountStatus(status, usageFormat)
 }
 
-func runUsageAccount(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runUsageAccount(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	status, err := apiClient.Usage().GetAccountStatus(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to get account info: %w", err)
@@ -202,12 +187,7 @@ func runUsageAccount(cmd *cobra.Command, args []string) error {
 	return outputAccountStatus(status, usageFormat)
 }
 
-func runUsageBilling(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runUsageBilling(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	fmt.Println("💳 Billing Information")
 	fmt.Println("\nZ.AI doesn't provide billing API endpoints.")
 	fmt.Println("Please manage billing at:", apiClient.Usage().GetWebDashboardURL())
@@ -294,12 +274,7 @@ func outputAccountStatus(status *client.AccountStatus, format string) error {
 	}
 }
 
-func runUsageDetect(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runUsageDetect(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	fmt.Println("🔍 Detecting Account Type...")
 	fmt.Print("Testing both pay-as-you-go and coding plan endpoints...\n\n")
 

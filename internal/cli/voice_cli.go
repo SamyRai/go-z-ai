@@ -18,21 +18,21 @@ var voiceCloneCmd = &cobra.Command{
 	Short: "Clone a voice from a sample audio file",
 	Long:  `Clone a voice from a sample audio file already uploaded via "zai-client files upload --purpose voice-clone-input".`,
 	Args:  cobra.ExactArgs(3),
-	RunE:  runVoiceClone,
+	RunE:  runWithClient(runVoiceClone),
 }
 
 var voiceDeleteCmd = &cobra.Command{
 	Use:   "delete [voice-id]",
 	Short: "Delete a cloned voice",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runVoiceDelete,
+	RunE:  runWithClient(runVoiceDelete),
 }
 
 var voiceListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List available voices",
 	Args:  cobra.NoArgs,
-	RunE:  runVoiceList,
+	RunE:  runWithClient(runVoiceList),
 }
 
 func init() {
@@ -43,12 +43,7 @@ func init() {
 	voiceListCmd.Flags().String("type", "", "Filter by type: OFFICIAL or PRIVATE")
 }
 
-func runVoiceClone(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runVoiceClone(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	voiceName, fileID, previewText := args[0], args[1], args[2]
 
 	resp, err := apiClient.Voice().Clone(cmd.Context(), client.VoiceCloneRequest{
@@ -64,12 +59,7 @@ func runVoiceClone(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runVoiceDelete(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runVoiceDelete(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	resp, err := apiClient.Voice().Delete(cmd.Context(), args[0])
 	if err != nil {
 		return fmt.Errorf("voice delete failed: %w", err)
@@ -79,12 +69,7 @@ func runVoiceDelete(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runVoiceList(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runVoiceList(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	name, _ := cmd.Flags().GetString("name")
 	voiceType, _ := cmd.Flags().GetString("type")
 

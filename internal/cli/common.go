@@ -19,6 +19,22 @@ func getClient() (*client.Client, error) {
 	return client.NewClient(config)
 }
 
+// runWithClient adapts a command handler that needs an API client into a
+// cobra RunE. It resolves the client once (via getClient) and passes it in, so
+// the ~50 command handlers that all opened with the same four-line getClient
+// preamble no longer repeat it. Handlers that don't need a client, or that must
+// branch before constructing one (e.g. `usage check --watch`), keep a plain
+// RunE and are not wrapped.
+func runWithClient(fn func(cmd *cobra.Command, args []string, apiClient *client.Client) error) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		apiClient, err := getClient()
+		if err != nil {
+			return err
+		}
+		return fn(cmd, args, apiClient)
+	}
+}
+
 // resolveConfig resolves the effective client.Config from, in precedence
 // order: the --api-key flag; an explicitly-named --account; the ZAI_API_KEY
 // (then KEY) env var; and finally the accounts store's active account. It is
@@ -139,14 +155,9 @@ func markAccountUsed(name string) {
 	_ = store.Save()
 }
 
-func validateAPIKey(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func validateAPIKey(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	// Test API key by making a simple request
-	_, err = apiClient.Models().List(cmd.Context())
+	_, err := apiClient.Models().List(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("invalid API key: %w", err)
 	}

@@ -19,14 +19,14 @@ var audioTranscribeCmd = &cobra.Command{
 	Use:   "transcribe [file]",
 	Short: "Transcribe a .wav or .mp3 file (<=25MB, <=30s)",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runAudioTranscribe,
+	RunE:  runWithClient(runAudioTranscribe),
 }
 
 var audioSpeechCmd = &cobra.Command{
 	Use:   "speech [text] [output-path]",
 	Short: "Synthesize speech from text (GLM-TTS)",
 	Args:  cobra.ExactArgs(2),
-	RunE:  runAudioSpeech,
+	RunE:  runWithClient(runAudioSpeech),
 }
 
 func init() {
@@ -41,12 +41,7 @@ func init() {
 	audioSpeechCmd.Flags().Float64("speed", 0, "Speed 0.5-2 (API default 1.0)")
 }
 
-func runAudioTranscribe(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runAudioTranscribe(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	path := args[0]
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -71,12 +66,7 @@ func runAudioTranscribe(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runAudioSpeech(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runAudioSpeech(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	text, outPath := args[0], args[1]
 	voice, _ := cmd.Flags().GetString("voice")
 	format, _ := cmd.Flags().GetString("format")

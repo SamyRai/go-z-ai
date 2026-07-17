@@ -26,7 +26,7 @@ var embeddingsCreateCmd = &cobra.Command{
 	Use:   "create [text]",
 	Short: "Generate an embedding for a text input",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runEmbeddingsCreate,
+	RunE:  runWithClient(runEmbeddingsCreate),
 }
 
 func init() {
@@ -37,12 +37,7 @@ func init() {
 	embeddingsCreateCmd.Flags().Int("dimensions", 0, "Output vector dimensions (embedding-3 only: 256, 512, 1024, or 2048)")
 }
 
-func runEmbeddingsCreate(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runEmbeddingsCreate(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	model, _ := cmd.Flags().GetString("model")
 	dimensions, _ := cmd.Flags().GetInt("dimensions")
 

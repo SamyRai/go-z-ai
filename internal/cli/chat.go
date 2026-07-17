@@ -53,7 +53,7 @@ output (--json-schema), stop sequences (--stop), and function-calling tool
 declarations (--tool). Tool calls in the response are printed but not executed
 by the CLI; use the Go RunWithTools helper for an auto-executing loop.`,
 	Args: cobra.MaximumNArgs(1),
-	RunE: runChatCreate,
+	RunE: runWithClient(runChatCreate),
 }
 
 var chatSimpleCmd = &cobra.Command{
@@ -61,7 +61,7 @@ var chatSimpleCmd = &cobra.Command{
 	Short: "Create a simple chat completion",
 	Long:  `Create a simple chat completion with basic parameters.`,
 	Args:  cobra.ExactArgs(2),
-	RunE:  runChatSimple,
+	RunE:  runWithClient(runChatSimple),
 }
 
 var chatAsyncResultCmd = &cobra.Command{
@@ -69,7 +69,7 @@ var chatAsyncResultCmd = &cobra.Command{
 	Short: "Poll the result of an async chat completion",
 	Long:  `Poll the result of a task submitted via "chat create --async".`,
 	Args:  cobra.ExactArgs(1),
-	RunE:  runChatAsyncResult,
+	RunE:  runWithClient(runChatAsyncResult),
 }
 
 func init() {
@@ -101,12 +101,7 @@ func init() {
 	chatSimpleCmd.Flags().StringVar(&chatFormat, "format", "text", "Output format (text, json)")
 }
 
-func runChatCreate(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runChatCreate(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	userMessage := ""
 	if len(args) > 0 {
 		userMessage = args[0]
@@ -262,12 +257,7 @@ func runChatStream(apiClient *client.Client, ctx context.Context, req *client.Ch
 	return nil
 }
 
-func runChatSimple(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runChatSimple(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	model := args[0]
 	message := args[1]
 
@@ -283,12 +273,7 @@ func runChatSimple(cmd *cobra.Command, args []string) error {
 	return outputChatResponse(response, chatFormat)
 }
 
-func runChatAsyncResult(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runChatAsyncResult(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	resp, err := apiClient.GetAsyncResult(cmd.Context(), args[0])
 	if err != nil {
 		return fmt.Errorf("failed to get async result: %w", err)

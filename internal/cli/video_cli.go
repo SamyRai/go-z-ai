@@ -17,14 +17,14 @@ var videoGenerateCmd = &cobra.Command{
 	Use:   "generate",
 	Short: "Submit a video generation task",
 	Args:  cobra.NoArgs,
-	RunE:  runVideoGenerate,
+	RunE:  runWithClient(runVideoGenerate),
 }
 
 var videoStatusCmd = &cobra.Command{
 	Use:   "status [id]",
 	Short: "Check an async video generation task",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runVideoStatus,
+	RunE:  runWithClient(runVideoStatus),
 }
 
 func init() {
@@ -44,12 +44,7 @@ func init() {
 	videoGenerateCmd.Flags().Bool("audio", false, "Generate with audio (model-dependent)")
 }
 
-func runVideoGenerate(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runVideoGenerate(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	model, _ := cmd.Flags().GetString("model")
 	prompt, _ := cmd.Flags().GetString("prompt")
 	images, _ := cmd.Flags().GetStringArray("image")
@@ -84,12 +79,7 @@ func runVideoGenerate(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runVideoStatus(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runVideoStatus(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	result, err := apiClient.GetAsyncResult(cmd.Context(), args[0])
 	if err != nil {
 		return fmt.Errorf("failed to check status: %w", err)
