@@ -12,6 +12,19 @@ import (
 )
 
 func getClient() (*client.Client, error) {
+	config, err := resolveConfig()
+	if err != nil {
+		return nil, err
+	}
+	return client.NewClient(config)
+}
+
+// resolveConfig resolves the effective client.Config from, in precedence
+// order: the --api-key flag; an explicitly-named --account; the ZAI_API_KEY
+// (then KEY) env var; and finally the accounts store's active account. It is
+// split out from getClient so this precedence — the load-bearing, easy-to-get
+// -wrong part — is testable without constructing a live *client.Client.
+func resolveConfig() (client.Config, error) {
 	apiKey := viper.GetString("api-key")
 	baseURL := viper.GetString("base-url")
 	accountName := viper.GetString("account")
@@ -25,10 +38,10 @@ func getClient() (*client.Client, error) {
 		// unknown name must fail loud rather than silently falling through.
 		acct, err := lookupAccount(accountName)
 		if err != nil {
-			return nil, err
+			return client.Config{}, err
 		}
 		if err := applyAccount(acct, &apiKey, &baseURL); err != nil {
-			return nil, err
+			return client.Config{}, err
 		}
 	default:
 		apiKey = os.Getenv("ZAI_API_KEY")
@@ -45,16 +58,16 @@ func getClient() (*client.Client, error) {
 	// (flags, --account, env vars) resolved an API key.
 	if apiKey == "" {
 		if acct, ok, err := activeAccount(); err != nil {
-			return nil, err
+			return client.Config{}, err
 		} else if ok {
 			if err := applyAccount(acct, &apiKey, &baseURL); err != nil {
-				return nil, err
+				return client.Config{}, err
 			}
 		}
 	}
 
 	if apiKey == "" {
-		return nil, fmt.Errorf("API key is required. Set it via --api-key flag, ZAI_API_KEY environment variable, KEY environment variable, 'zai-client accounts use <name>', or --account <name>")
+		return client.Config{}, fmt.Errorf("API key is required. Set it via --api-key flag, ZAI_API_KEY environment variable, KEY environment variable, 'zai-client accounts use <name>', or --account <name>")
 	}
 
 	chinaAPIKey := viper.GetString("china-api-key")
@@ -62,13 +75,11 @@ func getClient() (*client.Client, error) {
 		chinaAPIKey = os.Getenv("ZAI_CHINA_API_KEY")
 	}
 
-	config := client.Config{
+	return client.Config{
 		APIKey:      apiKey,
 		BaseURL:     baseURL,
 		ChinaAPIKey: chinaAPIKey,
-	}
-
-	return client.NewClient(config)
+	}, nil
 }
 
 // lookupAccount resolves a stored account by name, erroring if it doesn't
