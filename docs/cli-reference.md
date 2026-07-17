@@ -57,6 +57,16 @@ Tool calls are printed, not executed, by the CLI — see
 [Library Guide § Function calling](library-guide.md#function-calling) for the
 Go `RunWithTools` auto-executing loop.
 
+> **Vision + tool-calling can return HTTP 401.** Community reports (e.g.
+> [claude-code-router#1491](https://github.com/musistudio/claude-code-router/issues/1491))
+> show that combining a vision model (`--image` on `glm-4.6v`/`glm-4.5v`) with
+> function-calling tools (`--tool`) in the same request is rejected with a 401
+> on some GLM configurations — an authenticated key still fails only for that
+> combination. If you hit this, split the work: use a vision model for the
+> image turn and a text model (`glm-5.2`) for the tool-calling turn, rather
+> than sending images and tools together. Not yet reproduced against a live
+> account here — see [Roadmap](roadmap.md).
+
 ## Models
 
 ```bash
