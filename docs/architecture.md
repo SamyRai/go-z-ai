@@ -3,19 +3,41 @@
 ## Package layout
 
 ```
-.                     CLI commands (package main, one file per command group:
-                      chat.go, accounts_cli.go, coding_cli.go, ...)
+main.go               A five-line entrypoint: package main → internal/cli.Execute()
+internal/cli/         CLI commands (package cli), one file per command group:
+                      chat.go, accounts_cli.go, coding_cli.go, ...
 pkg/client/           The Go library — one file per API service, no CLI/TUI dependency
-pkg/accounts/         Multi-account credential store (~/.config/zai-client/accounts.json)
-pkg/coding/           GLM Coding Plan credential store + per-tool config writers
-pkg/usageview/        Pure presentation helpers (time windows, heat maps, formatting) —
+internal/accounts/    Multi-account credential store (~/.config/zai-client/accounts.json)
+internal/coding/      GLM Coding Plan credential store + per-tool config writers
+internal/usageview/   Pure presentation helpers (time windows, heat maps, formatting) —
                       shared by both the CLI and the TUI so their output can never drift
-pkg/tui/              Bubble Tea terminal UI, one subpackage per tab
+internal/tui/         Bubble Tea terminal UI, one subpackage per tab
+internal/fileinput/   FileOrURL: a URL passes through, a local path is base64-encoded —
+                      shared by `ocr parse` and the TUI media tab
 ```
 
 `pkg/client` has zero dependencies on anything CLI- or TUI-specific — it's
-designed to be imported standalone (see the [Library Guide](library-guide.md)).
-The CLI and TUI are both thin callers of it.
+designed to be imported standalone (see the [Library Guide](library-guide.md)),
+and is the **only** public package. Everything under `internal/` is
+implementation the compiler forbids outside code from importing, so the CLI/TUI
+layers can be refactored freely. The CLI and TUI are both thin callers of
+`pkg/client`. `go install github.com/SamyRai/go-z-ai@latest` still builds the
+root `main.go` into the `go-z-ai` binary.
+
+## CLI conventions
+
+Command handlers that need an API client are registered as
+`RunE: runWithClient(runX)` and take the resolved `*client.Client` as a third
+parameter — `runWithClient` (in `internal/cli/common.go`) resolves it once via
+`getClient`, so the handlers don't each repeat the resolve-and-check preamble.
+Credential precedence itself lives in `resolveConfig` (flag → `--account` →
+`ZAI_API_KEY`/`KEY` → active account), unit-tested in `credentials_test.go`.
+
+Output format is uniform: every command that prints a result registers the
+shared `--format` flag via `addFormatFlag` and renders through `emit(cmd, v,
+textFn)`, which emits pretty JSON for `--format json` and otherwise runs the
+human-readable `textFn`. Progress chatter on JSON-capable commands goes to
+stderr so stdout stays valid JSON.
 
 ## The request facade
 
@@ -100,13 +122,13 @@ localized, with a generic fallback description for anything not yet in the
 table rather than a hard failure. The same pattern shows up for model
 categorization (`pkg/client/models.go`'s `visionModelMarkers` — a single
 source of truth so `isTextModel`/`isVisionModel` can never contradict each
-other) and for account-type-to-endpoint resolution (`pkg/coding/plans.go`).
+other) and for account-type-to-endpoint resolution (`internal/coding/plans.go`).
 Prefer this shape over adding another conditional branch when you're adding a
 new recognized value to an existing concept.
 
 ## Credential file safety
 
-Both `pkg/accounts` (the multi-account store) and `pkg/coding` (the GLM
+Both `internal/accounts` (the multi-account store) and `internal/coding` (the GLM
 Coding Plan credential store, plus every third-party tool config it writes —
 Claude Code, OpenCode, Crush, Factory Droid, Cursor) write via a temp-file
 atomic write followed by rename, never a direct in-place write. A crash or
@@ -117,12 +139,12 @@ Files containing a key are created `0600`; directories `0700`.
 
 ## The TUI
 
-`pkg/tui` is a [Bubble Tea](https://github.com/charmbracelet/bubbletea)
+`internal/tui` is a [Bubble Tea](https://github.com/charmbracelet/bubbletea)
 program with one tab per subpackage (`chat`, `models`, `usage`, `accounts`,
 `coding`, `media`, `tools`). Each tab is an independent `tea.Model` with its
-own `Update`/`View`; `pkg/tui/root.go` dispatches between them. Long-running
+own `Update`/`View`; `internal/tui/root.go` dispatches between them. Long-running
 work (an API call, a filesystem operation) is wrapped in a `tea.Cmd` closure,
 which Bubble Tea runs on its own goroutine — code called from a `tea.Cmd`
 must not rely on package-level mutable state being uncontended (this bit us
 once with `http.DefaultClient.Timeout`; see the fix in
-`pkg/coding/validator.go`'s doc comment for the specifics).
+`internal/coding/validator.go`'s doc comment for the specifics).

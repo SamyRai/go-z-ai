@@ -41,19 +41,19 @@ const anthropicMessagesEndpoint = "/v1/messages"
 // required by the Messages API. Temperature/TopP/TopK are pointers so an unset
 // value is omitted rather than sent as a (meaningful) zero.
 type AnthropicMessageRequest struct {
-	Model         string                 `json:"model"`
-	Messages      []AnthropicMessage     `json:"messages"`
-	MaxTokens     int                    `json:"max_tokens"`
-	System        string                 `json:"system,omitempty"`
-	Temperature   *float64               `json:"temperature,omitempty"`
-	TopP          *float64               `json:"top_p,omitempty"`
-	TopK          *int                   `json:"top_k,omitempty"`
-	StopSequences []string               `json:"stop_sequences,omitempty"`
-	Stream        bool                   `json:"stream,omitempty"`
-	Tools         []AnthropicTool        `json:"tools,omitempty"`
-	ToolChoice    *AnthropicToolChoice   `json:"tool_choice,omitempty"`
-	Thinking      *AnthropicThinking     `json:"thinking,omitempty"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+	Model         string               `json:"model"`
+	Messages      []AnthropicMessage   `json:"messages"`
+	MaxTokens     int                  `json:"max_tokens"`
+	System        string               `json:"system,omitempty"`
+	Temperature   *float64             `json:"temperature,omitempty"`
+	TopP          *float64             `json:"top_p,omitempty"`
+	TopK          *int                 `json:"top_k,omitempty"`
+	StopSequences []string             `json:"stop_sequences,omitempty"`
+	Stream        bool                 `json:"stream,omitempty"`
+	Tools         []AnthropicTool      `json:"tools,omitempty"`
+	ToolChoice    *AnthropicToolChoice `json:"tool_choice,omitempty"`
+	Thinking      *AnthropicThinking   `json:"thinking,omitempty"`
+	Metadata      map[string]any       `json:"metadata,omitempty"`
 }
 
 // AnthropicThinking enables Anthropic extended thinking. When Type is
@@ -115,9 +115,9 @@ type AnthropicImageSource struct {
 // tool's arguments and is subject to the same GLM schema-compatibility rewrite
 // as ChatService tools (see SanitizeToolSchemas / Config.DisableToolSchemaCompat).
 type AnthropicTool struct {
-	Name        string                 `json:"name"`
-	Description string                 `json:"description,omitempty"`
-	InputSchema map[string]interface{} `json:"input_schema,omitempty"`
+	Name        string         `json:"name"`
+	Description string         `json:"description,omitempty"`
+	InputSchema map[string]any `json:"input_schema,omitempty"`
 }
 
 // AnthropicToolChoice controls whether/which tool the model must call.

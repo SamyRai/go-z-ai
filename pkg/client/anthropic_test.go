@@ -81,7 +81,7 @@ func TestAnthropicCreate(t *testing.T) {
 	if len(resp.Content) != 3 || resp.Content[2].Type != "tool_use" || resp.Content[2].Name != "get_weather" {
 		t.Fatalf("unexpected content blocks: %+v", resp.Content)
 	}
-	var input map[string]interface{}
+	var input map[string]any
 	if err := json.Unmarshal(resp.Content[2].Input, &input); err != nil {
 		t.Fatalf("tool_use input not JSON: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestAnthropicCreateOmitsUnsetSampling(t *testing.T) {
 // Tool input_schema is flattened for GLM by default, and left raw when the
 // caller opts out.
 func TestAnthropicCreateFlattensToolInputSchema(t *testing.T) {
-	capture := func(cfg Config) map[string]interface{} {
+	capture := func(cfg Config) map[string]any {
 		var body []byte
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			body, _ = io.ReadAll(r.Body)
@@ -128,7 +128,7 @@ func TestAnthropicCreateFlattensToolInputSchema(t *testing.T) {
 		defer srv.Close()
 
 		c := newRedirectingTestClient(t, srv, cfg)
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal([]byte(`{"type":"object","properties":{"q":{"anyOf":[{"type":"string"},{"type":"null"}]}}}`), &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -142,13 +142,13 @@ func TestAnthropicCreateFlattensToolInputSchema(t *testing.T) {
 		}
 		var sent struct {
 			Tools []struct {
-				InputSchema map[string]interface{} `json:"input_schema"`
+				InputSchema map[string]any `json:"input_schema"`
 			} `json:"tools"`
 		}
 		if err := json.Unmarshal(body, &sent); err != nil {
 			t.Fatalf("unmarshal: %v", err)
 		}
-		return sent.Tools[0].InputSchema["properties"].(map[string]interface{})["q"].(map[string]interface{})
+		return sent.Tools[0].InputSchema["properties"].(map[string]any)["q"].(map[string]any)
 	}
 
 	def := capture(Config{})

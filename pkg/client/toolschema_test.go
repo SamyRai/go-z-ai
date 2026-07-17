@@ -11,16 +11,16 @@ import (
 )
 
 // schema is a small helper to write JSON-Schema fixtures inline.
-func schema(t *testing.T, raw string) map[string]interface{} {
+func schema(t *testing.T, raw string) map[string]any {
 	t.Helper()
-	var m map[string]interface{}
+	var m map[string]any
 	if err := json.Unmarshal([]byte(raw), &m); err != nil {
 		t.Fatalf("bad fixture JSON: %v", err)
 	}
 	return m
 }
 
-func sanitized(t *testing.T, raw string) map[string]interface{} {
+func sanitized(t *testing.T, raw string) map[string]any {
 	t.Helper()
 	return sanitizeParameters(schema(t, raw))
 }
@@ -50,8 +50,8 @@ func TestSanitizeNullableAnyOf(t *testing.T) {
 			}
 		}
 	}`)
-	props := got["properties"].(map[string]interface{})
-	nick := props["nickname"].(map[string]interface{})
+	props := got["properties"].(map[string]any)
+	nick := props["nickname"].(map[string]any)
 	if nick["type"] != "string" {
 		t.Errorf("expected type string, got %v", nick["type"])
 	}
@@ -75,7 +75,7 @@ func TestSanitizeOneOfDistinctTypes(t *testing.T) {
 			}
 		}
 	}`)
-	val := got["properties"].(map[string]interface{})["value"].(map[string]interface{})
+	val := got["properties"].(map[string]any)["value"].(map[string]any)
 	if _, ok := val["oneOf"]; ok {
 		t.Error("oneOf should have been removed")
 	}
@@ -95,7 +95,7 @@ func TestSanitizeUnionCommonType(t *testing.T) {
 			"id": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "string", "format": "uuid"}, {"type": "null"}]}
 		}
 	}`)
-	id := got["properties"].(map[string]interface{})["id"].(map[string]interface{})
+	id := got["properties"].(map[string]any)["id"].(map[string]any)
 	if id["type"] != "string" {
 		t.Errorf("expected shared type string, got %v", id["type"])
 	}
@@ -113,14 +113,14 @@ func TestSanitizeAllOfMerge(t *testing.T) {
 	if got["type"] != "object" {
 		t.Errorf("expected type object, got %v", got["type"])
 	}
-	props := got["properties"].(map[string]interface{})
+	props := got["properties"].(map[string]any)
 	if _, ok := props["a"]; !ok {
 		t.Error("property a missing after allOf merge")
 	}
 	if _, ok := props["b"]; !ok {
 		t.Error("property b missing after allOf merge")
 	}
-	req := got["required"].([]interface{})
+	req := got["required"].([]any)
 	if len(req) != 2 {
 		t.Errorf("expected 2 required fields, got %v", req)
 	}
@@ -136,11 +136,11 @@ func TestSanitizeRefInlining(t *testing.T) {
 	if _, ok := got["$defs"]; ok {
 		t.Error("$defs should have been dropped")
 	}
-	user := got["properties"].(map[string]interface{})["user"].(map[string]interface{})
+	user := got["properties"].(map[string]any)["user"].(map[string]any)
 	if user["type"] != "object" {
 		t.Errorf("ref not inlined, got %v", user)
 	}
-	if _, ok := user["properties"].(map[string]interface{})["name"]; !ok {
+	if _, ok := user["properties"].(map[string]any)["name"]; !ok {
 		t.Error("inlined ref lost its properties")
 	}
 	if _, ok := user["$ref"]; ok {
@@ -156,7 +156,7 @@ func TestSanitizeRefWithSiblingKeywords(t *testing.T) {
 		"properties": {"u": {"$ref": "#/$defs/U", "description": "the user"}},
 		"$defs": {"U": {"type": "object", "description": "base"}}
 	}`)
-	u := got["properties"].(map[string]interface{})["u"].(map[string]interface{})
+	u := got["properties"].(map[string]any)["u"].(map[string]any)
 	if u["description"] != "the user" {
 		t.Errorf("sibling description should win, got %v", u["description"])
 	}
@@ -170,8 +170,8 @@ func TestSanitizeCyclicRef(t *testing.T) {
 		"properties": {"node": {"$ref": "#/$defs/Node"}},
 		"$defs": {"Node": {"type": "object", "properties": {"next": {"$ref": "#/$defs/Node"}}}}
 	}`)
-	node := got["properties"].(map[string]interface{})["node"].(map[string]interface{})
-	next := node["properties"].(map[string]interface{})["next"]
+	node := got["properties"].(map[string]any)["node"].(map[string]any)
+	next := node["properties"].(map[string]any)["next"]
 	// The cyclic inner ref collapses to {} (unconstrained), which is valid.
 	if next == nil {
 		t.Error("expected cyclic ref to collapse to a schema, got nil")
@@ -188,7 +188,7 @@ func TestSanitizeUnresolvableRef(t *testing.T) {
 		"type": "object",
 		"properties": {"x": {"$ref": "#/$defs/Missing", "description": "kept"}}
 	}`)
-	x := got["properties"].(map[string]interface{})["x"].(map[string]interface{})
+	x := got["properties"].(map[string]any)["x"].(map[string]any)
 	if x["description"] != "kept" {
 		t.Errorf("expected sibling kept, got %v", x)
 	}
@@ -225,7 +225,7 @@ func TestSanitizeNestedArrayItems(t *testing.T) {
 			"tags": {"type": "array", "items": {"anyOf": [{"type": "string"}, {"type": "null"}]}}
 		}
 	}`)
-	items := got["properties"].(map[string]interface{})["tags"].(map[string]interface{})["items"].(map[string]interface{})
+	items := got["properties"].(map[string]any)["tags"].(map[string]any)["items"].(map[string]any)
 	if items["type"] != "string" {
 		t.Errorf("nested anyOf under items not flattened, got %v", items)
 	}
@@ -257,8 +257,8 @@ func TestSanitizeToolSchemasDoesNotMutateInput(t *testing.T) {
 		t.Fatalf("input mutated:\nbefore: %s\nafter:  %s", before, after)
 	}
 	// And the output actually changed (anyOf removed).
-	outProps := out[0].Function.Parameters["properties"].(map[string]interface{})
-	if _, ok := outProps["x"].(map[string]interface{})["anyOf"]; ok {
+	outProps := out[0].Function.Parameters["properties"].(map[string]any)
+	if _, ok := outProps["x"].(map[string]any)["anyOf"]; ok {
 		t.Error("output should have flattened anyOf")
 	}
 }
@@ -295,7 +295,7 @@ func TestChatCreateFlattensToolSchemasOnWire(t *testing.T) {
 		}}}
 	}
 
-	capture := func(cfg Config) map[string]interface{} {
+	capture := func(cfg Config) map[string]any {
 		var body []byte
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			body, _ = io.ReadAll(r.Body)
@@ -311,14 +311,14 @@ func TestChatCreateFlattensToolSchemasOnWire(t *testing.T) {
 		var sent struct {
 			Tools []struct {
 				Function struct {
-					Parameters map[string]interface{} `json:"parameters"`
+					Parameters map[string]any `json:"parameters"`
 				} `json:"function"`
 			} `json:"tools"`
 		}
 		if err := json.Unmarshal(body, &sent); err != nil {
 			t.Fatalf("unmarshal request: %v", err)
 		}
-		return sent.Tools[0].Function.Parameters["properties"].(map[string]interface{})["q"].(map[string]interface{})
+		return sent.Tools[0].Function.Parameters["properties"].(map[string]any)["q"].(map[string]any)
 	}
 
 	// Default: anyOf flattened away on the wire.
