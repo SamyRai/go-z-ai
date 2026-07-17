@@ -5,10 +5,21 @@
 A few services are implemented from Z.AI's documented OpenAPI spec but their
 *success* response shape hasn't been confirmed against a real successful
 call (only the request shape and error paths have) — the account used for
-development has no PAYG balance/entitlement for these. If you have an
-account that can reach a real success response for any of these and hit a
-shape mismatch, please [open an issue](https://github.com/SamyRai/go-z-ai/issues)
-or a PR with a recorded cassette:
+development has no PAYG balance/entitlement for these.
+
+**Verifying these yourself:** `pkg/client/live_verify_test.go` holds a
+verification test per service that replays a committed cassette offline (and
+skips until one exists). If you have an entitled account, record one with:
+
+```sh
+ZAI_RECORD=1 ZAI_API_KEY=<real-key> go test -run TestVerifyAnthropicMessages ./pkg/client
+```
+
+The API key is redacted out of the cassette at save time; confirm with
+`grep "Bearer " pkg/client/testdata/cassettes/<name>.yaml` (must read
+`Bearer REDACTED`) before committing. If you hit a shape mismatch instead,
+please [open an issue](https://github.com/SamyRai/go-z-ai/issues) or PR the
+cassette. Still unverified:
 
 - Agents `Invoke`'s success-path response shape (`Choices`/`Usage`)
 - Embeddings and Moderations' actual output (entitlement-gated on every
