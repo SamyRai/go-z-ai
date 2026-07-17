@@ -259,8 +259,21 @@ func TestE2EAccountsRoundTrip(t *testing.T) {
 	if !strings.Contains(out, "work") {
 		t.Errorf("expected 'work' in accounts list, got:\n%s", out)
 	}
-	// NOTE: `accounts list --format json` currently prints the raw api_key
-	// (table mode masks it via maskAPIKey). This test pins the round-trip, not
-	// that behavior — the masked/unmasked inconsistency is tracked separately
-	// as a decision for the maintainer (intentional for export, or a leak?).
+	// `accounts list --format json` masks the API key by default (matching the
+	// table view), so the raw key must not appear.
+	if strings.Contains(out, "sk-work-123456") {
+		t.Errorf("accounts list --format json leaked the raw API key:\n%s", out)
+	}
+	if !strings.Contains(out, maskAPIKey("sk-work-123456")) {
+		t.Errorf("expected a masked key in accounts list json, got:\n%s", out)
+	}
+
+	// --reveal opts into the raw key (for export/backup).
+	revealed, err := runCLI(t, nil, "accounts", "list", "--format", "json", "--reveal")
+	if err != nil {
+		t.Fatalf("accounts list --reveal: %v", err)
+	}
+	if !strings.Contains(revealed, "sk-work-123456") {
+		t.Errorf("expected --reveal to emit the raw API key, got:\n%s", revealed)
+	}
 }

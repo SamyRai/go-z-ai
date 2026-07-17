@@ -71,9 +71,9 @@ Covered in depth in [Accounts & Quota](accounts-and-quota.md). Quick reference:
 
 ```bash
 zai-client accounts add <name> --api-key <key> [--type coding_plan|pay_as_you_go]
-zai-client accounts list
+zai-client accounts list [--format json] [--reveal]   # keys masked by default; --reveal for export
 zai-client accounts use <name>
-zai-client accounts show [name]
+zai-client accounts show [name] [--format json] [--reveal]
 zai-client accounts quota [--only name...]
 zai-client accounts usage [--days N] [--today] [--metric model|tool|both]
 zai-client accounts remove <name> [--yes]
