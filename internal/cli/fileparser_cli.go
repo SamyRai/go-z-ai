@@ -20,7 +20,7 @@ var fileParserSyncCmd = &cobra.Command{
 	Short: "Parse a document synchronously and print the result",
 	Long:  `Parse a document synchronously (tool_type prime-sync). file-type is required (e.g. PDF, DOCX, PNG) — the API rejects requests without it despite documenting it as optional.`,
 	Args:  cobra.ExactArgs(2),
-	RunE:  runFileParserSync,
+	RunE:  runWithClient(runFileParserSync),
 }
 
 var fileParserCreateCmd = &cobra.Command{
@@ -28,7 +28,7 @@ var fileParserCreateCmd = &cobra.Command{
 	Short: "Submit an async document parse task",
 	Long:  `Submit an async document parse task (tool-type: lite, expert, or prime). Poll the result with "fileparser result".`,
 	Args:  cobra.ExactArgs(3),
-	RunE:  runFileParserCreate,
+	RunE:  runWithClient(runFileParserCreate),
 }
 
 var fileParserResultCmd = &cobra.Command{
@@ -36,7 +36,7 @@ var fileParserResultCmd = &cobra.Command{
 	Short: "Fetch the result of an async parse task",
 	Long:  `Fetch the result of an async parse task submitted via "fileparser create". format is "text" or "download_link".`,
 	Args:  cobra.ExactArgs(2),
-	RunE:  runFileParserResult,
+	RunE:  runWithClient(runFileParserResult),
 }
 
 func init() {
@@ -44,12 +44,7 @@ func init() {
 	fileParserCmd.AddCommand(fileParserSyncCmd, fileParserCreateCmd, fileParserResultCmd)
 }
 
-func runFileParserSync(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runFileParserSync(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	path, fileType := args[0], args[1]
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -71,12 +66,7 @@ func runFileParserSync(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runFileParserCreate(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runFileParserCreate(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	path, toolType, fileType := args[0], args[1], args[2]
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -97,12 +87,7 @@ func runFileParserCreate(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runFileParserResult(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runFileParserResult(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	resp, err := apiClient.FileParser().Result(cmd.Context(), args[0], args[1])
 	if err != nil {
 		return fmt.Errorf("failed to get parse result: %w", err)

@@ -2,6 +2,8 @@ package cli
 
 import (
 	"fmt"
+
+	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
 )
 
@@ -15,14 +17,14 @@ var accountInfoCmd = &cobra.Command{
 	Use:   "info",
 	Short: "Get account information",
 	Long:  `Get detailed account information including email, status, and balance.`,
-	RunE:  runAccountInfo,
+	RunE:  runWithClient(runAccountInfo),
 }
 
 var accountStatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Get account status",
 	Long:  `Get current account status and subscription details.`,
-	RunE:  runAccountStatus,
+	RunE:  runWithClient(runAccountStatus),
 }
 
 func init() {
@@ -34,12 +36,7 @@ func init() {
 	accountStatusCmd.Flags().String("format", "table", "Output format (table, json)")
 }
 
-func runAccountInfo(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runAccountInfo(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	fmt.Println("👤 Getting Account Information...")
 	fmt.Print("Contacting Z.AI Account API...\n\n")
 
@@ -88,12 +85,7 @@ func runAccountInfo(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runAccountStatus(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runAccountStatus(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	fmt.Println("🔍 Getting Account Status...")
 	fmt.Print("Contacting Z.AI Account API...\n\n")
 

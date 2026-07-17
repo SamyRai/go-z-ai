@@ -19,7 +19,7 @@ var modelsListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all available models",
 	Long:  `List all available models with their details and pricing.`,
-	RunE:  runModelsList,
+	RunE:  runWithClient(runModelsList),
 }
 
 var modelsGetCmd = &cobra.Command{
@@ -27,28 +27,28 @@ var modelsGetCmd = &cobra.Command{
 	Short: "Get details for a specific model",
 	Long:  `Get detailed information for a specific model including pricing and capabilities.`,
 	Args:  cobra.ExactArgs(1),
-	RunE:  runModelsGet,
+	RunE:  runWithClient(runModelsGet),
 }
 
 var modelsTextCmd = &cobra.Command{
 	Use:   "text",
 	Short: "List text-only models",
 	Long:  `List all text-only models excluding vision models.`,
-	RunE:  runModelsText,
+	RunE:  runWithClient(runModelsText),
 }
 
 var modelsVisionCmd = &cobra.Command{
 	Use:   "vision",
 	Short: "List vision models",
 	Long:  `List all vision-capable models that can process images.`,
-	RunE:  runModelsVision,
+	RunE:  runWithClient(runModelsVision),
 }
 
 var modelsFreeCmd = &cobra.Command{
 	Use:   "free",
 	Short: "List free models",
 	Long:  `List all free models with zero cost.`,
-	RunE:  runModelsFree,
+	RunE:  runWithClient(runModelsFree),
 }
 
 var (
@@ -76,12 +76,7 @@ func init() {
 	modelsVisionCmd.Flags().BoolVar(&showPricing, "pricing", false, "Show pricing information")
 }
 
-func runModelsList(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runModelsList(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	models, err := apiClient.Models().List(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to list models: %w", err)
@@ -90,12 +85,7 @@ func runModelsList(cmd *cobra.Command, args []string) error {
 	return outputModels(models.Models, outputFormat, showPricing)
 }
 
-func runModelsGet(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runModelsGet(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	modelID := args[0]
 	model, err := apiClient.Models().Get(cmd.Context(), modelID)
 	if err != nil {
@@ -105,12 +95,7 @@ func runModelsGet(cmd *cobra.Command, args []string) error {
 	return outputModel(model, outputFormat)
 }
 
-func runModelsText(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runModelsText(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	models, err := apiClient.Models().GetTextModels(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to get text models: %w", err)
@@ -119,12 +104,7 @@ func runModelsText(cmd *cobra.Command, args []string) error {
 	return outputModels(models, outputFormat, showPricing)
 }
 
-func runModelsVision(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runModelsVision(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	models, err := apiClient.Models().GetVisionModels(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to get vision models: %w", err)
@@ -133,12 +113,7 @@ func runModelsVision(cmd *cobra.Command, args []string) error {
 	return outputModels(models, outputFormat, showPricing)
 }
 
-func runModelsFree(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runModelsFree(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	models, err := apiClient.Models().GetFreeModels(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to get free models: %w", err)

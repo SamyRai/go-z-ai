@@ -22,7 +22,7 @@ var anthropicMessagesCmd = &cobra.Command{
 	Use:   "messages [prompt]",
 	Short: "Create a message (POST /v1/messages)",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runAnthropicMessages,
+	RunE:  runWithClient(runAnthropicMessages),
 }
 
 func init() {
@@ -38,12 +38,7 @@ func init() {
 	f.Bool("stream", false, "Stream the response as it is generated")
 }
 
-func runAnthropicMessages(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runAnthropicMessages(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	model, _ := cmd.Flags().GetString("model")
 	maxTokens, _ := cmd.Flags().GetInt("max-tokens")
 	system, _ := cmd.Flags().GetString("system")

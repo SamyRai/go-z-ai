@@ -21,7 +21,7 @@ var ocrParseCmd = &cobra.Command{
 	Use:   "parse [file-or-url]",
 	Short: "Parse a local file or URL into Markdown",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runOCRParse,
+	RunE:  runWithClient(runOCRParse),
 }
 
 var ocrHandwritingCmd = &cobra.Command{
@@ -31,7 +31,7 @@ var ocrHandwritingCmd = &cobra.Command{
 with its bounding box (and, with --probability, per-word confidence). Distinct
 from "ocr parse": this targets short handwritten snippets, not full documents.`,
 	Args: cobra.ExactArgs(1),
-	RunE: runOCRHandwriting,
+	RunE: runWithClient(runOCRHandwriting),
 }
 
 func init() {
@@ -45,12 +45,7 @@ func init() {
 	ocrHandwritingCmd.Flags().Bool("probability", false, "Include per-word confidence statistics")
 }
 
-func runOCRParse(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runOCRParse(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	target := args[0]
 	file := target
 	if !strings.HasPrefix(target, "http://") && !strings.HasPrefix(target, "https://") {
@@ -78,12 +73,7 @@ func runOCRParse(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runOCRHandwriting(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runOCRHandwriting(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	path := args[0]
 	data, err := os.ReadFile(path)
 	if err != nil {

@@ -12,7 +12,7 @@ var rerankCmd = &cobra.Command{
 	Short: "Score candidate documents against a query for relevance",
 	Long:  `Score candidate documents against a query for relevance (useful for reordering RAG search results).`,
 	Args:  cobra.MinimumNArgs(2),
-	RunE:  runRerank,
+	RunE:  runWithClient(runRerank),
 }
 
 func init() {
@@ -21,12 +21,7 @@ func init() {
 	rerankCmd.Flags().Int("top-n", 0, "Return only the top N results by score (0 = all)")
 }
 
-func runRerank(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runRerank(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	topN, _ := cmd.Flags().GetInt("top-n")
 
 	resp, err := apiClient.Rerank().Create(cmd.Context(), client.RerankRequest{

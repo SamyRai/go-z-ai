@@ -22,7 +22,7 @@ var agentsInvokeCmd = &cobra.Command{
 	Use:   "invoke [agent-id] [message]",
 	Short: "Invoke an agent with a text message",
 	Args:  cobra.ExactArgs(2),
-	RunE:  runAgentsInvoke,
+	RunE:  runWithClient(runAgentsInvoke),
 }
 
 var agentsAsyncResultCmd = &cobra.Command{
@@ -30,7 +30,7 @@ var agentsAsyncResultCmd = &cobra.Command{
 	Short: "Poll the result of an async agent task",
 	Long:  `Poll the result of a long-running async agent task (e.g. intelligent_education_correction_polling).`,
 	Args:  cobra.ExactArgs(2),
-	RunE:  runAgentsAsyncResult,
+	RunE:  runWithClient(runAgentsAsyncResult),
 }
 
 func init() {
@@ -41,12 +41,7 @@ func init() {
 	agentsInvokeCmd.Flags().String("target-lang", "", "Target language (translation agents, e.g. 'zh-CN')")
 }
 
-func runAgentsInvoke(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runAgentsInvoke(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	agentID, message := args[0], args[1]
 
 	req := client.AgentInvokeRequest{
@@ -84,12 +79,7 @@ func runAgentsInvoke(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runAgentsAsyncResult(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runAgentsAsyncResult(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	agentID, asyncID := args[0], args[1]
 
 	resp, err := apiClient.Agents().AsyncResult(cmd.Context(), client.AgentAsyncResultRequest{

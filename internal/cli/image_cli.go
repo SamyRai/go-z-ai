@@ -17,14 +17,14 @@ var imageGenerateCmd = &cobra.Command{
 	Use:   "generate [prompt]",
 	Short: "Generate an image from a text prompt",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runImageGenerate,
+	RunE:  runWithClient(runImageGenerate),
 }
 
 var imageStatusCmd = &cobra.Command{
 	Use:   "status [id]",
 	Short: "Check an async image generation task",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runImageStatus,
+	RunE:  runWithClient(runImageStatus),
 }
 
 func init() {
@@ -37,12 +37,7 @@ func init() {
 	imageGenerateCmd.Flags().Bool("async", false, "Submit as an async task instead of waiting (use 'image status' to poll)")
 }
 
-func runImageGenerate(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runImageGenerate(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	model, _ := cmd.Flags().GetString("model")
 	size, _ := cmd.Flags().GetString("size")
 	quality, _ := cmd.Flags().GetString("quality")
@@ -81,12 +76,7 @@ func runImageGenerate(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runImageStatus(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runImageStatus(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	result, err := apiClient.GetAsyncResult(cmd.Context(), args[0])
 	if err != nil {
 		return fmt.Errorf("failed to check status: %w", err)

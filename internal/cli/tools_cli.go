@@ -18,7 +18,7 @@ var toolsWebSearchCmd = &cobra.Command{
 	Short: "Search the web",
 	Long:  `Use Z.AI's specialized web search for LLM-optimized results.`,
 	Args:  cobra.ExactArgs(1),
-	RunE:  runWebSearch,
+	RunE:  runWithClient(runWebSearch),
 }
 
 var toolsWebReaderCmd = &cobra.Command{
@@ -26,7 +26,7 @@ var toolsWebReaderCmd = &cobra.Command{
 	Short: "Read web page content",
 	Long:  `Parse and extract content from a URL with structured output.`,
 	Args:  cobra.ExactArgs(1),
-	RunE:  runWebReader,
+	RunE:  runWithClient(runWebReader),
 }
 
 var toolsTokenizerCmd = &cobra.Command{
@@ -34,7 +34,7 @@ var toolsTokenizerCmd = &cobra.Command{
 	Short: "Count tokens",
 	Long:  `Count tokens for a single-message chat request using Z.AI's tokenizer.`,
 	Args:  cobra.ExactArgs(1),
-	RunE:  runTokenizer,
+	RunE:  runWithClient(runTokenizer),
 }
 
 func init() {
@@ -49,12 +49,7 @@ func init() {
 	toolsTokenizerCmd.Flags().String("model", "glm-4.7", "Model to use for tokenization")
 }
 
-func runWebSearch(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runWebSearch(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	engine, _ := cmd.Flags().GetString("engine")
 	count, _ := cmd.Flags().GetInt("count")
 
@@ -91,12 +86,7 @@ func runWebSearch(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runWebReader(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runWebReader(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	url := args[0]
 	noImages, _ := cmd.Flags().GetBool("no-images")
 
@@ -137,12 +127,7 @@ func runWebReader(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runTokenizer(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runTokenizer(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	text := args[0]
 	model, _ := cmd.Flags().GetString("model")
 

@@ -19,28 +19,28 @@ var filesUploadCmd = &cobra.Command{
 	Use:   "upload [file]",
 	Short: "Upload a file",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runFilesUpload,
+	RunE:  runWithClient(runFilesUpload),
 }
 
 var filesListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List uploaded files",
 	Args:  cobra.NoArgs,
-	RunE:  runFilesList,
+	RunE:  runWithClient(runFilesList),
 }
 
 var filesDeleteCmd = &cobra.Command{
 	Use:   "delete [file-id]",
 	Short: "Delete an uploaded file",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runFilesDelete,
+	RunE:  runWithClient(runFilesDelete),
 }
 
 var filesDownloadCmd = &cobra.Command{
 	Use:   "download [file-id] [output-path]",
 	Short: "Download an uploaded file's content",
 	Args:  cobra.ExactArgs(2),
-	RunE:  runFilesDownload,
+	RunE:  runWithClient(runFilesDownload),
 }
 
 func init() {
@@ -51,12 +51,7 @@ func init() {
 	filesListCmd.Flags().String("purpose", "", "Filter by purpose (omit for all)")
 }
 
-func runFilesUpload(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runFilesUpload(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	path := args[0]
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -75,12 +70,7 @@ func runFilesUpload(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runFilesList(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runFilesList(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	purpose, _ := cmd.Flags().GetString("purpose")
 	list, err := apiClient.Files().List(cmd.Context(), client.FilePurpose(purpose))
 	if err != nil {
@@ -97,12 +87,7 @@ func runFilesList(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runFilesDelete(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runFilesDelete(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	resp, err := apiClient.Files().Delete(cmd.Context(), args[0])
 	if err != nil {
 		return fmt.Errorf("failed to delete file: %w", err)
@@ -116,12 +101,7 @@ func runFilesDelete(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runFilesDownload(cmd *cobra.Command, args []string) error {
-	apiClient, err := getClient()
-	if err != nil {
-		return err
-	}
-
+func runFilesDownload(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	fileID, outPath := args[0], args[1]
 	data, err := apiClient.Files().Content(cmd.Context(), fileID)
 	if err != nil {
