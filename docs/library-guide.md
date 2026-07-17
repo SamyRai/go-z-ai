@@ -218,24 +218,13 @@ error codes, and the retry behavior you get by default.
 
 ## Multi-account credential management
 
-If you're building something that manages multiple Z.AI accounts (like the
-CLI's `accounts` command does), `pkg/accounts` is reusable on its own:
-
-```go
-import "github.com/SamyRai/go-z-ai/pkg/accounts"
-
-store, err := accounts.Load()
-acct, ok := store.Get("personal")
-baseURL, err := acct.ResolvedBaseURL() // derives the right endpoint from acct.Type
-```
-
-`pkg/coding` is similarly standalone if you're building tooling around the
-GLM Coding Plan credential file (`~/.chelper/config.yaml`) or the supported
-coding-tool config formats (Claude Code, OpenCode, Crush, Factory Droid,
-Cursor) — see [Coding Tools](coding-tools.md) for what it does from the CLI
-side; the package API mirrors those same operations (`coding.Load`,
-`coding.Unload`, `coding.Detect`, one function per tool plus dispatch-by-ID
-variants).
+The multi-account credential store and the GLM Coding Plan credential/config
+writers live in `internal/accounts` and `internal/coding`. They are internal
+to this module — not part of the importable public API — so they can evolve
+without semver constraints. `pkg/client` is the only supported public package;
+the `accounts` and `coding` CLI commands are the stable way to drive that
+functionality. (These packages lived under `pkg/` before and were importable;
+see the [CHANGELOG](../CHANGELOG.md) for the move.)
 
 ## Testing your own code against this client
 

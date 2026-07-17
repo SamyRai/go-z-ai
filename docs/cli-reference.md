@@ -17,7 +17,10 @@ These apply to every command:
 | `--china-api-key string` | open.bigmodel.cn key for Embeddings/Moderations (or `ZAI_CHINA_API_KEY`; falls back to `--api-key`) |
 | `--config string` | Config file (default: `.env`) |
 
-Most output-producing commands also take `--format table\|json`.
+Every result-producing command takes `--format text\|json` (a few default to
+`json` where the payload is machine-oriented — e.g. `embeddings`,
+`moderations`). In `json` mode, progress/status chatter goes to stderr so
+stdout stays valid JSON you can pipe into `jq`.
 
 ## Chat
 
