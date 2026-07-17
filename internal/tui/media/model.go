@@ -6,11 +6,9 @@ package media
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"charm.land/bubbles/v2/key"
@@ -19,6 +17,7 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/SamyRai/go-z-ai/internal/fileinput"
 	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
 	"github.com/SamyRai/go-z-ai/pkg/client"
 )
@@ -211,15 +210,9 @@ func (m Model) submit() tea.Cmd {
 	default: // formOCR
 		target := m.inputs[formOCR].Value()
 		return func() tea.Msg {
-			// The layout API takes URLs verbatim but wants local files as
-			// base64 — same handling as the "ocr parse" CLI command.
-			file := target
-			if !strings.HasPrefix(target, "http://") && !strings.HasPrefix(target, "https://") {
-				data, err := os.ReadFile(target)
-				if err != nil {
-					return resultMsg{err: err}
-				}
-				file = base64.StdEncoding.EncodeToString(data)
+			file, err := fileinput.FileOrURL(target)
+			if err != nil {
+				return resultMsg{err: err}
 			}
 			resp, err := c.Layout().Parse(context.Background(), client.LayoutParsingRequest{File: file})
 			if err != nil {

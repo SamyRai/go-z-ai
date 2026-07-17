@@ -1,12 +1,11 @@
 package cli
 
 import (
-	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
+	"github.com/SamyRai/go-z-ai/internal/fileinput"
 	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
 )
@@ -47,14 +46,9 @@ func init() {
 }
 
 func runOCRParse(cmd *cobra.Command, args []string, apiClient *client.Client) error {
-	target := args[0]
-	file := target
-	if !strings.HasPrefix(target, "http://") && !strings.HasPrefix(target, "https://") {
-		data, err := os.ReadFile(target)
-		if err != nil {
-			return fmt.Errorf("failed to read %s: %w", target, err)
-		}
-		file = base64.StdEncoding.EncodeToString(data)
+	file, err := fileinput.FileOrURL(args[0])
+	if err != nil {
+		return err
 	}
 
 	startPage, _ := cmd.Flags().GetInt("start-page")
