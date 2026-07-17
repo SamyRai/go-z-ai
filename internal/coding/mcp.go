@@ -45,36 +45,36 @@ func HasNPX() bool {
 }
 
 // zaiMCPEnv is the env block every tool's entry sets for the server process.
-func zaiMCPEnv(apiKey string) map[string]interface{} {
-	return map[string]interface{}{
+func zaiMCPEnv(apiKey string) map[string]any {
+	return map[string]any{
 		"Z_AI_API_KEY": apiKey,
 		"Z_AI_MODE":    zaiMCPModeEnv,
 	}
 }
 
 // stdioMCPEntry is the entry shape Claude Code and Crush both use verbatim.
-func stdioMCPEntry(apiKey string) map[string]interface{} {
-	return map[string]interface{}{
+func stdioMCPEntry(apiKey string) map[string]any {
+	return map[string]any{
 		"type":    "stdio",
 		"command": "npx",
-		"args":    []interface{}{"-y", ZAIMCPPackage},
+		"args":    []any{"-y", ZAIMCPPackage},
 		"env":     zaiMCPEnv(apiKey),
 	}
 }
 
 // bareMCPEntry is the entry shape Factory Droid and Cursor both use verbatim
 // (command/args/env, no "type" field — neither tool's real config includes one).
-func bareMCPEntry(apiKey string) map[string]interface{} {
-	return map[string]interface{}{
+func bareMCPEntry(apiKey string) map[string]any {
+	return map[string]any{
 		"command": "npx",
-		"args":    []interface{}{"-y", ZAIMCPPackage},
+		"args":    []any{"-y", ZAIMCPPackage},
 		"env":     zaiMCPEnv(apiKey),
 	}
 }
 
 // storeMCPEntry writes entry into path's servers object under key
 // (e.g. "mcpServers" or "mcp"), preserving every other entry already there.
-func storeMCPEntry(path, key string, entry map[string]interface{}) error {
+func storeMCPEntry(path, key string, entry map[string]any) error {
 	m, err := readJSONMap(path)
 	if err != nil {
 		return err
@@ -92,7 +92,7 @@ func removeMCPEntry(path, key string) error {
 	if err != nil {
 		return err
 	}
-	if servers, ok := m[key].(map[string]interface{}); ok {
+	if servers, ok := m[key].(map[string]any); ok {
 		delete(servers, zaiMCPServerName)
 		if len(servers) == 0 {
 			delete(m, key)
@@ -110,7 +110,7 @@ func detectMCPEntry(path, key string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	servers, ok := m[key].(map[string]interface{})
+	servers, ok := m[key].(map[string]any)
 	if !ok {
 		return false, nil
 	}
@@ -147,9 +147,9 @@ func DetectMCPClaudeCode(home string) (bool, error) {
 
 // LoadMCPOpenCode registers the Vision MCP Server for OpenCode.
 func LoadMCPOpenCode(home, apiKey string) error {
-	entry := map[string]interface{}{
+	entry := map[string]any{
 		"type":        "local",
-		"command":     []interface{}{"npx", "-y", ZAIMCPPackage},
+		"command":     []any{"npx", "-y", ZAIMCPPackage},
 		"environment": zaiMCPEnv(apiKey),
 	}
 	return storeMCPEntry(Tools[1].ConfigPath(home), "mcp", entry)

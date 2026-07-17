@@ -166,7 +166,7 @@ func validateAPIKey(cmd *cobra.Command, args []string, apiClient *client.Client)
 	return nil
 }
 
-func outputJSON(v interface{}) error {
+func outputJSON(v any) error {
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(v)

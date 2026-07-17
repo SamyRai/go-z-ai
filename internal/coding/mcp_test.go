@@ -14,15 +14,15 @@ func TestClaudeCodeMCPLoadDetectUnload(t *testing.T) {
 	}
 
 	m := readJSON(t, mcpConfigPathClaudeCode(home))
-	servers := m["mcpServers"].(map[string]interface{})
-	entry := servers[zaiMCPServerName].(map[string]interface{})
+	servers := m["mcpServers"].(map[string]any)
+	entry := servers[zaiMCPServerName].(map[string]any)
 	if entry["type"] != "stdio" {
 		t.Errorf("type = %v, want stdio", entry["type"])
 	}
 	if entry["command"] != "npx" {
 		t.Errorf("command = %v, want npx", entry["command"])
 	}
-	env := entry["env"].(map[string]interface{})
+	env := entry["env"].(map[string]any)
 	if env["Z_AI_API_KEY"] != "vision-key" || env["Z_AI_MODE"] != "ZAI" {
 		t.Errorf("unexpected env: %+v", env)
 	}
@@ -78,16 +78,16 @@ func TestOpenCodeMCPLoadDetectUnload(t *testing.T) {
 	}
 
 	m := readJSON(t, Tools[1].ConfigPath(home))
-	servers := m["mcp"].(map[string]interface{})
-	entry := servers[zaiMCPServerName].(map[string]interface{})
+	servers := m["mcp"].(map[string]any)
+	entry := servers[zaiMCPServerName].(map[string]any)
 	if entry["type"] != "local" {
 		t.Errorf("type = %v, want local", entry["type"])
 	}
-	cmdArr, ok := entry["command"].([]interface{})
+	cmdArr, ok := entry["command"].([]any)
 	if !ok || len(cmdArr) != 3 || cmdArr[0] != "npx" || cmdArr[2] != ZAIMCPPackage {
 		t.Errorf("command = %v, want [npx -y %s]", entry["command"], ZAIMCPPackage)
 	}
-	env := entry["environment"].(map[string]interface{})
+	env := entry["environment"].(map[string]any)
 	if env["Z_AI_API_KEY"] != "vision-key" {
 		t.Errorf("unexpected environment: %+v", env)
 	}
@@ -133,8 +133,8 @@ func TestCrushMCPLoadDetectUnload(t *testing.T) {
 	}
 
 	m := readJSON(t, Tools[2].ConfigPath(home))
-	servers := m["mcp"].(map[string]interface{})
-	entry := servers[zaiMCPServerName].(map[string]interface{})
+	servers := m["mcp"].(map[string]any)
+	entry := servers[zaiMCPServerName].(map[string]any)
 	if entry["type"] != "stdio" || entry["command"] != "npx" {
 		t.Errorf("unexpected entry: %+v", entry)
 	}
@@ -176,8 +176,8 @@ func TestFactoryDroidMCPLoadDetectUnload(t *testing.T) {
 
 	mcpPath := mcpConfigPathFactoryDroid(home)
 	m := readJSON(t, mcpPath)
-	servers := m["mcpServers"].(map[string]interface{})
-	entry := servers[zaiMCPServerName].(map[string]interface{})
+	servers := m["mcpServers"].(map[string]any)
+	entry := servers[zaiMCPServerName].(map[string]any)
 	if entry["command"] != "npx" {
 		t.Errorf("unexpected entry: %+v", entry)
 	}
@@ -214,7 +214,7 @@ func TestFactoryDroidMCPDoesNotTouchSettingsJSON(t *testing.T) {
 		t.Fatalf("LoadMCP: %v", err)
 	}
 	after := readJSON(t, settingsPath)
-	if len(before["customModels"].([]interface{})) != len(after["customModels"].([]interface{})) {
+	if len(before["customModels"].([]any)) != len(after["customModels"].([]any)) {
 		t.Errorf("settings.json's customModels changed: before=%v after=%v", before["customModels"], after["customModels"])
 	}
 	if settingsPath == mcpConfigPathFactoryDroid(home) {
@@ -238,8 +238,8 @@ func TestCursorMCPLoadDetectUnload(t *testing.T) {
 	if m["unrelated"] != true {
 		t.Error("unrelated key lost")
 	}
-	servers := m["mcpServers"].(map[string]interface{})
-	entry := servers[zaiMCPServerName].(map[string]interface{})
+	servers := m["mcpServers"].(map[string]any)
+	entry := servers[zaiMCPServerName].(map[string]any)
 	if entry["command"] != "npx" {
 		t.Errorf("unexpected entry: %+v", entry)
 	}

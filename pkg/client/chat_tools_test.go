@@ -40,7 +40,7 @@ func TestRunWithToolsHappyPath(t *testing.T) {
 			Type: "function",
 			Function: &FunctionDef{
 				Name: "get_weather", Description: "weather",
-				Parameters: map[string]interface{}{"type": "object"},
+				Parameters: map[string]any{"type": "object"},
 			},
 		}},
 	}

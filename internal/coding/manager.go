@@ -56,22 +56,22 @@ func DefaultClaudeOptions() ClaudeOptions {
 
 // --- JSON helpers (preserve unknown fields, mirroring the helper's spreads) ---
 
-func readJSONMap(path string) (map[string]interface{}, error) {
+func readJSONMap(path string) (map[string]any, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return map[string]interface{}{}, nil
+			return map[string]any{}, nil
 		}
 		return nil, err
 	}
-	m := map[string]interface{}{}
+	m := map[string]any{}
 	if err := json.Unmarshal(data, &m); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
 	return m, nil
 }
 
-func writeJSONMap(path string, m map[string]interface{}) error {
+func writeJSONMap(path string, m map[string]any) error {
 	data, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		return err
@@ -81,11 +81,11 @@ func writeJSONMap(path string, m map[string]interface{}) error {
 
 // objectField returns the child object at key, creating an empty one if missing
 // or the wrong type.
-func objectField(m map[string]interface{}, key string) map[string]interface{} {
-	if v, ok := m[key].(map[string]interface{}); ok {
+func objectField(m map[string]any, key string) map[string]any {
+	if v, ok := m[key].(map[string]any); ok {
 		return v
 	}
-	child := map[string]interface{}{}
+	child := map[string]any{}
 	m[key] = child
 	return child
 }
@@ -155,7 +155,7 @@ func UnloadClaudeCode(home string) error {
 	if err != nil {
 		return err
 	}
-	env, ok := s["env"].(map[string]interface{})
+	env, ok := s["env"].(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -188,7 +188,7 @@ func DetectClaudeCode(home string) (Detection, error) {
 	if err != nil {
 		return Detection{}, err
 	}
-	env, ok := s["env"].(map[string]interface{})
+	env, ok := s["env"].(map[string]any)
 	if !ok {
 		return Detection{}, nil
 	}
@@ -226,16 +226,16 @@ func LoadOpenCode(home, plan, key string) error {
 	}
 	name := opencodeProviderName(plan)
 
-	providers := map[string]interface{}{}
-	if old, ok := m["provider"].(map[string]interface{}); ok {
+	providers := map[string]any{}
+	if old, ok := m["provider"].(map[string]any); ok {
 		for k, v := range old {
 			if k != "zai-coding-plan" && k != "zhipuai-coding-plan" {
 				providers[k] = v
 			}
 		}
 	}
-	providers[name] = map[string]interface{}{
-		"options": map[string]interface{}{"apiKey": key},
+	providers[name] = map[string]any{
+		"options": map[string]any{"apiKey": key},
 	}
 	m["$schema"] = "https://opencode.ai/config.json"
 	m["provider"] = providers
@@ -251,7 +251,7 @@ func UnloadOpenCode(home string) error {
 	if err != nil {
 		return err
 	}
-	if prov, ok := m["provider"].(map[string]interface{}); ok {
+	if prov, ok := m["provider"].(map[string]any); ok {
 		delete(prov, "zai-coding-plan")
 		delete(prov, "zhipuai-coding-plan")
 		if len(prov) == 0 {
@@ -275,7 +275,7 @@ func DetectOpenCode(home string) (Detection, error) {
 	if err != nil {
 		return Detection{}, err
 	}
-	prov, ok := m["provider"].(map[string]interface{})
+	prov, ok := m["provider"].(map[string]any)
 	if !ok {
 		return Detection{}, nil
 	}
@@ -283,8 +283,8 @@ func DetectOpenCode(home string) (Detection, error) {
 		"zai-coding-plan":     PlanGlobal,
 		"zhipuai-coding-plan": PlanChina,
 	} {
-		if entry, ok := prov[name].(map[string]interface{}); ok {
-			opts, _ := entry["options"].(map[string]interface{})
+		if entry, ok := prov[name].(map[string]any); ok {
+			opts, _ := entry["options"].(map[string]any)
 			key, _ := opts["apiKey"].(string)
 			return Detection{Configured: true, Plan: plan, APIKey: key}, nil
 		}
@@ -302,7 +302,7 @@ func LoadCrush(home, plan, key string) error {
 		return err
 	}
 	prov := objectField(m, "providers")
-	prov["zai"] = map[string]interface{}{
+	prov["zai"] = map[string]any{
 		"id":       "zai",
 		"name":     "ZAI Provider",
 		"base_url": CodingBaseURL(plan),
@@ -319,7 +319,7 @@ func UnloadCrush(home string) error {
 	if err != nil {
 		return err
 	}
-	if prov, ok := m["providers"].(map[string]interface{}); ok {
+	if prov, ok := m["providers"].(map[string]any); ok {
 		delete(prov, "zai")
 		if len(prov) == 0 {
 			delete(m, "providers")
@@ -336,11 +336,11 @@ func DetectCrush(home string) (Detection, error) {
 	if err != nil {
 		return Detection{}, err
 	}
-	prov, ok := m["providers"].(map[string]interface{})
+	prov, ok := m["providers"].(map[string]any)
 	if !ok {
 		return Detection{}, nil
 	}
-	zai, ok := prov["zai"].(map[string]interface{})
+	zai, ok := prov["zai"].(map[string]any)
 	if !ok {
 		return Detection{}, nil
 	}
@@ -372,10 +372,10 @@ func LoadFactoryDroid(home, plan, key string) error {
 	if err != nil {
 		return err
 	}
-	existing, _ := m["customModels"].([]interface{})
-	var models []interface{}
+	existing, _ := m["customModels"].([]any)
+	var models []any
 	for _, e := range existing {
-		if em, ok := e.(map[string]interface{}); ok {
+		if em, ok := e.(map[string]any); ok {
 			if dn, _ := em["displayName"].(string); strings.Contains(dn, "GLM Coding Plan") {
 				continue
 			}
@@ -384,7 +384,7 @@ func LoadFactoryDroid(home, plan, key string) error {
 	}
 	maxTokens := 131072
 	models = append(models,
-		map[string]interface{}{
+		map[string]any{
 			"displayName":     factoryDisplayName(plan, "anthropic"),
 			"model":           "glm-4.7",
 			"baseUrl":         AnthropicBaseURL(plan),
@@ -392,7 +392,7 @@ func LoadFactoryDroid(home, plan, key string) error {
 			"provider":        "anthropic",
 			"maxOutputTokens": maxTokens,
 		},
-		map[string]interface{}{
+		map[string]any{
 			"displayName":     factoryDisplayName(plan, "openai"),
 			"model":           "glm-4.7",
 			"baseUrl":         CodingBaseURL(plan),
@@ -412,13 +412,13 @@ func UnloadFactoryDroid(home string) error {
 	if err != nil {
 		return err
 	}
-	existing, ok := m["customModels"].([]interface{})
+	existing, ok := m["customModels"].([]any)
 	if !ok {
 		return nil
 	}
-	var kept []interface{}
+	var kept []any
 	for _, e := range existing {
-		if em, ok := e.(map[string]interface{}); ok {
+		if em, ok := e.(map[string]any); ok {
 			if dn, _ := em["displayName"].(string); strings.Contains(dn, "GLM Coding Plan") {
 				continue
 			}
@@ -439,12 +439,12 @@ func DetectFactoryDroid(home string) (Detection, error) {
 	if err != nil {
 		return Detection{}, err
 	}
-	models, ok := m["customModels"].([]interface{})
+	models, ok := m["customModels"].([]any)
 	if !ok {
 		return Detection{}, nil
 	}
 	for _, e := range models {
-		em, ok := e.(map[string]interface{})
+		em, ok := e.(map[string]any)
 		if !ok {
 			continue
 		}

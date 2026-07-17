@@ -50,23 +50,23 @@ func SanitizeToolSchemas(tools []Tool) []Tool {
 // The top level is expected to be an object schema; if a combinator/ref
 // collapses it to something else, it falls back to an unconstrained object so
 // the request still carries a valid `parameters` value.
-func sanitizeParameters(params map[string]interface{}) map[string]interface{} {
+func sanitizeParameters(params map[string]any) map[string]any {
 	res := sanitizeNode(params, params, map[string]bool{})
-	if m, ok := res.(map[string]interface{}); ok {
+	if m, ok := res.(map[string]any); ok {
 		return m
 	}
-	return map[string]interface{}{"type": "object"}
+	return map[string]any{"type": "object"}
 }
 
 // sanitizeNode dispatches on the JSON shape. root is the enclosing schema used
 // to resolve local `$ref` pointers; active tracks refs currently being resolved
 // to break cycles.
-func sanitizeNode(node interface{}, root map[string]interface{}, active map[string]bool) interface{} {
+func sanitizeNode(node any, root map[string]any, active map[string]bool) any {
 	switch v := node.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		return sanitizeSchemaObject(v, root, active)
-	case []interface{}:
-		arr := make([]interface{}, len(v))
+	case []any:
+		arr := make([]any, len(v))
 		for i, e := range v {
 			arr[i] = sanitizeNode(e, root, active)
 		}
@@ -100,7 +100,7 @@ var schemaMapKeywords = map[string]bool{
 	"properties": true, "patternProperties": true,
 }
 
-func sanitizeSchemaObject(m map[string]interface{}, root map[string]interface{}, active map[string]bool) interface{} {
+func sanitizeSchemaObject(m map[string]any, root map[string]any, active map[string]bool) any {
 	// A `$ref` replaces the whole node with the (sanitized) referent, with any
 	// sibling keywords layered on top.
 	if ref, ok := stringField(m, "$ref"); ok {
@@ -109,21 +109,21 @@ func sanitizeSchemaObject(m map[string]interface{}, root map[string]interface{},
 
 	// Combinators are merged into a base schema first, then the node's own
 	// keywords are layered on top (own scalars win; properties/required union).
-	base := map[string]interface{}{}
-	if members, ok := m["allOf"].([]interface{}); ok {
+	base := map[string]any{}
+	if members, ok := m["allOf"].([]any); ok {
 		for _, member := range members {
-			if sm, ok := sanitizeNode(member, root, active).(map[string]interface{}); ok {
+			if sm, ok := sanitizeNode(member, root, active).(map[string]any); ok {
 				mergeSchema(base, sm, false)
 			}
 		}
 	}
 	for _, key := range []string{"anyOf", "oneOf"} {
-		if members, ok := m[key].([]interface{}); ok {
+		if members, ok := m[key].([]any); ok {
 			mergeSchema(base, collapseUnion(members, root, active), false)
 		}
 	}
 
-	own := map[string]interface{}{}
+	own := map[string]any{}
 	for k, v := range m {
 		switch {
 		case droppedKeywords[k] || combinatorKeywords[k]:
@@ -145,14 +145,14 @@ func sanitizeSchemaObject(m map[string]interface{}, root map[string]interface{},
 // resolveRef inlines a local `$ref`. src is the node carrying the ref (its
 // sibling keywords are layered over the referent); active guards against
 // cycles.
-func resolveRef(ref string, src, root map[string]interface{}, active map[string]bool) interface{} {
+func resolveRef(ref string, src, root map[string]any, active map[string]bool) any {
 	if active[ref] {
-		return map[string]interface{}{} // cycle — unconstrained
+		return map[string]any{} // cycle — unconstrained
 	}
 	target := lookupPointer(ref, root)
 	if target == nil {
 		// Unresolvable ref: keep whatever sibling keywords the node had.
-		out := map[string]interface{}{}
+		out := map[string]any{}
 		for k, v := range src {
 			if k == "$ref" || droppedKeywords[k] {
 				continue
@@ -165,7 +165,7 @@ func resolveRef(ref string, src, root map[string]interface{}, active map[string]
 	resolved := sanitizeNode(target, root, active)
 	delete(active, ref)
 
-	rm, ok := resolved.(map[string]interface{})
+	rm, ok := resolved.(map[string]any)
 	if !ok {
 		return resolved
 	}
@@ -181,7 +181,7 @@ func resolveRef(ref string, src, root map[string]interface{}, active map[string]
 
 // lookupPointer resolves a local JSON pointer ("#/$defs/Foo") against root.
 // Only same-document pointers are supported; anything else returns nil.
-func lookupPointer(ref string, root map[string]interface{}) map[string]interface{} {
+func lookupPointer(ref string, root map[string]any) map[string]any {
 	if len(ref) < 2 || ref[0] != '#' {
 		return nil
 	}
@@ -192,10 +192,10 @@ func lookupPointer(ref string, root map[string]interface{}) map[string]interface
 	if path[0] != '/' {
 		return nil
 	}
-	cur := interface{}(root)
+	cur := any(root)
 	for _, raw := range splitPointer(path[1:]) {
 		token := unescapePointer(raw)
-		m, ok := cur.(map[string]interface{})
+		m, ok := cur.(map[string]any)
 		if !ok {
 			return nil
 		}
@@ -205,7 +205,7 @@ func lookupPointer(ref string, root map[string]interface{}) map[string]interface
 		}
 		cur = next
 	}
-	if m, ok := cur.(map[string]interface{}); ok {
+	if m, ok := cur.(map[string]any); ok {
 		return m
 	}
 	return nil
@@ -245,10 +245,10 @@ func unescapePointer(s string) string {
 }
 
 // collapseUnion reduces an anyOf/oneOf branch list to a single schema.
-func collapseUnion(members []interface{}, root map[string]interface{}, active map[string]bool) map[string]interface{} {
-	var nonNull []map[string]interface{}
+func collapseUnion(members []any, root map[string]any, active map[string]bool) map[string]any {
+	var nonNull []map[string]any
 	for _, member := range members {
-		sm, ok := sanitizeNode(member, root, active).(map[string]interface{})
+		sm, ok := sanitizeNode(member, root, active).(map[string]any)
 		if !ok || isNullSchema(sm) {
 			continue
 		}
@@ -256,20 +256,20 @@ func collapseUnion(members []interface{}, root map[string]interface{}, active ma
 	}
 	switch len(nonNull) {
 	case 0:
-		return map[string]interface{}{}
+		return map[string]any{}
 	case 1:
 		return nonNull[0]
 	default:
 		if t := commonType(nonNull); t != "" {
-			return map[string]interface{}{"type": t}
+			return map[string]any{"type": t}
 		}
-		return map[string]interface{}{}
+		return map[string]any{}
 	}
 }
 
 // isNullSchema reports whether a branch only permits JSON null, so it can be
 // dropped from a union.
-func isNullSchema(m map[string]interface{}) bool {
+func isNullSchema(m map[string]any) bool {
 	t, ok := m["type"]
 	if !ok {
 		return false
@@ -282,7 +282,7 @@ func isNullSchema(m map[string]interface{}) bool {
 
 // commonType returns the type shared by every branch, or "" if they differ or
 // any branch is untyped or multi-typed.
-func commonType(schemas []map[string]interface{}) string {
+func commonType(schemas []map[string]any) string {
 	common := ""
 	for _, s := range schemas {
 		t, ok := s["type"].(string)
@@ -301,14 +301,14 @@ func commonType(schemas []map[string]interface{}) string {
 // mergeSchema layers src onto dst. `properties` maps and `required` lists are
 // unioned; for every other keyword src overwrites dst only when srcWins is set
 // (otherwise the existing dst value is kept).
-func mergeSchema(dst, src map[string]interface{}, srcWins bool) {
+func mergeSchema(dst, src map[string]any, srcWins bool) {
 	for k, v := range src {
 		switch k {
 		case "properties":
-			sp, _ := v.(map[string]interface{})
-			dp, _ := dst["properties"].(map[string]interface{})
+			sp, _ := v.(map[string]any)
+			dp, _ := dst["properties"].(map[string]any)
 			if dp == nil {
-				dp = map[string]interface{}{}
+				dp = map[string]any{}
 			}
 			for pk, pv := range sp {
 				if _, exists := dp[pk]; !exists || srcWins {
@@ -328,11 +328,11 @@ func mergeSchema(dst, src map[string]interface{}, srcWins bool) {
 
 // unionRequired merges two `required` arrays, preserving order and dropping
 // duplicates.
-func unionRequired(a, b interface{}) []interface{} {
+func unionRequired(a, b any) []any {
 	seen := map[string]bool{}
-	var out []interface{}
-	for _, list := range []interface{}{a, b} {
-		arr, ok := list.([]interface{})
+	var out []any
+	for _, list := range []any{a, b} {
+		arr, ok := list.([]any)
 		if !ok {
 			continue
 		}
@@ -351,12 +351,12 @@ func unionRequired(a, b interface{}) []interface{} {
 
 // sanitizeSchemaMap sanitizes each value of a name->schema map (properties,
 // patternProperties).
-func sanitizeSchemaMap(v interface{}, root map[string]interface{}, active map[string]bool) interface{} {
-	m, ok := v.(map[string]interface{})
+func sanitizeSchemaMap(v any, root map[string]any, active map[string]bool) any {
+	m, ok := v.(map[string]any)
 	if !ok {
 		return v
 	}
-	out := make(map[string]interface{}, len(m))
+	out := make(map[string]any, len(m))
 	for name, sub := range m {
 		out[name] = sanitizeNode(sub, root, active)
 	}
@@ -365,15 +365,15 @@ func sanitizeSchemaMap(v interface{}, root map[string]interface{}, active map[st
 
 // cloneSchema shallow-copies a map so sibling keywords can be layered onto an
 // inlined referent without mutating the shared referent.
-func cloneSchema(m map[string]interface{}) map[string]interface{} {
-	out := make(map[string]interface{}, len(m))
+func cloneSchema(m map[string]any) map[string]any {
+	out := make(map[string]any, len(m))
 	for k, v := range m {
 		out[k] = v
 	}
 	return out
 }
 
-func stringField(m map[string]interface{}, key string) (string, bool) {
+func stringField(m map[string]any, key string) (string, bool) {
 	v, ok := m[key].(string)
 	return v, ok
 }
