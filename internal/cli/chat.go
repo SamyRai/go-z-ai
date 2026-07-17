@@ -151,51 +151,77 @@ func buildChatRequest(userMessage string) (*client.ChatRequest, error) {
 		},
 	}
 
-	if chatThinking != "" || chatEffort != "" {
-		tc := &client.ThinkingConfig{}
-		if chatThinking != "" {
-			tc.Type = chatThinking
-		}
-		if chatEffort != "" {
-			tc.Effort = chatEffort
-		}
-		req.Thinking = tc
-	}
+	req.Thinking = buildThinkingConfig()
 
-	if chatSchemaFile != "" {
-		raw, err := loadJSONArg(chatSchemaFile)
-		if err != nil {
-			return nil, fmt.Errorf("read --json-schema: %w", err)
+	for _, apply := range []func(*client.ChatRequest) error{
+		applyResponseFormat,
+		applyTools,
+		applyImages,
+	} {
+		if err := apply(req); err != nil {
+			return nil, err
 		}
-		req.ResponseFormat = client.NewJSONSchemaFormat(chatSchemaName, raw, chatSchemaStrict)
-	}
-
-	if chatToolFile != "" {
-		raw, err := loadJSONArg(chatToolFile)
-		if err != nil {
-			return nil, fmt.Errorf("read --tool: %w", err)
-		}
-		var tools []client.Tool
-		if err := json.Unmarshal(raw, &tools); err != nil {
-			return nil, fmt.Errorf("parse --tool JSON: %w", err)
-		}
-		req.Tools = tools
-	}
-
-	if len(chatImages) > 0 {
-		images := make([]string, len(chatImages))
-		for i, arg := range chatImages {
-			resolved, err := resolveImageArg(arg)
-			if err != nil {
-				return nil, fmt.Errorf("read --image %q: %w", arg, err)
-			}
-			images[i] = resolved
-		}
-		// The user message is always the last one buildChatRequest set up.
-		req.Messages[len(req.Messages)-1].Images = images
 	}
 
 	return req, nil
+}
+
+// buildThinkingConfig assembles the deep-thinking config from --thinking and
+// --effort, or nil when neither is set.
+func buildThinkingConfig() *client.ThinkingConfig {
+	if chatThinking == "" && chatEffort == "" {
+		return nil
+	}
+	return &client.ThinkingConfig{Type: chatThinking, Effort: chatEffort}
+}
+
+// applyResponseFormat sets a JSON-schema response format from --json-schema.
+func applyResponseFormat(req *client.ChatRequest) error {
+	if chatSchemaFile == "" {
+		return nil
+	}
+	raw, err := loadJSONArg(chatSchemaFile)
+	if err != nil {
+		return fmt.Errorf("read --json-schema: %w", err)
+	}
+	req.ResponseFormat = client.NewJSONSchemaFormat(chatSchemaName, raw, chatSchemaStrict)
+	return nil
+}
+
+// applyTools loads function-calling tool definitions from --tool.
+func applyTools(req *client.ChatRequest) error {
+	if chatToolFile == "" {
+		return nil
+	}
+	raw, err := loadJSONArg(chatToolFile)
+	if err != nil {
+		return fmt.Errorf("read --tool: %w", err)
+	}
+	var tools []client.Tool
+	if err := json.Unmarshal(raw, &tools); err != nil {
+		return fmt.Errorf("parse --tool JSON: %w", err)
+	}
+	req.Tools = tools
+	return nil
+}
+
+// applyImages resolves each --image argument (URL or @file) and attaches them
+// to the user message.
+func applyImages(req *client.ChatRequest) error {
+	if len(chatImages) == 0 {
+		return nil
+	}
+	images := make([]string, len(chatImages))
+	for i, arg := range chatImages {
+		resolved, err := resolveImageArg(arg)
+		if err != nil {
+			return fmt.Errorf("read --image %q: %w", arg, err)
+		}
+		images[i] = resolved
+	}
+	// The user message is always the last one buildChatRequest set up.
+	req.Messages[len(req.Messages)-1].Images = images
+	return nil
 }
 
 // resolveImageArg turns a --image argument into the URL/data-URI form the
