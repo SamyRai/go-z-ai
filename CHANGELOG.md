@@ -4,6 +4,39 @@ Notable changes to this project, loosely following
 [Keep a Changelog](https://keepachangelog.com/). This project doesn't cut
 version tags yet — entries are grouped by date.
 
+## 2026-07-17
+
+### Changed
+- **Repository layout (breaking for importers of the app packages).** The CLI
+  command code moved from `package main` at the repo root into `internal/cli`
+  (a five-line root `main.go` now just calls `cli.Execute()`), and the
+  in-repo-only packages `pkg/tui`, `pkg/usageview`, `pkg/accounts`, and
+  `pkg/coding` moved under `internal/`. Only `pkg/client` remains a public,
+  importable package — the documented library surface is now compiler-enforced.
+  `go install github.com/SamyRai/go-z-ai@latest` still produces the `go-z-ai`
+  binary; CLI behavior and `--help` output are unchanged. If you imported
+  `pkg/accounts` or `pkg/coding` directly (previously documented as reusable),
+  that import path no longer exists — drive the functionality through the
+  `accounts`/`coding` CLI commands instead.
+- `interface{}` → `any` throughout (mechanical; `any` is an alias, so
+  `pkg/client`'s exported signatures are unchanged for consumers).
+
+### Added
+- Consistent `--format text|json` on every result-producing command. `batch`,
+  `files`, `image`, `video`, `rerank`, and `ocr` gained JSON output (were
+  text-only); `embeddings`/`moderations` keep JSON as the default but gained a
+  text summary. Progress messages on JSON-capable commands now go to stderr so
+  stdout stays valid JSON.
+- First tests for the CLI layer: credential-precedence coverage
+  (`resolveConfig`), an end-to-end cobra harness against `httptest`, and unit
+  tests for `buildChatRequest` and the new `internal/fileinput` helper.
+
+### Internal
+- `runWithClient` wrapper replaces the four-line `getClient` preamble repeated
+  across ~50 command handlers. `addFormatFlag`/`emit` helpers centralize output
+  formatting. `internal/fileinput.FileOrURL` de-duplicates the OCR file/URL
+  handling previously copied between `ocr parse` and the TUI media tab.
+
 ## 2026-07-12
 
 ### Added

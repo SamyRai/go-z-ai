@@ -263,7 +263,7 @@ func validateConfig(config Config) error {
 // BaseURL, with authentication, structured error handling, and automatic
 // retry on transient failures (429, 5xx, network errors) up to
 // Config.MaxRetries, with exponential backoff and Retry-After.
-func (c *Client) doRequest(ctx context.Context, method, endpoint string, body interface{}, result interface{}) error {
+func (c *Client) doRequest(ctx context.Context, method, endpoint string, body any, result any) error {
 	return c.doRequestBase(ctx, c.config.BaseURL, method, endpoint, body, result)
 }
 
@@ -271,21 +271,21 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body in
 // of endpoints that don't live under Config.BaseURL (monitor/biz/tools).
 // Every service goes through this (or doRequest) — no service should build
 // its own http.Client, which would bypass retry, timeout, and error parsing.
-func (c *Client) doRequestBase(ctx context.Context, baseURL, method, endpoint string, body interface{}, result interface{}) error {
+func (c *Client) doRequestBase(ctx context.Context, baseURL, method, endpoint string, body any, result any) error {
 	return c.doRequestBaseKey(ctx, baseURL, c.config.APIKey, method, endpoint, body, result)
 }
 
 // doRequestBaseKey is doRequestBase with an explicit bearer credential,
 // for platforms that authenticate separately from Config.APIKey (currently
 // BigModelBaseURL — see Config.ChinaAPIKey).
-func (c *Client) doRequestBaseKey(ctx context.Context, baseURL, apiKey, method, endpoint string, body interface{}, result interface{}) error {
+func (c *Client) doRequestBaseKey(ctx context.Context, baseURL, apiKey, method, endpoint string, body any, result any) error {
 	return c.doRequestBaseKeyHeaders(ctx, baseURL, apiKey, method, endpoint, body, result, nil)
 }
 
 // doRequestBaseKeyHeaders is doRequestBaseKey with additional request headers,
 // for endpoints (currently the Anthropic-compatible surface) that require a
 // header the shared defaults don't set.
-func (c *Client) doRequestBaseKeyHeaders(ctx context.Context, baseURL, apiKey, method, endpoint string, body interface{}, result interface{}, headers map[string]string) error {
+func (c *Client) doRequestBaseKeyHeaders(ctx context.Context, baseURL, apiKey, method, endpoint string, body any, result any, headers map[string]string) error {
 	maxRetries := c.config.MaxRetries
 	if maxRetries < 0 {
 		maxRetries = 0
@@ -337,14 +337,14 @@ func (c *Client) doRequestBaseKeyHeaders(ctx context.Context, baseURL, apiKey, m
 
 // send builds and issues a single HTTP request against baseURL+endpoint,
 // authenticating with apiKey. The caller owns resp.Body.
-func (c *Client) send(ctx context.Context, baseURL, apiKey, method, endpoint string, body interface{}) (*http.Response, error) {
+func (c *Client) send(ctx context.Context, baseURL, apiKey, method, endpoint string, body any) (*http.Response, error) {
 	return c.sendHeaders(ctx, baseURL, apiKey, method, endpoint, body, nil)
 }
 
 // sendHeaders is send with additional request headers (set after the defaults,
 // so they can override them). Used by the Anthropic-compatible surface, which
 // needs an anthropic-version header the OpenAI-style endpoints don't.
-func (c *Client) sendHeaders(ctx context.Context, baseURL, apiKey, method, endpoint string, body interface{}, headers map[string]string) (*http.Response, error) {
+func (c *Client) sendHeaders(ctx context.Context, baseURL, apiKey, method, endpoint string, body any, headers map[string]string) (*http.Response, error) {
 	url := baseURL + endpoint
 
 	var bodyReader io.Reader
@@ -392,7 +392,7 @@ func (c *Client) sendMultipart(ctx context.Context, endpoint, contentType string
 }
 
 // decodeBody reads and JSON-decodes the response body into result (when non-nil).
-func (c *Client) decodeBody(resp *http.Response, result interface{}) error {
+func (c *Client) decodeBody(resp *http.Response, result any) error {
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read response body: %w", err)
