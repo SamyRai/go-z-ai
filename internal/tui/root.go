@@ -53,7 +53,7 @@ func newRootModel(cfg Config) *rootModel {
 	m.screens[tabUsage] = usage.New(cfg.Client, cfg.Accounts)
 	m.screens[tabAccounts] = accounts.New(cfg.Accounts)
 	m.screens[tabCoding] = coding.New(cfg.Coding)
-	m.screens[tabMedia] = media.New(cfg.Client)
+	m.screens[tabMedia] = media.New(cfg.Client, int(tabMedia))
 	m.screens[tabTools] = tools.New(cfg.Client)
 	return m
 }
@@ -135,6 +135,17 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case uimsg.Status:
 		m.toastText, m.toastLevel = msg.Text, toastInfo
 		return m, nil
+
+	case uimsg.Routed:
+		// An async result addressed to a specific screen — deliver it there
+		// even if that screen isn't active, so switching tabs mid-operation
+		// doesn't drop the result (see uimsg.Routed).
+		if msg.Tab < 0 || msg.Tab >= len(m.screens) || m.screens[msg.Tab] == nil {
+			return m, nil
+		}
+		ns, cmd := m.screens[msg.Tab].Update(msg.Msg)
+		m.screens[msg.Tab] = ns
+		return m, cmd
 	}
 
 	ns, cmd := m.screens[m.active].Update(msg)

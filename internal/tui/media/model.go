@@ -6,10 +6,10 @@ package media
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/spinner"
@@ -18,6 +18,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/SamyRai/go-z-ai/internal/fileinput"
+	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
 	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
 	"github.com/SamyRai/go-z-ai/pkg/client"
 )
@@ -34,30 +35,30 @@ const (
 
 var formNames = [...]string{"Image", "Video", "Audio", "OCR"}
 
-const pollInterval = 3 * time.Second
-
 type resultMsg struct {
-	text    string
-	err     error
-	videoID string // set when a video task was submitted; triggers polling
+	text string
+	err  error
 }
-
-type pollMsg struct{ id string }
 
 // Model is the Media tab's screen model.
 type Model struct {
-	client *client.Client
-	active form
-	inputs [formCount]textinput.Model
-	result viewport.Model
-	spin   spinner.Model
-	busy   bool
+	client  *client.Client
+	selfTab int // this screen's tab index, used to route async results back
+	active  form
+	inputs  [formCount]textinput.Model
+	result  viewport.Model
+	spin    spinner.Model
+	busy    bool
 
-	pollingVideoID string
+	// cancel aborts the in-flight submission (a video generation can poll for
+	// minutes); nil when nothing is running.
+	cancel context.CancelFunc
 }
 
-// New builds the Media screen. c must be non-nil.
-func New(c *client.Client) Model {
+// New builds the Media screen. c must be non-nil. selfTab is this screen's tab
+// index in the root model, so async results can be routed back here even when
+// the user has switched to another tab.
+func New(c *client.Client, selfTab int) Model {
 	image := textinput.New()
 	image.Placeholder = "image prompt"
 	video := textinput.New()
@@ -68,10 +69,11 @@ func New(c *client.Client) Model {
 	ocr.Placeholder = "path to file, or a URL"
 
 	return Model{
-		client: c,
-		inputs: [formCount]textinput.Model{formImage: image, formVideo: video, formAudio: audio, formOCR: ocr},
-		result: viewport.New(),
-		spin:   spinner.New(),
+		client:  c,
+		selfTab: selfTab,
+		inputs:  [formCount]textinput.Model{formImage: image, formVideo: video, formAudio: audio, formOCR: ocr},
+		result:  viewport.New(),
+		spin:    spinner.New(),
 	}
 }
 
@@ -85,26 +87,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case resultMsg:
+		m.busy = false
+		m.cancel = nil
 		if msg.err != nil {
-			m.busy = false
-			m.pollingVideoID = ""
+			// A cancellation is user-initiated, not a failure — leave the
+			// "cancelled" notice the esc handler already set.
+			if errors.Is(msg.err, context.Canceled) {
+				return m, nil
+			}
 			m.result.SetContent("error: " + msg.err.Error())
 			return m, nil
 		}
 		m.result.SetContent(msg.text)
-		if msg.videoID != "" {
-			m.pollingVideoID = msg.videoID
-			return m, pollAfter(msg.videoID)
-		}
-		// Terminal result: also stop the video-poll spinner if one was live.
-		m.busy = false
-		m.pollingVideoID = ""
 		return m, nil
 
-	case pollMsg:
-		return m, m.checkVideo(msg.id)
-
 	case spinner.TickMsg:
+		if !m.busy {
+			return m, nil
+		}
 		var cmd tea.Cmd
 		m.spin, cmd = m.spin.Update(msg)
 		return m, cmd
@@ -120,12 +120,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "up":
 			m.active = (m.active + formCount - 1) % formCount
 			return m, nil
+		case "esc":
+			if m.busy && m.cancel != nil {
+				m.cancel()
+				m.result.SetContent("cancelled")
+			}
+			return m, nil
 		case "enter":
 			if m.busy {
 				return m, nil
 			}
 			m.busy = true
-			return m, tea.Batch(m.submit(), m.spin.Tick)
+			// Call submit before the return so it records the cancel func on
+			// m before m is copied into the return value.
+			cmd := m.submit()
+			return m, tea.Batch(cmd, m.spin.Tick)
 		}
 	}
 
@@ -134,60 +143,58 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func pollAfter(id string) tea.Cmd {
-	return tea.Tick(pollInterval, func(time.Time) tea.Msg { return pollMsg{id: id} })
-}
-
-func (m Model) checkVideo(id string) tea.Cmd {
+// submit starts the active form's operation on a background context (stored on
+// the model so esc can cancel it) and returns a single tea.Cmd. The Cmd runs
+// the whole operation — including a video task's poll-to-completion via
+// WaitForResult — and wraps its terminal result in uimsg.Routed so the result
+// reaches this screen even if the user has switched tabs meanwhile. It has a
+// pointer receiver because it records the cancel func on the model.
+func (m *Model) submit() tea.Cmd {
 	c := m.client
-	return func() tea.Msg {
-		result, err := c.GetAsyncResult(context.Background(), id)
-		if err != nil {
-			return resultMsg{err: err}
-		}
-		switch result.TaskStatus {
-		case client.TaskStatusSuccess:
-			text := fmt.Sprintf("status: %s\n", result.TaskStatus)
-			for i, v := range result.VideoResult {
-				text += fmt.Sprintf("video %d: %s\n", i+1, v.URL)
-			}
-			return resultMsg{text: text}
-		case client.TaskStatusFail:
-			return resultMsg{err: fmt.Errorf("video generation failed")}
-		default:
-			return resultMsg{text: fmt.Sprintf("status: %s (polling every %s)", result.TaskStatus, pollInterval), videoID: id}
-		}
-	}
-}
+	self := m.selfTab
+	ctx, cancel := context.WithCancel(context.Background())
+	m.cancel = cancel
 
-func (m Model) submit() tea.Cmd {
-	c := m.client
+	// routed wraps a resultMsg for delivery back to this screen.
+	routed := func(r resultMsg) tea.Msg { return uimsg.Routed{Tab: self, Msg: r} }
+
 	switch m.active {
 	case formImage:
 		prompt := m.inputs[formImage].Value()
 		return func() tea.Msg {
-			resp, err := c.Images().Generate(context.Background(), client.ImageGenerationRequest{Model: "glm-image", Prompt: prompt})
+			resp, err := c.Images().Generate(ctx, client.ImageGenerationRequest{Model: "glm-image", Prompt: prompt})
 			if err != nil {
-				return resultMsg{err: err}
+				return routed(resultMsg{err: err})
 			}
 			text := "open in browser:\n"
 			for _, d := range resp.Data {
 				text += d.URL + "\n"
 			}
-			return resultMsg{text: text}
+			return routed(resultMsg{text: text})
 		}
 
 	case formVideo:
 		prompt := m.inputs[formVideo].Value()
 		return func() tea.Msg {
-			resp, err := c.Videos().Generate(context.Background(), client.VideoGenerationRequest{Model: "cogvideox-3", Prompt: prompt})
+			resp, err := c.Videos().Generate(ctx, client.VideoGenerationRequest{Model: "cogvideox-3", Prompt: prompt})
 			if err != nil {
-				return resultMsg{err: err}
+				return routed(resultMsg{err: err})
 			}
-			return resultMsg{
-				text:    fmt.Sprintf("status: %s (polling every %s)", resp.TaskStatus, pollInterval),
-				videoID: resp.ID,
+			// Video is always async; WaitForResult polls to a terminal state
+			// (or until ctx is cancelled) inside this one Cmd, so there's no
+			// multi-message poll loop for a tab switch to strand.
+			result, err := c.WaitForResult(ctx, resp.ID, 0)
+			if err != nil {
+				return routed(resultMsg{err: err})
 			}
+			if result.TaskStatus == client.TaskStatusFail {
+				return routed(resultMsg{err: fmt.Errorf("video generation failed")})
+			}
+			text := fmt.Sprintf("status: %s\n", result.TaskStatus)
+			for i, v := range result.VideoResult {
+				text += fmt.Sprintf("video %d: %s\n", i+1, v.URL)
+			}
+			return routed(resultMsg{text: text})
 		}
 
 	case formAudio:
@@ -195,16 +202,16 @@ func (m Model) submit() tea.Cmd {
 		return func() tea.Msg {
 			data, err := os.ReadFile(path)
 			if err != nil {
-				return resultMsg{err: err}
+				return routed(resultMsg{err: err})
 			}
-			resp, err := c.Audio().Transcribe(context.Background(), client.AudioTranscriptionRequest{
+			resp, err := c.Audio().Transcribe(ctx, client.AudioTranscriptionRequest{
 				FileName: filepath.Base(path),
 				FileData: data,
 			})
 			if err != nil {
-				return resultMsg{err: err}
+				return routed(resultMsg{err: err})
 			}
-			return resultMsg{text: resp.Text}
+			return routed(resultMsg{text: resp.Text})
 		}
 
 	default: // formOCR
@@ -212,13 +219,13 @@ func (m Model) submit() tea.Cmd {
 		return func() tea.Msg {
 			file, err := fileinput.FileOrURL(target)
 			if err != nil {
-				return resultMsg{err: err}
+				return routed(resultMsg{err: err})
 			}
-			resp, err := c.Layout().Parse(context.Background(), client.LayoutParsingRequest{File: file})
+			resp, err := c.Layout().Parse(ctx, client.LayoutParsingRequest{File: file})
 			if err != nil {
-				return resultMsg{err: err}
+				return routed(resultMsg{err: err})
 			}
-			return resultMsg{text: resp.MDResults}
+			return routed(resultMsg{text: resp.MDResults})
 		}
 	}
 }
@@ -227,8 +234,8 @@ func (m Model) View() tea.View {
 	body := uistyle.RenderPills(int(m.active), formNames[:]) + "\n\n"
 	body += m.inputs[m.active].View() + "\n"
 	body += "\n" + m.result.View()
-	if m.busy || m.pollingVideoID != "" {
-		body += "\n" + m.spin.View() + " working..."
+	if m.busy {
+		body += "\n" + m.spin.View() + " working… (esc to cancel)"
 	}
 	return tea.NewView(body)
 }
@@ -238,5 +245,6 @@ func (m Model) ShortHelp() []key.Binding {
 	return []key.Binding{
 		key.NewBinding(key.WithKeys("up", "down"), key.WithHelp("↑/↓", "switch form")),
 		key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "submit")),
+		key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "cancel")),
 	}
 }

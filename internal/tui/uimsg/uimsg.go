@@ -11,3 +11,15 @@ type Err struct{ Err error }
 
 // Status carries a transient informational message for the status line.
 type Status struct{ Text string }
+
+// Routed carries a screen-specific message that must reach the screen that
+// started the work, even if the user has since switched tabs. Async operations
+// (e.g. the Media tab's video generation, which can run for minutes) wrap their
+// terminal result in Routed so the root model delivers it to the originating
+// screen instead of dropping it on whatever tab happens to be active when the
+// work finishes. Tab is the destination screen's index; Msg is the wrapped,
+// screen-private message (kept as any so uimsg needn't import bubbletea).
+type Routed struct {
+	Tab int
+	Msg any
+}
