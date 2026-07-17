@@ -190,6 +190,56 @@ func TestE2EOCRParseBase64(t *testing.T) {
 	}
 }
 
+// TestE2EFilesListJSON covers a command that gained JSON output in the format
+// unification (it printed only a text table before). The --format json path
+// must emit valid JSON of the file list.
+func TestE2EFilesListJSON(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"object": "list",
+			"data": []map[string]any{
+				{"id": "file-1", "filename": "in.jsonl", "bytes": 12, "purpose": "batch", "status": "processed"},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	out, err := runCLI(t, srv, "files", "list", "--format", "json")
+	if err != nil {
+		t.Fatalf("files list --format json: %v", err)
+	}
+	var got struct {
+		Data []map[string]any `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("files list output is not JSON: %v\n%s", err, out)
+	}
+	if len(got.Data) != 1 || got.Data[0]["id"] != "file-1" {
+		t.Errorf("expected file-1 in JSON output, got:\n%s", out)
+	}
+}
+
+// TestE2ERerankJSON confirms the rerank command (text-only before) now emits
+// JSON on demand.
+func TestE2ERerankJSON(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"results": []map[string]any{
+				{"index": 0, "relevance_score": 0.9, "document": "doc a"},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	out, err := runCLI(t, srv, "rerank", "query", "doc a", "doc b", "--format", "json")
+	if err != nil {
+		t.Fatalf("rerank --format json: %v", err)
+	}
+	if !strings.Contains(out, "relevance_score") {
+		t.Errorf("expected JSON rerank output, got:\n%s", out)
+	}
+}
+
 // TestE2EAccountsRoundTrip exercises the accounts store end-to-end through the
 // CLI (add → list → use → current → remove) against an isolated store file,
 // with no network. This is the first coverage of the internal/accounts package

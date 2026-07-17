@@ -42,6 +42,7 @@ func init() {
 	videoGenerateCmd.Flags().String("quality", "", "cogvideox-3 only: speed or quality")
 	videoGenerateCmd.Flags().String("movement", "", "Vidu models only: auto | small | medium | large")
 	videoGenerateCmd.Flags().Bool("audio", false, "Generate with audio (model-dependent)")
+	addFormatFlag("text", videoGenerateCmd, videoStatusCmd)
 }
 
 func runVideoGenerate(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -74,9 +75,11 @@ func runVideoGenerate(cmd *cobra.Command, args []string, apiClient *client.Clien
 		return fmt.Errorf("video generation failed: %w", err)
 	}
 
-	fmt.Printf("⏳ Task submitted: %s (status: %s)\n", resp.ID, resp.TaskStatus)
-	fmt.Printf("   Check with: zai-client video status %s\n", resp.ID)
-	return nil
+	return emit(cmd, resp, func() error {
+		fmt.Printf("⏳ Task submitted: %s (status: %s)\n", resp.ID, resp.TaskStatus)
+		fmt.Printf("   Check with: zai-client video status %s\n", resp.ID)
+		return nil
+	})
 }
 
 func runVideoStatus(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -85,12 +88,14 @@ func runVideoStatus(cmd *cobra.Command, args []string, apiClient *client.Client)
 		return fmt.Errorf("failed to check status: %w", err)
 	}
 
-	fmt.Printf("Status: %s\n", result.TaskStatus)
-	for i, v := range result.VideoResult {
-		fmt.Printf("Video %d: %s\n", i+1, v.URL)
-		if v.CoverImageURL != "" {
-			fmt.Printf("  Cover: %s\n", v.CoverImageURL)
+	return emit(cmd, result, func() error {
+		fmt.Printf("Status: %s\n", result.TaskStatus)
+		for i, v := range result.VideoResult {
+			fmt.Printf("Video %d: %s\n", i+1, v.URL)
+			if v.CoverImageURL != "" {
+				fmt.Printf("  Cover: %s\n", v.CoverImageURL)
+			}
 		}
-	}
-	return nil
+		return nil
+	})
 }

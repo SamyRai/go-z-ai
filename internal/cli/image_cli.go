@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
@@ -35,6 +36,7 @@ func init() {
 	imageGenerateCmd.Flags().String("size", "", "Image size, e.g. 1280x1280 (default 1280x1280)")
 	imageGenerateCmd.Flags().String("quality", "", "Quality: hd (default, ~20s) or standard (~5-10s)")
 	imageGenerateCmd.Flags().Bool("async", false, "Submit as an async task instead of waiting (use 'image status' to poll)")
+	addFormatFlag("text", imageGenerateCmd, imageStatusCmd)
 }
 
 func runImageGenerate(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -55,25 +57,29 @@ func runImageGenerate(cmd *cobra.Command, args []string, apiClient *client.Clien
 		if err != nil {
 			return fmt.Errorf("image generation failed: %w", err)
 		}
-		fmt.Printf("⏳ Task submitted: %s (status: %s)\n", resp.ID, resp.TaskStatus)
-		fmt.Printf("   Check with: zai-client image status %s\n", resp.ID)
-		return nil
+		return emit(cmd, resp, func() error {
+			fmt.Printf("⏳ Task submitted: %s (status: %s)\n", resp.ID, resp.TaskStatus)
+			fmt.Printf("   Check with: zai-client image status %s\n", resp.ID)
+			return nil
+		})
 	}
 
-	fmt.Println("🎨 Generating image...")
+	fmt.Fprintln(os.Stderr, "🎨 Generating image...")
 	resp, err := apiClient.Images().Generate(cmd.Context(), req)
 	if err != nil {
 		return fmt.Errorf("image generation failed: %w", err)
 	}
-	if len(resp.Data) == 0 {
-		fmt.Println("No image returned")
+	return emit(cmd, resp, func() error {
+		if len(resp.Data) == 0 {
+			fmt.Println("No image returned")
+			return nil
+		}
+		for i, d := range resp.Data {
+			fmt.Printf("✅ Image %d: %s\n", i+1, d.URL)
+		}
+		fmt.Println("   (URL expires after 30 days)")
 		return nil
-	}
-	for i, d := range resp.Data {
-		fmt.Printf("✅ Image %d: %s\n", i+1, d.URL)
-	}
-	fmt.Println("   (URL expires after 30 days)")
-	return nil
+	})
 }
 
 func runImageStatus(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -82,9 +88,11 @@ func runImageStatus(cmd *cobra.Command, args []string, apiClient *client.Client)
 		return fmt.Errorf("failed to check status: %w", err)
 	}
 
-	fmt.Printf("Status: %s\n", result.TaskStatus)
-	for i, d := range result.Data {
-		fmt.Printf("Image %d: %s\n", i+1, d.URL)
-	}
-	return nil
+	return emit(cmd, result, func() error {
+		fmt.Printf("Status: %s\n", result.TaskStatus)
+		for i, d := range result.Data {
+			fmt.Printf("Image %d: %s\n", i+1, d.URL)
+		}
+		return nil
+	})
 }

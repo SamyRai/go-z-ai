@@ -51,6 +51,7 @@ func init() {
 	batchCreateCmd.Flags().String("endpoint", string(client.BatchEndpointChatCompletions), "Target endpoint (currently the API's only supported value)")
 	batchListCmd.Flags().String("after", "", "Cursor: list batches after this batch ID")
 	batchListCmd.Flags().Int("limit", 0, "Max batches to return (0 = server default)")
+	addFormatFlag("text", batchCreateCmd, batchStatusCmd, batchListCmd, batchCancelCmd)
 }
 
 func runBatchCreate(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -64,9 +65,11 @@ func runBatchCreate(cmd *cobra.Command, args []string, apiClient *client.Client)
 		return fmt.Errorf("failed to create batch: %w", err)
 	}
 
-	fmt.Printf("⏳ Batch submitted: %s (status: %s)\n", b.ID, b.Status)
-	fmt.Printf("   Check with: zai-client batch status %s\n", b.ID)
-	return nil
+	return emit(cmd, b, func() error {
+		fmt.Printf("⏳ Batch submitted: %s (status: %s)\n", b.ID, b.Status)
+		fmt.Printf("   Check with: zai-client batch status %s\n", b.ID)
+		return nil
+	})
 }
 
 func runBatchStatus(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -75,17 +78,19 @@ func runBatchStatus(cmd *cobra.Command, args []string, apiClient *client.Client)
 		return fmt.Errorf("failed to check batch status: %w", err)
 	}
 
-	fmt.Printf("Status: %s\n", b.Status)
-	if b.RequestCounts != nil {
-		fmt.Printf("Requests: %d/%d completed, %d failed\n", b.RequestCounts.Completed, b.RequestCounts.Total, b.RequestCounts.Failed)
-	}
-	if b.OutputFileID != "" {
-		fmt.Printf("Output file: %s (download with: zai-client files download %s <path>)\n", b.OutputFileID, b.OutputFileID)
-	}
-	if b.ErrorFileID != "" {
-		fmt.Printf("Error file: %s\n", b.ErrorFileID)
-	}
-	return nil
+	return emit(cmd, b, func() error {
+		fmt.Printf("Status: %s\n", b.Status)
+		if b.RequestCounts != nil {
+			fmt.Printf("Requests: %d/%d completed, %d failed\n", b.RequestCounts.Completed, b.RequestCounts.Total, b.RequestCounts.Failed)
+		}
+		if b.OutputFileID != "" {
+			fmt.Printf("Output file: %s (download with: zai-client files download %s <path>)\n", b.OutputFileID, b.OutputFileID)
+		}
+		if b.ErrorFileID != "" {
+			fmt.Printf("Error file: %s\n", b.ErrorFileID)
+		}
+		return nil
+	})
 }
 
 func runBatchList(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -97,17 +102,19 @@ func runBatchList(cmd *cobra.Command, args []string, apiClient *client.Client) e
 		return fmt.Errorf("failed to list batches: %w", err)
 	}
 
-	if len(list.Data) == 0 {
-		fmt.Println("No batches found")
+	return emit(cmd, list, func() error {
+		if len(list.Data) == 0 {
+			fmt.Println("No batches found")
+			return nil
+		}
+		for _, b := range list.Data {
+			fmt.Printf("%s  %-12s  %-24s\n", b.ID, b.Status, b.Endpoint)
+		}
+		if list.HasMore {
+			fmt.Printf("(more results available; pass --after %s)\n", list.Data[len(list.Data)-1].ID)
+		}
 		return nil
-	}
-	for _, b := range list.Data {
-		fmt.Printf("%s  %-12s  %-24s\n", b.ID, b.Status, b.Endpoint)
-	}
-	if list.HasMore {
-		fmt.Printf("(more results available; pass --after %s)\n", list.Data[len(list.Data)-1].ID)
-	}
-	return nil
+	})
 }
 
 func runBatchCancel(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -116,6 +123,8 @@ func runBatchCancel(cmd *cobra.Command, args []string, apiClient *client.Client)
 		return fmt.Errorf("failed to cancel batch: %w", err)
 	}
 
-	fmt.Printf("Status: %s\n", b.Status)
-	return nil
+	return emit(cmd, b, func() error {
+		fmt.Printf("Status: %s\n", b.Status)
+		return nil
+	})
 }

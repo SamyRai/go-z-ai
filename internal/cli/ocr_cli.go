@@ -40,6 +40,7 @@ func init() {
 
 	ocrParseCmd.Flags().Int("start-page", 0, "First PDF page to parse (1-indexed; PDFs only)")
 	ocrParseCmd.Flags().Int("end-page", 0, "Last PDF page to parse (1-indexed; PDFs only)")
+	addFormatFlag("text", ocrParseCmd)
 
 	ocrHandwritingCmd.Flags().String("language", "", "Language hint (optional)")
 	ocrHandwritingCmd.Flags().Bool("probability", false, "Include per-word confidence statistics")
@@ -59,7 +60,7 @@ func runOCRParse(cmd *cobra.Command, args []string, apiClient *client.Client) er
 	startPage, _ := cmd.Flags().GetInt("start-page")
 	endPage, _ := cmd.Flags().GetInt("end-page")
 
-	fmt.Println("📄 Parsing document...")
+	fmt.Fprintln(os.Stderr, "📄 Parsing document...")
 	resp, err := apiClient.Layout().Parse(cmd.Context(), client.LayoutParsingRequest{
 		File:        file,
 		StartPageID: startPage,
@@ -69,8 +70,10 @@ func runOCRParse(cmd *cobra.Command, args []string, apiClient *client.Client) er
 		return fmt.Errorf("layout parsing failed: %w", err)
 	}
 
-	fmt.Println(resp.MDResults)
-	return nil
+	return emit(cmd, resp, func() error {
+		fmt.Println(resp.MDResults)
+		return nil
+	})
 }
 
 func runOCRHandwriting(cmd *cobra.Command, args []string, apiClient *client.Client) error {
