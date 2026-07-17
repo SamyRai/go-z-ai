@@ -33,6 +33,8 @@ var moderationsCheckCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(moderationsCmd)
 	moderationsCmd.AddCommand(moderationsCheckCmd)
+
+	addFormatFlag("json", moderationsCheckCmd)
 }
 
 func runModerationsCheck(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -43,5 +45,14 @@ func runModerationsCheck(cmd *cobra.Command, args []string, apiClient *client.Cl
 		return fmt.Errorf("failed to check content: %w", err)
 	}
 
-	return outputJSON(resp)
+	return emit(cmd, resp, func() error {
+		for _, r := range resp.ResultList {
+			if len(r.RiskType) > 0 {
+				fmt.Printf("%s: %s (%v)\n", r.ContentType, r.RiskLevel, r.RiskType)
+			} else {
+				fmt.Printf("%s: %s\n", r.ContentType, r.RiskLevel)
+			}
+		}
+		return nil
+	})
 }

@@ -49,6 +49,7 @@ func init() {
 
 	filesUploadCmd.Flags().String("purpose", "batch", "File purpose: batch, code-interpreter, agent, or voice-clone-input")
 	filesListCmd.Flags().String("purpose", "", "Filter by purpose (omit for all)")
+	addFormatFlag("text", filesUploadCmd, filesListCmd, filesDeleteCmd)
 }
 
 func runFilesUpload(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -60,14 +61,16 @@ func runFilesUpload(cmd *cobra.Command, args []string, apiClient *client.Client)
 
 	purpose, _ := cmd.Flags().GetString("purpose")
 
-	fmt.Printf("📤 Uploading %s...\n", filepath.Base(path))
+	fmt.Fprintf(os.Stderr, "📤 Uploading %s...\n", filepath.Base(path))
 	f, err := apiClient.Files().Upload(cmd.Context(), filepath.Base(path), data, client.FilePurpose(purpose))
 	if err != nil {
 		return fmt.Errorf("upload failed: %w", err)
 	}
 
-	fmt.Printf("✅ Uploaded: %s (%d bytes, status: %s)\n", f.ID, f.Bytes, f.Status)
-	return nil
+	return emit(cmd, f, func() error {
+		fmt.Printf("✅ Uploaded: %s (%d bytes, status: %s)\n", f.ID, f.Bytes, f.Status)
+		return nil
+	})
 }
 
 func runFilesList(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -77,14 +80,16 @@ func runFilesList(cmd *cobra.Command, args []string, apiClient *client.Client) e
 		return fmt.Errorf("failed to list files: %w", err)
 	}
 
-	if len(list.Data) == 0 {
-		fmt.Println("No files found")
+	return emit(cmd, list, func() error {
+		if len(list.Data) == 0 {
+			fmt.Println("No files found")
+			return nil
+		}
+		for _, f := range list.Data {
+			fmt.Printf("%s  %-20s  %8d bytes  %-10s  %s\n", f.ID, f.Filename, f.Bytes, f.Purpose, f.Status)
+		}
 		return nil
-	}
-	for _, f := range list.Data {
-		fmt.Printf("%s  %-20s  %8d bytes  %-10s  %s\n", f.ID, f.Filename, f.Bytes, f.Purpose, f.Status)
-	}
-	return nil
+	})
 }
 
 func runFilesDelete(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -93,12 +98,14 @@ func runFilesDelete(cmd *cobra.Command, args []string, apiClient *client.Client)
 		return fmt.Errorf("failed to delete file: %w", err)
 	}
 
-	if resp.Deleted {
-		fmt.Printf("✅ Deleted: %s\n", resp.ID)
-	} else {
-		fmt.Printf("⚠️  Not deleted: %s\n", resp.ID)
-	}
-	return nil
+	return emit(cmd, resp, func() error {
+		if resp.Deleted {
+			fmt.Printf("✅ Deleted: %s\n", resp.ID)
+		} else {
+			fmt.Printf("⚠️  Not deleted: %s\n", resp.ID)
+		}
+		return nil
+	})
 }
 
 func runFilesDownload(cmd *cobra.Command, args []string, apiClient *client.Client) error {

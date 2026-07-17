@@ -19,6 +19,7 @@ func init() {
 	rootCmd.AddCommand(rerankCmd)
 
 	rerankCmd.Flags().Int("top-n", 0, "Return only the top N results by score (0 = all)")
+	addFormatFlag("text", rerankCmd)
 }
 
 func runRerank(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -34,8 +35,10 @@ func runRerank(cmd *cobra.Command, args []string, apiClient *client.Client) erro
 		return fmt.Errorf("rerank failed: %w", err)
 	}
 
-	for i, r := range resp.Results {
-		fmt.Printf("%d. [%.4f] (doc #%d) %s\n", i+1, r.RelevanceScore, r.Index, r.Document)
-	}
-	return nil
+	return emit(cmd, resp, func() error {
+		for i, r := range resp.Results {
+			fmt.Printf("%d. [%.4f] (doc #%d) %s\n", i+1, r.RelevanceScore, r.Index, r.Document)
+		}
+		return nil
+	})
 }

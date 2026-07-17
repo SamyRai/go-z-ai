@@ -172,6 +172,27 @@ func outputJSON(v interface{}) error {
 	return encoder.Encode(v)
 }
 
+// addFormatFlag registers the shared --format flag on each command with the
+// given default ("table"/"text" for human output, "json" for machine output),
+// so every command selects its output mode the same way instead of the three
+// ad-hoc conventions this replaced (a bound package var, a bare outputJSON with
+// no flag, or no JSON at all).
+func addFormatFlag(def string, cmds ...*cobra.Command) {
+	for _, c := range cmds {
+		c.Flags().String("format", def, "Output format (text, json)")
+	}
+}
+
+// emit renders v as pretty JSON when --format json is selected, otherwise runs
+// textFn for the human-readable output. It reads the flag registered by
+// addFormatFlag, so commands no longer each hand-roll the `switch format` block.
+func emit(cmd *cobra.Command, v any, textFn func() error) error {
+	if format, _ := cmd.Flags().GetString("format"); format == "json" {
+		return outputJSON(v)
+	}
+	return textFn()
+}
+
 // maskAPIKey renders an API key safely for display (e.g. account listings),
 // keeping only the first/last 4 characters visible.
 func maskAPIKey(key string) string {

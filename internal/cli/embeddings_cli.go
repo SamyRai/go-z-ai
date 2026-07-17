@@ -35,6 +35,9 @@ func init() {
 
 	embeddingsCreateCmd.Flags().String("model", client.EmbeddingModel3, "Embedding model: embedding-3 or embedding-2")
 	embeddingsCreateCmd.Flags().Int("dimensions", 0, "Output vector dimensions (embedding-3 only: 256, 512, 1024, or 2048)")
+	// Default json: the vector payload is machine-oriented, so JSON stays the
+	// out-of-the-box output (text mode prints a summary).
+	addFormatFlag("json", embeddingsCreateCmd)
 }
 
 func runEmbeddingsCreate(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -50,5 +53,14 @@ func runEmbeddingsCreate(cmd *cobra.Command, args []string, apiClient *client.Cl
 		return fmt.Errorf("failed to create embedding: %w", err)
 	}
 
-	return outputJSON(resp)
+	return emit(cmd, resp, func() error {
+		dims := 0
+		if len(resp.Data) > 0 {
+			dims = len(resp.Data[0].Embedding)
+		}
+		fmt.Printf("model: %s\n", resp.Model)
+		fmt.Printf("embeddings: %d (dimensions: %d)\n", len(resp.Data), dims)
+		fmt.Printf("tokens: %d\n", resp.Usage.TotalTokens)
+		return nil
+	})
 }
