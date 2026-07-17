@@ -21,11 +21,11 @@ type ImageURLPart struct {
 // MarshalJSON/UnmarshalJSON can switch between a plain string and a
 // content-parts array without touching every other field.
 type messageWire struct {
-	Role       string      `json:"role"`
-	Content    interface{} `json:"content"`
-	ToolCalls  []ToolCall  `json:"tool_calls,omitempty"`
-	ToolCallID string      `json:"tool_call_id,omitempty"`
-	Name       string      `json:"name,omitempty"`
+	Role       string     `json:"role"`
+	Content    any        `json:"content"`
+	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+	ToolCallID string     `json:"tool_call_id,omitempty"`
+	Name       string     `json:"name,omitempty"`
 }
 
 // MarshalJSON emits the plain-string wire shape Message has always used,

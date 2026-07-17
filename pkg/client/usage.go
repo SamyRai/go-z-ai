@@ -46,7 +46,7 @@ func (t *UsageTracker) TrackRequest(model string, promptTokens, completionTokens
 }
 
 // GetSummary returns current usage summary
-func (t *UsageTracker) GetSummary() map[string]interface{} {
+func (t *UsageTracker) GetSummary() map[string]any {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
@@ -60,7 +60,7 @@ func (t *UsageTracker) GetSummary() map[string]interface{} {
 		totalCost += t.costs[model]
 	}
 
-	return map[string]interface{}{
+	return map[string]any{
 		"total_requests":  totalRequests,
 		"total_tokens":    totalTokens,
 		"total_cost":      totalCost,
@@ -101,12 +101,12 @@ func (s *UsageService) TestBalance(ctx context.Context) error {
 }
 
 // GetClientSideUsage returns client-side tracked usage information
-func (s *UsageService) GetClientSideUsage() map[string]interface{} {
+func (s *UsageService) GetClientSideUsage() map[string]any {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	if s.tracker == nil {
-		return map[string]interface{}{
+		return map[string]any{
 			"message": "No usage tracked yet. Make API requests to enable tracking.",
 		}
 	}

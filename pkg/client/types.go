@@ -21,20 +21,20 @@ type Message struct {
 
 // ChatRequest represents a chat completion request
 type ChatRequest struct {
-	Model          string                 `json:"model"`
-	Messages       []Message              `json:"messages"`
-	Temperature    float64                `json:"temperature,omitempty"`
-	TopP           float64                `json:"top_p,omitempty"`
-	MaxTokens      int                    `json:"max_tokens,omitempty"`
-	Stream         bool                   `json:"stream,omitempty"`
-	DoSample       bool                   `json:"do_sample,omitempty"`
-	Stop           []string               `json:"stop,omitempty"`
-	Tools          []Tool                 `json:"tools,omitempty"`
-	ToolChoice     string                 `json:"tool_choice,omitempty"`
-	ResponseFormat *ResponseFormat        `json:"response_format,omitempty"`
-	Thinking       *ThinkingConfig        `json:"thinking,omitempty"`
-	Metadata       map[string]interface{} `json:"metadata,omitempty"`
-	User           string                 `json:"user,omitempty"`
+	Model          string          `json:"model"`
+	Messages       []Message       `json:"messages"`
+	Temperature    float64         `json:"temperature,omitempty"`
+	TopP           float64         `json:"top_p,omitempty"`
+	MaxTokens      int             `json:"max_tokens,omitempty"`
+	Stream         bool            `json:"stream,omitempty"`
+	DoSample       bool            `json:"do_sample,omitempty"`
+	Stop           []string        `json:"stop,omitempty"`
+	Tools          []Tool          `json:"tools,omitempty"`
+	ToolChoice     string          `json:"tool_choice,omitempty"`
+	ResponseFormat *ResponseFormat `json:"response_format,omitempty"`
+	Thinking       *ThinkingConfig `json:"thinking,omitempty"`
+	Metadata       map[string]any  `json:"metadata,omitempty"`
+	User           string          `json:"user,omitempty"`
 }
 
 // ThinkingConfig controls chain-of-thought reasoning
@@ -77,9 +77,9 @@ type Tool struct {
 
 // FunctionDef defines a function for tool calling
 type FunctionDef struct {
-	Name        string                 `json:"name"`
-	Description string                 `json:"description,omitempty"`
-	Parameters  map[string]interface{} `json:"parameters,omitempty"`
+	Name        string         `json:"name"`
+	Description string         `json:"description,omitempty"`
+	Parameters  map[string]any `json:"parameters,omitempty"`
 }
 
 // ChatResponse represents a chat completion response

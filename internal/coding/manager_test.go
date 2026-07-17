@@ -8,13 +8,13 @@ import (
 )
 
 // readJSON reads path into a map for assertions.
-func readJSON(t *testing.T, path string) map[string]interface{} {
+func readJSON(t *testing.T, path string) map[string]any {
 	t.Helper()
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)
 	}
-	var m map[string]interface{}
+	var m map[string]any
 	if err := json.Unmarshal(data, &m); err != nil {
 		t.Fatalf("parse %s: %v", path, err)
 	}
@@ -29,7 +29,7 @@ func TestClaudeCodeLoadDetectUnload(t *testing.T) {
 	}
 
 	// settings.json must use ANTHROPIC_AUTH_TOKEN, not ANTHROPIC_API_KEY.
-	env := readJSON(t, filepath.Join(home, ".claude", "settings.json"))["env"].(map[string]interface{})
+	env := readJSON(t, filepath.Join(home, ".claude", "settings.json"))["env"].(map[string]any)
 	if env["ANTHROPIC_AUTH_TOKEN"] != "key-123" {
 		t.Errorf("AUTH_TOKEN not set: %v", env["ANTHROPIC_AUTH_TOKEN"])
 	}
@@ -71,7 +71,7 @@ func TestClaudeCodePreservesExistingEnv(t *testing.T) {
 	if err := Load(home, "claude", PlanChina, "k"); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	env := readJSON(t, settings)["env"].(map[string]interface{})
+	env := readJSON(t, settings)["env"].(map[string]any)
 	if env["MY_VAR"] != "keep" {
 		t.Error("existing env var not preserved")
 	}
@@ -87,7 +87,7 @@ func TestOpenCodeLoadDetectUnload(t *testing.T) {
 		t.Fatalf("Load: %v", err)
 	}
 	m := readJSON(t, filepath.Join(home, ".config", "opencode", "opencode.json"))
-	prov := m["provider"].(map[string]interface{})
+	prov := m["provider"].(map[string]any)
 	if _, ok := prov["zai-coding-plan"]; !ok {
 		t.Error("zai-coding-plan provider missing")
 	}
@@ -115,7 +115,7 @@ func TestOpenCodeChinaUsesZhipuProvider(t *testing.T) {
 		t.Fatalf("Load: %v", err)
 	}
 	m := readJSON(t, filepath.Join(home, ".config", "opencode", "opencode.json"))
-	prov := m["provider"].(map[string]interface{})
+	prov := m["provider"].(map[string]any)
 	if _, ok := prov["zhipuai-coding-plan"]; !ok {
 		t.Error("china plan should use zhipuai-coding-plan provider")
 	}
@@ -126,7 +126,7 @@ func TestCrushLoadDetectUnload(t *testing.T) {
 	if err := Load(home, "crush", PlanGlobal, "c-key"); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	zai := readJSON(t, filepath.Join(home, ".config", "crush", "crush.json"))["providers"].(map[string]interface{})["zai"].(map[string]interface{})
+	zai := readJSON(t, filepath.Join(home, ".config", "crush", "crush.json"))["providers"].(map[string]any)["zai"].(map[string]any)
 	if zai["base_url"] != "https://api.z.ai/api/coding/paas/v4" {
 		t.Errorf("base_url = %v", zai["base_url"])
 	}
@@ -150,13 +150,13 @@ func TestFactoryDroidLoadDetectUnload(t *testing.T) {
 	if err := Load(home, "factory-droid", PlanGlobal, "f-key"); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	models := readJSON(t, filepath.Join(home, ".factory", "settings.json"))["customModels"].([]interface{})
+	models := readJSON(t, filepath.Join(home, ".factory", "settings.json"))["customModels"].([]any)
 	if len(models) != 2 {
 		t.Fatalf("expected 2 custom models, got %d", len(models))
 	}
 	var sawAnthropic, sawOpenAI bool
 	for _, e := range models {
-		em := e.(map[string]interface{})
+		em := e.(map[string]any)
 		dn := em["displayName"].(string)
 		if dn == "GLM-4.7 [GLM Coding Plan Global] - Anthropic" {
 			sawAnthropic = true
@@ -192,7 +192,7 @@ func TestFactoryDroidPreservesOtherModels(t *testing.T) {
 	if err := Load(home, "factory-droid", PlanGlobal, "k"); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	models := readJSON(t, path)["customModels"].([]interface{})
+	models := readJSON(t, path)["customModels"].([]any)
 	if len(models) != 3 { // 1 existing + 2 GLM
 		t.Fatalf("expected 3 models (1 preserved + 2 GLM), got %d", len(models))
 	}
@@ -261,7 +261,7 @@ func TestClaudeCodeDefaultOptionsTuning(t *testing.T) {
 	if err := LoadClaudeCodeOpts(home, PlanGlobal, "k", DefaultClaudeOptions()); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	env := readJSON(t, filepath.Join(home, ".claude", "settings.json"))["env"].(map[string]interface{})
+	env := readJSON(t, filepath.Join(home, ".claude", "settings.json"))["env"].(map[string]any)
 	if env["ANTHROPIC_DEFAULT_HAIKU_MODEL"] != "glm-4.5-air" {
 		t.Errorf("haiku model = %v", env["ANTHROPIC_DEFAULT_HAIKU_MODEL"])
 	}
@@ -281,7 +281,7 @@ func TestClaudeCodePlainLoadHasNoTuning(t *testing.T) {
 	if err := LoadClaudeCode(home, PlanGlobal, "k"); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	env := readJSON(t, filepath.Join(home, ".claude", "settings.json"))["env"].(map[string]interface{})
+	env := readJSON(t, filepath.Join(home, ".claude", "settings.json"))["env"].(map[string]any)
 	for _, k := range []string{
 		"ANTHROPIC_DEFAULT_HAIKU_MODEL",
 		"ANTHROPIC_DEFAULT_SONNET_MODEL",
@@ -305,7 +305,7 @@ func TestClaudeCodeCustomTuning(t *testing.T) {
 	if err := LoadClaudeCodeOpts(home, PlanGlobal, "k", opts); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	env := readJSON(t, filepath.Join(home, ".claude", "settings.json"))["env"].(map[string]interface{})
+	env := readJSON(t, filepath.Join(home, ".claude", "settings.json"))["env"].(map[string]any)
 	if env["ANTHROPIC_DEFAULT_OPUS_MODEL"] != "glm-5.2" {
 		t.Errorf("opus = %v", env["ANTHROPIC_DEFAULT_OPUS_MODEL"])
 	}
