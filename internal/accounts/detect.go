@@ -20,11 +20,18 @@ func ProbeType(ctx context.Context, apiKey string) (accountType client.AccountTy
 	if err != nil {
 		return "", false, err
 	}
+	at, confirmed := probeType(ctx, c)
+	return at, confirmed, nil
+}
 
+// probeType is ProbeType's classification step against an already-built client.
+// It's split out so tests can inject an HTTP transport: GetQuotaLimit targets a
+// hardcoded monitor base URL that Config.BaseURL can't redirect, so a canned
+// transport on Config.HTTPClient is the only seam.
+func probeType(ctx context.Context, c *client.Client) (client.AccountType, bool) {
 	quota, callErr := c.Quota().GetQuotaLimit(ctx)
 	if callErr == nil && quota != nil && quota.Success && quota.Data.Level != "" {
-		return client.AccountTypeCodingPlan, true, nil
+		return client.AccountTypeCodingPlan, true
 	}
-
-	return client.AccountTypePayAsYouGo, false, nil
+	return client.AccountTypePayAsYouGo, false
 }
