@@ -83,8 +83,30 @@ default.
 | Agents | `https://api.z.ai/api` (bare root, no `/paas/v4`) | Verified live — nesting `/v1/agents` under the chat-completions base 404s. |
 | Everything else | `Config.BaseURL` (`/api/paas/v4`, or `/api/coding/paas/v4` for GLM Coding Plan accounts) | The general case. |
 
-This project treats "documented" and "true" as separate claims and verifies
-both before shipping a service — see the next section.
+### Regional gateway selection (Config.Region)
+
+Z.AI serves the same GLM model family from two regional gateways: the
+international host `api.z.ai` and the China-mainland mirror
+`open.bigmodel.cn`. Most services pick their host via `Config.BaseURL` (chat,
+files, tools, etc.) or a fixed constant (Embeddings/Moderations always use the
+China host). Three services — **monitor** (quota/usage), **biz** (account
+info), and **agents** — used to be hardcoded to `api.z.ai`, which left a
+`glm_coding_plan_china` key unable to reach its own region's monitor/usage
+endpoints.
+
+`Config.Region` (`RegionGlobal`, the default, or `RegionChina`) selects the
+host for those three region-scoped services only. It does **not** override
+`Config.BaseURL` (the chat surface) or the Embeddings/Moderations host.
+From the CLI, use `--region {global,china}` (aliases: `cn`, `bigmodel`, `west`).
+An unknown value falls back to global rather than erroring, so a typo never
+blocks an unrelated command.
+
+The China mirror hosts for monitor/biz/agents are modeled by mirroring the
+`api.z.ai` path layout on `open.bigmodel.cn` and marked `NOT VERIFIED LIVE` —
+the China platform is live-verified to serve the same OpenAPI surface for
+`/models` and `/chat/completions` (see `BigModelBaseURL`), but the monitor/biz
+hosts on the China side have not been captured by a cassette yet. Pin them with
+`ZAI_RECORD=1` if you hold an entitled China key.
 
 ## The live-verification convention
 

@@ -19,13 +19,13 @@ import (
 func isolateCreds(t *testing.T) string {
 	t.Helper()
 
-	for _, key := range []string{"api-key", "base-url", "account", "china-api-key"} {
+	for _, key := range []string{"api-key", "base-url", "account", "china-api-key", "region"} {
 		prev := viper.GetString(key)
 		viper.Set(key, "")
 		t.Cleanup(func() { viper.Set(key, prev) })
 	}
 
-	for _, env := range []string{"ZAI_API_KEY", "KEY", "ZAI_API_BASE_URL", "ZAI_CHINA_API_KEY"} {
+	for _, env := range []string{"ZAI_API_KEY", "KEY", "ZAI_API_BASE_URL", "ZAI_CHINA_API_KEY", "ZAI_REGION", "REGION"} {
 		t.Setenv(env, "")
 	}
 
@@ -200,4 +200,120 @@ func TestResolveConfigChinaKeyFallsBackToEnv(t *testing.T) {
 	if cfg.ChinaAPIKey != "china-key" {
 		t.Errorf("expected ZAI_CHINA_API_KEY, got %q", cfg.ChinaAPIKey)
 	}
+}
+
+// --region defaults to global (the historical behavior) when unset.
+func TestResolveConfigRegionDefaultsGlobal(t *testing.T) {
+	isolateCreds(t)
+	t.Setenv("ZAI_API_KEY", "k")
+
+	cfg, err := resolveConfig()
+	if err != nil {
+		t.Fatalf("resolveConfig: %v", err)
+	}
+	if cfg.Region != client.RegionGlobal {
+		t.Errorf("expected default RegionGlobal, got %q", cfg.Region)
+	}
+}
+
+// --region china selects the China gateway for the region-scoped services,
+// while leaving the chat BaseURL alone. resolveConfig returns BaseURL empty
+// when no --base-url/account/explicit value set it; NewClient then defaults it
+// to DefaultBaseURL — so here we only assert that --region does NOT inject a
+// base URL (empty, not the China coding/anthropic host).
+func TestResolveConfigRegionChina(t *testing.T) {
+	isolateCreds(t)
+	t.Setenv("ZAI_API_KEY", "k")
+	viper.Set("region", "china")
+
+	cfg, err := resolveConfig()
+	if err != nil {
+		t.Fatalf("resolveConfig: %v", err)
+	}
+	if cfg.Region != client.RegionChina {
+		t.Errorf("expected RegionChina, got %q", cfg.Region)
+	}
+	if cfg.BaseURL != "" {
+		t.Errorf("--region must not touch chat BaseURL; expected empty (NewClient defaults it), got %q", cfg.BaseURL)
+	}
+}
+
+// --region aliases: "cn" and "bigmodel" map to China; "west" maps to global
+// (so the flag reads naturally for international users); a typo falls back to
+// global rather than erroring, so a bad value never blocks an unrelated
+// command.
+func TestResolveConfigRegionAliases(t *testing.T) {
+	cases := []struct {
+		in   string
+		want client.Region
+	}{
+		{"china", client.RegionChina},
+		{"cn", client.RegionChina},
+		{"bigmodel", client.RegionChina},
+		{"CHINA", client.RegionChina},
+		{"global", client.RegionGlobal},
+		{"west", client.RegionGlobal},
+		{"", client.RegionGlobal},
+		{"typo", client.RegionGlobal},
+	}
+	for _, tc := range cases {
+		t.Run(tc.in, func(t *testing.T) {
+			isolateCreds(t)
+			t.Setenv("ZAI_API_KEY", "k")
+			if tc.in != "" {
+				viper.Set("region", tc.in)
+			}
+			cfg, err := resolveConfig()
+			if err != nil {
+				t.Fatalf("resolveConfig: %v", err)
+			}
+			if cfg.Region != tc.want {
+				t.Errorf("region %q: got %q, want %q", tc.in, cfg.Region, tc.want)
+			}
+		})
+	}
+}
+
+// ZAI_REGION env var selects the region when --region is unset, mirroring
+// ZAI_API_BASE_URL / ZAI_CHINA_API_KEY. The --region flag still wins.
+func TestResolveConfigRegionFromEnv(t *testing.T) {
+	t.Run("env sets china", func(t *testing.T) {
+		isolateCreds(t)
+		t.Setenv("ZAI_API_KEY", "k")
+		t.Setenv("ZAI_REGION", "china")
+		cfg, err := resolveConfig()
+		if err != nil {
+			t.Fatalf("resolveConfig: %v", err)
+		}
+		if cfg.Region != client.RegionChina {
+			t.Errorf("expected ZAI_REGION=china to select RegionChina, got %q", cfg.Region)
+		}
+	})
+
+	t.Run("flag beats env", func(t *testing.T) {
+		isolateCreds(t)
+		t.Setenv("ZAI_API_KEY", "k")
+		t.Setenv("ZAI_REGION", "china")
+		viper.Set("region", "global")
+		cfg, err := resolveConfig()
+		if err != nil {
+			t.Fatalf("resolveConfig: %v", err)
+		}
+		if cfg.Region != client.RegionGlobal {
+			t.Errorf("expected --region global to beat ZAI_REGION=china, got %q", cfg.Region)
+		}
+	})
+
+	t.Run("env alias cn", func(t *testing.T) {
+		isolateCreds(t)
+		t.Setenv("ZAI_API_KEY", "k")
+		t.Setenv("ZAI_REGION", "cn")
+		cfg, err := resolveConfig()
+		if err != nil {
+			t.Fatalf("resolveConfig: %v", err)
+		}
+		if cfg.Region != client.RegionChina {
+			t.Errorf("expected ZAI_REGION=cn to select RegionChina, got %q", cfg.Region)
+		}
+	})
 }

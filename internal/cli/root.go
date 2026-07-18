@@ -32,11 +32,13 @@ func init() {
 	rootCmd.PersistentFlags().String("base-url", "", "API base URL (default: https://api.z.ai/api/paas/v4)")
 	rootCmd.PersistentFlags().String("account", "", "Use a stored account by name for this command (see 'accounts list')")
 	rootCmd.PersistentFlags().String("china-api-key", "", "open.bigmodel.cn API key for embeddings/moderations (can also set ZAI_CHINA_API_KEY environment variable; falls back to --api-key)")
+	rootCmd.PersistentFlags().String("region", "", "Regional gateway for monitor/biz/agents: 'global' (api.z.ai, default) or 'china' (open.bigmodel.cn). Does not override --base-url.")
 
 	viper.BindPFlag("api-key", rootCmd.PersistentFlags().Lookup("api-key"))
 	viper.BindPFlag("base-url", rootCmd.PersistentFlags().Lookup("base-url"))
 	viper.BindPFlag("account", rootCmd.PersistentFlags().Lookup("account"))
 	viper.BindPFlag("china-api-key", rootCmd.PersistentFlags().Lookup("china-api-key"))
+	viper.BindPFlag("region", rootCmd.PersistentFlags().Lookup("region"))
 }
 
 func initConfig() {

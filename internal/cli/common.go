@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/SamyRai/go-z-ai/internal/accounts"
 	"github.com/SamyRai/go-z-ai/pkg/client"
@@ -91,10 +92,32 @@ func resolveConfig() (client.Config, error) {
 		chinaAPIKey = os.Getenv("ZAI_CHINA_API_KEY")
 	}
 
+	// --region selects the regional gateway for monitor/biz/agents. It does
+	// not override --base-url (chat surface) or the China key (embeddings/
+	// moderations). The ZAI_REGION env var mirrors ZAI_API_BASE_URL /
+	// ZAI_CHINA_API_KEY so a .env file can set it persistently. Unknown values
+	// fall back to global (the historical default) rather than erroring, so a
+	// typo doesn't break a command that never touches the region-scoped
+	// services.
+	regionValue := viper.GetString("region")
+	if regionValue == "" {
+		// viper.AutomaticEnv() makes the bare key "REGION" work too, but the
+		// documented convention is ZAI_*; honor the obvious name explicitly.
+		regionValue = os.Getenv("ZAI_REGION")
+	}
+	region := client.RegionGlobal
+	switch strings.ToLower(regionValue) {
+	case "china", "cn", "bigmodel":
+		region = client.RegionChina
+	case "", "global", "west":
+		region = client.RegionGlobal
+	}
+
 	return client.Config{
 		APIKey:      apiKey,
 		BaseURL:     baseURL,
 		ChinaAPIKey: chinaAPIKey,
+		Region:      region,
 	}, nil
 }
 

@@ -51,6 +51,34 @@ func AnthropicBaseURL(plan string) string {
 	return "https://api.z.ai/api/anthropic"
 }
 
+// MonitorBaseURL is the monitor (quota/usage) endpoint a plan's region uses.
+// A glm_coding_plan_china key's coding-plan-only /usage/quota/limit etc. calls
+// should land on the China host. NOT VERIFIED LIVE for the China monitor host.
+func MonitorBaseURL(plan string) string {
+	if plan == PlanChina {
+		return "https://open.bigmodel.cn/api/monitor"
+	}
+	return "https://api.z.ai/api/monitor"
+}
+
+// BizBaseURL is the biz (account info) endpoint a plan's region uses. Same
+// caveat as MonitorBaseURL.
+func BizBaseURL(plan string) string {
+	if plan == PlanChina {
+		return "https://open.bigmodel.cn/api/biz"
+	}
+	return "https://api.z.ai/api/biz"
+}
+
+// AgentsBaseURL is the agents endpoint a plan's region uses (bare root, no
+// /paas/v4 — nesting under the chat base 404s). Same caveat as MonitorBaseURL.
+func AgentsBaseURL(plan string) string {
+	if plan == PlanChina {
+		return "https://open.bigmodel.cn/api"
+	}
+	return "https://api.z.ai/api"
+}
+
 // planFromBaseURL infers a plan from a configured endpoint URL, returning
 // ("", false) when it is not a known Z.AI/BigModel endpoint.
 func planFromBaseURL(baseURL string) (string, bool) {

@@ -49,7 +49,11 @@ func NewDetectionService(client *Client) *DetectionService {
 	}
 }
 
-// DetectAccountType detects the account type by testing different endpoints
+// DetectAccountType detects the account type by testing different endpoints.
+// The probe hosts follow Config.Region: a RegionChina client tests the
+// open.bigmodel.cn coding/paas endpoints, RegionGlobal (the default) tests
+// api.z.ai — so a China-issued key is classified against its own platform
+// rather than mis-failing auth on the global host.
 func (s *DetectionService) DetectAccountType(ctx context.Context) (*DetectedAccount, error) {
 	// Try to use cached result
 	s.mu.RLock()
@@ -62,12 +66,13 @@ func (s *DetectionService) DetectAccountType(ctx context.Context) (*DetectedAcco
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	codingURL, paasURL := s.probeURLs()
 	// Test Coding Plan endpoint
-	codingResult := s.testEndpoint(ctx, CodingBaseURL)
+	codingResult := s.testEndpoint(ctx, codingURL)
 	if codingResult.Working {
 		account := &DetectedAccount{
 			Type:        AccountTypeCodingPlan,
-			BaseURL:     CodingBaseURL,
+			BaseURL:     codingURL,
 			Working:     true,
 			Models:      []string{"glm-5.2", "glm-5-turbo", "glm-4.7"},
 			UsageLimits: s.detectCodingPlanLimits(),
@@ -77,11 +82,11 @@ func (s *DetectionService) DetectAccountType(ctx context.Context) (*DetectedAcco
 	}
 
 	// Test Pay-as-you-go endpoint
-	paasResult := s.testEndpoint(ctx, ProdBaseURL)
+	paasResult := s.testEndpoint(ctx, paasURL)
 	if paasResult.Working {
 		account := &DetectedAccount{
 			Type:        AccountTypePayAsYouGo,
-			BaseURL:     ProdBaseURL,
+			BaseURL:     paasURL,
 			Working:     true,
 			Models:      []string{}, // Will be populated
 			UsageLimits: nil,
@@ -93,15 +98,33 @@ func (s *DetectionService) DetectAccountType(ctx context.Context) (*DetectedAcco
 	return nil, fmt.Errorf("unable to detect account type - both endpoints failed")
 }
 
+// probeURLs returns the coding-plan and pay-as-you-go base URLs to probe,
+// selected by Config.Region. The China mirror paths mirror api.z.ai's layout
+// (live-verified for /models and /chat/completions — see BigModelBaseURL).
+func (s *DetectionService) probeURLs() (coding, paas string) {
+	if s.client.config.Region == RegionChina {
+		return ChinaCodingBaseURL, ChinaProdBaseURL
+	}
+	return CodingBaseURL, ProdBaseURL
+}
+
 func (s *DetectionService) testEndpoint(ctx context.Context, baseURL string) *EndpointTest {
 	result := &EndpointTest{
 		BaseURL: baseURL,
 	}
 
-	// Create a temporary client with the test endpoint URL
+	// Create a temporary client pointed at the probe URL. It inherits the
+	// parent's HTTPClient so a test (or a caller supplying a custom transport)
+	// can intercept the probe instead of hitting the real network; only the
+	// BaseURL is overridden. MaxRetries=-1 disables retries — a probe that
+	// fails shouldn't burn 3 backoff rounds before detection falls through to
+	// the next endpoint. ChinaAPIKey/Region/etc. are irrelevant for this
+	// one-shot probe against an explicit URL.
 	tempClient, err := NewClient(Config{
-		APIKey:  s.client.config.APIKey,
-		BaseURL: baseURL,
+		APIKey:     s.client.config.APIKey,
+		BaseURL:    baseURL,
+		HTTPClient: s.client.httpClient,
+		MaxRetries: -1,
 	})
 	if err != nil {
 		result.Error = err

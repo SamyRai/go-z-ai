@@ -22,6 +22,24 @@ const (
 	MonitorBaseURL   = "https://api.z.ai/api/monitor"
 	BizBaseURL       = "https://api.z.ai/api/biz"
 
+	// China*BaseURL mirrors the api.z.ai hosts on the China-mainland gateway
+	// (open.bigmodel.cn). A glm_coding_plan_china key's monitor/biz/agents
+	// calls should land here; selected via Config.Region = RegionChina. NOT
+	// VERIFIED LIVE for monitor/biz/agents on the China host — the China
+	// mirror is documented to serve the same OpenAPI surface as api.z.ai
+	// (live-verified for /models and /chat/completions, see BigModelBaseURL
+	// below), so these mirror that host's path layout. Pin with a cassette if
+	// you hold an entitled China key.
+	ChinaMonitorBaseURL = "https://open.bigmodel.cn/api/monitor"
+	ChinaBizBaseURL     = "https://open.bigmodel.cn/api/biz"
+	ChinaAgentsBaseURL  = "https://open.bigmodel.cn/api"
+
+	// ChinaCodingBaseURL / ChinaProdBaseURL are the China-mirror chat bases,
+	// used by DetectionService to probe the right platform for a RegionChina
+	// key. They mirror CodingBaseURL/ProdBaseURL on the global host.
+	ChinaCodingBaseURL = "https://open.bigmodel.cn/api/coding/paas/v4"
+	ChinaProdBaseURL   = "https://open.bigmodel.cn/api/paas/v4"
+
 	// BigModelBaseURL is Z.AI's China-mainland mirror (Zhipu's open.bigmodel.cn
 	// platform, run under the same "ZHIPU AI API" OpenAPI spec as api.z.ai.
 	// LIVE-VERIFIED 2026-07-11: a single z.ai API key authenticates
@@ -87,6 +105,14 @@ type Config struct {
 	// `$ref`/`$defs` — into the flat subset it accepts (see
 	// SanitizeToolSchemas). Set this to send tool schemas through untouched.
 	DisableToolSchemaCompat bool
+	// Region selects the regional gateway (api.z.ai vs open.bigmodel.cn) for
+	// the services whose host is otherwise hardcoded: monitor (quota/usage),
+	// biz (account info), and agents. It does NOT override Config.BaseURL
+	// (chat/completions) or BigModelBaseURL (embeddings/moderations).
+	// Defaults to RegionGlobal (api.z.ai) — the historical behavior. Set to
+	// RegionChina when the key was issued on open.bigmodel.cn so those calls
+	// land on the matching host. See region.go.
+	Region Region
 }
 
 // Client represents the Z.AI API client
