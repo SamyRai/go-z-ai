@@ -15,12 +15,19 @@ These apply to every command:
 | `--base-url string` | API base URL (default: `https://api.z.ai/api/paas/v4`) |
 | `--account string` | Use a stored account by name for this command (see [Accounts & Quota](accounts-and-quota.md)) |
 | `--china-api-key string` | open.bigmodel.cn key for Embeddings/Moderations (or `ZAI_CHINA_API_KEY`; falls back to `--api-key`) |
+| `--region string` | Regional gateway for monitor/biz/agents/detection: `global` (api.z.ai, default) or `china` (open.bigmodel.cn). Aliases `cn`, `bigmodel`, `west`. Or `ZAI_REGION` env. Does not override `--base-url`. Unknown values fall back to global. |
 | `--config string` | Config file (default: `.env`) |
 
 Every result-producing command takes `--format text\|json` (a few default to
 `json` where the payload is machine-oriented — e.g. `embeddings`,
 `moderations`). In `json` mode, progress/status chatter goes to stderr so
 stdout stays valid JSON you can pipe into `jq`.
+
+Set `--region china` (or `ZAI_REGION=china`) when your key was issued on
+`open.bigmodel.cn`, so quota/usage, account-info, agents, and account-type
+detection land on the matching host. It does **not** change the chat base URL
+(use `--base-url` for that) or the Embeddings/Moderations host (always the
+China platform). See [Accounts & Quota § Regional gateways](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn).
 
 ## Chat
 
@@ -39,7 +46,7 @@ zai-client chat async-result [task-id]
 | `--async` | Submit without waiting; poll with `chat async-result <task-id>` |
 | `--temperature float`, `--top-p float`, `--max-tokens int` | Sampling controls |
 | `--system string` | System message |
-| `--thinking string`, `--effort string` | Deep-thinking mode and effort level (`max\|high\|medium\|low\|minimal\|none`) |
+| `--thinking string`, `--effort string` | Deep-thinking mode and effort level (`max\|xhigh\|high\|medium\|low\|minimal\|none`; `xhigh`→`max` is GLM-5.2 only) |
 | `--show-reasoning` | Print `reasoning_content` to stderr |
 | `--json-schema string` | Structured output: `@file.json` or inline JSON |
 | `--tool string` | Function-calling tool declarations: `@tools.json` or inline JSON array |
@@ -176,7 +183,7 @@ zai-client rerank <query> <documents...> [--top-n N]
 ```
 
 Embeddings route to `open.bigmodel.cn` — see
-[Accounts & Quota § China platform key](accounts-and-quota.md#china-platform-key)
+[Accounts & Quota § Regional gateways](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn)
 for why, and what that means for authentication.
 
 ## Content moderation

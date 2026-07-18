@@ -48,7 +48,9 @@ fmt.Println(resp.Choices[0].Message.Content)
 | [Getting Started](docs/getting-started.md) | [CLI Reference](docs/cli-reference.md) |
 | [Accounts & Quota](docs/accounts-and-quota.md) | [Coding Tools](docs/coding-tools.md) |
 | [Library Guide](docs/library-guide.md) | [Error Handling](docs/error-handling.md) |
-| [Architecture](docs/architecture.md) | [Contributing](CONTRIBUTING.md) |
+| [Architecture](docs/architecture.md) | [Roadmap & Known Limitations](docs/roadmap.md) |
+| [Contributing](CONTRIBUTING.md) | [Security Policy](SECURITY.md) |
+| [Changelog](CHANGELOG.md) | |
 
 ## What's covered
 
