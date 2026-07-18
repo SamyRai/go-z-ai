@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/SamyRai/go-z-ai.svg)](https://pkg.go.dev/github.com/SamyRai/go-z-ai)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/github.com/SamyRai/go-z-ai/badge)](https://securityscorecards.dev/view.html?uri=github.com/SamyRai/go-z-ai)
+[![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/SamyRai/go-z-ai?label=openssf%20scorecard)](https://securityscorecards.dev/view.html?uri=github.com/SamyRai/go-z-ai)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 A Go CLI and client library for the Z.AI (Zhipu AI) API platform: chat
