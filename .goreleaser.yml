@@ -70,5 +70,8 @@ changelog:
 release:
   draft: false
   prerelease: auto
-  discussion_category_name: Releases
+  # Post a linked discussion in the "Announcements" category (created by GitHub
+  # when Discussions is enabled). Use an existing category name verbatim or the
+  # release publish step fails with 404.
+  discussion_category_name: Announcements
   name_template: '{{.Tag}}'
