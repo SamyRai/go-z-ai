@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/SamyRai/go-z-ai.svg)](https://pkg.go.dev/github.com/SamyRai/go-z-ai)
-[![Go Report Card](https://goreportcard.com/badge/github.com/SamyRai/go-z-ai)](https://goreportcard.com/report/github.com/SamyRai/go-z-ai)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/github.com/SamyRai/go-z-ai/badge)](https://securityscorecards.dev/view.html?uri=github.com/SamyRai/go-z-ai)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 一个用于 Z.AI（智谱 AI / BigModel）API 平台的 Go 命令行工具和客户端库：

@@ -80,10 +80,20 @@ within minutes.
 
 First release: `v0.1.0` (2026-07-19).
 
+## 7. OpenSSF Scorecard ✅
+
+`.github/workflows/scorecard.yml` runs `ossf/scorecard-action@v2.4.2` weekly
+(Monday ~05:17 UTC) and on `branch_protection_review`, publishes results to
+the Security tab (SARIF), and exposes them at
+`api.securityscorecards.dev/github.com/SamyRai/go-z-ai/badge` — which is the
+badge surfaced in the README.
+
+> ℹ️ Replaces the now-sunset Go Report Card badge. goreportcard.com shut down
+> its badge service on July 1, 2026 after 11 years; the badge endpoint now
+> returns a static "retired" placeholder for every repo regardless of grade.
+
 ## Later, if this grows
 
-- **OpenSSF Scorecard** (`ossf/scorecard-action`) publishing SARIF to the
-  Security tab — useful once there are outside contributors judging
-  trustworthiness before depending on this as a library.
 - **CODEOWNERS** — add when regular outside contributors arrive (today the
   ruleset deliberately skips required reviews).
+
