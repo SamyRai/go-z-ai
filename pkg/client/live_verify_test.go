@@ -186,3 +186,117 @@ func TestVerifyAgentsInvoke(t *testing.T) {
 		t.Error("expected at least one choice in the agent response")
 	}
 }
+
+// TestVerifyVoiceClone confirms the voice-clone success shape: a preview audio
+// file ID and a new voice ID usable as AudioSpeechRequest.Voice. Recording
+// requires ZAI_VOICE_SAMPLE_FILE_ID (a sample-audio file previously uploaded
+// with purpose voice-clone-input) and ZAI_VOICE_NAME (a unique name to assign
+// the clone). Skips offline until a cassette exists.
+func TestVerifyVoiceClone(t *testing.T) {
+	c := newVerifyClient(t, "voice_clone", DefaultBaseURL)
+
+	fileID := os.Getenv("ZAI_VOICE_SAMPLE_FILE_ID")
+	voiceName := os.Getenv("ZAI_VOICE_NAME")
+	if os.Getenv("ZAI_RECORD") == "1" && (fileID == "" || voiceName == "") {
+		t.Skip("recording Voice Clone requires ZAI_VOICE_SAMPLE_FILE_ID and ZAI_VOICE_NAME")
+	}
+	if fileID == "" {
+		fileID = "replayed-file-id" // the recorded cassette pins the real id
+	}
+	if voiceName == "" {
+		voiceName = "replayed-voice"
+	}
+
+	resp, err := c.Voice().Clone(context.Background(), VoiceCloneRequest{
+		VoiceName: voiceName,
+		Input:     "Hello, this is a clone preview.",
+		FileID:    fileID,
+	})
+	if err != nil {
+		t.Fatalf("Voice Clone: %v", err)
+	}
+	if resp.Voice == "" {
+		t.Error("expected a non-empty voice ID in the clone response")
+	}
+}
+
+// TestVerifyVoiceDelete confirms deleting a cloned voice returns the voice ID
+// and an update timestamp. Recording requires ZAI_VOICE_ID (a voice ID
+// returned by a prior Clone); offline, it skips until a cassette exists.
+func TestVerifyVoiceDelete(t *testing.T) {
+	c := newVerifyClient(t, "voice_delete", DefaultBaseURL)
+
+	voiceID := os.Getenv("ZAI_VOICE_ID")
+	if os.Getenv("ZAI_RECORD") == "1" && voiceID == "" {
+		t.Skip("recording Voice Delete requires ZAI_VOICE_ID (a voice ID from a prior Clone)")
+	}
+	if voiceID == "" {
+		voiceID = "replayed-voice"
+	}
+
+	resp, err := c.Voice().Delete(context.Background(), voiceID)
+	if err != nil {
+		t.Fatalf("Voice Delete: %v", err)
+	}
+	if resp.Voice == "" {
+		t.Error("expected the deleted voice ID echoed back")
+	}
+}
+
+// TestVerifyChatStreamToolCall confirms the GLM-4.6+ streamed-tool-call mode:
+// with StreamToolCall=true, tool-call deltas arrive incrementally in
+// StreamDelta.ToolCalls across multiple SSE chunks (rather than in a single
+// batch at the end). NOT VERIFIED LIVE — the field was added to match
+// docs.z.ai's chat-completion spec; record a cassette to pin the exact SSE
+// chunk shape.
+func TestVerifyChatStreamToolCall(t *testing.T) {
+	c := newVerifyClient(t, "chat_stream_tool_call", DefaultBaseURL)
+
+	tool := NewFunctionTool("get_weather", "weather lookup", map[string]any{
+		"type":       "object",
+		"properties": map[string]any{"city": map[string]any{"type": "string"}},
+		"required":   []any{"city"},
+	})
+
+	var toolCallChunks int
+	err := c.Chat().CreateStream(context.Background(), ChatRequest{
+		Model:          "glm-4.6",
+		Messages:       []Message{{Role: "user", Content: "What's the weather in Tokyo?"}},
+		Tools:          []Tool{tool},
+		StreamToolCall: true,
+	}, func(ch StreamChunk) error {
+		if len(ch.Choices) > 0 && len(ch.Choices[0].Delta.ToolCalls) > 0 {
+			toolCallChunks++
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("CreateStream: %v", err)
+	}
+	if toolCallChunks == 0 {
+		t.Error("expected at least one chunk carrying a tool-call delta under StreamToolCall=true")
+	}
+}
+
+// TestVerifyChatWebSearchResponse confirms the top-level web_search array a
+// chat completion returns when a web_search tool fires, and pins the entry
+// shape. NOT VERIFIED LIVE — the field placement is modeled from the docs.
+func TestVerifyChatWebSearchResponse(t *testing.T) {
+	c := newVerifyClient(t, "chat_web_search", DefaultBaseURL)
+
+	resp, err := c.Chat().Create(context.Background(), ChatRequest{
+		Model:    "glm-4.6",
+		Messages: []Message{{Role: "user", Content: "What are today's top headlines?"}},
+		Tools:    []Tool{NewWebSearchTool("today top headlines")},
+	})
+	if err != nil {
+		t.Fatalf("Chat Create: %v", err)
+	}
+	if len(resp.WebSearch) == 0 {
+		t.Fatal("expected a non-empty web_search array when a web_search tool fires")
+	}
+	w := resp.WebSearch[0]
+	if w.Link == "" {
+		t.Error("expected a non-empty link in the first web_search entry")
+	}
+}
