@@ -300,3 +300,124 @@ func TestGetAsyncResultParsesChatCompletion(t *testing.T) {
 		t.Fatalf("unexpected usage: %+v", resp.Usage)
 	}
 }
+
+// validateChatRequest must reject tool names outside ^[A-Za-z0-9_-]{1,64}$,
+// reject more than 128 function tools, and reject an unknown thinking.effort.
+func TestValidateChatRequestToolNameGuard(t *testing.T) {
+	valid := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95,
+		Tools: []Tool{{Type: ToolTypeFunction, Function: &FunctionDef{Name: "get_weather-42"}}}}
+	if err := validateChatRequest(&valid); err != nil {
+		t.Fatalf("valid request rejected: %v", err)
+	}
+
+	bad := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95,
+		Tools: []Tool{{Type: ToolTypeFunction, Function: &FunctionDef{Name: "bad name!"}}}}
+	if err := validateChatRequest(&bad); err == nil {
+		t.Fatal("expected error for tool name with spaces/punctuation, got nil")
+	}
+}
+
+func TestValidateChatRequestToolNameTooLong(t *testing.T) {
+	long := strings.Repeat("a", 65)
+	req := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95,
+		Tools: []Tool{{Type: ToolTypeFunction, Function: &FunctionDef{Name: long}}}}
+	if err := validateChatRequest(&req); err == nil {
+		t.Fatal("expected error for 65-char tool name, got nil")
+	}
+}
+
+func TestValidateChatRequestFunctionCap(t *testing.T) {
+	tools := make([]Tool, ToolMaxFunctions+1)
+	for i := range tools {
+		tools[i] = Tool{Type: ToolTypeFunction, Function: &FunctionDef{Name: "t"}}
+	}
+	req := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95, Tools: tools}
+	if err := validateChatRequest(&req); err == nil {
+		t.Fatalf("expected error for %d function tools (max %d), got nil", ToolMaxFunctions+1, ToolMaxFunctions)
+	}
+}
+
+func TestValidateChatRequestInvalidEffort(t *testing.T) {
+	req := ChatRequest{
+		Model:    "m",
+		Messages: []Message{{Role: "user", Content: "hi"}},
+		TopP:     0.95,
+		Thinking: &ThinkingConfig{Type: "enabled", Effort: "ultra"},
+	}
+	if err := validateChatRequest(&req); err == nil {
+		t.Fatal("expected error for unknown effort 'ultra', got nil")
+	}
+}
+
+func TestValidateChatRequestValidEffort(t *testing.T) {
+	for _, e := range []string{EffortMax, EffortXhigh, EffortHigh, EffortMedium, EffortLow, EffortMinimal, EffortNone} {
+		req := ChatRequest{
+			Model:    "m",
+			Messages: []Message{{Role: "user", Content: "hi"}},
+			TopP:     0.95,
+			Thinking: &ThinkingConfig{Type: "enabled", Effort: e},
+		}
+		if err := validateChatRequest(&req); err != nil {
+			t.Errorf("effort %q rejected: %v", e, err)
+		}
+	}
+}
+
+// A function tool with an empty Type (the legacy implicit case) must still be
+// treated as "function" and its name validated.
+func TestValidateChatRequestImplicitFunctionType(t *testing.T) {
+	req := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95,
+		Tools: []Tool{{Function: &FunctionDef{Name: "ok_name"}}}}
+	if err := validateChatRequest(&req); err != nil {
+		t.Fatalf("implicit-function-type request rejected: %v", err)
+	}
+}
+
+// A function-typed tool with no Function payload must be rejected.
+func TestValidateChatRequestFunctionMissingPayload(t *testing.T) {
+	req := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95,
+		Tools: []Tool{{Type: ToolTypeFunction}}}
+	if err := validateChatRequest(&req); err == nil {
+		t.Fatal("expected error for function tool with nil Function payload, got nil")
+	}
+}
+
+// A retrieval/web_search tool with a nil payload must be rejected — otherwise
+// it would serialize as a bare {"type":...} and likely 400 at the server.
+func TestValidateChatRequestRetrievalMissingPayload(t *testing.T) {
+	req := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95,
+		Tools: []Tool{{Type: ToolTypeRetrieval}}}
+	if err := validateChatRequest(&req); err == nil {
+		t.Fatal("expected error for retrieval tool with nil Retrieval payload, got nil")
+	}
+}
+
+func TestValidateChatRequestWebSearchMissingPayload(t *testing.T) {
+	req := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95,
+		Tools: []Tool{{Type: ToolTypeWebSearch}}}
+	if err := validateChatRequest(&req); err == nil {
+		t.Fatal("expected error for web_search tool with nil WebSearch payload, got nil")
+	}
+}
+
+// A retrieval/web_search tool with its payload present must pass validation
+// (no name check applies — only function tools carry a name).
+func TestValidateChatRequestRetrievalAndWebSearchAccepted(t *testing.T) {
+	req := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95,
+		Tools: []Tool{
+			NewRetrievalTool("kb-1", "find docs"),
+			NewWebSearchTool("query"),
+		}}
+	if err := validateChatRequest(&req); err != nil {
+		t.Fatalf("valid retrieval/web_search tools rejected: %v", err)
+	}
+}
+
+// An unknown tool type must be rejected explicitly (not silently ignored).
+func TestValidateChatRequestUnknownToolType(t *testing.T) {
+	req := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95,
+		Tools: []Tool{{Type: "code_interpreter"}}}
+	if err := validateChatRequest(&req); err == nil {
+		t.Fatal("expected error for unknown tool type, got nil")
+	}
+}

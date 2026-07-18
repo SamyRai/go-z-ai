@@ -35,13 +35,33 @@ type ChatRequest struct {
 	Thinking       *ThinkingConfig `json:"thinking,omitempty"`
 	Metadata       map[string]any  `json:"metadata,omitempty"`
 	User           string          `json:"user,omitempty"`
+	// StreamToolCall enables streaming responses for function (tool) calls,
+	// so tool-call deltas arrive incrementally like content deltas instead of
+	// in a single batch at the end. Default false. Only supported by GLM-4.6
+	// and above. NOT VERIFIED LIVE — captured from the docs.z.ai
+	// chat-completion spec; record a cassette to confirm the SSE chunk shape
+	// before relying on it. See StreamDelta.ToolCalls for where the deltas land.
+	StreamToolCall bool `json:"stream_tool_call,omitempty"`
 }
+
+// Effort levels for ThinkingConfig.Effort, as documented on docs.z.ai. The
+// server normalizes: none/minimal -> skip thinking, low/medium -> high,
+// xhigh -> max. Effort is only honored by GLM-5.2; other models ignore it.
+const (
+	EffortMax     = "max"
+	EffortXhigh   = "xhigh"
+	EffortHigh    = "high"
+	EffortMedium  = "medium"
+	EffortLow     = "low"
+	EffortMinimal = "minimal"
+	EffortNone    = "none"
+)
 
 // ThinkingConfig controls chain-of-thought reasoning
 type ThinkingConfig struct {
 	Type      string `json:"type,omitempty"`      // enabled, disabled
 	Preserved bool   `json:"preserved,omitempty"` // keep reasoning across turns
-	Effort    string `json:"effort,omitempty"`    // max, high, medium, low, minimal, none
+	Effort    string `json:"effort,omitempty"`    // one of the Effort* constants (GLM-5.2 only)
 }
 
 // ResponseFormat controls the output format
@@ -69,26 +89,92 @@ func NewJSONSchemaFormat(name string, schema json.RawMessage, strict bool) *Resp
 	}
 }
 
-// Tool represents a function/tool definition
+// Tool type identifiers, as documented on docs.z.ai. The chat-completion
+// spec lists "function", "retrieval", and "web_search" as the possible
+// tools[].type values — though the same spec also notes only "function" is
+// fully supported today. The retrieval/web_search request shapes are marked
+// NOT VERIFIED LIVE until a cassette pins them down; see NewRetrievalTool /
+// NewWebSearchTool.
+const (
+	ToolTypeFunction  = "function"
+	ToolTypeRetrieval = "retrieval"
+	ToolTypeWebSearch = "web_search"
+)
+
+// ToolMaxFunctions is the documented cap on the number of tools a single
+// request may carry when any are type "function". Enforced in
+// validateChatRequest so callers get a clear client-side error rather than
+// an opaque server one.
+const ToolMaxFunctions = 128
+
+// Tool represents a tool the model may invoke. Type selects which payload
+// field the server reads; today only Type=="function" (Function) is
+// live-supported. The wire shape of retrieval/web_search is modeled for
+// forward compatibility and marked NOT VERIFIED LIVE.
 type Tool struct {
-	Type     string       `json:"type"` // function
-	Function *FunctionDef `json:"function,omitempty"`
+	Type      string       `json:"type"`
+	Function  *FunctionDef `json:"function,omitempty"`
+	Retrieval *Retrieval   `json:"retrieval,omitempty"`
+	WebSearch *WebSearch   `json:"web_search,omitempty"`
 }
 
-// FunctionDef defines a function for tool calling
+// FunctionDef defines a function for tool calling. Name must match
+// ^[a-zA-Z0-9_-]+$ and be 1–64 chars (enforced in validateChatRequest).
 type FunctionDef struct {
 	Name        string         `json:"name"`
 	Description string         `json:"description,omitempty"`
 	Parameters  map[string]any `json:"parameters,omitempty"`
 }
 
-// ChatResponse represents a chat completion response
+// Retrieval is the payload for a type:"retrieval" tool. NOT VERIFIED LIVE —
+// the chat-completion spec documents this tool type but its request shape is
+// not yet pinned by a cassette.
+type Retrieval struct {
+	Prompt      string `json:"prompt,omitempty"`
+	KnowledgeID string `json:"knowledge_id,omitempty"`
+}
+
+// WebSearch is the payload for a type:"web_search" tool. The shape follows
+// the official Python SDK example (tools=[{"type":"web_search","web_search":
+// {"search_query":["..."]}}]). NOT VERIFIED LIVE against a chat-completion
+// success response — SearchQuery is the documented field; additional fields
+// the server may accept are not modeled here to avoid guessing wire names.
+type WebSearch struct {
+	SearchQuery []string `json:"search_query,omitempty"`
+}
+
+// NewFunctionTool is the typed constructor for a function tool.
+func NewFunctionTool(name, description string, parameters map[string]any) Tool {
+	return Tool{Type: ToolTypeFunction, Function: &FunctionDef{
+		Name: name, Description: description, Parameters: parameters,
+	}}
+}
+
+// NewRetrievalTool is the typed constructor for a retrieval tool. NOT VERIFIED
+// LIVE.
+func NewRetrievalTool(knowledgeID, prompt string) Tool {
+	return Tool{Type: ToolTypeRetrieval, Retrieval: &Retrieval{KnowledgeID: knowledgeID, Prompt: prompt}}
+}
+
+// NewWebSearchTool is the typed constructor for a web_search tool carrying one
+// or more search queries. NOT VERIFIED LIVE.
+func NewWebSearchTool(queries ...string) Tool {
+	return Tool{Type: ToolTypeWebSearch, WebSearch: &WebSearch{SearchQuery: queries}}
+}
+
+// ChatResponse represents a chat completion response. When the request used a
+// web_search tool, WebSearch carries the matched sources the model grounded
+// its answer in (a top-level array, sibling to Choices — the entry shape
+// reuses WebSearchResult from tools.go, which matches docs.z.ai's web-search
+// reference; NOT VERIFIED LIVE until a chat-completion cassette pins the exact
+// placement of the array).
 type ChatResponse struct {
-	ID      string   `json:"id"`
-	Created int64    `json:"created"`
-	Model   string   `json:"model"`
-	Choices []Choice `json:"choices"`
-	Usage   Usage    `json:"usage"`
+	ID        string            `json:"id"`
+	Created   int64             `json:"created"`
+	Model     string            `json:"model"`
+	Choices   []Choice          `json:"choices"`
+	Usage     Usage             `json:"usage"`
+	WebSearch []WebSearchResult `json:"web_search,omitempty"`
 }
 
 // Choice represents a response choice
@@ -97,6 +183,17 @@ type Choice struct {
 	Message      ResponseMsg `json:"message"`
 	FinishReason string      `json:"finish_reason"`
 }
+
+// FinishReason values documented on docs.z.ai. Code that needs to switch on
+// the reason should prefer these consts over bare strings.
+const (
+	FinishReasonStop                       = "stop"
+	FinishReasonToolCalls                  = "tool_calls"
+	FinishReasonLength                     = "length"
+	FinishReasonSensitive                  = "sensitive"
+	FinishReasonModelContextWindowExceeded = "model_context_window_exceeded"
+	FinishReasonNetworkError               = "network_error"
+)
 
 // ResponseMsg represents the response message
 type ResponseMsg struct {
