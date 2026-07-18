@@ -105,14 +105,17 @@ international host `api.z.ai` (the default) and the China-mainland mirror
 `open.bigmodel.cn`. Two separate concerns decide which host a given call
 lands on:
 
-**1. Embeddings / Moderations / Rerank / Voice always route to
-`open.bigmodel.cn`** — it's the only platform that documents those endpoints
-(`api.z.ai`'s doc index doesn't mention them). `--china-api-key` /
+**1. Embeddings and Moderations always route to `open.bigmodel.cn`** —
+they're the only services pinned to the China host in code
+(`pkg/client/embeddings.go`, `pkg/client/moderations.go` both call
+`doRequestBaseKey(BigModelBaseURL, …)`). `--china-api-key` /
 `ZAI_CHINA_API_KEY` is the credential knob here; it's optional because a
 regular `ZAI_API_KEY` authenticates identically on both platforms (same
 `/models` catalog, same billing-level errors — live-verified), so the
 fallback is the common case. Set a separate China key only if you hold a
-distinct bigmodel.cn-only credential.
+distinct bigmodel.cn-only credential. Rerank and Voice use the default
+`--base-url` (`api.z.ai` by default) — they're documented only on the
+China platform but the client doesn't force-route them.
 
 **2. monitor / biz / agents / detection route to `open.bigmodel.cn` when
 `--region china` (or `ZAI_REGION=china`)** is set; otherwise they route to
@@ -123,7 +126,7 @@ auth or get mis-classified. `--region` does **not** change the chat base URL
 (use `--base-url` for that) or the Embeddings/Moderations host. Aliases:
 `cn`, `bigmodel`, `west`; an unknown value falls back to global.
 
-Whether you get real results from the China-only services (Embeddings,
+Whether you get real results from the China-documented services (Embeddings,
 Moderations, Rerank, Voice) depends on your account's **plan entitlement**,
 not which key you use. A GLM Coding Plan account's model catalog is
 chat-only — calling those with that account returns `400 Unknown Model`

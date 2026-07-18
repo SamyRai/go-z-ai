@@ -10,9 +10,19 @@ This gets you from zero to your first `zai-client` command in a couple of minute
 go install github.com/SamyRai/go-z-ai@latest
 ```
 
-This puts a `go-z-ai` binary on your `$GOPATH/bin` — rename it or alias it to
-`zai-client` if you want the shorter name used throughout these docs, or build
-from source instead:
+This puts a `go-z-ai` binary on your `$GOPATH/bin`. **Every example in these
+docs uses the shorter name `zai-client`**, so add one of these to your shell
+startup before going further:
+
+```bash
+# Option A — rename (simplest)
+mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+
+# Option B — alias (keeps the original name)
+echo "alias zai-client=go-z-ai" >> ~/.zshrc   # or ~/.bashrc
+```
+
+Or build from source with the name you want directly:
 
 ```bash
 git clone https://github.com/SamyRai/go-z-ai.git
@@ -20,8 +30,13 @@ cd go-z-ai
 go build -o zai-client .
 ```
 
-The rest of this guide assumes the binary is called `zai-client` and is on
-your `PATH`.
+Whichever path you took, confirm `zai-client` resolves and is on your `PATH`:
+
+```bash
+zai-client --version
+```
+
+The rest of this guide assumes the binary is called `zai-client`.
 
 ## 2. Authenticate
 

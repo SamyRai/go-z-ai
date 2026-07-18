@@ -3,6 +3,17 @@
 `pkg/client` is a standalone Go library — everything the CLI does, it does by
 calling this package. You can depend on it directly without the CLI at all.
 
+## Contents
+
+- [Creating a client](#creating-a-client)
+- [Services](#services)
+- [Chat completions](#chat-completions)
+- [Anthropic-compatible Messages API](#anthropic-compatible-messages-api)
+- [Error handling](#error-handling)
+- [Multi-account credential management](#multi-account-credential-management)
+- [Testing your own code against this client](#testing-your-own-code-against-this-client)
+- [Architecture notes](#architecture-notes)
+
 ```bash
 go get github.com/SamyRai/go-z-ai
 ```
@@ -60,6 +71,7 @@ a pending retry backoff.
 | `c.Files()` | `Upload`, `List`, `Delete`, `Content` |
 | `c.Batch()` | `Create`, `Retrieve`, `List`, `Cancel` |
 | `c.Agents()` | `Invoke`, `AsyncResult` |
+| `c.Anthropic()` | `Create`, `CreateStream` — Anthropic-protocol `/v1/messages` surface |
 | `c.Embeddings()` | `Create` (routes to `open.bigmodel.cn`) |
 | `c.Moderations()` | `Create` (routes to `open.bigmodel.cn`) |
 | `c.Rerank()` | `Create` |

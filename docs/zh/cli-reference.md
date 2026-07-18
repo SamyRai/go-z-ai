@@ -5,6 +5,23 @@
 本页是一次有组织的概览；如果本页与 `--help` 出现不一致，请以 `--help`
 为准。
 
+## 目录
+
+- [全局 flag](#全局-flag)
+- [聊天补全](#聊天补全)
+- [模型](#模型)
+- [账户、用量与配额](#账户用量与配额)
+- [编码工具（GLM Coding Plan）](#编码工具glm-coding-plan)
+- [文件与批量任务](#文件与批量任务)
+- [媒体生成](#媒体生成)
+- [文档解析与 OCR](#文档解析与-ocr)
+- [检索辅助](#检索辅助)
+- [内容审核](#内容审核)
+- [Agents](#agents)
+- [工具（网页搜索、reader、tokenizer）](#工具网页搜索readertokenizer)
+- [Anthropic 兼容端点](#anthropic-兼容端点)
+- [终端 UI](#终端-ui)
+
 ## 全局 flag
 
 以下 flag 适用于每条命令：
@@ -17,6 +34,7 @@
 | `--china-api-key string` | 用于 embeddings/moderations 的 open.bigmodel.cn key（或 `ZAI_CHINA_API_KEY`；未设置时回退到 `--api-key`） |
 | `--region string` | 用于 monitor/biz/agents/detection 的区域网关：`global`（api.z.ai，默认）或 `china`（open.bigmodel.cn）。别名 `cn`、`bigmodel`、`west`。或使用 `ZAI_REGION` 环境变量。不会覆盖 `--base-url`。未知值回退到 global。 |
 | `--config string` | 配置文件（默认：`.env`） |
+| `--version` | 打印版本（标签、提交、构建日期）并退出。在发布版本中由 GoReleaser ldflags 填充；否则为 `dev`。 |
 
 每条会产生结果的命令都接受 `--format text\|json`（少数命令在 payload
 面向机器时默认使用 `json`——例如 `embeddings`、`moderations`）。在
@@ -89,6 +107,7 @@ zai-client accounts add <name> --api-key <key> [--type coding_plan|pay_as_you_go
 zai-client accounts list [--format json] [--reveal]   # keys masked by default; --reveal for export
 zai-client accounts use <name>
 zai-client accounts show [name] [--format json] [--reveal]
+zai-client accounts current                            # 'accounts show' 的简写（当前激活账户）
 zai-client accounts quota [--only name...]
 zai-client accounts usage [--days N] [--today] [--metric model|tool|both]
 zai-client accounts remove <name> [--yes]
@@ -106,6 +125,7 @@ Coding Plan。完整流程见 [编码工具](coding-tools.md)。
 ```bash
 zai-client coding auth <plan> <key>      # validate + store a credential
 zai-client coding auth revoke
+zai-client coding auth reload <tool>     # 重新把已存储的凭据推送到工具配置
 zai-client coding load <tool>            # write it into a tool's config
 zai-client coding unload <tool>
 zai-client coding status
@@ -137,9 +157,10 @@ zai-client batch cancel <batch-id>
 ## 媒体生成
 
 ```bash
-# Images (glm-image | cogview-4-250304)
-zai-client image generate <prompt> [--model ...] [--size ...] [--quality hd|standard] [--async]
+# 图像——默认模型 glm-image（也支持 cogview-4-250304）
+zai-client image generate <prompt> [--model glm-image|cogview-4-250304] [--size ...] [--quality hd|standard] [--async]
 zai-client image status <id>
+# --quality：默认为 hd（约 20 秒）；standard 更快（约 5-10 秒）。
 
 # Video — always async (cogvideox-3 | viduq1-text | viduq1-image | vidu2-image | ...)
 zai-client video generate --prompt "..." [--model ...] [--duration N] [--aspect-ratio ...]
@@ -180,6 +201,7 @@ zai-client rerank <query> <documents...> [--top-n N]
 
 embeddings 会路由到 `open.bigmodel.cn`——关于原因以及对鉴权的影响，见
 [账户与配额 § 区域网关](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn)。
+Rerank 使用默认的 `--base-url`（并不固定指向中国平台主机）。
 
 ## 内容审核
 

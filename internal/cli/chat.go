@@ -90,7 +90,7 @@ func init() {
 	chatCreateCmd.Flags().BoolVar(&chatDoSample, "do-sample", false, "Enable the sampling strategy")
 	chatCreateCmd.Flags().StringSliceVar(&chatStop, "stop", nil, "Stop sequences (repeatable, max 4)")
 	chatCreateCmd.Flags().StringVar(&chatThinking, "thinking", "", "Deep thinking: enabled or disabled")
-	chatCreateCmd.Flags().StringVar(&chatEffort, "effort", "", "Thinking effort: max, high, medium, low, minimal, none")
+	chatCreateCmd.Flags().StringVar(&chatEffort, "effort", "", "Thinking effort: max, xhigh, high, medium, low, minimal, none (xhigh→max is GLM-5.2 only)")
 	chatCreateCmd.Flags().BoolVar(&chatShowReason, "show-reasoning", false, "Print reasoning_content (to stderr in text mode)")
 	chatCreateCmd.Flags().StringVar(&chatSchemaFile, "json-schema", "", "Structured output schema: @file.json or inline JSON")
 	chatCreateCmd.Flags().StringVar(&chatSchemaName, "schema-name", "output", "Name for the json_schema response format")

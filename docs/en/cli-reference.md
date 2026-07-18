@@ -5,6 +5,23 @@ list (`zai-client <command> --help`, `zai-client <command> <subcommand> --help`)
 This page is the organized tour; treat `--help` as the source of truth if the
 two ever disagree.
 
+## Contents
+
+- [Global flags](#global-flags)
+- [Chat](#chat)
+- [Models](#models)
+- [Accounts, usage, and quota](#accounts-usage-and-quota)
+- [Coding tools (GLM Coding Plan)](#coding-tools-glm-coding-plan)
+- [Files & batch](#files--batch)
+- [Media generation](#media-generation)
+- [Document parsing & OCR](#document-parsing--ocr)
+- [Retrieval helpers](#retrieval-helpers)
+- [Content moderation](#content-moderation)
+- [Agents](#agents)
+- [Tools (web search, reader, tokenizer)](#tools-web-search-reader-tokenizer)
+- [Anthropic-compatible endpoint](#anthropic-compatible-endpoint)
+- [Terminal UI](#terminal-ui)
+
 ## Global flags
 
 These apply to every command:
@@ -17,6 +34,7 @@ These apply to every command:
 | `--china-api-key string` | open.bigmodel.cn key for Embeddings/Moderations (or `ZAI_CHINA_API_KEY`; falls back to `--api-key`) |
 | `--region string` | Regional gateway for monitor/biz/agents/detection: `global` (api.z.ai, default) or `china` (open.bigmodel.cn). Aliases `cn`, `bigmodel`, `west`. Or `ZAI_REGION` env. Does not override `--base-url`. Unknown values fall back to global. |
 | `--config string` | Config file (default: `.env`) |
+| `--version` | Print version (tag, commit, build date) and exit. Populated by GoReleaser ldflags in release builds; `dev` otherwise. |
 
 Every result-producing command takes `--format text\|json` (a few default to
 `json` where the payload is machine-oriented — e.g. `embeddings`,
@@ -91,6 +109,7 @@ zai-client accounts add <name> --api-key <key> [--type coding_plan|pay_as_you_go
 zai-client accounts list [--format json] [--reveal]   # keys masked by default; --reveal for export
 zai-client accounts use <name>
 zai-client accounts show [name] [--format json] [--reveal]
+zai-client accounts current                            # shorthand for 'accounts show' (active account)
 zai-client accounts quota [--only name...]
 zai-client accounts usage [--days N] [--today] [--metric model|tool|both]
 zai-client accounts remove <name> [--yes]
@@ -108,6 +127,7 @@ Coding Plan. Full walkthrough: [Coding Tools](coding-tools.md).
 ```bash
 zai-client coding auth <plan> <key>      # validate + store a credential
 zai-client coding auth revoke
+zai-client coding auth reload <tool>     # re-push stored creds into a tool's config
 zai-client coding load <tool>            # write it into a tool's config
 zai-client coding unload <tool>
 zai-client coding status
@@ -140,9 +160,10 @@ file ID.
 ## Media generation
 
 ```bash
-# Images (glm-image | cogview-4-250304)
-zai-client image generate <prompt> [--model ...] [--size ...] [--quality hd|standard] [--async]
+# Images — default model glm-image (cogview-4-250304 also supported)
+zai-client image generate <prompt> [--model glm-image|cogview-4-250304] [--size ...] [--quality hd|standard] [--async]
 zai-client image status <id>
+# --quality: hd is the default (~20s); standard is faster (~5-10s).
 
 # Video — always async (cogvideox-3 | viduq1-text | viduq1-image | vidu2-image | ...)
 zai-client video generate --prompt "..." [--model ...] [--duration N] [--aspect-ratio ...]
@@ -184,7 +205,8 @@ zai-client rerank <query> <documents...> [--top-n N]
 
 Embeddings route to `open.bigmodel.cn` — see
 [Accounts & Quota § Regional gateways](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn)
-for why, and what that means for authentication.
+for why, and what that means for authentication. Rerank uses the default
+`--base-url` (it is not pinned to the China host).
 
 ## Content moderation
 
@@ -192,7 +214,7 @@ for why, and what that means for authentication.
 zai-client moderations check <text>
 ```
 
-Also routes to `open.bigmodel.cn` — same note as Embeddings above.
+Routes to `open.bigmodel.cn` — same note as Embeddings above.
 
 ## Agents
 

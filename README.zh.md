@@ -19,6 +19,14 @@
 go install github.com/SamyRai/go-z-ai@latest
 ```
 
+这会在 `$GOPATH/bin` 下生成一个名为 `go-z-ai` 的二进制。下面的示例都使用更短的
+名字 **`zai-client`**——做软链或重命名即可：
+
+```bash
+ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+# 或者：mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+```
+
 需要 Go 1.26.4+ 和一个 [Z.AI API Key](https://z.ai/manage-apikey)。
 从源码构建、首次鉴权、故障排查请见 **[快速开始 →](docs/zh/getting-started.md)**
 

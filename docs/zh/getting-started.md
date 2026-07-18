@@ -10,9 +10,19 @@
 go install github.com/SamyRai/go-z-ai@latest
 ```
 
-这会在你的 `$GOPATH/bin` 下放一个 `go-z-ai` 二进制文件——如果你想让本文档中
-使用的简短名字生效，可以把它重命名或设置别名到 `zai-client`，或者直接从源码
-构建：
+这会在你的 `$GOPATH/bin` 下放一个 `go-z-ai` 二进制文件。**本文档中的所有示例
+都使用更简短的名字 `zai-client`**，所以在继续之前，请在你的 shell 启动脚本里
+二选一地加上下面其中一种：
+
+```bash
+# 方式 A —— 重命名（最简单）
+mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+
+# 方式 B —— 别名（保留原名）
+echo "alias zai-client=go-z-ai" >> ~/.zshrc   # 或 ~/.bashrc
+```
+
+或者直接从源码构建出你想要的名字：
 
 ```bash
 git clone https://github.com/SamyRai/go-z-ai.git
@@ -20,7 +30,13 @@ cd go-z-ai
 go build -o zai-client .
 ```
 
-本指南余下部分假设这个二进制文件叫做 `zai-client` 并且位于你的 `PATH` 上。
+无论你走哪条路径，都请确认 `zai-client` 能被解析到、并且位于你的 `PATH` 上：
+
+```bash
+zai-client --version
+```
+
+本指南余下部分假设这个二进制文件叫做 `zai-client`。
 
 ## 2. 鉴权
 

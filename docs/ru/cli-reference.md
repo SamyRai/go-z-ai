@@ -6,6 +6,23 @@
 обзор; считайте `--help` источником истины, если когда-либо возникнут
 расхождения.
 
+## Содержание
+
+- [Глобальные флаги](#глобальные-флаги)
+- [Чат](#чат)
+- [Модели](#модели)
+- [Аккаунты, использование и квота](#аккаунты-использование-и-квота)
+- [Инструменты для кода (GLM Coding Plan)](#инструменты-для-кода-glm-coding-plan)
+- [Файлы и пакетная обработка](#файлы-и-пакетная-обработка)
+- [Генерация медиа](#генерация-медиа)
+- [Разбор документов и OCR](#разбор-документов-и-ocr)
+- [Вспомогательные инструменты поиска](#вспомогательные-инструменты-поиска)
+- [Модерация контента](#модерация-контента)
+- [Агенты](#агенты)
+- [Инструменты (веб-поиск, reader, токенизатор)](#инструменты-веб-поиск-reader-токенизатор)
+- [Эндпоинт, совместимый с Anthropic](#эндпоинт-совместимый-с-anthropic)
+- [Терминальный UI](#терминальный-ui)
+
 ## Глобальные флаги
 
 Эти флаги применяются ко всем командам:
@@ -18,6 +35,7 @@
 | `--china-api-key string` | Ключ open.bigmodel.cn для embeddings/модераций (или `ZAI_CHINA_API_KEY`; при отсутствии берётся `--api-key`) |
 | `--region string` | Региональный шлюз для monitor/biz/agents/detection: `global` (api.z.ai, по умолчанию) или `china` (open.bigmodel.cn). Псевдонимы: `cn`, `bigmodel`, `west`. Либо переменная окружения `ZAI_REGION`. Не переопределяет `--base-url`. Неизвестные значения приводят к global. |
 | `--config string` | Файл конфигурации (по умолчанию: `.env`) |
+| `--version` | Печатает версию (тег, коммит, дату сборки) и выходит. Заполняется ldflags GoReleaser в релизных сборках; иначе `dev`. |
 
 Каждая команда, возвращающая результат, принимает `--format text\|json`
 (некоторые по умолчанию используют `json`, если полезная нагрузка ориентирована
@@ -96,6 +114,7 @@ zai-client accounts add <name> --api-key <key> [--type coding_plan|pay_as_you_go
 zai-client accounts list [--format json] [--reveal]   # ключи по умолчанию скрыты; --reveal для экспорта
 zai-client accounts use <name>
 zai-client accounts show [name] [--format json] [--reveal]
+zai-client accounts current                            # сокращение для 'accounts show' (активный аккаунт)
 zai-client accounts quota [--only name...]
 zai-client accounts usage [--days N] [--today] [--metric model|tool|both]
 zai-client accounts remove <name> [--yes]
@@ -114,6 +133,7 @@ zai-client validate
 ```bash
 zai-client coding auth <plan> <key>      # проверить и сохранить учётные данные
 zai-client coding auth revoke
+zai-client coding auth reload <tool>     # повторно записать сохранённые учётные данные в конфиг инструмента
 zai-client coding load <tool>            # записать в конфиг инструмента
 zai-client coding unload <tool>
 zai-client coding status
@@ -146,9 +166,10 @@ zai-client batch cancel <batch-id>
 ## Генерация медиа
 
 ```bash
-# Изображения (glm-image | cogview-4-250304)
+# Изображения — модель по умолчанию glm-image (также поддерживается cogview-4-250304)
 zai-client image generate <prompt> [--model ...] [--size ...] [--quality hd|standard] [--async]
 zai-client image status <id>
+# --quality: hd по умолчанию (~20 с); standard быстрее (~5-10 с).
 
 # Видео — всегда асинхронно (cogvideox-3 | viduq1-text | viduq1-image | vidu2-image | ...)
 zai-client video generate --prompt "..." [--model ...] [--duration N] [--aspect-ratio ...]
@@ -190,7 +211,8 @@ zai-client rerank <query> <documents...> [--top-n N]
 
 Embeddings направляются на `open.bigmodel.cn` — см.
 [Аккаунты и квоты § Региональные шлюзы](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn),
-почему так и что это значит для аутентификации.
+почему так и что это значит для аутентификации. Rerank использует `--base-url`
+по умолчанию (не привязан к китайскому хосту).
 
 ## Модерация контента
 

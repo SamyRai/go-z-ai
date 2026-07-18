@@ -3,6 +3,17 @@
 `pkg/client` 是一个独立的 Go 库——CLI 所做的一切，都是通过调用这个 package
 完成的。你可以直接依赖它，完全不需要带上 CLI。
 
+## 目录
+
+- [创建客户端](#创建客户端)
+- [服务](#服务)
+- [聊天补全](#聊天补全)
+- [Anthropic 兼容的 Messages API](#anthropic-兼容的-messages-api)
+- [错误处理](#错误处理)
+- [多账户凭据管理](#多账户凭据管理)
+- [用本客户端测试你自己的代码](#用本客户端测试你自己的代码)
+- [架构说明](#架构说明)
+
 ```bash
 go get github.com/SamyRai/go-z-ai
 ```
@@ -59,6 +70,7 @@ c, err := client.NewClientFromEnv() // reads ZAI_API_KEY, ZAI_API_BASE_URL
 | `c.Files()` | `Upload`、`List`、`Delete`、`Content` |
 | `c.Batch()` | `Create`、`Retrieve`、`List`、`Cancel` |
 | `c.Agents()` | `Invoke`、`AsyncResult` |
+| `c.Anthropic()` | `Create`、`CreateStream`——Anthropic 协议 `/v1/messages` 接口 |
 | `c.Embeddings()` | `Create`（路由到 `open.bigmodel.cn`） |
 | `c.Moderations()` | `Create`（路由到 `open.bigmodel.cn`） |
 | `c.Rerank()` | `Create` |

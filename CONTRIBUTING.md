@@ -66,3 +66,15 @@ drain a request body with `io.ReadAll`, never a single `Read` into a
 
 See [SECURITY.md](SECURITY.md) — please don't open a public issue for a
 vulnerability.
+
+## Documentation and translations
+
+Docs live under `docs/<lang>/` (`en`, `ru`, `zh`). **English (`docs/en/`) is
+the source of truth** — write your change there first. The other locales are
+translations that intentionally may lag behind; don't block a PR on them, but
+do add a `## Translation debt` line to your PR description listing which
+`docs/en/*.md` you touched, so the next translation pass picks them up.
+
+When updating `docs/en/`, also update the corresponding translated file under
+`docs/ru/` and `docs/zh/` if your change is small (a one-line correction, a
+new flag in a table). Larger translations are tracked as follow-up work.

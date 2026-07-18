@@ -12,6 +12,11 @@
 - [ ] `govulncheck ./...` is clean (see CONTRIBUTING.md for the versioned command)
 - [ ] Added/updated tests for the behavior change
 
+## Docs
+
+- [ ] If this changes user-facing behavior, I updated `docs/en/` (the source of truth)
+- [ ] If `docs/en/` changed, I noted translation debt for `docs/ru/` and `docs/zh/` (a one-line `## Translation debt` note below is enough — translations are tracked as follow-up, not a merge blocker)
+
 ## Notes for the reviewer
 
 <!-- Anything that needs context: API quirks discovered, live-verification

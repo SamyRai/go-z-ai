@@ -19,6 +19,14 @@ Crush, Factory Droid, and Cursor to your GLM Coding Plan.
 go install github.com/SamyRai/go-z-ai@latest
 ```
 
+This produces a binary named `go-z-ai` on your `$GOPATH/bin`. The examples
+below use the shorter name **`zai-client`** — symlink or rename it:
+
+```bash
+ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+# or: mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+```
+
 Requires Go 1.26.4+ and a [Z.AI API key](https://z.ai/manage-apikey).
 Building from source, first-run auth, and troubleshooting:
 **[Getting Started →](docs/en/getting-started.md)**

@@ -1,5 +1,17 @@
 # Architecture
 
+## Contents
+
+- [Package layout](#package-layout)
+- [CLI conventions](#cli-conventions)
+- [The request facade](#the-request-facade)
+- [Retry and timeout design](#retry-and-timeout-design)
+- [Why some services hit a different host](#why-some-services-hit-a-different-host)
+- [The live-verification convention](#the-live-verification-convention)
+- [Extending a structured lookup table](#extending-a-structured-lookup-table)
+- [Credential file safety](#credential-file-safety)
+- [The TUI](#the-tui)
+
 ## Package layout
 
 ```
