@@ -59,7 +59,7 @@ const (
 	// 1211) with this account's key on either platform — live-verified
 	// that's an account/plan-entitlement gate (this account's model
 	// catalog, per /models, is chat-only), not a platform-routing issue.
-	// See docs/accounts-and-quota.md for the user-facing explanation.
+	// See docs/en/accounts-and-quota.md for the user-facing explanation.
 	BigModelBaseURL = "https://open.bigmodel.cn/api/paas/v4"
 
 	// Monitor usage endpoints

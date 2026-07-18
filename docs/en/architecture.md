@@ -130,7 +130,7 @@ new success-path cassette with `ZAI_RECORD=1`, then replays it; it's the
 to-do list of shapes still pending a real capture.
 
 If you're extending a service, see
-[Contributing § the live-verification convention](../CONTRIBUTING.md) before
+[Contributing § the live-verification convention](../../CONTRIBUTING.md) before
 you add a new cassette.
 
 ## Extending a structured lookup table

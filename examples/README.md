@@ -18,8 +18,8 @@ on every push.
 | [`anthropic-messages`](anthropic-messages) | The Anthropic-compatible `/v1/messages` endpoint via `Anthropic().Create`. |
 
 These are deliberately small — for the full surface (tools, vision, structured
-output, batch, voice, the CLI, the TUI) see the [Library Guide](../docs/library-guide.md)
-and [CLI Reference](../docs/cli-reference.md).
+output, batch, voice, the CLI, the TUI) see the [Library Guide](../docs/en/library-guide.md)
+and [CLI Reference](../docs/en/cli-reference.md).
 
 ## Notes
 

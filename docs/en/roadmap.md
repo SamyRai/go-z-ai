@@ -3,7 +3,7 @@
 What's still open, why, and the exact action that closes it. Items leave this
 page when a committed cassette or a merged change resolves them — this is the
 verify-first convention's working list (see
-[Contributing § the live-verification convention](../CONTRIBUTING.md) and
+[Contributing § the live-verification convention](../../CONTRIBUTING.md) and
 [Architecture § the live-verification convention](architecture.md#the-live-verification-convention)
 for the why).
 

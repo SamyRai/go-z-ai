@@ -23,7 +23,7 @@ import (
 // account's key authenticates fine on both platforms — same /models
 // catalog, same chat/completions billing error — it just has no embedding
 // models in its catalog). See BigModelBaseURL's doc comment and
-// docs/accounts-and-quota.md.
+// docs/en/accounts-and-quota.md.
 type EmbeddingsService struct {
 	client *Client
 }

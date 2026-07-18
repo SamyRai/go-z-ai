@@ -1,6 +1,6 @@
 # Z.AI API Client
 
-**English** | [简体中文](README.zh.md)
+**English** | [简体中文](README.zh.md) | [Русский](README.ru.md) | [Deutsch](README.de.md) | [Татарча](README.tt.md) | [Türkçe](README.tr.md)
 
 [![CI](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/SamyRai/go-z-ai.svg)](https://pkg.go.dev/github.com/SamyRai/go-z-ai)
@@ -21,7 +21,7 @@ go install github.com/SamyRai/go-z-ai@latest
 
 Requires Go 1.26.4+ and a [Z.AI API key](https://z.ai/manage-apikey).
 Building from source, first-run auth, and troubleshooting:
-**[Getting Started →](docs/getting-started.md)**
+**[Getting Started →](docs/en/getting-started.md)**
 
 ## Quick example
 
@@ -46,14 +46,14 @@ More runnable programs — streaming, async image polling, the Anthropic
 
 ## Documentation
 
-**[Full documentation index →](docs/README.md)**
+**[Full documentation index →](docs/en/README.md)**
 
 | | |
 |---|---|
-| [Getting Started](docs/getting-started.md) | [CLI Reference](docs/cli-reference.md) |
-| [Accounts & Quota](docs/accounts-and-quota.md) | [Coding Tools](docs/coding-tools.md) |
-| [Library Guide](docs/library-guide.md) | [Error Handling](docs/error-handling.md) |
-| [Architecture](docs/architecture.md) | [Roadmap & Known Limitations](docs/roadmap.md) |
+| [Getting Started](docs/en/getting-started.md) | [CLI Reference](docs/en/cli-reference.md) |
+| [Accounts & Quota](docs/en/accounts-and-quota.md) | [Coding Tools](docs/en/coding-tools.md) |
+| [Library Guide](docs/en/library-guide.md) | [Error Handling](docs/en/error-handling.md) |
+| [Architecture](docs/en/architecture.md) | [Roadmap & Known Limitations](docs/en/roadmap.md) |
 | [Contributing](CONTRIBUTING.md) | [Security Policy](SECURITY.md) |
 | [Code of Conduct](CODE_OF_CONDUCT.md) | [Changelog](CHANGELOG.md) |
 
@@ -64,8 +64,8 @@ the Anthropic-compatible `/v1/messages` endpoint, Models, Images, Video, Audio
 (transcription + TTS + voice cloning), OCR & document parsing, Embeddings,
 Moderations, Rerank, Agents, Files, Batch jobs, GLM Coding Plan
 usage/quota/multi-account management, and a full-screen terminal UI
-(`zai-client tui`). See [CLI Reference](docs/cli-reference.md) for the complete
-command list or [Library Guide](docs/library-guide.md) for the Go API.
+(`zai-client tui`). See [CLI Reference](docs/en/cli-reference.md) for the complete
+command list or [Library Guide](docs/en/library-guide.md) for the Go API.
 
 ## How it relates to the official SDKs
 

@@ -12,7 +12,7 @@ import (
 )
 
 // This file verifies the *success*-path response shapes of services that were
-// previously modeled only from Z.AI's docs (see docs/roadmap.md "Unverified
+// previously modeled only from Z.AI's docs (see docs/en/roadmap.md "Unverified
 // live"). Each test replays a committed cassette offline in CI. To capture a
 // cassette against a real entitled account, run one test with recording on:
 //
@@ -116,7 +116,7 @@ func TestVerifyAnthropicMessages(t *testing.T) {
 	if resp.Usage.OutputTokens <= 0 {
 		t.Error("expected output token accounting")
 	}
-	// Records the reasoning-channel finding for docs/roadmap.md.
+	// Records the reasoning-channel finding for docs/en/roadmap.md.
 	reasonedViaBlock := false
 	for _, b := range resp.Content {
 		if b.Type == "thinking" {

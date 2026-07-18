@@ -27,7 +27,7 @@ import (
 // 400 "Unknown Model" (code 1211) on ProdBaseURL AND on BigModelBaseURL for
 // at least one GLM-Coding-Plan account, live-verified 2026-07-11 to be an
 // account/plan-entitlement gate rather than a platform-routing issue — see
-// EmbeddingsService's doc comment and docs/accounts-and-quota.md.
+// EmbeddingsService's doc comment and docs/en/accounts-and-quota.md.
 type ModerationsService struct {
 	client *Client
 }

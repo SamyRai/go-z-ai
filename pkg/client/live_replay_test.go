@@ -18,7 +18,7 @@ import (
 // This is distinct from live_verify_test.go, which holds the TestVerify*
 // recording harness: those tests SKIP until you capture a new success-path
 // cassette with ZAI_RECORD=1, then replay it. See live_verify_test.go's
-// header and docs/roadmap.md for the record-one-yourself flow.
+// header and docs/en/roadmap.md for the record-one-yourself flow.
 
 // These two tests replay real recorded interactions from a live account
 // (2026-07-10, coding_plan type) against the general PAYG base
@@ -28,7 +28,7 @@ import (
 // error 1211 "Unknown Model". This rules out a base-URL/routing problem —
 // the remaining unknown was the correct live model code vs. an account/plan
 // gate, resolved by TestBigModelSameKeyAuthenticates below (it's a plan
-// gate — see docs/accounts-and-quota.md).
+// gate — see docs/en/accounts-and-quota.md).
 //
 // No service type exists yet for either endpoint (that's the point — we
 // don't have a confirmed success response to model), so these replay
@@ -71,7 +71,7 @@ func TestModerationsLiveErrorIsUnknownModelNotRouting(t *testing.T) {
 // (1211) here too — identical to ProdBaseURL — which is why this is an
 // account/plan-entitlement gate (this account's catalog is chat-only on
 // both platforms), not a China-vs-international routing issue. See
-// BigModelBaseURL's doc comment and docs/accounts-and-quota.md.
+// BigModelBaseURL's doc comment and docs/en/accounts-and-quota.md.
 func TestBigModelSameKeyAuthenticates(t *testing.T) {
 	c := newReplayClient(t, "bigmodel_same_key", BigModelBaseURL)
 	apiKey := "replayed-from-cassette"

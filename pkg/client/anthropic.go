@@ -25,7 +25,7 @@ import (
 // documented Messages API (which Z.AI mirrors) but have not been confirmed
 // against a real successful call from the development account (no Coding Plan
 // entitlement on it). If you can record one and hit a shape mismatch, please
-// open an issue or PR with a cassette — see docs/roadmap.md.
+// open an issue or PR with a cassette — see docs/en/roadmap.md.
 type AnthropicService struct {
 	client *Client
 }
@@ -140,7 +140,7 @@ type AnthropicResponse struct {
 	// ReasoningContent is not part of Anthropic's Messages schema, but GLM's
 	// endpoint may surface reasoning in this OpenAI-style field instead of a
 	// thinking content block (the reasoning_content-not-converted case behind
-	// claude-code-router#1133). Thinking() falls back to it. See docs/roadmap.md.
+	// claude-code-router#1133). Thinking() falls back to it. See docs/en/roadmap.md.
 	ReasoningContent string `json:"reasoning_content,omitempty"`
 }
 

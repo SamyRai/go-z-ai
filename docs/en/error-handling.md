@@ -94,7 +94,7 @@ with `IsRetriable: true` — a reasonable default (treat unknowns as transient
 server issues) but the constants above are the ones with a specifically
 tailored `UserMessage` and retry decision.
 
-Source of truth: [`pkg/client/errors.go`](../pkg/client/errors.go).
+Source of truth: [`pkg/client/errors.go`](../../pkg/client/errors.go).
 
 ## The 200-with-embedded-failure quirk
 

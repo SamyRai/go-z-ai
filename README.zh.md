@@ -1,6 +1,6 @@
 # Z.AI API 客户端
 
-[English](README.md) | **简体中文**
+[English](README.md) | **简体中文** | [Русский](README.ru.md) | [Deutsch](README.de.md) | [Татарча](README.tt.md) | [Türkçe](README.tr.md)
 
 [![CI](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/SamyRai/go-z-ai.svg)](https://pkg.go.dev/github.com/SamyRai/go-z-ai)
@@ -20,7 +20,7 @@ go install github.com/SamyRai/go-z-ai@latest
 ```
 
 需要 Go 1.26.4+ 和一个 [Z.AI API Key](https://z.ai/manage-apikey)。
-从源码构建、首次鉴权、故障排查请见 **[快速开始 →](docs/getting-started.md)**
+从源码构建、首次鉴权、故障排查请见 **[快速开始 →](docs/zh/getting-started.md)**
 
 ## 快速示例
 
@@ -42,14 +42,14 @@ fmt.Println(resp.Choices[0].Message.Content)
 
 ## 文档
 
-**[完整文档索引 →](docs/README.md)**
+**[完整文档索引 →](docs/zh/README.md)**
 
 | | |
 |---|---|
-| [快速开始](docs/getting-started.md) | [CLI 参考](docs/cli-reference.md) |
-| [账户与配额](docs/accounts-and-quota.md) | [编码工具](docs/coding-tools.md) |
-| [库使用指南](docs/library-guide.md) | [错误处理](docs/error-handling.md) |
-| [架构](docs/architecture.md) | [路线图与已知限制](docs/roadmap.md) |
+| [快速开始](docs/zh/getting-started.md) | [CLI 参考](docs/zh/cli-reference.md) |
+| [账户与配额](docs/zh/accounts-and-quota.md) | [编码工具](docs/zh/coding-tools.md) |
+| [库使用指南](docs/zh/library-guide.md) | [错误处理](docs/zh/error-handling.md) |
+| [架构](docs/zh/architecture.md) | [路线图与已知限制](docs/zh/roadmap.md) |
 | [贡献指南](CONTRIBUTING.md) | [安全策略](SECURITY.md) |
 | [行为准则](CODE_OF_CONDUCT.md) | [更新日志](CHANGELOG.md) |
 
@@ -59,7 +59,7 @@ fmt.Println(resp.Choices[0].Message.Content)
 `/v1/messages` 端点，模型、图像、视频、音频（转写 + TTS + 声音克隆），OCR 与
 文档解析，向量、内容审核、重排序、Agent、文件、批量任务，GLM Coding Plan
 用量 / 配额 / 多账户管理，以及全屏终端 UI（`zai-client tui`）。完整命令列表见
-[CLI 参考](docs/cli-reference.md)，Go API 见 [库使用指南](docs/library-guide.md)。
+[CLI 参考](docs/zh/cli-reference.md)，Go API 见 [库使用指南](docs/zh/library-guide.md)。
 
 ## 与官方 SDK 的对比
 
