@@ -137,3 +137,178 @@ func TestMessageUnmarshalRoundTrip(t *testing.T) {
 		t.Errorf("expected 2 images round-tripped, got %v", gotMulti.Images)
 	}
 }
+
+// NewFunctionTool must emit the documented function tool wire shape.
+func TestFunctionToolMarshal(t *testing.T) {
+	tool := NewFunctionTool("get_weather", "weather lookup", map[string]any{
+		"type":       "object",
+		"properties": map[string]any{"city": map[string]any{"type": "string"}},
+		"required":   []any{"city"},
+	})
+	out, err := json.Marshal(tool)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	s := string(out)
+	for _, want := range []string{
+		`"type":"function"`,
+		`"function":{`,
+		`"name":"get_weather"`,
+		`"description":"weather lookup"`,
+		`"parameters":{`,
+	} {
+		if !strings.Contains(s, want) {
+			t.Errorf("expected %q in %s", want, s)
+		}
+	}
+	// A function tool must not emit retrieval/web_search payloads.
+	if strings.Contains(s, `"retrieval":`) || strings.Contains(s, `"web_search":`) {
+		t.Errorf("function tool leaked retrieval/web_search payload: %s", s)
+	}
+}
+
+// NewRetrievalTool / NewWebSearchTool must emit their respective shapes. NOT
+// VERIFIED LIVE — these pin the modeled shape, not a confirmed wire contract.
+func TestRetrievalAndWebSearchToolMarshal(t *testing.T) {
+	ret := NewRetrievalTool("kb-1", "find docs")
+	out, err := json.Marshal(ret)
+	if err != nil {
+		t.Fatalf("marshal retrieval: %v", err)
+	}
+	s := string(out)
+	for _, want := range []string{`"type":"retrieval"`, `"retrieval":{`, `"knowledge_id":"kb-1"`, `"prompt":"find docs"`} {
+		if !strings.Contains(s, want) {
+			t.Errorf("expected %q in %s", want, s)
+		}
+	}
+	if strings.Contains(s, `"function":`) {
+		t.Errorf("retrieval tool leaked function payload: %s", s)
+	}
+
+	ws := NewWebSearchTool("golang generics", "go modules")
+	out, err = json.Marshal(ws)
+	if err != nil {
+		t.Fatalf("marshal web_search: %v", err)
+	}
+	s = string(out)
+	for _, want := range []string{`"type":"web_search"`, `"web_search":{`, `"search_query":["golang generics","go modules"]`} {
+		if !strings.Contains(s, want) {
+			t.Errorf("expected %q in %s", want, s)
+		}
+	}
+	// No speculative enable/search_result fields should leak.
+	for _, unwanted := range []string{`"enable"`, `"search_result"`, `"enable_search"`} {
+		if strings.Contains(s, unwanted) {
+			t.Errorf("web_search tool leaked %q: %s", unwanted, s)
+		}
+	}
+}
+
+// Tool unmarshal must round-trip all three tool types by their Type field.
+func TestToolUnmarshalRoundTrip(t *testing.T) {
+	cases := []struct {
+		name string
+		tool Tool
+	}{
+		{"function", NewFunctionTool("f", "d", map[string]any{"type": "object"})},
+		{"retrieval", NewRetrievalTool("kb", "p")},
+		{"web_search", NewWebSearchTool("q")},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			data, err := json.Marshal(tc.tool)
+			if err != nil {
+				t.Fatalf("marshal: %v", err)
+			}
+			var got Tool
+			if err := json.Unmarshal(data, &got); err != nil {
+				t.Fatalf("unmarshal: %v", err)
+			}
+			if got.Type != tc.tool.Type {
+				t.Errorf("Type mismatch: got %q, want %q", got.Type, tc.tool.Type)
+			}
+			switch tc.name {
+			case "function":
+				if got.Function == nil || got.Function.Name != tc.tool.Function.Name {
+					t.Errorf("Function not round-tripped: %+v vs %+v", got.Function, tc.tool.Function)
+				}
+			case "retrieval":
+				if got.Retrieval == nil || got.Retrieval.KnowledgeID != tc.tool.Retrieval.KnowledgeID {
+					t.Errorf("Retrieval not round-tripped: %+v vs %+v", got.Retrieval, tc.tool.Retrieval)
+				}
+			case "web_search":
+				if got.WebSearch == nil || len(got.WebSearch.SearchQuery) != 1 {
+					t.Errorf("WebSearch not round-tripped: %+v vs %+v", got.WebSearch, tc.tool.WebSearch)
+				}
+			}
+		})
+	}
+}
+
+// StreamToolCall must serialize to the stream_tool_call field when true, and
+// be omitted when false (the default).
+func TestStreamToolCallSerialization(t *testing.T) {
+	with := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95, StreamToolCall: true}
+	out, err := json.Marshal(with)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if !strings.Contains(string(out), `"stream_tool_call":true`) {
+		t.Errorf("expected stream_tool_call:true in %s", out)
+	}
+
+	without := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95}
+	out, err = json.Marshal(without)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if strings.Contains(string(out), "stream_tool_call") {
+		t.Errorf("stream_tool_call should be omitted when false: %s", out)
+	}
+}
+
+// ChatResponse must deserialize a top-level web_search array into the
+// WebSearch field (NOT VERIFIED LIVE — pins the modeled placement).
+func TestChatResponseWebSearchUnmarshal(t *testing.T) {
+	body := `{"id":"1","model":"m","choices":[{"index":0,"message":{"role":"assistant","content":"see sources"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2},"web_search":[{"title":"Go Docs","content":"overview","link":"https://go.dev/doc","media":"go.dev","icon":"go","refer":"1","publish_date":"2024-01-01"}]}`
+	var resp ChatResponse
+	if err := json.Unmarshal([]byte(body), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(resp.WebSearch) != 1 {
+		t.Fatalf("expected 1 web_search entry, got %d", len(resp.WebSearch))
+	}
+	w := resp.WebSearch[0]
+	if w.Title != "Go Docs" || w.Link != "https://go.dev/doc" || w.Media != "go.dev" {
+		t.Errorf("web_search entry mismatch: %+v", w)
+	}
+}
+
+// A ChatResponse without a web_search array must leave WebSearch nil (not error).
+func TestChatResponseWithoutWebSearch(t *testing.T) {
+	body := `{"id":"1","model":"m","choices":[],"usage":{"prompt_tokens":0,"completion_tokens":0,"total_tokens":0}}`
+	var resp ChatResponse
+	if err := json.Unmarshal([]byte(body), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if resp.WebSearch != nil {
+		t.Errorf("expected nil WebSearch, got %+v", resp.WebSearch)
+	}
+}
+
+// The FinishReason* constants must match the values documented on docs.z.ai.
+func TestFinishReasonConstants(t *testing.T) {
+	want := map[string]string{
+		"stop":                          FinishReasonStop,
+		"tool_calls":                    FinishReasonToolCalls,
+		"length":                        FinishReasonLength,
+		"sensitive":                     FinishReasonSensitive,
+		"model_context_window_exceeded": FinishReasonModelContextWindowExceeded,
+		"network_error":                 FinishReasonNetworkError,
+	}
+	for value, constVal := range want {
+		if value != constVal {
+			t.Errorf("FinishReason constant mismatch: got %q, want %q", constVal, value)
+		}
+	}
+}

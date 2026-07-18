@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -184,6 +185,13 @@ func (s *ChatService) readSSE(ctx context.Context, resp *http.Response, onChunk 
 	return nil
 }
 
+// toolNamePattern matches Z.AI's documented constraint on tools[].function.name:
+// ASCII letters, digits, underscore, hyphen; 1–64 chars. Applied in
+// validateChatRequest so callers get a clear client-side error instead of an
+// opaque server-side one. NOT VERIFIED LIVE that the server rejects names
+// outside this set — the regex mirrors docs.z.ai's stated rule.
+var toolNamePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
+
 func validateChatRequest(req *ChatRequest) error {
 	if req.Model == "" {
 		return fmt.Errorf("model is required")
@@ -214,5 +222,57 @@ func validateChatRequest(req *ChatRequest) error {
 		return fmt.Errorf("top_p must be between 0.01 and 1")
 	}
 
+	// Validate Thinking.Effort (when set) against the documented enum so the
+	// caller gets a clear error rather than the server's 400.
+	if req.Thinking != nil && req.Thinking.Effort != "" {
+		if !validEffort[req.Thinking.Effort] {
+			return fmt.Errorf("thinking.effort %q is not one of %v", req.Thinking.Effort, effortValues())
+		}
+	}
+
+	// Enforce the documented 128-function cap and the tool-name pattern
+	// (^[A-Za-z0-9_-]{1,64}$) client-side. Each tool type must also carry its
+	// matching payload (Function/Retrieval/WebSearch) — a bare {"type":...}
+	// would otherwise serialize and likely 400 at the server.
+	funcCount := 0
+	for i, t := range req.Tools {
+		switch t.Type {
+		case "", ToolTypeFunction:
+			if t.Function == nil {
+				return fmt.Errorf("tools[%d]: type %q requires a function payload", i, t.Type)
+			}
+			funcCount++
+			if !toolNamePattern.MatchString(t.Function.Name) {
+				return fmt.Errorf("tools[%d].function.name %q must match ^[A-Za-z0-9_-]{1,64}$", i, t.Function.Name)
+			}
+		case ToolTypeRetrieval:
+			if t.Retrieval == nil {
+				return fmt.Errorf("tools[%d]: type %q requires a retrieval payload", i, t.Type)
+			}
+		case ToolTypeWebSearch:
+			if t.WebSearch == nil {
+				return fmt.Errorf("tools[%d]: type %q requires a web_search payload", i, t.Type)
+			}
+		default:
+			return fmt.Errorf("tools[%d]: unknown tool type %q", i, t.Type)
+		}
+	}
+	if funcCount > ToolMaxFunctions {
+		return fmt.Errorf("too many function tools: %d (max %d)", funcCount, ToolMaxFunctions)
+	}
+
 	return nil
+}
+
+// validEffort is the set of ThinkingConfig.Effort values docs.z.ai documents.
+var validEffort = map[string]bool{
+	EffortMax: true, EffortXhigh: true, EffortHigh: true, EffortMedium: true,
+	EffortLow: true, EffortMinimal: true, EffortNone: true,
+}
+
+func effortValues() []string {
+	return []string{
+		EffortMax, EffortXhigh, EffortHigh, EffortMedium,
+		EffortLow, EffortMinimal, EffortNone,
+	}
 }
