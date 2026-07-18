@@ -1,9 +1,9 @@
 # Contributing
 
 Thanks for considering a contribution. This is a Go CLI + client library for
-the Z.AI (Zhipu AI) API. Start with [docs/architecture.md](docs/architecture.md)
+the Z.AI (Zhipu AI) API. Start with [docs/en/architecture.md](docs/en/architecture.md)
 if you want the package layout and design rationale before diving in, and
-[docs/roadmap.md](docs/roadmap.md) for known gaps that are good first
+[docs/en/roadmap.md](docs/en/roadmap.md) for known gaps that are good first
 contributions. A few things that make this repo different from a typical Go
 project:
 

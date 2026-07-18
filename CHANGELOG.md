@@ -216,7 +216,7 @@ gitignored — no keys were exposed or rotated.
   header. New CLI: `anthropic messages <prompt> [--stream ...]`. Routing/auth
   are confirmed reaching the live endpoint (bogus key → clean HTTP 401); the
   success-path body shape is documented, not yet live-verified (see
-  [Roadmap](docs/roadmap.md)).
+  [Roadmap](docs/en/roadmap.md)).
   - Extended thinking: `AnthropicThinking` request config, `thinking`/
     `redacted_thinking` response blocks, and `resp.Thinking()` — which falls
     back to an OpenAI-style `reasoning_content` field if GLM surfaces reasoning
@@ -231,9 +231,9 @@ gitignored — no keys were exposed or rotated.
   inline (with cycle protection). Exposed as `client.SanitizeToolSchemas` for
   explicit use, applied automatically before every chat request, and disablable
   via `Config.DisableToolSchemaCompat`. See `pkg/client/toolschema.go` and
-  [Library Guide](docs/library-guide.md#tool-schema-compatibility). The exact
+  [Library Guide](docs/en/library-guide.md#tool-schema-compatibility). The exact
   set of server-rejected constructs is drawn from community reports, not yet
-  reproduced live here (see [Roadmap](docs/roadmap.md)).
+  reproduced live here (see [Roadmap](docs/en/roadmap.md)).
 
 ### Changed
 - golangci-lint is now part of the gate: a checked-in `.golangci.yml` (default

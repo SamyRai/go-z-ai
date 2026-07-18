@@ -14,7 +14,7 @@ import (
 // POST /paas/v4/voice/clone, /voice/delete; GET /voice/list). Not
 // mentioned in docs.z.ai's doc index at all — same "only documented on the
 // China platform" situation as Embeddings/Moderations, and likewise
-// unconfirmed against a live success response (see docs/roadmap.md).
+// unconfirmed against a live success response (see docs/en/roadmap.md).
 type VoiceService struct {
 	client *Client
 }

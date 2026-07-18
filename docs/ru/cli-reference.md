@@ -1,0 +1,247 @@
+# Справочник по CLI
+
+Каждая команда поддерживает `--help` для получения актуального и достоверного
+списка флагов (`zai-client <command> --help`,
+`zai-client <command> <subcommand> --help`). Эта страница — структурированный
+обзор; считайте `--help` источником истины, если когда-либо возникнут
+расхождения.
+
+## Глобальные флаги
+
+Эти флаги применяются ко всем командам:
+
+| Flag | Описание |
+|---|---|
+| `--api-key string` | API-ключ Z.AI (или переменная окружения `ZAI_API_KEY`) |
+| `--base-url string` | Базовый URL API (по умолчанию: `https://api.z.ai/api/paas/v4`) |
+| `--account string` | Использовать сохранённый аккаунт по имени для этой команды (см. [Аккаунты и квоты](accounts-and-quota.md)) |
+| `--china-api-key string` | Ключ open.bigmodel.cn для embeddings/модераций (или `ZAI_CHINA_API_KEY`; при отсутствии берётся `--api-key`) |
+| `--region string` | Региональный шлюз для monitor/biz/agents/detection: `global` (api.z.ai, по умолчанию) или `china` (open.bigmodel.cn). Псевдонимы: `cn`, `bigmodel`, `west`. Либо переменная окружения `ZAI_REGION`. Не переопределяет `--base-url`. Неизвестные значения приводят к global. |
+| `--config string` | Файл конфигурации (по умолчанию: `.env`) |
+
+Каждая команда, возвращающая результат, принимает `--format text\|json`
+(некоторые по умолчанию используют `json`, если полезная нагрузка ориентирована
+на машину — например, `embeddings`, `moderations`). В режиме `json` сообщения о
+прогрессе/статусе направляются в stderr, поэтому stdout остаётся корректным
+JSON, который можно передать в `jq`.
+
+Установите `--region china` (или `ZAI_REGION=china`), если ваш ключ был выдан
+на `open.bigmodel.cn`, чтобы квота/использование, account-info, agents и
+определение типа аккаунта попадали на соответствующий хост. Это **не** меняет
+базовый URL чата (используйте для этого `--base-url`) и не меняет хост
+embedings/модераций (всегда китайская платформа). См.
+[Аккаунты и квоты § Региональные шлюзы](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn).
+
+## Чат
+
+```bash
+zai-client chat create [message] [flags]
+zai-client chat simple [model] [message]
+zai-client chat async-result [task-id]
+```
+
+`chat create` — основная точка входа:
+
+| Flag | Назначение |
+|---|---|
+| `--model string` | По умолчанию `glm-5.2` |
+| `--stream` | Потоковая передача token за token |
+| `--async` | Отправить без ожидания; опрашивать через `chat async-result <task-id>` |
+| `--temperature float`, `--top-p float`, `--max-tokens int` | Управление сэмплингом |
+| `--system string` | Системное сообщение |
+| `--thinking string`, `--effort string` | Режим глубокого мышления и уровень усилий (`max\|xhigh\|high\|medium\|low\|minimal\|none`; `xhigh`→`max` только для GLM-5.2) |
+| `--show-reasoning` | Печатать `reasoning_content` в stderr |
+| `--json-schema string` | Структурированный вывод: `@file.json` или inline JSON |
+| `--tool string` | Объявления инструментов для вызова функций: `@tools.json` или inline JSON-массив |
+| `--image string` (повторяемый) | Прикрепить изображение: URL или `@path` к локальному файлу (base64). Требуется визуальная модель (`glm-4.6v`/`glm-4.5v`) |
+| `--stop strings` | Стоп-последовательности (повторяемый, максимум 4) |
+| `--format text\|json` | Формат вывода |
+
+```bash
+zai-client chat create "Summarize this in 3 bullets" --model glm-5.2 --stream
+zai-client chat create "Describe this" --image @photo.jpg --model glm-4.6v
+zai-client chat create "Extract fields" --json-schema @schema.json
+```
+
+Вызовы инструментов печатаются, а не выполняются CLI — см.
+[Руководство по библиотеке § Вызов функций](library-guide.md#function-calling)
+о Go-цикле `RunWithTools` с автоматическим выполнением.
+
+> **Визуальная модель + вызов инструментов могут вернуть HTTP 401.** Из
+> сообщений сообщества (например,
+> [claude-code-router#1491](https://github.com/musistudio/claude-code-router/issues/1491))
+> следует, что сочетание визуальной модели (`--image` на `glm-4.6v`/`glm-4.5v`)
+> с инструментами вызова функций (`--tool`) в одном запросе на некоторых
+> конфигурациях GLM отклоняется с 401 — аутентифицированный ключ всё равно
+> падает только для этой комбинации. Если столкнулись с этим, разделите
+> работу: используйте визуальную модель для шага с изображением и текстовую
+> модель (`glm-5.2`) для шага с вызовом инструментов, вместо того чтобы
+> отправлять изображения и инструменты вместе. Здесь это пока не воспроизведено
+> на живом аккаунте — см. [Дорожная карта](roadmap.md).
+
+## Модели
+
+```bash
+zai-client models list [--pricing]
+zai-client models get [model-id]
+zai-client models text | vision | free
+```
+
+## Аккаунты, использование и квота
+
+Подробно описано в [Аккаунты и квоты](accounts-and-quota.md). Краткая справка:
+
+```bash
+zai-client accounts add <name> --api-key <key> [--type coding_plan|pay_as_you_go]
+zai-client accounts list [--format json] [--reveal]   # ключи по умолчанию скрыты; --reveal для экспорта
+zai-client accounts use <name>
+zai-client accounts show [name] [--format json] [--reveal]
+zai-client accounts quota [--only name...]
+zai-client accounts usage [--days N] [--today] [--metric model|tool|both]
+zai-client accounts remove <name> [--yes]
+
+zai-client usage quota | summary | account | billing | check [--watch] | detect
+zai-client account info | status
+zai-client validate
+```
+
+## Инструменты для кода (GLM Coding Plan)
+
+Настраивает Claude Code, OpenCode, Crush, Factory Droid или Cursor на
+использование вашего GLM Coding Plan. Полное руководство: [Инструменты для
+кода](coding-tools.md).
+
+```bash
+zai-client coding auth <plan> <key>      # проверить и сохранить учётные данные
+zai-client coding auth revoke
+zai-client coding load <tool>            # записать в конфиг инструмента
+zai-client coding unload <tool>
+zai-client coding status
+zai-client coding tools                  # список поддерживаемых инструментов + статус установки
+zai-client coding doctor                 # проверка работоспособности
+
+zai-client coding mcp add <tool>         # зарегистрировать MCP-сервер Vision от Z.AI
+zai-client coding mcp status
+zai-client coding mcp remove <tool>
+```
+
+## Файлы и пакетная обработка
+
+```bash
+zai-client files upload <file> [--purpose batch|code-interpreter|agent|voice-clone-input]
+zai-client files list [--purpose ...]
+zai-client files delete <file-id>
+zai-client files download <file-id> <output-path>
+
+zai-client batch create <input-file-id> [--endpoint ...]
+zai-client batch status <batch-id>
+zai-client batch list [--after ...] [--limit N]
+zai-client batch cancel <batch-id>
+```
+
+Пакетные задачи обрабатывают множество запросов завершения чата из JSONL-файла
+асинхронно — сначала загрузите его, затем создайте пакетную задачу с
+полученным file ID.
+
+## Генерация медиа
+
+```bash
+# Изображения (glm-image | cogview-4-250304)
+zai-client image generate <prompt> [--model ...] [--size ...] [--quality hd|standard] [--async]
+zai-client image status <id>
+
+# Видео — всегда асинхронно (cogvideox-3 | viduq1-text | viduq1-image | vidu2-image | ...)
+zai-client video generate --prompt "..." [--model ...] [--duration N] [--aspect-ratio ...]
+zai-client video status <id>
+
+# Аудио
+zai-client audio transcribe <file>                       # glm-asr, .wav/.mp3, <=25MB, <=30s
+zai-client audio speech <text> <output-path> [--voice ...] [--speed N] [--format wav|pcm]
+
+# Клонирование голоса (работает в паре с audio speech --voice)
+zai-client voice clone <voice-name> <sample-file-id> <preview-text>
+zai-client voice list [--name ...] [--type OFFICIAL|PRIVATE]
+zai-client voice delete <voice-id>
+```
+
+## Разбор документов и OCR
+
+```bash
+# Layout OCR — изображение/PDF в Markdown
+zai-client ocr parse <file-or-url> [--start-page N] [--end-page N]
+zai-client ocr handwriting <file> [--probability]
+
+# Разбор документов (препроцессинг для RAG/извлечения) — отдельный продукт, не OCR
+zai-client parser parse <file> <file-type>              # синхронно
+zai-client parser create <file> <tool-type> <file-type> # асинхронно: lite|expert|prime
+zai-client parser result <task-id> <format>              # text|download_link
+```
+
+`parser` и `ocr` решают разные задачи: OCR извлекает layout/текст из
+изображений; parser же предназначен для превращения документов в текст,
+готовый для RAG, и поддерживает больше тарифов инструментов.
+
+## Вспомогательные инструменты поиска
+
+```bash
+zai-client embeddings create <text> [--model embedding-3|embedding-2] [--dimensions N]
+zai-client rerank <query> <documents...> [--top-n N]
+```
+
+Embeddings направляются на `open.bigmodel.cn` — см.
+[Аккаунты и квоты § Региональные шлюзы](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn),
+почему так и что это значит для аутентификации.
+
+## Модерация контента
+
+```bash
+zai-client moderations check <text>
+```
+
+Также направляется на `open.bigmodel.cn` — та же заметка, что и для embeddings
+выше.
+
+## Агенты
+
+```bash
+zai-client agents invoke <agent-id> <message> [--source-lang ...] [--target-lang ...]
+zai-client agents async-result <agent-id> <async-id>
+```
+
+Вызывает специализированных агентов Z.AI (перевод, генерация слайдов/постеров,
+шаблоны видеоэффектов). Примечание: Agents API возвращает HTTP 200, даже когда
+вызов падает на бизнес-уровне (например, недостаточный баланс) — CLI
+сообщает о такой неудаче из тела ответа, а не как об ошибке команды.
+
+## Инструменты (веб-поиск, reader, токенизатор)
+
+```bash
+zai-client tools web-search <query> [--engine ...] [--count N]
+zai-client tools web-reader <url> [--no-images]
+zai-client tools tokenizer <text> [--model ...]
+```
+
+## Эндпоинт, совместимый с Anthropic
+
+```bash
+zai-client anthropic messages <prompt> [--model glm-4.6] [--max-tokens 1024] \
+    [--system ...] [--temperature ...] [--thinking-budget N] [--stream]
+```
+
+Вызывает Anthropic-совместимый эндпоинт Z.AI (`/api/anthropic/v1/messages`) —
+тот же эндпоинт, на который GLM Coding Plan направляет Claude Code, — вместо
+OpenAI-стиля `chat create`. Печатает текст сообщения (или стримит текстовые
+дельты с `--stream`); `--thinking-budget N` включает расширенное мышление и
+выводит рассуждения в stderr. См.
+[Руководство по библиотеке](library-guide.md#anthropic-compatible-messages-api)
+для Go API.
+
+## Терминальный UI
+
+```bash
+zai-client tui
+```
+
+Запускает полноэкранный терминальный UI с вкладками Chat, Models, Usage,
+Accounts, Coding, Media и Tools — та же функциональность, что и у CLI-команд
+выше, в одном интерактивном сеансе.

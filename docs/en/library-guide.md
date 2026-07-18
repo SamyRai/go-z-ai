@@ -269,7 +269,7 @@ to this module — not part of the importable public API — so they can evolve
 without semver constraints. `pkg/client` is the only supported public package;
 the `accounts` and `coding` CLI commands are the stable way to drive that
 functionality. (These packages lived under `pkg/` before and were importable;
-see the [CHANGELOG](../CHANGELOG.md) for the move.)
+see the [CHANGELOG](../../CHANGELOG.md) for the move.)
 
 ## Testing your own code against this client
 
@@ -279,7 +279,7 @@ you control. If you want to replay *real* recorded Z.AI traffic instead of a
 hand-written stub, see how this repo's own tests do it with
 [go-vcr](https://github.com/dnaeon/go-vcr) — `pkg/client/*_test.go` and
 `pkg/client/testdata/cassettes/` — and read
-[Contributing § the live-verification convention](../CONTRIBUTING.md) for why.
+[Contributing § the live-verification convention](../../CONTRIBUTING.md) for why.
 
 ## Architecture notes
 
