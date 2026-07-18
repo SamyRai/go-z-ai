@@ -293,7 +293,7 @@ func NewQuotaService(client *Client) *QuotaService {
 // GetQuotaLimit retrieves the current quota limit status
 func (s *QuotaService) GetQuotaLimit(ctx context.Context) (*QuotaLimitResponse, error) {
 	var result QuotaLimitResponse
-	if err := s.client.doRequestBase(ctx, MonitorBaseURL, "GET", QuotaLimitEndpoint, nil, &result); err != nil {
+	if err := s.client.doRequestBase(ctx, s.client.config.Region.monitorBaseURL(), "GET", QuotaLimitEndpoint, nil, &result); err != nil {
 		return nil, fmt.Errorf("failed to get quota limit: %w", err)
 	}
 	return &result, nil
@@ -319,7 +319,7 @@ func monitorUsagePath(endpoint string, startTime, endTime time.Time) string {
 func (s *QuotaService) GetModelUsage(ctx context.Context, startTime, endTime time.Time) (*ModelUsageResponse, error) {
 	var result ModelUsageResponse
 	path := monitorUsagePath(ModelUsageEndpoint, startTime, endTime)
-	if err := s.client.doRequestBase(ctx, MonitorBaseURL, "GET", path, nil, &result); err != nil {
+	if err := s.client.doRequestBase(ctx, s.client.config.Region.monitorBaseURL(), "GET", path, nil, &result); err != nil {
 		return nil, fmt.Errorf("failed to get model usage: %w", err)
 	}
 	return &result, nil
@@ -329,7 +329,7 @@ func (s *QuotaService) GetModelUsage(ctx context.Context, startTime, endTime tim
 func (s *QuotaService) GetToolUsage(ctx context.Context, startTime, endTime time.Time) (*ToolUsageResponse, error) {
 	var result ToolUsageResponse
 	path := monitorUsagePath(ToolUsageEndpoint, startTime, endTime)
-	if err := s.client.doRequestBase(ctx, MonitorBaseURL, "GET", path, nil, &result); err != nil {
+	if err := s.client.doRequestBase(ctx, s.client.config.Region.monitorBaseURL(), "GET", path, nil, &result); err != nil {
 		return nil, fmt.Errorf("failed to get tool usage: %w", err)
 	}
 	return &result, nil

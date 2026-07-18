@@ -58,7 +58,7 @@ func NewAccountService(client *Client) *AccountService {
 // GetAccountInfo retrieves account information
 func (s *AccountService) GetAccountInfo(ctx context.Context) (*AccountInfoResponse, error) {
 	var result AccountInfoResponse
-	if err := s.client.doRequestBase(ctx, BizBaseURL, "GET", "/account/info", nil, &result); err != nil {
+	if err := s.client.doRequestBase(ctx, s.client.config.Region.bizBaseURL(), "GET", "/account/info", nil, &result); err != nil {
 		return nil, fmt.Errorf("failed to get account info: %w", err)
 	}
 	return &result, nil
@@ -67,7 +67,7 @@ func (s *AccountService) GetAccountInfo(ctx context.Context) (*AccountInfoRespon
 // GetAccountStatus retrieves account status
 func (s *AccountService) GetAccountStatus(ctx context.Context) (*AccountStatusResponse, error) {
 	var result AccountStatusResponse
-	if err := s.client.doRequestBase(ctx, BizBaseURL, "GET", "/account/status", nil, &result); err != nil {
+	if err := s.client.doRequestBase(ctx, s.client.config.Region.bizBaseURL(), "GET", "/account/status", nil, &result); err != nil {
 		return nil, fmt.Errorf("failed to get account status: %w", err)
 	}
 	return &result, nil

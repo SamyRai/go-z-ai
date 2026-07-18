@@ -117,7 +117,7 @@ func (s *AgentsService) Invoke(ctx context.Context, req AgentInvokeRequest) (*Ag
 	}
 
 	var resp AgentResponse
-	if err := s.client.doRequestBase(ctx, AgentsBaseURL, "POST", "/v1/agents", req, &resp); err != nil {
+	if err := s.client.doRequestBase(ctx, s.client.config.Region.agentsBaseURL(), "POST", "/v1/agents", req, &resp); err != nil {
 		return nil, fmt.Errorf("failed to invoke agent: %w", err)
 	}
 	return &resp, nil
@@ -208,7 +208,7 @@ func (s *AgentsService) AsyncResult(ctx context.Context, req AgentAsyncResultReq
 	}
 
 	var resp AgentAsyncResultResponse
-	if err := s.client.doRequestBase(ctx, AgentsBaseURL, "POST", "/v1/agents/async-result", req, &resp); err != nil {
+	if err := s.client.doRequestBase(ctx, s.client.config.Region.agentsBaseURL(), "POST", "/v1/agents/async-result", req, &resp); err != nil {
 		return nil, fmt.Errorf("failed to get agent async result: %w", err)
 	}
 	return &resp, nil
