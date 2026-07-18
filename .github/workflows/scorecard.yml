@@ -5,11 +5,11 @@ name: OpenSSF Scorecard
 # Docs: https://github.com/ossf/scorecard-action
 
 on:
-  branch_protection_review:
-    branches: [main]
   schedule:
     - cron: '17 5 * * 1'   # weekly, Monday ~05:17 UTC (offset to avoid the pile-up)
   workflow_dispatch:
+  push:
+    branches: [main]       # also run on changes to security-relevant config
 
 permissions: read-all
 
