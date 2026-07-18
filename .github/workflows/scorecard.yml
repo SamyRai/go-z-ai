@@ -2,14 +2,18 @@ name: OpenSSF Scorecard
 
 # Weekly security heuristics scan + SARIF upload to the Security tab.
 # Produces the score read by api.securityscorecards.dev/.../badge.
+#
+# Note on triggers: scorecard-action only honors publish_results: true when
+# the run is triggered by `schedule` (it deliberately suppresses publishing
+# on push/PR/dispatch to avoid overwriting the official weekly cron data in
+# the public transparency log). The Security-tab SARIF upload still works
+# for any trigger; the public badge only updates from the scheduled run.
 # Docs: https://github.com/ossf/scorecard-action
 
 on:
   schedule:
     - cron: '17 5 * * 1'   # weekly, Monday ~05:17 UTC (offset to avoid the pile-up)
   workflow_dispatch:
-  push:
-    branches: [main]       # also run on changes to security-relevant config
 
 permissions: read-all
 
