@@ -45,6 +45,29 @@ cassette. Still unverified:
   live cassette that pins down exactly which constructs 500 (and which the
   flattened output makes pass), that would upgrade this from "documented
   behavior" to "live-verified." See `pkg/client/toolschema.go`.
+- **Chat-completion API additions** — the following fields were added to
+  `pkg/client/types.go` to match the current docs.z.ai chat-completion spec,
+  and are `NOT VERIFIED LIVE` until a cassette pins them:
+  - `ChatRequest.StreamToolCall` (GLM-4.6+ streamed tool-call deltas).
+  - `Tool` discrimination across `function` / `retrieval` / `web_search`
+    types (the spec lists three types but notes only `function` is fully
+    supported; the retrieval/web_search request shapes are modeled, not
+    confirmed). See `NewRetrievalTool` / `NewWebSearchTool`.
+  - `ChatResponse.WebSearch` (top-level `web_search` array; the entry shape
+    reuses `WebSearchResult` from `tools.go`, which is live-verified for the
+    standalone web-search tool).
+  - `ThinkingConfig.Effort` now documents `xhigh` (GLM-5.2; `xhigh`→`max`).
+  - `FinishReason*` constants for the live values `sensitive`,
+    `model_context_window_exceeded`, `network_error`.
+  - The client-side tool-name regex guard (`^[A-Za-z0-9_-]{1,64}$`) and the
+    128-function cap — these are documented rules, not yet confirmed as the
+    server's exact rejection criteria.
+- **China regional gateway for monitor/biz/agents** — `Config.Region =
+  RegionChina` routes the quota/usage, account, and agents calls to
+  `open.bigmodel.cn`. The China mirror hosts are modeled by mirroring the
+  `api.z.ai` path layout (live-verified for `/models` and `/chat/completions`,
+  see `BigModelBaseURL`); the monitor/biz/agents hosts on the China side are
+  `NOT VERIFIED LIVE`. Pin with `ZAI_RECORD=1` against an entitled China key.
 
 ## Not implemented
 
