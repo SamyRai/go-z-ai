@@ -4,6 +4,51 @@ Notable changes to this project, loosely following
 [Keep a Changelog](https://keepachangelog.com/). This project doesn't cut
 version tags yet — entries are grouped by date.
 
+## 2026-07-18
+
+### Added
+- **Regional gateway selection (`Config.Region` / `--region` / `ZAI_REGION`).**
+  Z.AI serves the same GLM model family from two regional gateways: the
+  international host `api.z.ai` (the historical default) and the China mirror
+  `open.bigmodel.cn`. Previously only Embeddings/Moderations were wired to the
+  China host; monitor (quota/usage), biz (account info), agents, and account
+  detection were hardcoded to `api.z.ai`, so a `glm_coding_plan_china` key
+  couldn't reach its own region's usage/account endpoints and got
+  mis-classified by `accounts add`/`account detect`. `Config.Region`
+  (`RegionGlobal`, the default, or `RegionChina`) now selects the host for
+  monitor, biz, agents, and detection. From the CLI: `--region {global,china}`
+  or `ZAI_REGION` env (aliases `cn`, `bigmodel`, `west`); an unknown value
+  falls back to global rather than erroring. `internal/coding/plans.go`
+  mirrors this with `MonitorBaseURL` / `BizBaseURL` / `AgentsBaseURL` plan
+  helpers. The China hosts are `NOT VERIFIED LIVE` (modeled by mirroring the
+  `api.z.ai` path layout on `open.bigmodel.cn`, which is live-verified for
+  `/models` and `/chat/completions`). See `docs/architecture.md`.
+- **Chat-completion API sync (`pkg/client/types.go`, `chat.go`).** New fields
+  matching the current docs.z.ai chat-completion spec, all additive and
+  `NOT VERIFIED LIVE` until a cassette pins them:
+  - `ChatRequest.StreamToolCall` — streamed tool-call deltas (GLM-4.6+).
+  - `Tool` now discriminates across `function` / `retrieval` / `web_search`
+    types via `NewFunctionTool` / `NewRetrievalTool` / `NewWebSearchTool`.
+    The `web_search` payload shape (`{"search_query":[...]}`) follows the
+    official Python SDK example; `retrieval` and the full tool-type support
+    are unverified live.
+  - `ChatResponse.WebSearch` — the top-level `web_search` array returned when
+    a web_search tool fires (entry shape reuses `WebSearchResult` from
+    `tools.go`).
+  - `ThinkingConfig.Effort` now documents `xhigh` (GLM-5.2; `xhigh`→`max`).
+    `validateChatRequest` rejects unknown effort values client-side.
+  - `FinishReason*` constants for the live values `sensitive`,
+    `model_context_window_exceeded`, `network_error`.
+  - Client-side tool-name guard (`^[A-Za-z0-9_-]{1,64}$`), a 128-function
+    cap, and per-type payload validation (a `function`/`retrieval`/`web_search`
+    tool must carry its matching payload; unknown types are rejected).
+- **Live-verification scaffolding** for four more services in
+  `pkg/client/live_verify_test.go`: Voice Clone, Voice Delete,
+  Chat-Stream-Tool-Call, and Chat-Web-Search-Response. Each skips until a
+  cassette exists (CI stays green); record one with
+  `ZAI_RECORD=1 ZAI_API_KEY=<key> go test -run TestVerify<Name> ./pkg/client`
+  (the harness redacts `Authorization` to `Bearer REDACTED` before saving).
+
 ## 2026-07-17
 
 ### Changed
