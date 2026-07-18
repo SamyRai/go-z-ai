@@ -44,9 +44,13 @@ zai-client validate
 `validate` makes one real API call and confirms the key works before you go
 further.
 
-If you're on Z.AI's China platform (open.bigmodel.cn) for Embeddings/Moderations
-specifically, see the note in [Accounts & Quota](accounts-and-quota.md#china-platform-key) —
-most of the time your regular key works there too and you don't need anything extra.
+If your key was issued on Z.AI's China platform (`open.bigmodel.cn`), set
+`--region china` (or `ZAI_REGION=china`) so quota / usage, account-info,
+agents, and account-type detection route to the right host — without it those
+calls hit `api.z.ai` and a China-issued key can fail auth. See
+[Accounts & Quota § Regional gateways](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn)
+for the full picture; most chat / embeddings / moderations usage needs
+nothing extra (a regular `ZAI_API_KEY` authenticates on both platforms).
 
 ## 3. Your first commands
 

@@ -35,7 +35,8 @@ c, err := client.NewClientFromEnv() // reads ZAI_API_KEY, ZAI_API_BASE_URL
 | `Timeout` | 30s | Bounds dial/TLS/response-header wait — **not** the whole response body read, so it never truncates a live SSE stream |
 | `MaxRetries` | 3 | Retries on 429/5xx/network errors. `-1` disables retries entirely |
 | `RetryDelay` | 200ms | Base exponential-backoff delay |
-| `ChinaAPIKey` | falls back to `APIKey` | Only needed if you hold a separate bigmodel.cn-only credential — see [Accounts & Quota](accounts-and-quota.md#china-platform-key) |
+| `ChinaAPIKey` | falls back to `APIKey` | Only needed if you hold a separate bigmodel.cn-only credential — see [Accounts & Quota](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn) |
+| `Region` | `RegionGlobal` | Selects the host for monitor/biz/agents/detection: `RegionGlobal` (api.z.ai) or `RegionChina` (open.bigmodel.cn). Does not override `BaseURL` (chat surface) or the Embeddings/Moderations host. See [Accounts & Quota](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn). |
 
 Every service method takes `context.Context` as its first argument and
 propagates it all the way to the HTTP call — cancel it to abort a request or
@@ -95,6 +96,12 @@ err := c.Chat().CreateStream(ctx, req, func(chunk client.StreamChunk) error {
 })
 ```
 
+Set `req.StreamToolCall = true` (GLM-4.6+) to stream tool-call deltas
+incrementally in `chunk.Choices[0].Delta.ToolCalls` across multiple events,
+rather than receiving them as a single batch at the end of the turn. Useful
+for surfacing "the model is calling a tool…" progress to a UI. NOT VERIFIED
+LIVE — see [Roadmap](roadmap.md).
+
 ### Async
 
 ```go
@@ -140,6 +147,44 @@ repeats until the model returns a non-tool finish reason or
 cap. A tool executor error is reported back to the model as the tool's
 result (`"error: ..."`), not returned to your caller, so the model can
 recover instead of the whole exchange failing.
+
+#### Tool types
+
+A `Tool` carries one of three payloads, selected by its `Type`:
+
+| Constructor | `Type` | Payload |
+|---|---|---|
+| `NewFunctionTool(name, desc, params)` | `ToolTypeFunction` (`"function"`) | `FunctionDef` — a callable the model invokes by name |
+| `NewRetrievalTool(knowledgeID, prompt)` | `ToolTypeRetrieval` (`"retrieval"`) | `Retrieval` — a knowledge base to ground the answer |
+| `NewWebSearchTool(queries...)` | `ToolTypeWebSearch` (`"web_search"`) | `WebSearch` — a `search_query` list |
+
+`retrieval` and `web_search` are documented on docs.z.ai but **NOT VERIFIED
+LIVE** here — only `function` is confirmed against the live API. The
+`web_search` payload shape (`{"search_query":[...]}`) follows the official
+Python SDK example; see [Roadmap](roadmap.md).
+
+`validateChatRequest` enforces three documented rules client-side, so you get
+a clear local error instead of the server's opaque one:
+
+- **Tool-name pattern** — `tools[].function.name` must match
+  `^[A-Za-z0-9_-]{1,64}$`.
+- **Function cap** — at most `ToolMaxFunctions` (128) function tools per
+  request.
+- **Per-type payload** — a `function`/`retrieval`/`web_search` tool must
+  carry its matching payload; unknown types are rejected.
+
+#### Response fields worth checking
+
+Beyond `resp.Choices[0].Message.Content`:
+
+- `resp.Choices[0].FinishReason` — compare against the `FinishReason*`
+  constants (`FinishReasonStop`, `FinishReasonToolCalls`, `FinishReasonLength`,
+  `FinishReasonSensitive`, `FinishReasonModelContextWindowExceeded`,
+  `FinishReasonNetworkError`). The last three are documented live values that
+  signal non-content terminations.
+- `resp.WebSearch` — the top-level `web_search` array the response carries
+  when a `web_search` tool fired (each entry's `Link`/`Title`/`Content` are
+  the sources the answer grounded in). NOT VERIFIED LIVE.
 
 #### Tool-schema compatibility
 

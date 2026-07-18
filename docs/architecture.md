@@ -80,7 +80,7 @@ default.
 | Service | Base URL | Why |
 |---|---|---|
 | Embeddings, Moderations | `open.bigmodel.cn` | The only platform that documents these endpoints — `api.z.ai`'s doc index doesn't mention either. Live-verified that a regular z.ai key authenticates identically on both platforms, so `Config.ChinaAPIKey` falls back to `Config.APIKey` by default. |
-| Agents | `https://api.z.ai/api` (bare root, no `/paas/v4`) | Verified live — nesting `/v1/agents` under the chat-completions base 404s. |
+| Agents | `https://api.z.ai/api` (bare root, no `/paas/v4`) by default; `https://open.bigmodel.cn/api` under `Config.Region = RegionChina` | Verified live — nesting `/v1/agents` under the chat-completions base 404s. |
 | Everything else | `Config.BaseURL` (`/api/paas/v4`, or `/api/coding/paas/v4` for GLM Coding Plan accounts) | The general case. |
 
 ### Regional gateway selection (Config.Region)
@@ -89,24 +89,25 @@ Z.AI serves the same GLM model family from two regional gateways: the
 international host `api.z.ai` and the China-mainland mirror
 `open.bigmodel.cn`. Most services pick their host via `Config.BaseURL` (chat,
 files, tools, etc.) or a fixed constant (Embeddings/Moderations always use the
-China host). Three services — **monitor** (quota/usage), **biz** (account
-info), and **agents** — used to be hardcoded to `api.z.ai`, which left a
-`glm_coding_plan_china` key unable to reach its own region's monitor/usage
-endpoints.
+China host). Four services — **monitor** (quota/usage), **biz** (account
+info), **agents**, and **account-type detection** — used to be hardcoded to
+`api.z.ai`, which left a `glm_coding_plan_china` key unable to reach its own
+region's monitor/usage endpoints (and got mis-classified by
+`accounts add`/`account detect`).
 
 `Config.Region` (`RegionGlobal`, the default, or `RegionChina`) selects the
-host for those three region-scoped services only. It does **not** override
+host for those four region-scoped services only. It does **not** override
 `Config.BaseURL` (the chat surface) or the Embeddings/Moderations host.
-From the CLI, use `--region {global,china}` (aliases: `cn`, `bigmodel`, `west`).
-An unknown value falls back to global rather than erroring, so a typo never
-blocks an unrelated command.
+From the CLI, use `--region {global,china}` or `ZAI_REGION` (aliases: `cn`,
+`bigmodel`, `west`). An unknown value falls back to global rather than
+erroring, so a typo never blocks an unrelated command.
 
-The China mirror hosts for monitor/biz/agents are modeled by mirroring the
-`api.z.ai` path layout on `open.bigmodel.cn` and marked `NOT VERIFIED LIVE` —
-the China platform is live-verified to serve the same OpenAPI surface for
-`/models` and `/chat/completions` (see `BigModelBaseURL`), but the monitor/biz
-hosts on the China side have not been captured by a cassette yet. Pin them with
-`ZAI_RECORD=1` if you hold an entitled China key.
+The China mirror hosts for monitor/biz/agents/detection are modeled by
+mirroring the `api.z.ai` path layout on `open.bigmodel.cn` and marked
+`NOT VERIFIED LIVE` — the China platform is live-verified to serve the same
+OpenAPI surface for `/models` and `/chat/completions` (see `BigModelBaseURL`),
+but the monitor/biz/agents hosts on the China side have not been captured by a
+cassette yet. Pin them with `ZAI_RECORD=1` if you hold an entitled China key.
 
 ## The live-verification convention
 
@@ -117,8 +118,16 @@ differently across two official SDKs). Rather than trust a single source,
 new services here are checked against a real API call and the interaction is
 recorded as a [go-vcr](https://github.com/dnaeon/go-vcr) cassette
 (`pkg/client/testdata/cassettes/`), replayed in `ModeReplayOnly` so the test
-suite never touches the network. `pkg/client/live_verification_test.go` is
-the running log of what's been confirmed this way and why it mattered.
+suite never touches the network.
+
+Two files in `pkg/client` carry the live-verification work, with distinct
+roles: **`live_replay_test.go`** holds the `Test*Live` tests that replay the
+committed cassettes as frozen findings (entitlement gates, the
+200-with-embedded-failure quirk, the single-key-across-hosts claim); it is the
+running log of what's been confirmed and why it mattered. **`live_verify_test.go`**
+holds the `TestVerify*` recording harness — each test SKIPS until you capture a
+new success-path cassette with `ZAI_RECORD=1`, then replays it; it's the
+to-do list of shapes still pending a real capture.
 
 If you're extending a service, see
 [Contributing § the live-verification convention](../CONTRIBUTING.md) before

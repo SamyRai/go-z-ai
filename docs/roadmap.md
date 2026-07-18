@@ -1,81 +1,107 @@
 # Roadmap & Known Limitations
 
+What's still open, why, and the exact action that closes it. Items leave this
+page when a committed cassette or a merged change resolves them — this is the
+verify-first convention's working list (see
+[Contributing § the live-verification convention](../CONTRIBUTING.md) and
+[Architecture § the live-verification convention](architecture.md#the-live-verification-convention)
+for the why).
+
+> **Recording a cassette yourself:** every "Unverified live" item below has a
+> matching `TestVerify*` test that SKIPS until you capture a success-path
+> cassette with `ZAI_RECORD=1`. The harness redacts `Authorization` to
+> `Bearer REDACTED` before saving — confirm with
+> `grep "Bearer " pkg/client/testdata/cassettes/<name>.yaml` before committing.
+>
+> ```sh
+> ZAI_RECORD=1 ZAI_API_KEY=<real-key> go test -run TestVerify<Name> ./pkg/client
+> ```
+
 ## Unverified live
 
-A few services are implemented from Z.AI's documented OpenAPI spec but their
-*success* response shape hasn't been confirmed against a real successful
-call (only the request shape and error paths have) — the account used for
-development has no PAYG balance/entitlement for these.
+Two groups: **services** whose success-path response shape isn't captured
+yet, and **fields added in the 2026-07-18 sprint** that match the docs but
+aren't pinned by a cassette.
 
-**Verifying these yourself:** `pkg/client/live_verify_test.go` holds a
-verification test per service that replays a committed cassette offline (and
-skips until one exists). If you have an entitled account, record one with:
+### Services needing a success-path cassette
 
-```sh
-ZAI_RECORD=1 ZAI_API_KEY=<real-key> go test -run TestVerifyAnthropicMessages ./pkg/client
-```
+The dev account used so far has no PAYG balance / entitlement for these, so
+only their request shape and error paths are confirmed. A cassette that
+captures a real success response closes each item.
 
-The API key is redacted out of the cassette at save time; confirm with
-`grep "Bearer " pkg/client/testdata/cassettes/<name>.yaml` (must read
-`Bearer REDACTED`) before committing. If you hit a shape mismatch instead,
-please [open an issue](https://github.com/SamyRai/go-z-ai/issues) or PR the
-cassette. Still unverified:
+- **Anthropic Messages** (`TestVerifyAnthropicMessages`) — routing, the
+  `anthropic-version` header, and Bearer auth are confirmed (a bogus key
+  returns a clean 401, not a 404/timeout). Open question the cassette would
+  settle: does GLM surface reasoning as Anthropic `thinking` blocks or the
+  OpenAI-style `reasoning_content` field? ([claude-code-router#1133](https://github.com/musistudio/claude-code-router/issues/1133))
+- **Embeddings** (`TestVerifyEmbeddings`) — currently returns `400 Unknown
+  Model` (code 1211) on every account tested; that's an entitlement gate,
+  not a routing bug (see [Accounts & Quota](accounts-and-quota.md)).
+- **Moderations** (`TestVerifyModerations`) — same 1211 entitlement gate.
+- **Agents `Invoke` success shape** (`TestVerifyAgentsInvoke`) — only the
+  failure envelope (`ID`/`AgentID`/`Status`/`Error`) is live-confirmed today,
+  via `testdata/cassettes/agents_invoke.yaml` (a 200-with-embedded-failure).
+  The `Choices`/`Usage` success shape is modeled from docs only.
+- **Voice `Clone` / `Delete`** (`TestVerifyVoiceClone`, `TestVerifyVoiceDelete`)
+  — `Voice List` is confirmed live; clone/delete need an uploaded sample
+  audio and a real cloned voice ID to record. Clone needs `ZAI_VOICE_SAMPLE_FILE_ID`
+  + `ZAI_VOICE_NAME`; delete needs `ZAI_VOICE_ID`.
+- **Batch and Files endpoints generally** — no dedicated `TestVerify*`
+  scaffold yet; would need an entitled PAYG account to record.
 
-- Agents `Invoke`'s success-path response shape (`Choices`/`Usage`)
-- Embeddings and Moderations' actual output (entitlement-gated on every
-  account tested so far — see [Accounts & Quota](accounts-and-quota.md))
-- Voice `Clone`/`Delete` (`List` is confirmed live and working)
-- Batch and Files endpoints generally
-- **Anthropic Messages** (`AnthropicService`, `POST /api/anthropic/v1/messages`)
-  — routing, the `anthropic-version` header, and Bearer auth are confirmed
-  reaching the live endpoint (a bogus key returns a clean HTTP 401, not a
-  404/timeout), but the *success*-path response body (`content` blocks,
-  `stop_reason`, `usage`) is modeled from Anthropic's documented shape and not
-  yet parsed from a real entitled call here. In particular, whether GLM returns
-  reasoning as Anthropic `thinking` blocks or in an OpenAI-style
-  `reasoning_content` field (the claude-code-router#1133 case) is unconfirmed —
-  `AnthropicResponse.Thinking()` reads both, but which one the endpoint actually
-  populates needs a live capture.
+### Fields added in the 2026-07-18 sprint, pending a cassette
+
+These fields were added to `pkg/client/types.go` / `chat.go` to match the
+current docs.z.ai chat-completion spec. They're additive and unit-tested,
+but NOT VERIFIED LIVE until a cassette pins the exact wire shape. Each has a
+`TestVerify*` test ready to record.
+
+- **`ChatRequest.StreamToolCall`** (`TestVerifyChatStreamToolCall`) — GLM-4.6+
+  streamed tool-call deltas. Cassette should show tool-call deltas arriving
+  across multiple SSE chunks in `StreamDelta.ToolCalls`.
+- **`Tool` discrimination across `function` / `retrieval` / `web_search`**
+  (`NewFunctionTool` / `NewRetrievalTool` / `NewWebSearchTool`) — the spec
+  lists all three types; only `function` is confirmed. The `web_search`
+  payload shape (`{"search_query":[...]}`) follows the official Python SDK
+  example.
+- **`ChatResponse.WebSearch`** (`TestVerifyChatWebSearchResponse`) — the
+  top-level `web_search` array returned when a `web_search` tool fires.
+  Entry shape reuses `WebSearchResult` from `tools.go` (live-verified for the
+  standalone web-search tool); placement as a top-level array is modeled from
+  the docs.
+- **`ThinkingConfig.Effort = "xhigh"`** — added to the validated enum
+  (`xhigh`→`max`, GLM-5.2 only). No dedicated test; covered by any thinking
+  + xhigh cassette.
+- **`FinishReason*` constants** (`sensitive`, `model_context_window_exceeded`,
+  `network_error`) — added from the docs; no cassette reproduces these
+  termination paths yet.
+- **Client-side tool-name regex** (`^[A-Za-z0-9_-]{1,64}$`) and **128-function
+  cap** — documented server-side rules we enforce locally; not confirmed as
+  the server's exact rejection criteria.
+- **China regional gateway for monitor/biz/agents/detection** — `RegionChina`
+  routes quota/usage/account/agents/detection to `open.bigmodel.cn`.
+  `/models` and `/chat/completions` are live-verified on the China host; the
+  monitor/biz/agents paths are modeled by mirroring `api.z.ai`'s layout and
+  need a cassette against an entitled China key to confirm.
+
+### Older open questions (no dedicated test yet)
+
 - **Tool-schema compatibility rewriting** — the set of JSON-Schema constructs
-  GLM's parser rejects with HTTP 500 (`anyOf`/`oneOf`/`allOf`/`$ref`) is drawn
-  from community bug reports (e.g.
-  [claude-code-router#1474](https://github.com/musistudio/claude-code-router/issues/1474)),
-  not yet reproduced against a live account here. The rewrite itself is
-  fully unit-tested and inert on already-flat schemas; if you can record a
-  live cassette that pins down exactly which constructs 500 (and which the
-  flattened output makes pass), that would upgrade this from "documented
-  behavior" to "live-verified." See `pkg/client/toolschema.go`.
-- **Chat-completion API additions** — the following fields were added to
-  `pkg/client/types.go` to match the current docs.z.ai chat-completion spec,
-  and are `NOT VERIFIED LIVE` until a cassette pins them:
-  - `ChatRequest.StreamToolCall` (GLM-4.6+ streamed tool-call deltas).
-  - `Tool` discrimination across `function` / `retrieval` / `web_search`
-    types (the spec lists three types but notes only `function` is fully
-    supported; the retrieval/web_search request shapes are modeled, not
-    confirmed). See `NewRetrievalTool` / `NewWebSearchTool`.
-  - `ChatResponse.WebSearch` (top-level `web_search` array; the entry shape
-    reuses `WebSearchResult` from `tools.go`, which is live-verified for the
-    standalone web-search tool).
-  - `ThinkingConfig.Effort` now documents `xhigh` (GLM-5.2; `xhigh`→`max`).
-  - `FinishReason*` constants for the live values `sensitive`,
-    `model_context_window_exceeded`, `network_error`.
-  - The client-side tool-name regex guard (`^[A-Za-z0-9_-]{1,64}$`) and the
-    128-function cap — these are documented rules, not yet confirmed as the
-    server's exact rejection criteria.
-- **China regional gateway for monitor/biz/agents** — `Config.Region =
-  RegionChina` routes the quota/usage, account, and agents calls to
-  `open.bigmodel.cn`. The China mirror hosts are modeled by mirroring the
-  `api.z.ai` path layout (live-verified for `/models` and `/chat/completions`,
-  see `BigModelBaseURL`); the monitor/biz/agents hosts on the China side are
-  `NOT VERIFIED LIVE`. Pin with `ZAI_RECORD=1` against an entitled China key.
+  GLM's parser rejects with HTTP 500 (`anyOf`/`oneOf`/`allOf`/`$ref`) is
+  drawn from community bug reports
+  ([claude-code-router#1474](https://github.com/musistudio/claude-code-router/issues/1474)),
+  not reproduced against a live account here. The rewrite itself is fully
+  unit-tested and inert on already-flat schemas; a cassette pinning exactly
+  which constructs 500 (and which the flattened output makes pass) would
+  upgrade this from "documented behavior" to "live-verified." See
+  `pkg/client/toolschema.go`.
 
 ## Not implemented
 
 - **Request/response logging and metrics collection** — no built-in
   instrumentation hooks yet.
 - **Performance benchmarks** — deferred until a real bottleneck is measured;
-  no known hot path currently justifies one (see the `golang-performance`
-  guidance this repo follows: profile before optimizing).
+  no known hot path currently justifies one (profile before optimizing).
 
 ## Deliberately not implemented
 

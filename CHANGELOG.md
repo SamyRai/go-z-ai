@@ -49,6 +49,32 @@ version tags yet — entries are grouped by date.
   `ZAI_RECORD=1 ZAI_API_KEY=<key> go test -run TestVerify<Name> ./pkg/client`
   (the harness redacts `Authorization` to `Bearer REDACTED` before saving).
 
+### Docs
+- Aligned every doc with the 2026-07-18 sprint: `--region`/`ZAI_REGION` added
+  to the CLI Reference global-flags table; `xhigh` added to the `--effort`
+  values; `Config.Region` added to the Library Guide Config table; the new
+  tool types (`NewRetrievalTool`/`NewWebSearchTool`), `StreamToolCall`,
+  `ChatResponse.WebSearch`, the `FinishReason*` constants, the 128-function
+  cap, and the tool-name regex documented in the Library Guide's Function
+  calling section; Accounts & Quota's "China platform key" rewritten as
+  "Regional gateways" covering both the Embeddings/Moderations axis and the
+  monitor/biz/agents/detection axis; Getting Started's China note reframed;
+  Architecture's "three services" corrected to four (detection also went
+  region-aware).
+- Rewrote `docs/roadmap.md` as a crisp, current task list — every
+  "Unverified live" item names its exact `TestVerify*` test + recording
+  command, grounded in the cassette inventory (no item was removed: none of
+  the unverified services got a success cassette this sprint).
+- Renamed `pkg/client/live_verification_test.go` → `live_replay_test.go` so
+  the two live-test files self-document: `live_replay_test.go` holds the
+  `Test*Live` replay-only tests (frozen findings), `live_verify_test.go`
+  holds the `TestVerify*` recording harness. No behavior change.
+- Index completeness: `docs/README.md` now lists `.github/SETUP.md` and
+  `.env.example`; root `README.md`'s doc table now matches the docs/ index
+  (Roadmap, Security, Changelog rows added).
+- `.github/PULL_REQUEST_TEMPLATE.md` checklist aligned with CONTRIBUTING.md
+  (added `golangci-lint run` and `govulncheck`).
+
 ## 2026-07-17
 
 ### Changed
@@ -177,8 +203,9 @@ version tags yet — entries are grouped by date.
   and CLI commands.
 - Handwriting OCR (`ocr handwriting`), distinct from layout parsing (`ocr parse`).
 - A [go-vcr](https://github.com/dnaeon/go-vcr)-based live-verification test
-  suite (`pkg/client/live_verification_test.go`, `testdata/cassettes/`) that
-  replays real recorded API interactions instead of hand-written fixtures.
+  suite (now `pkg/client/live_replay_test.go` + `live_verify_test.go`,
+  `testdata/cassettes/`) that replays real recorded API interactions instead
+  of hand-written fixtures.
 - Cursor as a fifth supported coding tool alongside Claude Code, OpenCode,
   Crush, and Factory Droid.
 - Full documentation rewrite: a `docs/` guide (Getting Started, CLI

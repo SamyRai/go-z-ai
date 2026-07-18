@@ -24,7 +24,11 @@ monitor/quota endpoint with a single free (no token cost) call. A successful,
 well-formed response means `coding_plan`; anything else falls back to
 `pay_as_you_go` — this is an inference by elimination, not a positive
 confirmation, since no endpoint is known to exist that's specific to
-pay-as-you-go keys. Pass `--type` explicitly to skip the probe.
+pay-as-you-go keys. Pass `--type` explicitly to skip the probe. The probe
+respects `--region`: a `glm_coding_plan_china` key probes
+`open.bigmodel.cn`'s coding endpoint instead of `api.z.ai`'s, so it classifies
+against the right platform (see [Regional gateways](#regional-gateways-apiza--openbigmodelcn)
+below).
 
 **Resolution order** — see [Getting Started](getting-started.md#2-authenticate)
 for the full priority list across `--api-key`, `--account`, env vars, and the
@@ -94,22 +98,43 @@ has no usage/quota API — that was true only of the general
 nothing for an account, check its type first (`pay_as_you_go` accounts
 genuinely don't have this data) before assuming the API is broken.
 
-## China platform key
+## Regional gateways (api.z.ai / open.bigmodel.cn)
 
-Embeddings, Moderations, Rerank, and Voice route to `open.bigmodel.cn` —
-the only platform that documents those endpoints (`api.z.ai`'s doc index
-doesn't mention them). `--china-api-key` / `ZAI_CHINA_API_KEY` is optional:
-confirmed live that a regular `ZAI_API_KEY` authenticates identically on both
-platforms (same `/models` catalog, same billing-level errors), so the
+Z.AI serves the same GLM model family from two regional gateways: the
+international host `api.z.ai` (the default) and the China-mainland mirror
+`open.bigmodel.cn`. Two separate concerns decide which host a given call
+lands on:
+
+**1. Embeddings / Moderations / Rerank / Voice always route to
+`open.bigmodel.cn`** — it's the only platform that documents those endpoints
+(`api.z.ai`'s doc index doesn't mention them). `--china-api-key` /
+`ZAI_CHINA_API_KEY` is the credential knob here; it's optional because a
+regular `ZAI_API_KEY` authenticates identically on both platforms (same
+`/models` catalog, same billing-level errors — live-verified), so the
 fallback is the common case. Set a separate China key only if you hold a
 distinct bigmodel.cn-only credential.
 
-Whether you get real results from those endpoints depends on your account's
-**plan entitlement**, not which key you use. A GLM Coding Plan account's
-model catalog is chat-only — calling Embeddings/Moderations/Rerank/Voice with
-that account returns `400 Unknown Model` (error code 1211) on either
-platform. That's expected, not a bug: check `zai-client models list` to see
-what's actually in your account's catalog.
+**2. monitor / biz / agents / detection route to `open.bigmodel.cn` when
+`--region china` (or `ZAI_REGION=china`)** is set; otherwise they route to
+`api.z.ai`. This is the knob a `glm_coding_plan_china` user needs so quota /
+usage, account info, agents, and account-type detection land on the right
+host — without it, those calls hit `api.z.ai` and a China-issued key can fail
+auth or get mis-classified. `--region` does **not** change the chat base URL
+(use `--base-url` for that) or the Embeddings/Moderations host. Aliases:
+`cn`, `bigmodel`, `west`; an unknown value falls back to global.
+
+Whether you get real results from the China-only services (Embeddings,
+Moderations, Rerank, Voice) depends on your account's **plan entitlement**,
+not which key you use. A GLM Coding Plan account's model catalog is
+chat-only — calling those with that account returns `400 Unknown Model`
+(error code 1211) on either platform. That's expected, not a bug: check
+`zai-client models list` to see what's actually in your account's catalog.
+
+The China mirror hosts for monitor/biz/agents/detection mirror the
+`api.z.ai` path layout but are **NOT VERIFIED LIVE** here — `open.bigmodel.cn`
+is live-verified to serve the same OpenAPI surface for `/models` and
+`/chat/completions`, but the monitor/biz/agents paths on the China side
+haven't been captured by a cassette yet. See [Roadmap](roadmap.md).
 
 ## Error codes
 
