@@ -1,5 +1,7 @@
 # Z.AI API Client
 
+**English** | [简体中文](README.zh.md)
+
 [![CI](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/SamyRai/go-z-ai.svg)](https://pkg.go.dev/github.com/SamyRai/go-z-ai)
 [![Go Report Card](https://goreportcard.com/badge/github.com/SamyRai/go-z-ai)](https://goreportcard.com/report/github.com/SamyRai/go-z-ai)
@@ -39,6 +41,9 @@ resp, _ := c.Chat().Create(ctx, client.ChatRequest{
 fmt.Println(resp.Choices[0].Message.Content)
 ```
 
+More runnable programs — streaming, async image polling, the Anthropic
+`/v1/messages` endpoint — live under [`examples/`](examples/).
+
 ## Documentation
 
 **[Full documentation index →](docs/README.md)**
@@ -50,7 +55,7 @@ fmt.Println(resp.Choices[0].Message.Content)
 | [Library Guide](docs/library-guide.md) | [Error Handling](docs/error-handling.md) |
 | [Architecture](docs/architecture.md) | [Roadmap & Known Limitations](docs/roadmap.md) |
 | [Contributing](CONTRIBUTING.md) | [Security Policy](SECURITY.md) |
-| [Changelog](CHANGELOG.md) | |
+| [Code of Conduct](CODE_OF_CONDUCT.md) | [Changelog](CHANGELOG.md) |
 
 ## What's covered
 
@@ -61,6 +66,21 @@ Moderations, Rerank, Agents, Files, Batch jobs, GLM Coding Plan
 usage/quota/multi-account management, and a full-screen terminal UI
 (`zai-client tui`). See [CLI Reference](docs/cli-reference.md) for the complete
 command list or [Library Guide](docs/library-guide.md) for the Go API.
+
+## How it relates to the official SDKs
+
+Z.AI / Zhipu publish official SDKs for **Python**
+([zai-org/z-ai-sdk-python](https://github.com/zai-org/z-ai-sdk-python), PyPI
+`zai-sdk`), **Node** ([MetaGLM/zhipuai-sdk-nodejs-v4](https://github.com/MetaGLM/zhipuai-sdk-nodejs-v4)),
+and **Java** ([MetaGLM/zhipuai-sdk-java-v4](https://github.com/MetaGLM/zhipuai-sdk-java-v4)).
+There is **no official Go SDK** — `go-z-ai` fills that gap, and layers a CLI,
+a TUI, regional gateway switching (`api.z.ai` ↔ `open.bigmodel.cn`), and GLM
+Coding Plan multi-account management on top of the same API surface.
+
+> ℹ️ `zai-claude-config.json` at the repo root is a **template** with
+> placeholder values (`"your-zai-api-key-here"`) used by
+> `zai-client coding load claude-code`. It is not a real config and ships no
+> credentials.
 
 ## Contributing
 

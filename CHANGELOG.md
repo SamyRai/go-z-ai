@@ -1,8 +1,66 @@
 # Changelog
 
 Notable changes to this project, loosely following
-[Keep a Changelog](https://keepachangelog.com/). This project doesn't cut
-version tags yet — entries are grouped by date.
+[Keep a Changelog](https://keepachangelog.com/). Entries before `v0.1.0` are
+grouped by date; from `v0.1.0` on, sections are tagged.
+
+## 2026-07-19
+
+Open-source readiness pass: community files, examples, CI hardening, and the
+first tagged release path. The local `.env` (never in git history) remains
+gitignored — no keys were exposed or rotated.
+
+### Added
+- **`CODE_OF_CONDUCT.md`** (Contributor Covenant 2.1) with a contact address
+  matching `SECURITY.md`.
+- **`README.zh.md`** — Simplified-Chinese README mirroring the English
+  structure, with cross-language links at the top of both READMEs.
+- **`examples/`** — three runnable `package main` programs (compiled by CI's
+  `go build ./...`) covering the three core API shapes:
+  - `examples/chat-streaming` — `Chat().CreateStream` callback streaming.
+  - `examples/async-poll` — `Images().GenerateAsync` + `WaitForResult`.
+  - `examples/anthropic-messages` — the Anthropic-compatible `/v1/messages`.
+  Each has a per-example description and is linked from the top-level README.
+- **`Makefile`** wrapping the contributor commands (`build`, `vet`, `test`,
+  `test-cover`, `fmt`, `fmt-check`, `lint`, `vuln`, `tidy`, `ci-local`).
+- **`--version`** on `zai-client`, populated by GoReleaser ldflags at release
+  time (`version`, `commit`, `date` vars in `main.go`).
+- **`.github/workflows/release.yml`** + **`.goreleaser.yml`** — tag-triggered
+  (`v*`) GoReleaser build for `linux/amd64, linux/arm64, darwin/amd64,
+  darwin/arm64`, with SBOM (`spdx-json`) and keyless cosign/sigstore signing
+  via OIDC. Creates a GitHub Release with an auto-generated changelog and
+  publishes to the `Releases` Discussion category.
+- README: "How it relates to the official SDKs" section noting there is **no
+  official Go SDK** (Python/Node/Java only), and a callout that
+  `zai-claude-config.json` is a template, not a real config.
+
+### Changed
+- **CI hardening** (`.github/workflows/ci.yml`):
+  - Added `concurrency` block — cancels superseded PR runs.
+  - `test` and `lint` jobs now run on an OS matrix
+    (`ubuntu-latest`, `macos-latest`) since the project ships a darwin binary
+    and a TUI.
+  - Tests now produce a coverage profile (`go test -race -coverprofile`) and
+    upload `cover.out` as an artifact; a coverage summary is printed.
+  - Pinned `govulncheck` to `v1.1.4` instead of `@latest` for reproducibility.
+- **`.gitignore`** now covers `.zcode/` and `.claude/` at the repo level
+  (previously `.zcode/` was covered by nothing and `.claude/` only by a
+  per-developer global ignore — both are local agent/CLI working state that
+  must never ship).
+
+### Documentation
+- README docs table now links to `CODE_OF_CONDUCT.md`.
+- Note on the global-vs-China endpoint feature matrix in
+  `docs/accounts-and-quota.md` confirmed already accurate for mid-2026
+  (embeddings/moderations/rerank/batch/voice on `open.bigmodel.cn` only; the
+  GLM-5.2 flagship model is supported; the deprecated Assistant API is
+  deliberately not implemented — see `docs/roadmap.md`).
+
+### Security (no incident)
+- Verified via `git log --all --full-history -- .env` (empty) and a source
+  scan for the Z.AI key format that **no credentials were ever committed**.
+  All VCR cassettes carry `Bearer REDACTED`. No key rotation was needed; the
+  local `.env` stays ignored.
 
 ## 2026-07-18
 

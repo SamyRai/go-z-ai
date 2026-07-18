@@ -68,3 +68,8 @@ MEMORY.md
 
 # Account credentials (stored in user home dir, but just in case)
 accounts.json
+
+# Agent / CLI working state (ZCode, Claude Code). These are per-developer
+# local sessions and plans and must never ship in the public repo.
+.zcode/
+.claude/

@@ -11,10 +11,33 @@ import (
 
 var cfgFile string
 
+// buildInfo is set by Execute() from main.go's ldflag-populated vars so that
+// `zai-client --version` reports the GoReleaser build metadata.
+var buildInfo = struct {
+	version string
+	commit  string
+	date    string
+}{version: "dev", commit: "none", date: "unknown"}
+
 var rootCmd = &cobra.Command{
-	Use:   "zai-client",
-	Short: "Z.AI API Client",
-	Long:  `A comprehensive CLI client for the Z.AI (Zhipu AI) API platform.`,
+	Use:     "zai-client",
+	Short:   "Z.AI API Client",
+	Long:    `A comprehensive CLI client for the Z.AI (Zhipu AI) API platform.`,
+	Version: "dev",
+}
+
+// SetBuildInfo configures the version/commit/date reported by --version.
+// It must be called before Execute(). When not called, defaults to "dev".
+func SetBuildInfo(version, commit, date string) {
+	buildInfo.version = version
+	buildInfo.commit = commit
+	buildInfo.date = date
+	rootCmd.Version = version
+	if version == "dev" {
+		// Show a richer string for development builds so it's clear --version
+		// is wired but no release tag was applied.
+		rootCmd.Version = fmt.Sprintf("%s (commit: %s, built: %s)", version, commit, date)
+	}
 }
 
 func Execute() {
