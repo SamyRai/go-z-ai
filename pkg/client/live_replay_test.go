@@ -9,6 +9,17 @@ import (
 	"testing"
 )
 
+// This file holds the Test*Live replay-only tests: each consumes one of the
+// committed cassettes in testdata/cassettes/ as a frozen finding (no network,
+// no recording path) and asserts on the recorded response. The tests document
+// real confirmed behaviors — entitlement gates, the 200-with-embedded-failure
+// quirk, the single-key-across-hosts claim, etc.
+//
+// This is distinct from live_verify_test.go, which holds the TestVerify*
+// recording harness: those tests SKIP until you capture a new success-path
+// cassette with ZAI_RECORD=1, then replay it. See live_verify_test.go's
+// header and docs/roadmap.md for the record-one-yourself flow.
+
 // These two tests replay real recorded interactions from a live account
 // (2026-07-10, coding_plan type) against the general PAYG base
 // (ProdBaseURL) to lock in a confirmed finding: both endpoints are reachable
