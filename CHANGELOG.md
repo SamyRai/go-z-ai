@@ -62,6 +62,16 @@ gitignored — no keys were exposed or rotated.
   All VCR cassettes carry `Bearer REDACTED`. No key rotation was needed; the
   local `.env` stays ignored.
 
+### Changed (follow-up)
+- **Replaced the Go Report Card badge with OpenSSF Scorecard** in both
+  READMEs. goreportcard.com sunset its public badge service on
+  **July 1, 2026** (after 11 years); the badge endpoint now serves a static
+  "retired" placeholder for every repo, so the badge had become meaningless.
+  Added `.github/workflows/scorecard.yml` running `ossf/scorecard-action`
+  weekly and on `branch_protection_review`, uploading SARIF to the Security
+  tab and exposing the score via `api.securityscorecards.dev`. SETUP.md
+  updated accordingly.
+
 ## 2026-07-18
 
 ### Added
