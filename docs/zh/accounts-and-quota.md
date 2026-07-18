@@ -96,12 +96,15 @@ Z.AI 通过两个区域网关提供同一套 GLM 模型家族：国际主机 `ap
 中国大陆镜像 `open.bigmodel.cn`。有两个相互独立的因素决定某次调用落在哪个
 主机上：
 
-**1. Embeddings / Moderations / Rerank / Voice 始终路由到 `open.bigmodel.cn`**
-—— 它是唯一为这些端点提供文档的平台（`api.z.ai` 的文档索引中并未提及它们）。
+**1. Embeddings 和 Moderations 始终路由到 `open.bigmodel.cn`**——它们是代码里
+唯一被固定指向中国主机的服务（`pkg/client/embeddings.go` 和
+`pkg/client/moderations.go` 都调用 `doRequestBaseKey(BigModelBaseURL, …)`）。
 `--china-api-key` / `ZAI_CHINA_API_KEY` 是此处的凭据开关；它是可选的，因为普通的
 `ZAI_API_KEY` 在两个平台上鉴权方式完全相同（相同的 `/models` 目录、相同的
 计费层级错误 —— 已实测验证），所以回退才是常见情况。仅当你持有独立的、仅限
-bigmodel.cn 使用的凭据时，才需要单独设置中国密钥。
+bigmodel.cn 使用的凭据时，才需要单独设置中国密钥。Rerank 和 Voice 使用默认的
+`--base-url`（默认即 `api.z.ai`）——它们仅在中国平台有文档，但客户端并不会
+强制把它们路由过去。
 
 **2. 当设置了 `--region china`（或 `ZAI_REGION=china`）时，monitor / biz /
 agents / detection 会路由到 `open.bigmodel.cn`**；否则它们会路由到
@@ -112,7 +115,7 @@ agents / detection 会路由到 `open.bigmodel.cn`**；否则它们会路由到
 Embeddings/Moderations 的主机。别名：`cn`、`bigmodel`、`west`；未知值会回退到
 global。
 
-你能否从中国专属服务（Embeddings、Moderations、Rerank、Voice）拿到真实结果，
+你能否从中国平台文档中提到的服务（Embeddings、Moderations、Rerank、Voice）拿到真实结果，
 取决于你账户的**套餐权益**，而非你用哪把密钥。GLM Coding Plan 账户的模型目录
 仅含 chat —— 用该账户调用这些服务会在任一平台上返回 `400 Unknown Model`
 （错误码 1211）。这是预期行为，不是 bug：通过 `zai-client models list` 查看

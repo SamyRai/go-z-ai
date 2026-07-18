@@ -4,6 +4,17 @@
 достигается за счёт вызовов к этому пакету. Вы можете зависеть от него
 напрямую, вообще без CLI.
 
+## Содержание
+
+- [Создание клиента](#создание-клиента)
+- [Сервисы](#сервисы)
+- [Завершение чата](#завершение-чата)
+- [Anthropic-совместимый Messages API](#anthropic-совместимый-messages-api)
+- [Обработка ошибок](#обработка-ошибок)
+- [Управление мультиаккаунтными кредами](#управление-мультиаккаунтными-кредами)
+- [Тестирование вашего кода против этого клиента](#тестирование-вашего-кода-против-этого-клиента)
+- [Архитектурные заметки](#архитектурные-заметки)
+
 ```bash
 go get github.com/SamyRai/go-z-ai
 ```
@@ -62,6 +73,7 @@ c, err := client.NewClientFromEnv() // reads ZAI_API_KEY, ZAI_API_BASE_URL
 | `c.Files()` | `Upload`, `List`, `Delete`, `Content` |
 | `c.Batch()` | `Create`, `Retrieve`, `List`, `Cancel` |
 | `c.Agents()` | `Invoke`, `AsyncResult` |
+| `c.Anthropic()` | `Create`, `CreateStream` — Anthropic-протокол поверхности `/v1/messages` |
 | `c.Embeddings()` | `Create` (маршрутизируется на `open.bigmodel.cn`) |
 | `c.Moderations()` | `Create` (маршрутизируется на `open.bigmodel.cn`) |
 | `c.Rerank()` | `Create` |

@@ -20,6 +20,15 @@ Coding Plan'ınıza bağlamak için.
 go install github.com/SamyRai/go-z-ai@latest
 ```
 
+Bu, `$GOPATH/bin` altında `go-z-ai` adlı bir ikili (binary) oluşturur.
+Aşağıdaki örnekler daha kısa olan **`zai-client`** adını kullanır — sembolik
+bağlayın veya yeniden adlandırın:
+
+```bash
+ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+# veya: mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+```
+
 Go 1.26.4+ ve bir [Z.AI API anahtarı](https://z.ai/manage-apikey) gerektirir.
 Kaynaktan derleme, ilk kimlik doğrulama ve sorun giderme:
 **[Başlarken →](docs/en/getting-started.md)**

@@ -20,6 +20,14 @@ GLM Coding Plan.
 go install github.com/SamyRai/go-z-ai@latest
 ```
 
+Это создаст бинарник `go-z-ai` в `$GOPATH/bin`. Примеры ниже используют более
+короткое имя **`zai-client`** — сделайте симлинк или переименуйте:
+
+```bash
+ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+# или: mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+```
+
 Требуется Go 1.26.4+ и [API-ключ Z.AI](https://z.ai/manage-apikey). Сборка из
 исходников, первичная аутентификация и устранение неполадок:
 **[Начало работы →](docs/ru/getting-started.md)**

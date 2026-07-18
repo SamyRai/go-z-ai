@@ -20,6 +20,15 @@ Plan anzubinden.
 go install github.com/SamyRai/go-z-ai@latest
 ```
 
+Dies erzeugt einen Binary namens `go-z-ai` in Ihrem `$GOPATH/bin`. Die
+Beispiele unten verwenden den kürzeren Namen **`zai-client`** — verlinken
+oder umbenennen Sie ihn:
+
+```bash
+ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+# oder: mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+```
+
 Setzt Go 1.26.4+ und einen [Z.AI API-Key](https://z.ai/manage-apikey) voraus.
 Build aus dem Quellcode, Erstanmeldung und Fehlerbehebung:
 **[Erste Schritte →](docs/en/getting-started.md)**
