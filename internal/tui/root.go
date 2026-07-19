@@ -29,6 +29,10 @@ const (
 	chromeRows     = 4
 	panelVOverhead = 2
 	panelHOverhead = 4
+	// tabBarRow is the screen row index (0-based) of the tab-bar strip. The
+	// header occupies row 0; the tab bar is right below it. Used by the
+	// mouse-click handler to hit-test tab pills.
+	tabBarRow = 1
 )
 
 // toastTTL is how long a toast stays visible before auto-dismissing. A newer
@@ -239,6 +243,27 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		ns, cmd := m.screens[msg.Tab].Update(msg.Msg)
 		m.screens[msg.Tab] = ns
 		return m, cmd
+
+	case tea.MouseClickMsg:
+		// A click also dismisses a lingering toast, matching the
+		// any-keypress-dismisses behavior.
+		m.toastText = ""
+
+		// Click on the tab bar (the row directly below the header) switches
+		// tabs. Other clicks fall through to the active screen so viewports
+		// and lists can handle them (bubbles components already forward
+		// mouse msgs in their Update). Tab-bar clicks are blocked mid-stream
+		// for the same reason keyboard tab-nav is.
+		activeStreaming := false
+		if sc, ok := m.screens[m.active].(streamer); ok {
+			activeStreaming = sc.Streaming()
+		}
+		if msg.Y == tabBarRow && !activeStreaming && m.overlay == nil {
+			if t, ok := tabBarHit(msg.X); ok {
+				m.switchTab(t)
+				return m, m.ensureInit()
+			}
+		}
 	}
 
 	ns, cmd := m.screens[m.active].Update(msg)
@@ -310,6 +335,11 @@ func (m *rootModel) View() tea.View {
 
 	v := tea.NewView(content)
 	v.AltScreen = true
+	// Enable cell-motion mouse mode (wheel, click, drag) for the whole
+	// app: the tab bar uses clicks for navigation, and the screen viewports
+	// / lists get wheel-scrolling for free (bubbles components already
+	// forward mouse msgs to their own Update).
+	v.MouseMode = tea.MouseModeCellMotion
 	return v
 }
 
