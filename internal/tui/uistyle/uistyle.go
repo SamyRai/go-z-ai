@@ -95,6 +95,23 @@ var (
 		Foreground(ColorAccent).
 		Padding(0, 1)
 
+	// HeaderApp is the left-side app-name badge in the top header: a solid
+	// accent-on-teal block, mirroring the active tab pill so the brand reads
+	// as part of the navigation chrome.
+	HeaderApp = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("15")).
+			Background(ColorAccentBg).
+			Padding(0, 1)
+
+	// Badge styles for the header's context chips (account, plan, model, …).
+	// Each badge is a compact "label: value" pair; the label is muted and the
+	// value carries the role color, so the eye lands on the value.
+	BadgeLabel = lipgloss.NewStyle().Foreground(ColorMuted)
+	BadgeValue = lipgloss.NewStyle().Foreground(ColorAccent).Bold(true)
+	BadgeWarn  = lipgloss.NewStyle().Foreground(ColorWarn).Bold(true)
+	BadgeOK    = lipgloss.NewStyle().Foreground(ColorSuccess).Bold(true)
+
 	// Panel wraps a screen's content in a bordered container. Only the root
 	// model applies this around the active screen — screens themselves
 	// should not nest another Panel border inside their own View, or the
@@ -155,6 +172,15 @@ func applyTheme() {
 		Padding(0, 2)
 	PillInactive = lipgloss.NewStyle().Foreground(ColorMuted).Padding(0, 2)
 	Header = lipgloss.NewStyle().Bold(true).Foreground(ColorAccent).Padding(0, 1)
+	HeaderApp = lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("15")).
+		Background(ColorAccentBg).
+		Padding(0, 1)
+	BadgeLabel = lipgloss.NewStyle().Foreground(ColorMuted)
+	BadgeValue = lipgloss.NewStyle().Foreground(ColorAccent).Bold(true)
+	BadgeWarn = lipgloss.NewStyle().Foreground(ColorWarn).Bold(true)
+	BadgeOK = lipgloss.NewStyle().Foreground(ColorSuccess).Bold(true)
 	Panel = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(ColorBorder).
@@ -195,6 +221,17 @@ func RenderOverlayCard(title, body string) string {
 		card = SectionTitle.Render(title) + "\n\n" + body
 	}
 	return OverlayCardStyle.Render(card)
+}
+
+// RenderBadge renders a "label value" chip: a muted label followed by a
+// styled value, with a single space between. Used by the top header's
+// account / plan / model context chips. valueStyle is one of BadgeValue /
+// BadgeWarn / BadgeOK (or any lipgloss style the caller supplies).
+func RenderBadge(label, value string, valueStyle lipgloss.Style) string {
+	if value == "" {
+		return ""
+	}
+	return BadgeLabel.Render(label+" ") + valueStyle.Render(value)
 }
 
 // RenderPills renders names as a row of pill segments, highlighting active.

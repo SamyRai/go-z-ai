@@ -9,6 +9,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	accountsstore "github.com/SamyRai/go-z-ai/internal/accounts"
+	rootcoding "github.com/SamyRai/go-z-ai/internal/coding"
 	"github.com/SamyRai/go-z-ai/internal/tui/accounts"
 	"github.com/SamyRai/go-z-ai/internal/tui/chat"
 	"github.com/SamyRai/go-z-ai/internal/tui/coding"
@@ -20,28 +22,31 @@ import (
 	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
 	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
 	"github.com/SamyRai/go-z-ai/internal/tui/usage"
+	"github.com/SamyRai/go-z-ai/pkg/client"
 )
 
-// chrome rows: header line + tab bar + status line + help bar, plus the
-// bordered panel's own top/bottom border. The status line is always reserved
-// (blank when no toast is active) so the inner content area never shifts when
-// a toast appears or expires. Panel padding is 1 col each side, border 1 col
-// each side, so 4 columns of horizontal overhead too.
+// chrome rows: header line + a spacer + tab bar + a spacer + status line +
+// help bar, plus the bordered panel's own top/bottom border. The status line
+// is always reserved (blank when no toast is active) so the inner content
+// area never shifts when a toast appears or expires. The two spacer lines
+// give the chrome breathing room above and below the tab strip. Panel padding
+// is 1 col each side, border 1 col each side, so 4 columns of horizontal
+// overhead too.
 const (
-	chromeRows     = 4
+	chromeRows     = 6
 	panelVOverhead = 2
 	panelHOverhead = 4
 	// tabBarRow is the screen row index (0-based) of the tab-bar strip. The
-	// header occupies row 0; the tab bar is right below it. Used by the
-	// mouse-click handler to hit-test tab pills.
-	tabBarRow = 1
+	// header occupies row 0; a spacer sits at row 1; the tab bar is at row 2.
+	// Used by the mouse-click handler to hit-test tab pills.
+	tabBarRow = 2
 	// minWidth/minHeight are the smallest terminal at which the full chrome
 	// (header + tabs + panel + status + help) renders readably. Below this,
 	// View short-circuits to a centered "please resize" message instead of a
 	// cramped, broken layout. The screens themselves still receive resize
 	// msgs and floor their own dimensions, so we never crash.
 	minWidth  = 60
-	minHeight = 20
+	minHeight = 22
 )
 
 // toastTTL is how long a toast stays visible before auto-dismissing. A newer
@@ -402,7 +407,7 @@ func (m *rootModel) View() tea.View {
 		panel = placeOverlay(innerW, innerH, ov.Content)
 	}
 
-	header := uistyle.Header.Render("go-z-ai") + " " + uistyle.StatusBar.Render(m.accountLabel())
+	header := m.renderHeader(innerW)
 
 	help := m.help.ShortHelpView(m.footerBindings())
 	// The status line is always present: the toast when one is active,
@@ -419,7 +424,9 @@ func (m *rootModel) View() tea.View {
 
 	content := lipgloss.JoinVertical(lipgloss.Left,
 		header,
+		"", // spacer: breathing room between the header and the tab strip
 		renderTabBar(m.active, m.width),
+		"", // spacer: breathing room between the tab strip and the panel
 		panel,
 		status,
 		help,
@@ -435,15 +442,121 @@ func (m *rootModel) View() tea.View {
 	return v
 }
 
-func (m *rootModel) accountLabel() string {
+// renderHeader builds the top header line: the app badge on the left and a
+// right-aligned cluster of context badges (account, type, plan, model) that
+// give every tab at-a-glance state. width is the inner content width so the
+// badge cluster can be pushed to the right edge with a spacer; on narrow
+// terminals the badges drop progressively to keep the app name visible.
+func (m *rootModel) renderHeader(width int) string {
+	left := uistyle.HeaderApp.Render("go-z-ai")
+
+	// Account badge: the user-chosen name, warn-styled when there's no active
+	// account (the user can't do anything API-shaped until they add one).
+	acct, hasAccount := m.activeAccount()
+	var accountBadge, typeBadge, planBadge, modelBadge string
+	if !hasAccount {
+		accountBadge = uistyle.RenderBadge("account", "none", uistyle.BadgeWarn)
+	} else {
+		accountBadge = uistyle.RenderBadge("account", acct.Name, uistyle.BadgeValue)
+		// Type badge: pay_as_you_go vs coding_plan — determines which endpoint
+		// family and which features (e.g. the Usage tab's monitor endpoints)
+		// are available, so it's worth surfacing everywhere.
+		typeBadge = uistyle.RenderBadge("type", accountTypeLabel(acct.Type), uistyle.BadgeValue)
+	}
+
+	// Plan badge: the coding store's configured plan region (Global/China),
+	// surfaced because it silently changes the endpoint the coding tab and
+	// coding-agent integrations talk to. Only shown when set.
+	planBadge = m.planBadge()
+
+	// Model badge: the chat tab's currently-selected model. Useful on every
+	// tab because users often check Usage or Models while composing a chat.
+	if g, ok := m.screens[tabChat].(chatModelGetter); ok {
+		if id := g.ModelID(); id != "" {
+			modelBadge = uistyle.RenderBadge("model", id, uistyle.BadgeValue)
+		}
+	}
+
+	badges := joinBadges("  ", accountBadge, typeBadge, planBadge, modelBadge)
+
+	// Narrow terminals: drop the least-essential badges first so the app name
+	// and the account badge stay visible. Tiers match the tab bar's compact
+	// threshold for visual consistency.
+	switch {
+	case width > 0 && width < compactTabWidth-30:
+		badges = accountBadge // essential only
+	case width > 0 && width < compactTabWidth:
+		badges = joinBadges("  ", accountBadge, modelBadge)
+	}
+
+	if badges == "" {
+		return left
+	}
+
+	// Spacer pushes the badge cluster to the right edge of the line.
+	spacer := lipgloss.NewStyle().Width(max(width-displayWidth(left)-displayWidth(badges)-2, 0)).Render(" ")
+	return left + " " + spacer + badges
+}
+
+// accountTypeLabel shortens the raw AccountType enum ("pay_as_you_go" /
+// "coding_plan") to a label compact enough for a header badge, while staying
+// unambiguous (the raw form is verbose and underscores read poorly inline).
+func accountTypeLabel(t client.AccountType) string {
+	switch t {
+	case client.AccountTypePayAsYouGo:
+		return "pay-as-you-go"
+	case client.AccountTypeCodingPlan:
+		return "coding-plan"
+	default:
+		return string(t)
+	}
+}
+
+// joinBadges concatenates non-empty badge strings with the given separator.
+func joinBadges(sep string, badges ...string) string {
+	var out string
+	for _, b := range badges {
+		if b == "" {
+			continue
+		}
+		if out != "" {
+			out += sep
+		}
+		out += b
+	}
+	return out
+}
+
+// displayWidth returns the rendered cell width of a lipgloss-styled string,
+// stripping ANSI escapes. Used by renderHeader to size the right-align spacer.
+// lipgloss.Width already accounts for style padding, so prefer it when the
+// string carries style markup.
+func displayWidth(s string) int {
+	return lipgloss.Width(s)
+}
+
+// activeAccount returns the active account, or ok=false if there's no store
+// or no active account. Thin wrapper so renderHeader reads cleanly.
+func (m *rootModel) activeAccount() (accountsstore.Account, bool) {
 	if m.cfg.Accounts == nil {
+		return accountsstore.Account{}, false
+	}
+	return m.cfg.Accounts.ActiveAccount()
+}
+
+// planBadge returns the coding plan badge ("plan Global"/"plan China") or ""
+// if the coding store has no plan configured. Reads the store on every render
+// — cheap (one file read, cached by the store) and keeps the badge live as
+// the coding tab mutates it.
+func (m *rootModel) planBadge() string {
+	if m.cfg.Coding == nil {
 		return ""
 	}
-	acct, ok := m.cfg.Accounts.ActiveAccount()
-	if !ok {
-		return "no active account"
+	cfg, err := m.cfg.Coding.Load()
+	if err != nil || cfg == nil || cfg.Plan == "" {
+		return ""
 	}
-	return fmt.Sprintf("account: %s (%s)", acct.Name, acct.Type)
+	return uistyle.RenderBadge("plan", rootcoding.PlanRegion(cfg.Plan), uistyle.BadgeOK)
 }
 
 // openHelpOverlay builds the help overlay from the global keymap and the

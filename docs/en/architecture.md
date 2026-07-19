@@ -213,6 +213,33 @@ root model in `internal/tui/root.go`; each screen renders only its body. A
 few cross-cutting pieces live outside the screens so they can be shared
 without an import cycle:
 
+#### Top header
+
+The header is a single line: the `go-z-ai` app badge on the left, a
+right-aligned cluster of context badges, and a spacer between them that
+pushes the badges to the right edge. The badges give every tab at-a-glance
+state:
+
+- **account** — the active account's name (or a warn-styled `none` when no
+  account is set, so the missing-credentials state is unmissable).
+- **type** — `pay-as-you-go` / `coding-plan`, since that determines which
+  endpoint family and which features (e.g. the Usage tab's monitor
+  endpoints) are available.
+- **plan** — `Global` / `China` from the coding store, surfaced because it
+  silently changes the endpoint the Coding tab and coding-agent
+  integrations talk to. Only shown when a plan is configured.
+- **model** — the Chat tab's currently-selected model. Useful on every tab
+  because users often check Usage or Models while composing a chat.
+
+On narrow terminals the header drops badges progressively (plan, then type,
+keeping account + model) so the app name and the essentials stay visible.
+Badges are built via `uistyle.RenderBadge(label, value, valueStyle)` — a
+muted label paired with a role-colored value.
+
+A spacer line sits above and below the tab strip so the chrome has breathing
+room; `chromeRows` accounts for both spacers when sizing the inner panel.
+
+
 - **`internal/tui/uistyle`** — the lipgloss style vocabulary and a dual
   light/dark palette. The root model resolves the palette against the
   terminal's actual background (`tea.BackgroundColorMsg`) and rebuilds every
@@ -258,8 +285,8 @@ The app has three width tiers:
   shortens price headers; the Usage heatmap collapses to one-line-per-section
   summaries; the tab bar switches to a numbered compact form.
 
-Below **60×20** the root renders only a centered "terminal too small — resize
-to at least 60×20" message instead of overlapping chrome. Screens still
+Below **60×22** the root renders only a centered "terminal too small — resize
+to at least 60×22" message instead of overlapping chrome. Screens still
 receive `WindowSizeMsg` and floor their own dimensions, so growing back past
 the threshold resumes a correctly-laid-out app with no extra work.
 

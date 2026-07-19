@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -128,8 +129,9 @@ func TestMinSizeGuardRendersMessage(t *testing.T) {
 	if !strings.Contains(v.Content, "too small") {
 		t.Errorf("expected a resize hint below min size, got:\n%s", v.Content)
 	}
-	if !strings.Contains(v.Content, "60x20") {
-		t.Errorf("expected the hint to mention the minimum dimensions, got:\n%s", v.Content)
+	want := fmt.Sprintf("%dx%d", minWidth, minHeight)
+	if !strings.Contains(v.Content, want) {
+		t.Errorf("expected the hint to mention the minimum dimensions %s, got:\n%s", want, v.Content)
 	}
 }
 
@@ -170,5 +172,60 @@ func TestDefaultKeymapHasHelpAndPalette(t *testing.T) {
 		if len(b.Keys()) == 0 {
 			t.Errorf("expected non-empty keys for binding %+v", b)
 		}
+	}
+}
+
+// chatModelSpy is a minimal tea.Model that also implements chatModelGetter, so
+// renderHeader's model badge can read its ModelID without a real chat screen.
+type chatModelSpy struct{ model string }
+
+func (s chatModelSpy) Init() tea.Cmd                       { return nil }
+func (s chatModelSpy) Update(tea.Msg) (tea.Model, tea.Cmd) { return s, nil }
+func (s chatModelSpy) View() tea.View                      { return tea.NewView("") }
+func (s chatModelSpy) ModelID() string                     { return s.model }
+
+// renderHeader on a wide terminal shows the app badge plus every context
+// badge (account name, type, plan when set, model). With no account it shows
+// a warn-styled "none" so the missing-account state is unmissable.
+func TestRenderHeaderShowsBadges(t *testing.T) {
+	m := &rootModel{active: tabChat, keys: defaultKeyMap(), width: 100, height: 30}
+	m.screens[tabChat] = chatModelSpy{model: "glm-5.2"}
+
+	hdr := m.renderHeader(100)
+	if !strings.Contains(hdr, "go-z-ai") {
+		t.Errorf("expected app badge, got:\n%s", hdr)
+	}
+	if !strings.Contains(hdr, "none") {
+		t.Errorf("expected 'none' account badge with no store, got:\n%s", hdr)
+	}
+	if !strings.Contains(hdr, "glm-5.2") {
+		t.Errorf("expected the chat model in the header, got:\n%s", hdr)
+	}
+}
+
+// On a narrow terminal the header drops the less-essential badges (type, plan)
+// but keeps the account badge and the model badge so the essentials survive.
+func TestRenderHeaderNarrowDropsBadges(t *testing.T) {
+	m := &rootModel{active: tabChat, keys: defaultKeyMap(), width: 50, height: 30}
+	m.screens[tabChat] = chatModelSpy{model: "glm-5.2"}
+
+	hdr := m.renderHeader(50)
+	if !strings.Contains(hdr, "go-z-ai") {
+		t.Errorf("app badge must always be present, got:\n%s", hdr)
+	}
+	// At 50 cols (below compactTabWidth) the header keeps account + model.
+	if !strings.Contains(hdr, "glm-5.2") {
+		t.Errorf("model badge should survive at 50 cols, got:\n%s", hdr)
+	}
+}
+
+// joinBadges skips empty strings and joins the rest with the separator.
+func TestJoinBadges(t *testing.T) {
+	got := joinBadges("  ", "a", "", "b", "", "")
+	if got != "a  b" {
+		t.Errorf("expected 'a  b', got %q", got)
+	}
+	if s := joinBadges("  "); s != "" {
+		t.Errorf("expected empty join for all-empty input, got %q", s)
 	}
 }

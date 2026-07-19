@@ -32,6 +32,20 @@ func DisplayName(p string) string {
 	}
 }
 
+// PlanRegion returns the short region label for a plan ("Global" / "China"),
+// or "" for an unrecognized plan. Used by the TUI header badge and anywhere a
+// compact region tag beats the full DisplayName.
+func PlanRegion(p string) string {
+	switch p {
+	case PlanGlobal:
+		return "Global"
+	case PlanChina:
+		return "China"
+	default:
+		return ""
+	}
+}
+
 // CodingBaseURL is the OpenAI-compatible coding-plan endpoint a plan uses
 // (https://api.z.ai/api/coding/paas/v4 or the open.bigmodel.cn mirror).
 func CodingBaseURL(plan string) string {
