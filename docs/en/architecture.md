@@ -163,11 +163,25 @@ var quotaWindowConfigs = []QuotaWindowConfig{
 When Z.AI adds a new window type, the change is additive (append a row) and
 localized, with a generic fallback description for anything not yet in the
 table rather than a hard failure. The same pattern shows up for model
-categorization (`pkg/client/models.go`'s `visionModelMarkers` — a single
-source of truth so `isTextModel`/`isVisionModel` can never contradict each
-other) and for account-type-to-endpoint resolution (`internal/coding/plans.go`).
+categorization (`pkg/client/models_catalog.go`'s `modelsCatalog` table —
+each row carries a `Capabilities []string` that `ModelDetails.HasCapability`
+reads, replacing the old divergent `visionModelMarkers` substring lists) and
+for account-type-to-endpoint resolution (`internal/coding/plans.go`).
 Prefer this shape over adding another conditional branch when you're adding a
 new recognized value to an existing concept.
+
+`modelsCatalog` is also the fix for a data-availability gap: Z.AI's `/models`
+endpoint returns only the OpenAI-bare `{id, object, created, owned_by}`
+shape, so without enrichment every `Context`/`Pricing`/`Capabilities` cell
+renders as `-`/`0`. `ModelsService.List` runs each decoded model through
+`enrichModel`, which overlays catalog fields but lets **live API values
+win** when both are present — so the day Z.AI starts sending `max_context`
+or `pricing` in `/models`, the real numbers take over with no code change.
+Pricing/context figures are transcribed from
+<https://docs.z.ai/guides/overview/pricing> and need periodic manual
+refresh (the API gives no signal when they change); the file header carries
+the "last verified" date. Uncataloged models still appear from `/models`
+with sparse data rather than being hidden or guessed at.
 
 ## Credential file safety
 
@@ -191,3 +205,61 @@ which Bubble Tea runs on its own goroutine — code called from a `tea.Cmd`
 must not rely on package-level mutable state being uncontended (this bit us
 once with `http.DefaultClient.Timeout`; see the fix in
 `internal/coding/validator.go`'s doc comment for the specifics).
+
+### Shared infrastructure
+
+The chrome (header, tab bar, panel, status line, help bar) is owned by the
+root model in `internal/tui/root.go`; each screen renders only its body. A
+few cross-cutting pieces live outside the screens so they can be shared
+without an import cycle:
+
+- **`internal/tui/uistyle`** — the lipgloss style vocabulary and a dual
+  light/dark palette. The root model resolves the palette against the
+  terminal's actual background (`tea.BackgroundColorMsg`) and rebuilds every
+  shared style via `uistyle.SetDark`, so the whole app follows the terminal
+  theme. Styles are package `var`s reassigned on theme change; screens read
+  them fresh at render time.
+- **`internal/tui/uimsg`** — shared message types (`Err`, `Status`, `Routed`,
+  `CloseOverlay`, `OpenModelPicker`) so screens can talk to the root without
+  importing it. `Routed` wraps an async result with its originating tab so a
+  result started in one tab still lands there after the user switches.
+- **Overlays** — a single `overlay tea.Model` slot on the root, composited
+  above the active screen via `lipgloss.Place` (`internal/tui/overlay.go`).
+  While open it owns keypresses; resize/background-color/routed msgs still
+  flow to the screens beneath so they stay correctly laid out when the
+  overlay closes. The help overlay (`?`), command palette (`ctrl+p`), and
+  chat model picker (`ctrl+m`, from the chat tab) are all root-owned
+  overlays.
+
+### Key bindings
+
+Global (handled by the root before any screen sees the key):
+
+| Key            | Action                                           |
+|----------------|--------------------------------------------------|
+| `tab` / `shift+tab` | next / previous tab                          |
+| `?`            | toggle the help overlay (all bindings)           |
+| `ctrl+p`       | command palette (fuzzy-search app-wide actions)  |
+| `ctrl+c`       | quit (or cancel an in-flight chat stream)        |
+| mouse click on tab bar | switch tab                               |
+| mouse wheel    | scroll the active viewport / list                |
+
+Per-screen bindings are surfaced in the help bar at the bottom and in the
+`?` overlay.
+
+### Responsive layout
+
+The app has three width tiers:
+
+- **≥ 100 cols** — two-column layouts where they exist (Models: table + live
+  preview; Usage: quota + heatmap side by side).
+- **70–99 cols** — single column, full table/heatmap rows.
+- **< 70 cols** — compact: the Models table drops the CAPS column and
+  shortens price headers; the Usage heatmap collapses to one-line-per-section
+  summaries; the tab bar switches to a numbered compact form.
+
+Below **60×20** the root renders only a centered "terminal too small — resize
+to at least 60×20" message instead of overlapping chrome. Screens still
+receive `WindowSizeMsg` and floor their own dimensions, so growing back past
+the threshold resumes a correctly-laid-out app with no extra work.
+

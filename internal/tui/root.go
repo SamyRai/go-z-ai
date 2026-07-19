@@ -13,8 +13,8 @@ import (
 	"github.com/SamyRai/go-z-ai/internal/tui/chat"
 	"github.com/SamyRai/go-z-ai/internal/tui/coding"
 	"github.com/SamyRai/go-z-ai/internal/tui/media"
-	"github.com/SamyRai/go-z-ai/internal/tui/models"
 	"github.com/SamyRai/go-z-ai/internal/tui/modelpicker"
+	"github.com/SamyRai/go-z-ai/internal/tui/models"
 	"github.com/SamyRai/go-z-ai/internal/tui/palette"
 	"github.com/SamyRai/go-z-ai/internal/tui/tools"
 	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
@@ -370,6 +370,9 @@ func (m *rootModel) ensureInit() tea.Cmd {
 	if m.initialized[m.active] {
 		return nil
 	}
+	if m.screens[m.active] == nil {
+		return nil
+	}
 	m.initialized[m.active] = true
 	return m.screens[m.active].Init()
 }
@@ -474,10 +477,10 @@ func (m *rootModel) openPalette() tea.Model {
 	cmds := make([]palette.Command, 0, len(tabNames)+4)
 	for i, name := range tabNames {
 		cmds = append(cmds, palette.Command{
-			Name: "Go to " + name,
-			Desc: "switch tab",
-			Hint: "Navigation",
-			Do:   palette.ActionSwitchTab,
+			Name:  "Go to " + name,
+			Desc:  "switch tab",
+			Hint:  "Navigation",
+			Do:    palette.ActionSwitchTab,
 			DoArg: i,
 		})
 	}
