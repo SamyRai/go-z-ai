@@ -78,3 +78,13 @@ do add a `## Translation debt` line to your PR description listing which
 When updating `docs/en/`, also update the corresponding translated file under
 `docs/ru/` and `docs/zh/` if your change is small (a one-line correction, a
 new flag in a table). Larger translations are tracked as follow-up work.
+
+## Static site
+
+The repo also generates a static HTML site (deployed to GitHub Pages) from the
+markdown docs. The generator lives at `cmd/sitegen` with templates under
+`internal/sitegen/`. Run `make site-serve` to preview locally. See
+[docs/en/site-generation.md](docs/en/site-generation.md) for the full
+architecture and how to add locales. Doc edits propagate to the site
+automatically on the next push to `main` — no separate step needed unless
+you're also touching templates or the generator itself.

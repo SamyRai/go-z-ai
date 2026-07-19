@@ -9,7 +9,7 @@ latest tagged release and `main` receive security fixes.
 
 **Please do not open a public GitHub issue for a security vulnerability.**
 
-Preferred: use [GitHub's private vulnerability reporting](../../security/advisories/new)
+Preferred: use [GitHub's private vulnerability reporting](https://github.com/SamyRai/go-z-ai/security/advisories/new)
 (Security tab → "Report a vulnerability") on this repository. This opens a
 private advisory visible only to maintainers until a fix is ready.
 

@@ -16,6 +16,7 @@
 
 - [ ] If this changes user-facing behavior, I updated `docs/en/` (the source of truth)
 - [ ] If `docs/en/` changed, I noted translation debt for `docs/ru/` and `docs/zh/` (a one-line `## Translation debt` note below is enough — translations are tracked as follow-up, not a merge blocker)
+- [ ] If this changes the rendered site (templates, CSS, generator code), I ran `make site-serve` and verified the output
 
 ## Notes for the reviewer
 

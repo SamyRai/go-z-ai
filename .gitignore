@@ -50,6 +50,12 @@ dist/
 build/
 bin/
 
+# Generated static site (output of cmd/sitegen — never commit the build)
+site/
+# Generator binary built by `go build -o sitegen ./cmd/sitegen`.
+# Source files under cmd/sitegen/ and internal/sitegen/ ARE committed.
+/sitegen
+
 # Temporary files
 tmp/
 temp/
