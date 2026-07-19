@@ -168,9 +168,34 @@ func applyTheme() {
 	Skeleton = lipgloss.NewStyle().Foreground(ColorMuted)
 	EmptyTitle = lipgloss.NewStyle().Bold(true).Foreground(ColorAccent)
 	EmptyHint = lipgloss.NewStyle().Foreground(ColorMuted)
+	OverlayCardStyle = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(ColorAccent).
+		Padding(1, 2)
 }
 
 func init() { applyTheme() }
+
+// OverlayCardStyle is the bordered, padded card an overlay renders into. It
+// reuses the panel border shape so modals read as "a panel on top of the
+// panel" rather than an alien element. Defined here (not in the tui root
+// package) so overlay subpackages like palette can wrap their own content in
+// the same card without an import cycle. Rebuilt by applyTheme so the border
+// color tracks the resolved theme.
+var OverlayCardStyle = lipgloss.NewStyle().
+	Border(lipgloss.RoundedBorder()).
+	BorderForeground(ColorAccent).
+	Padding(1, 2)
+
+// RenderOverlayCard wraps a titled body in the modal card style. Shared by
+// the root's help overlay and subpackage overlays (palette, model picker).
+func RenderOverlayCard(title, body string) string {
+	card := body
+	if title != "" {
+		card = SectionTitle.Render(title) + "\n\n" + body
+	}
+	return OverlayCardStyle.Render(card)
+}
 
 // RenderPills renders names as a row of pill segments, highlighting active.
 func RenderPills(active int, names []string) string {

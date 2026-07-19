@@ -133,6 +133,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// Refresh forces an immediate re-fetch of quota/usage data. Implements the
+// root model's refresher interface so the command palette's "Refresh current
+// tab" action can trigger the same path as the 'r' key.
+func (m Model) Refresh() (tea.Model, tea.Cmd) {
+	m.loading = true
+	return m, m.route(m.fetch())
+}
+
 // syncBars keeps one progress.Model per quota limit, reused across refreshes
 // so the gradient fill doesn't get rebuilt every 30s.
 func (m *Model) syncBars() {

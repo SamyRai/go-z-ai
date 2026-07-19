@@ -14,6 +14,7 @@ import (
 	"github.com/SamyRai/go-z-ai/internal/tui/coding"
 	"github.com/SamyRai/go-z-ai/internal/tui/media"
 	"github.com/SamyRai/go-z-ai/internal/tui/models"
+	"github.com/SamyRai/go-z-ai/internal/tui/palette"
 	"github.com/SamyRai/go-z-ai/internal/tui/tools"
 	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
 	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
@@ -101,6 +102,15 @@ type helpProvider interface {
 	ShortHelp() []key.Binding
 }
 
+// refresher is implemented by screens that have a 'r' refresh binding. The
+// command palette's "Refresh current tab" action calls it directly rather
+// than synthesizing a keypress (which is awkward in v2). It returns the
+// updated model alongside the cmd so value-receiver screens can flip their
+// loading flag and have it persist.
+type refresher interface {
+	Refresh() (tea.Model, tea.Cmd)
+}
+
 // innerSize returns the content area available to the active screen, after
 // subtracting the header/tab-bar/footer rows and the bordered panel's own
 // border+padding.
@@ -124,6 +134,14 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if _, ok := msg.(uimsg.CloseOverlay); ok {
 		m.overlay = nil
 		return m, nil
+	}
+
+	// A command-palette Result carries an action the root must perform
+	// (switch tab, refresh, toggle help, open model picker, quit). Handle it
+	// before overlay routing so the palette can self-close and dispatch.
+	if res, ok := msg.(palette.Result); ok {
+		m.overlay = nil
+		return m, m.runPaletteAction(res)
 	}
 
 	if m.overlay != nil {
@@ -216,6 +234,14 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			m.overlay = m.openHelpOverlay()
+			return m, nil
+		case key.Matches(msg, m.keys.Palette) && !activeStreaming:
+			// Toggle: ctrl+p again closes the palette.
+			if m.overlay != nil {
+				m.overlay = nil
+				return m, nil
+			}
+			m.overlay = m.openPalette()
 			return m, nil
 		}
 
@@ -363,6 +389,65 @@ func (m *rootModel) openHelpOverlay() tea.Model {
 		screenBindings = h.ShortHelp()
 	}
 	return newHelpOverlay(m.keys, screenTitle, screenBindings)
+}
+
+// openPalette builds the command-palette overlay. Tab names are passed in so
+// the palette needn't import the tab enum; the static action set (refresh,
+// toggle help, switch chat model, quit) is the same regardless of the active
+// screen.
+func (m *rootModel) openPalette() tea.Model {
+	cmds := make([]palette.Command, 0, len(tabNames)+4)
+	for i, name := range tabNames {
+		cmds = append(cmds, palette.Command{
+			Name: "Go to " + name,
+			Desc: "switch tab",
+			Hint: "Navigation",
+			Do:   palette.ActionSwitchTab,
+			DoArg: i,
+		})
+	}
+	cmds = append(cmds,
+		palette.Command{Name: "Refresh current tab", Desc: "reload data", Do: palette.ActionRefresh},
+		palette.Command{Name: "Toggle help", Desc: "open the keybindings overlay", Do: palette.ActionToggleHelp},
+		palette.Command{Name: "Switch chat model", Desc: "open the model picker (chat tab)", Do: palette.ActionOpenModelPicker},
+		palette.Command{Name: "Quit", Desc: "exit go-z-ai tui", Do: palette.ActionQuit},
+	)
+	return palette.New(cmds)
+}
+
+// runPaletteAction performs the action chosen from the command palette. The
+// palette has already been dismissed by the caller.
+func (m *rootModel) runPaletteAction(res palette.Result) tea.Cmd {
+	switch res.Action {
+	case palette.ActionSwitchTab:
+		if res.Arg >= 0 && res.Arg < len(m.screens) && m.screens[res.Arg] != nil {
+			m.switchTab(tab(res.Arg))
+			return m.ensureInit()
+		}
+	case palette.ActionRefresh:
+		// Screens that support refresh implement refresher; call it directly
+		// rather than synthesizing a keypress (v2's KeyPressMsg is awkward to
+		// build by hand). Screens without refresh just ignore the action.
+		if r, ok := m.screens[m.active].(refresher); ok {
+			ns, cmd := r.Refresh()
+			m.screens[m.active] = ns
+			return cmd
+		}
+		return nil
+	case palette.ActionToggleHelp:
+		m.overlay = m.openHelpOverlay()
+		return nil
+	case palette.ActionOpenModelPicker:
+		// Implemented alongside the chat model picker; until then, jump to
+		// the chat tab so the user can pick via the chat-screen binding.
+		if m.screens[tabChat] != nil {
+			m.switchTab(tabChat)
+			return m.ensureInit()
+		}
+	case palette.ActionQuit:
+		return tea.Quit
+	}
+	return nil
 }
 
 func (m *rootModel) footerBindings() []key.Binding {

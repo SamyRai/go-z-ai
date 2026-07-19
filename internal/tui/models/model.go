@@ -196,6 +196,14 @@ func (m *Model) resize() {
 	m.view.SetHeight(max(m.height-1, 3))
 }
 
+// Refresh reloads the model catalog. Implements the root model's refresher
+// interface so the command palette's "Refresh current tab" action can trigger
+// the same path as the 'r' key.
+func (m Model) Refresh() (tea.Model, tea.Cmd) {
+	m.loading = true
+	return m, m.route(m.fetch())
+}
+
 // updateTable handles key presses while in the table+preview layout.
 func (m Model) updateTable(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {

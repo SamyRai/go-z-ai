@@ -100,6 +100,13 @@ func refresh() tea.Cmd {
 
 func (m Model) Init() tea.Cmd { return refresh() }
 
+// Refresh re-scans installed coding-agent tools. Implements the root model's
+// refresher interface so the command palette's "Refresh current tab" action
+// can trigger the same path as the 'r' key.
+func (m Model) Refresh() (tea.Model, tea.Cmd) {
+	return m, refresh()
+}
+
 func (m *Model) newAuthForm() *huh.Form {
 	m.formPlan, m.formKey = "", ""
 	return huh.NewForm(

@@ -8,14 +8,6 @@ import (
 	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
 )
 
-// overlayCardStyle is the bordered, padded card an overlay renders into. It
-// intentionally reuses the panel border shape so modals read as "a panel on
-// top of the panel" rather than an alien element.
-var overlayCardStyle = lipgloss.NewStyle().
-	Border(lipgloss.RoundedBorder()).
-	BorderForeground(uistyle.ColorAccent).
-	Padding(1, 2)
-
 // placeOverlay centers the given content over a backdrop filling width×height.
 // The backdrop is a solid field of spaces so the underlying screen body is
 // visually obscured (not just painted over with the card). Used by the root
@@ -39,11 +31,10 @@ func placeOverlay(width, height int, content string) string {
 	)
 }
 
-// renderOverlayCard wraps content in the bordered modal card style.
+// renderOverlayCard wraps content in the bordered modal card style. Thin
+// wrapper around uistyle.RenderOverlayCard kept here so the root package's
+// help overlay builds through the same shared style as subpackage overlays
+// (palette, model picker), with no duplication.
 func renderOverlayCard(title, body string) string {
-	card := body
-	if title != "" {
-		card = uistyle.SectionTitle.Render(title) + "\n\n" + body
-	}
-	return overlayCardStyle.Render(card)
+	return uistyle.RenderOverlayCard(title, body)
 }
