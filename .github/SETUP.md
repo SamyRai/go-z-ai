@@ -35,13 +35,27 @@ Settings → Advanced Security (or Security → "Configure" on some plans):
 - `dependabot.yml` in this repo already handles routine version-update PRs
   (weekly, `gomod` + `github-actions`) — alerts/security-updates are the
   separate vulnerability-driven path and need the toggle above.
+- `.github/workflows/dependency-review.yml` blocks PRs that introduce a
+  dependency with a moderate-or-worse vulnerability. Requires the
+  dependency graph (auto-on for public repos; otherwise Settings →
+  Code security → Dependency graph).
 
-## 3. CodeQL (code scanning) ⬜
+## 3. CodeQL (code scanning) ✅ (workflow) / ⬜ (settings gate)
 
-Security → Code security → **Set up code scanning** → **Default setup**.
-One click — GitHub picks the right query pack for Go and runs it on every
-PR to `main`. No workflow file needed; don't add a custom CodeQL workflow
-unless you outgrow default setup's configuration options.
+Two parts:
+
+- **Workflow** — `.github/workflows/codeql.yml` runs the CodeQL `go` analysis
+  on push/PR to `main` plus a weekly sweep, with the `security-extended` +
+  `security-and-quality` query suites enabled (broader than default setup).
+  All actions in it are pinned by SHA.
+- **Settings gate ⬜** — Security → Code security → **Set up code scanning** →
+  **Default setup**, **or** "Advanced setup" → point at the `codeql.yml`
+  workflow. Either way, alerts only start surfacing in the Security tab once
+  the toggle is on. Until then the workflow still runs, but results stay in
+  the run logs.
+
+> ℹ️ CodeQL Action v3 is being deprecated in December 2026 (GHES 3.19 EOL).
+> All CodeQL steps here already use `@v4`.
 
 ## 4. Secret scanning + push protection ⬜ (public-launch gate)
 
@@ -82,11 +96,17 @@ First release: `v0.1.0` (2026-07-19).
 
 ## 7. OpenSSF Scorecard ✅
 
-`.github/workflows/scorecard.yml` runs `ossf/scorecard-action@v2.4.2` weekly
-(Monday ~05:17 UTC) and on `branch_protection_review`, publishes results to
-the Security tab (SARIF), and exposes them at
+`.github/workflows/scorecard.yml` runs `ossf/scorecard-action` weekly
+(Monday ~05:17 UTC), publishes results to the Security tab (SARIF), and
+exposes them at
 `api.securityscorecards.dev/github.com/SamyRai/go-z-ai/badge` — which is the
 badge surfaced in the README.
+
+All third-party actions across every workflow are pinned by 40-char commit
+SHA with a `# vX.Y.Z` version comment. This is what Scorecard's
+`Pinned-Dependencies` check rewards (tag pins like `@v5` are mutable and
+score 0); Dependabot keeps them current via its `github-actions` ecosystem
+(see `dependabot.yml`).
 
 > ℹ️ Replaces the now-sunset Go Report Card badge. goreportcard.com shut down
 > its badge service on July 1, 2026 after 11 years; the badge endpoint now
