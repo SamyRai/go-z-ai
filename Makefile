@@ -5,6 +5,9 @@
 GO ?= go
 GOLANGCI_LINT ?= golangci-lint
 GOVULNCHECK ?= govulncheck
+MARKDOWNLINT ?= markdownlint-cli2
+LYCHEE ?= lychee
+MD_GLOBS := README*.md docs/**/*.md CONTRIBUTING.md examples/README.md .github/**/*.md
 
 .PHONY: help
 help: ## Show this help.
@@ -50,8 +53,21 @@ vuln: ## Run govulncheck.
 tidy: ## Run go mod tidy.
 	$(GO) mod tidy
 
+.PHONY: docs-lint
+docs-lint: ## Lint markdown: structure (markdownlint-cli2) + links (lychee).
+	$(MARKDOWNLINT) $(MD_GLOBS)
+	$(LYCHEE) --no-progress --max-concurrency 10 $(MD_GLOBS)
+
+.PHONY: docs-lint-links
+docs-lint-links: ## Check markdown links only (local + external).
+	$(LYCHEE) --no-progress --cache --max-concurrency 10 $(MD_GLOBS)
+
+.PHONY: docs-fix
+docs-fix: ## Auto-fix markdownlint-cli2 issues.
+	$(MARKDOWNLINT) --fix $(MD_GLOBS)
+
 .PHONY: ci-local
-ci-local: fmt-check vet lint test vuln ## Run the full CI-equivalent check locally.
+ci-local: fmt-check vet lint test vuln docs-lint ## Run the full CI-equivalent check locally.
 
 .PHONY: clean
 clean: ## Remove built binary and coverage artifacts.

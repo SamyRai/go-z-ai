@@ -1,18 +1,67 @@
 # Z.AI API İstemcisi
 
+Z.AI (Zhipu AI / BigModel) platformu için bir Go **CLI**'sı, **kitaplığı** ve
+**TUI**'sı — tüm GLM model yüzeylerini tek bir araçta, ayrıca Claude Code,
+OpenCode, Crush, Factory Droid ve Cursor'ı GLM Coding Plan'ınıza bağlayan
+`@z_ai/coding-helper`'ın bir Go port'u.
+
 **English** | [简体中文](README.zh.md) | [Русский](README.ru.md) | [Deutsch](README.de.md) | [Татарча](README.tt.md) | [Türkçe](README.tr.md)
 
 [![CI](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/SamyRai/go-z-ai.svg)](https://pkg.go.dev/github.com/SamyRai/go-z-ai)
-[![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/SamyRai/go-z-ai?label=openssf%20scorecard)](https://securityscorecards.dev/view.html?uri=github.com/SamyRai/go-z-ai)
+[![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/SamyRai/go-z-ai?label=openssf%20scorecard)](https://securityscorecards.dev/viewer/?uri=github.com/SamyRai/go-z-ai)
+[![Latest release](https://img.shields.io/github/v/release/SamyRai/go-z-ai)](https://github.com/SamyRai/go-z-ai/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-Z.AI (Zhipu AI / BigModel) platforması için bir Go CLI ve istemci
-kitaplığı: sohbet tamamlama, modeller, görseller, video, ses, gömme
-(embedding), moderasyon, yeniden sıralama, ajanlar, toplu işler, dosya
-ayrıştırma, GLM Coding Plan hesap/kota yönetimi ve `@z_ai/coding-helper`'ın
-Go port'u — Claude Code, OpenCode, Crush, Factory Droid ve Cursor'ı GLM
-Coding Plan'ınıza bağlamak için.
+## Hızlı örnek
+
+```bash
+# 1. Yapılandır (bunlardan herhangi biri çalışır — ortam değişkeni, .env dosyası veya --config <dosya>)
+export ZAI_API_KEY=your_api_key_here
+# veya: cp .env.example .env, sonra .env dosyasını düzenle
+
+# 2. CLI'yı kullan
+zai-client chat create "Goroutine'leri tek bir paragrafta açıkla" --stream
+```
+
+```go
+// …veya kitaplığı içe aktarın — CLI gerekmez.
+import "github.com/SamyRai/go-z-ai/pkg/client"
+
+c, _ := client.NewClientFromEnv()
+resp, _ := c.Chat().Create(ctx, client.ChatRequest{
+    Model:    "glm-5.2",
+    Messages: []client.Message{{Role: "user", Content: "Goroutine'leri tek bir paragrafta açıkla"}},
+})
+fmt.Println(resp.Choices[0].Message.Content)
+```
+
+Daha fazla çalıştırılabilir program — akış (streaming), asenkron görsel sorgulama,
+Anthropic `/v1/messages` uç noktası — [`examples/`](examples/) dizininde.
+
+## Özellikler
+
+- **Sohbet** — akış (streaming), yapılandırılmış çıktı (JSON Schema), derin
+  düşünme, fonksiyon/araç çağrısı, görsel giriş (`glm-4.6v`/`glm-4.5v`) ve bir
+  **Anthropic uyumlu `/v1/messages`** uç noktası (GLM Coding Plan'a
+  bağlandığında Claude Code ve Cursor'ın eriştiği aynı uç nokta).
+- **Medya** — görsel üretimi, video üretimi (her zaman asenkron), ses
+  transkripsiyonu, TTS ve GLM-TTS ses klonlama.
+- **Belge anlama** — düzen OCR'ı, el yazısı OCR'ı ve RAG ön işleme için bir
+  belge ayrıştırıcı.
+- **Erişim (Retrieval)** — gömme (embedding), yeniden sıralama, yerleşik web
+  arama / web okuyucu / tokenizer araçları.
+- **Moderasyon** — Çin platformu uç noktası üzerinden içerik moderasyonu.
+- **Ajanlar** — Z.AI'nin uzmanlaşmış ajanları (çeviri, slayt/poster üretimi,
+  video efektleri).
+- **Toplu işler & dosyalar** — sohbet tamamlamaları için JSONL toplu işler,
+  dosya yükleme/listeleme/indirme.
+- **GLM Coding Plan** — kota/kullanım izleme, çoklu hesap yönetimi ve
+  aboneliğinize Claude Code, OpenCode, Crush, Factory Droid ve Cursor'ı bağlamak
+  için `zai-client coding`.
+- **DX** — tam ekran terminal UI'ı (`zai-client tui`), bölgesel ağ geçidi
+  değiştirme (`api.z.ai` ↔ `open.bigmodel.cn`), backoff + jitter ile otomatik
+  yeniden deneme ve her Z.AI hata kodunun eşlendiği tipli bir `APIError`.
 
 ## Kurulum
 
@@ -29,31 +78,102 @@ ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
 # veya: mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
 ```
 
-Go 1.26.4+ ve bir [Z.AI API anahtarı](https://z.ai/manage-apikey) gerektirir.
-Kaynaktan derleme, ilk kimlik doğrulama ve sorun giderme:
+Go 1.26.4+ ve bir [Z.AI API anahtarı](https://z.ai/manage-apikey/apikey-list) gerektirir.
+Kaynaktan derleme, ilk çalıştırmada kimlik doğrulama ve sorun giderme:
 **[Başlarken →](docs/en/getting-started.md)**
 
-## Hızlı örnek
+## CLI olarak
+
+Tüm yüzeyi kapsayan tek bir `zai-client` ikilisi. Her komut `--help`
+destekler; hızlı tur:
 
 ```bash
-export ZAI_API_KEY=your_api_key_here
-zai-client chat create "Goroutine'leri tek bir paragrafta açıkla" --stream
+zai-client chat create "..." --stream          # sohbet (akış, araçlar, görsel giriş, yapılandırılmış çıktı)
+zai-client anthropic messages "..." --stream   # Anthropic uyumlu /v1/messages
+zai-client image|video|audio|voice ...         # medya üretimi, transkripsiyon, TTS, klonlama
+zai-client ocr|parser ...                      # OCR + belge ayrıştırma
+zai-client embeddings|rerank|moderations ...   # erişim + içerik moderasyonu
+zai-client models list                         # model kataloğu + fiyatlandırma
+zai-client accounts add|use|quota|usage ...    # çoklu hesap + GLM Coding Plan izleme
+zai-client coding auth|load|doctor|mcp ...     # Claude Code / Cursor / vb. öğeleri GLM Coding Plan'a bağla
+zai-client tui                                 # tam ekran terminal UI'ı (yukarıdakilerin tamamı)
+zai-client validate                            # anahtarınızın çalıştığını tek bir gerçek çağrıyla doğrula
+```
+
+Sonuç üreten her komut `--format text|json` alır (JSON stdout'a, ilerleme
+konuşmaları stderr'e gider, böylece `jq`'ya yönlendirebilirsiniz).
+
+→ Tam komut listesi: **[CLI Referansı](docs/en/cli-reference.md)**
+
+## Go kitaplığı olarak
+
+`pkg/client` tek genel olarak içe aktarılabilir pakettir; `internal/` altındaki
+her şey uygulama detayıdır. Yeniden deneme, zaman aşımı, bölgesel ağ geçidi
+seçimi ve hata eşleme merkezîdir — servisler kendi `http.Client`'larını
+oluşturmaz veya ham istekler göndermez.
+
+```bash
+go get github.com/SamyRai/go-z-ai
 ```
 
 ```go
 import "github.com/SamyRai/go-z-ai/pkg/client"
 
-c, _ := client.NewClientFromEnv()
-resp, _ := c.Chat().Create(ctx, client.ChatRequest{
-    Model:    "glm-5.2",
-    Messages: []client.Message{{Role: "user", Content: "Goroutine'leri tek bir paragrafta açıkla"}},
+c, err := client.NewClient(client.Config{
+    APIKey: os.Getenv("ZAI_API_KEY"),
+    // İsteğe bağlı: BaseURL, Timeout, MaxRetries, RetryDelay, ChinaAPIKey, Region
 })
-fmt.Println(resp.Choices[0].Message.Content)
 ```
 
-Daha fazla çalıştırılabilir örnek — akış (streaming), görsellerin asenkron
-sorgulanması, Anthropic `/v1/messages` uç noktası — [`examples/`](examples/)
-dizininde.
+Servisler, tümü `c.<Service>().<Method>(ctx, …)` desenini izler:
+
+| Erişim | Kapsar |
+|---|---|
+| `c.Chat()` | Tamamlamalar, akış, asenkron, `RunWithTools` |
+| `c.Anthropic()` | Anthropic protokollü `/v1/messages` (Create, CreateStream) |
+| `c.Models()` | List, Get, metin/görsel/ücretsiz filtreler |
+| `c.Images()` / `c.Videos()` | Görsel (senkron/asenkron), video (her zaman asenkron) |
+| `c.Audio()` / `c.Voice()` | Transkripsiyon, TTS, ses klonlama |
+| `c.Layout()` / `c.FileParser()` | RAG için OCR + belgeden-metine |
+| `c.Files()` / `c.Batch()` | Yükleme, toplu işler |
+| `c.Agents()` | Z.AI uzmanlaşmış ajanları |
+| `c.Embeddings()` / `c.Rerank()` / `c.Moderations()` | Erişim + moderasyon |
+| `c.Tools()` | WebSearch, WebReader, Tokenize |
+| `c.Usage()` / `c.Quota()` / `c.Account()` / `c.Detection()` | GLM Coding Plan izleme |
+| `c.GetAsyncResult()` / `c.WaitForResult()` | Asenkron görevler için paylaşılan sorgulama |
+
+→ Örneklerle tam API: **[Kitaplık Kılavuzu](docs/en/library-guide.md)**
+→ Oluşturulmuş referans: [pkg.go.dev](https://pkg.go.dev/github.com/SamyRai/go-z-ai)
+
+## Yapılandırma
+
+Kimlik bilgilerini sağlamanın üç yolu, şu öncelik sırasıyla çözümlenir (en
+yüksek olan kazanır):
+
+| Yöntem | Ne zaman kullanılır |
+|---|---|
+| `--api-key <key>` bayrağı | Tek seferlik çağrılar, betikler, CI |
+| `--account <name>` bayrağı | [Kayıtlı hesaplar](docs/en/accounts-and-quota.md) arasında geçiş |
+| `ZAI_API_KEY` ortam değişkeni (veya `.env` dosyası) | Günlük yerel kabuk kullanımı |
+| Hesap deposunun aktif hesabı | `zai-client accounts use <name>`'dan sonra |
+
+`.env` dosyası yaygın olanıdır — açıklamalı şablonu kopyalayın ve düzenleyin:
+
+```bash
+cp .env.example .env
+# veya herhangi bir dosyayı gösterin: zai-client --config /path/to/config ...
+```
+
+```dotenv
+ZAI_API_KEY=your_api_key_here
+# ZAI_API_BASE_URL=https://api.z.ai/api/paas/v4     # sohbet uç noktasını geçersiz kıl
+# ZAI_REGION=china                                   # anahtarınız open.bigmodel.cn üzerinde yayımlandıysa
+# ZAI_CHINA_API_KEY=...                              # ayrı bigmodel.cn kimlik bilgisi
+# ZAI_ENV=production
+```
+
+→ Tam referans (çoklu hesap, bölgesel ağ geçitleri, kota pencereleri):
+**[Hesaplar & Kotalar](docs/en/accounts-and-quota.md)**
 
 ## Belgeler
 
@@ -68,17 +188,6 @@ dizininde.
 | [Katkıda Bulunma](CONTRIBUTING.md) | [Güvenlik Politikası](SECURITY.md) |
 | [Davranış Kuralları](CODE_OF_CONDUCT.md) | [Değişiklik Günlüğü](CHANGELOG.md) |
 
-## Kapsam
-
-Sohbet (akış, yapılandırılmış çıktı, derin düşünme, fonksiyon çağrısı, görsel
-girdi), Anthropic uyumlu `/v1/messages` uç noktası, modeller, görseller,
-video, ses (transkripsiyon + TTS + ses klonlama), OCR ve belge ayrıştırma,
-gömme (embedding), moderasyon, yeniden sıralama, ajanlar, dosyalar, toplu
-işler, GLM Coding Plan kullanımı/kotası/çoklu hesap yönetimi ve tam ekran
-terminal UI'ı (`zai-client tui`). Komutların tamamı için [CLI
-Referansı](docs/en/cli-reference.md), Go API'si için [Kitaplık
-Kılavuzu](docs/en/library-guide.md)'na bakın.
-
 ## Resmî SDK'lar ile ilişkisi
 
 Z.AI / Zhipu, **Python**
@@ -87,15 +196,15 @@ Z.AI / Zhipu, **Python**
 ve **Java** ([MetaGLM/zhipuai-sdk-java-v4](https://github.com/MetaGLM/zhipuai-sdk-java-v4))
 için resmî SDK'lar yayımlar. Resmî bir Go SDK'sı **yoktur** — `go-z-ai` bu
 boşluğu doldurur ve aynı API yüzeyi üzerine bir CLI, bir TUI, bölgesel ağ
-geçidi değiştirme (`api.z.ai` ↔ `open.bigmodel.cn`) ve çok hesapli GLM
-Coding Plan yönetimi ekler.
+geçidi değiştirme (`api.z.ai` ↔ `open.bigmodel.cn`) ve GLM Coding Plan çoklu
+hesap yönetimi ekler.
 
 > ℹ️ Repo kökündeki `zai-claude-config.json`, `zai-client coding load
 > claude-code` tarafından kullanılan, yer tutucu değerler içeren
 > (`"your-zai-api-key-here"`) bir **şablondur**. Gerçek bir yapılandırma
 > değildir ve hiçbir kimlik bilgisi içermez.
 
-## Katkıda bulunma
+## Katkıda Bulunma
 
 [CONTRIBUTING.md](CONTRIBUTING.md)'ye bakın — özellikle bir servis ekliyor veya
 değiştiriyorsanız projenin canlı doğrulama kuralına (el ile yazılmış

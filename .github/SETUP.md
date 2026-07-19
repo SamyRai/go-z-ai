@@ -96,4 +96,3 @@ badge surfaced in the README.
 
 - **CODEOWNERS** — add when regular outside contributors arrive (today the
   ruleset deliberately skips required reviews).
-

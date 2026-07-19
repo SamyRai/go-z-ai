@@ -4,7 +4,7 @@
 
 ## 1. 安装
 
-**前置条件：** Go 1.26.4+，一个 Z.AI API Key（[在此创建](https://z.ai/manage-apikey)）。
+**前置条件：** Go 1.26.4+，一个 Z.AI API Key（[在此创建](https://z.ai/manage-apikey/apikey-list)）。
 
 ```bash
 go install github.com/SamyRai/go-z-ai@latest
@@ -96,7 +96,7 @@ zai-client usage quota
 再检查一下 `echo $ZAI_API_KEY`，或者显式传入 `--api-key` 来确认。
 
 **"invalid API key" / HTTP 401**——找到了 key，但 Z.AI 拒绝了它。
-去 [z.ai/manage-apikey](https://z.ai/manage-apikey) 重新生成。
+去 [z.ai/manage-apikey](https://z.ai/manage-apikey/apikey-list) 重新生成。
 
 **在 `embeddings`/`moderations`/`rerank`/`voice` 上出现 "Unknown Model"（错误 1211）**——
 这几乎总是账户的权益门槛，而不是 bug：你的账户套餐目录里不包含该模型。运行

@@ -6,7 +6,7 @@
 ## 1. Установка
 
 **Предварительные требования:** Go 1.26.4+, API-ключ Z.AI
-([создайте его здесь](https://z.ai/manage-apikey)).
+([создайте его здесь](https://z.ai/manage-apikey/apikey-list)).
 
 ```bash
 go install github.com/SamyRai/go-z-ai@latest
@@ -103,7 +103,7 @@ zai-client usage quota
 убедиться.
 
 **"invalid API key" / HTTP 401** — ключ найден, но Z.AI его отклонил.
-Перевыпустите его на [z.ai/manage-apikey](https://z.ai/manage-apikey).
+Перевыпустите его на [z.ai/manage-apikey](https://z.ai/manage-apikey/apikey-list).
 
 **"Unknown Model" (error 1211) на `embeddings`/`moderations`/`rerank`/`voice`** —
 почти всегда это ограничение по тарифу аккаунта, а не баг: в каталоге тарифа

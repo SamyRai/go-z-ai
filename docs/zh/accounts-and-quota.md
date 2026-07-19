@@ -48,7 +48,7 @@ zai-client usage check --watch               # 当用量超过 80% 时告警
 
 `accounts quota` 输出示例：
 
-```
+```text
 📊 GLM Coding Plan Usage (PRO tier)
 
 • 5-hour rolling token window

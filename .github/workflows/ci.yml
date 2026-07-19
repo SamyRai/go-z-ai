@@ -96,3 +96,40 @@ jobs:
 
       - name: Run govulncheck
         run: govulncheck ./...
+
+  docs:
+    name: Lint docs (markdown + links)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: |
+            README*.md
+            docs/**/*.md
+            CONTRIBUTING.md
+            examples/README.md
+            .github/**/*.md
+
+      - name: Restore lychee cache
+        uses: actions/cache@v4
+        with:
+          path: .lycheecache
+          key: lychee-cache-${{ github.run_id }}
+          restore-keys: lychee-cache-
+
+      - name: Link check
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress
+            --cache
+            --max-concurrency 10
+            --exclude 'pkg\.go\.dev'
+            --exclude 'docs\.z\.ai'
+            README*.md docs/**/*.md CONTRIBUTING.md examples/README.md .github/**/*.md
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

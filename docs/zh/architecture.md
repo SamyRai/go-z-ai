@@ -14,7 +14,7 @@
 
 ## 包布局
 
-```
+```text
 main.go               一个五行的入口：package main → internal/cli.Execute()
 internal/cli/         CLI 命令（package cli），每个命令组一个文件：
                       chat.go、accounts_cli.go、coding_cli.go ……
@@ -53,7 +53,7 @@ github.com/SamyRai/go-z-ai@latest` 仍然会把根目录的 `main.go` 构建为
 每个服务方法最终都会汇聚到三个 `Client` 方法之一——服务永远不会自己构造
 `http.Client` 或直接发起原始请求：
 
-```
+```text
 doRequest(ctx, method, endpoint, body, result)
   → doRequestBase(ctx, baseURL, method, endpoint, body, result)   // 用于非默认 base URL
     → doRequestBaseKey(ctx, baseURL, apiKey, method, endpoint, body, result)  // 用于换用不同的凭证

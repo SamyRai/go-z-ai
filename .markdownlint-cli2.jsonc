@@ -1,0 +1,49 @@
+// markdownlint-cli2 config for go-z-ai.
+// Docs tree is multilingual (en/ru/zh + de/tt/tr root READMEs), so we disable
+// rules that fight translated prose and keep structural rules on.
+// Reference: https://github.com/DavidAnson/markdownlint-cli2
+{
+  "config": {
+    "default": true,
+
+    // Line length — unrealistic for CJK (no spaces) and verbose Russian/German.
+    "MD013": false,
+
+    // Inline HTML — used for <details>, <sub>, <sup>, badge <img> fallbacks.
+    "MD033": false,
+
+    // First line must be a heading — our language switcher / banner comes first.
+    "MD041": false,
+
+    // Bare URLs — common in install commands and quick-reference blocks.
+    "MD034": false,
+
+    // Multiple top-level headings — language-switcher READMEs may need >1 H1.
+    "MD025": false,
+
+    // Table column style — opt-in opinionated rule that conflicts with the
+    // codebase's existing compact `|---|---|` separator style across all docs.
+    "MD060": false,
+
+    // Link fragments — markdownlint's slug rules disagree with GitHub's
+    // actual renderer on headings containing dots/slashes (e.g. our
+    // "## Regional gateways (api.z.ai / open.bigmodel.cn)" → the linter
+    // flags the matching anchor as invalid even though GitHub renders it).
+    // Link integrity is verified separately by lychee + the checklinks script.
+    "MD051": false,
+
+    // Allow hard tabs inside code blocks (Go snippets sometimes use them).
+    "MD010": { "code_blocks": false }
+  },
+
+  // Globs to lint. CHANGELOG.md is excluded — it's a historical release log
+  // whose compact "### Added / Fixed / Changed" sub-headings deliberately
+  // don't follow markdownlint's blank-line rules.
+  "globs": [
+    "README*.md",
+    "docs/**/*.md",
+    "CONTRIBUTING.md",
+    "examples/README.md",
+    ".github/**/*.md"
+  ]
+}
