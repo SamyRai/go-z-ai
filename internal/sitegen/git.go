@@ -2,6 +2,7 @@ package sitegen
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os/exec"
 	"regexp"
@@ -11,14 +12,14 @@ import (
 
 // Commit is a recent commit summary for the activity feed.
 type Commit struct {
-	Hash         string    // short hash
-	Subject      string    // first line of message (full, for tooltips)
-	Description  string    // description without the conventional-commit prefix
-	Author       string    // author name
-	Date         time.Time // commit date (for relative-time display)
-	URL          string    // full GitHub commit URL
-	Type         string    // conventional-commit type: feat, fix, docs, chore, etc.
-	Scope        string    // conventional-commit scope (e.g. "site", "ci")
+	Hash        string    // short hash
+	Subject     string    // first line of message (full, for tooltips)
+	Description string    // description without the conventional-commit prefix
+	Author      string    // author name
+	Date        time.Time // commit date (for relative-time display)
+	URL         string    // full GitHub commit URL
+	Type        string    // conventional-commit type: feat, fix, docs, chore, etc.
+	Scope       string    // conventional-commit scope (e.g. "site", "ci")
 }
 
 // GitStats summarises repository activity from `git`.
@@ -33,40 +34,47 @@ type GitStats struct {
 // GitStats — the generator never fails on git problems.
 func CollectGitStats() GitStats {
 	var s GitStats
-	s.Commits30d = safeGitInt(`rev-list`, `--count`, `--since=30 days ago`, `HEAD`)
-	s.Contributors = safeGitInt(`shortlog`, `-sne`, `--all`)
+	s.Commits30d = gitCount(`rev-list`, `--count`, `--since=30 days ago`, `HEAD`)
+	s.Contributors = gitLineCount(`shortlog`, `-sne`, `--all`)
 	s.RecentCommits = safeGitLog(`-10`)
 	s.LastRelease = safeGitFirst(`describe`, `--tags`, `--abbrev=0`)
 	return s
 }
 
-func safeGitInt(args ...string) int {
+// gitCount parses the integer output of `git rev-list --count …`.
+func gitCount(args ...string) int {
 	out, err := gitOutput(args...)
-	if err != nil || len(out) == 0 {
+	if err != nil {
 		return 0
 	}
-	// shortlog output has lines like "    42\tName <email>"; rev-list is just a number.
-	// For shortlog, count non-empty lines. For rev-list, parse the int.
-	if n := strings.Count(out, "\n"); n > 0 && !isPureNumber(strings.TrimSpace(out)) {
-		return n
-	}
+	out = strings.TrimSpace(out)
 	var n int
-	for _, r := range out {
-		if r < '0' || r > '9' {
-			// Not a pure number — fall back to line count.
-		}
-		_ = r
+	if _, err := fmt.Sscanf(out, "%d", &n); err != nil {
+		return 0
 	}
-	if isPureNumber(strings.TrimSpace(out)) {
-		_, _ = fmt.Sscanf(strings.TrimSpace(out), "%d", &n)
-		return n
+	return n
+}
+
+// gitLineCount counts non-empty output lines. Used for `git shortlog -sne`
+// where each line is one contributor. Trims a possible missing trailing
+// newline (git shortlog emits one line per group, no trailing newline) so a
+// single-contributor repo reports 1, not 0.
+func gitLineCount(args ...string) int {
+	out, err := gitOutput(args...)
+	if err != nil {
+		return 0
 	}
-	return strings.Count(out, "\n")
+	out = strings.TrimSpace(out)
+	if out == "" {
+		return 0
+	}
+	return len(strings.Split(out, "\n"))
 }
 
 // conventionalCommitRE parses Conventional Commits format:
-//   type(scope): description    → type=scope, scope=scope
-//   type: description           → type=type, scope=""
+//
+//	type(scope): description    → type=scope, scope=scope
+//	type: description           → type=type, scope=""
 var conventionalCommitRE = regexp.MustCompile(`^([a-z]+)(?:\(([^)]+)\))?!?:\s*(.+)$`)
 
 func safeGitLog(arg string) []Commit {
@@ -81,9 +89,9 @@ func safeGitLog(arg string) []Commit {
 			continue
 		}
 		c := Commit{
-			Hash:       parts[0],
-			Subject:    parts[1],
-			Author:     parts[2],
+			Hash:        parts[0],
+			Subject:     parts[1],
+			Author:      parts[2],
 			Description: parts[1], // default: full subject
 		}
 		if t, err := time.Parse(time.RFC3339, parts[3]); err == nil {
@@ -109,8 +117,26 @@ func safeGitFirst(args ...string) string {
 	return strings.TrimSpace(out)
 }
 
+// gitCommitDate returns the committer date of HEAD as a time.Time and true,
+// or zero/false if git is unavailable or HEAD has no commits (e.g. a fresh
+// checkout in CI before any commit lands). Used as the deterministic build
+// clock so two builds of the same commit produce identical site output.
+func gitCommitDate() (time.Time, bool) {
+	out, err := gitOutput("log", "-1", "--format=%cI")
+	if err != nil {
+		return time.Time{}, false
+	}
+	t, err := time.Parse(time.RFC3339, strings.TrimSpace(out))
+	if err != nil {
+		return time.Time{}, false
+	}
+	return t, true
+}
+
 func gitOutput(args ...string) (string, error) {
-	cmd := exec.Command("git", args...)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -118,16 +144,4 @@ func gitOutput(args ...string) (string, error) {
 		return "", fmt.Errorf("git %s: %v: %s", strings.Join(args, " "), err, stderr.String())
 	}
 	return stdout.String(), nil
-}
-
-func isPureNumber(s string) bool {
-	if s == "" {
-		return false
-	}
-	for _, r := range s {
-		if r < '0' || r > '9' {
-			return false
-		}
-	}
-	return true
 }

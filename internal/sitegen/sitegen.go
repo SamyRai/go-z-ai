@@ -13,14 +13,15 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
+	htmltemplate "html/template"
 	"io/fs"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template" // sitemap uses text/template (no HTML escaping needed for an XML file)
-	htmltemplate "html/template"
 	"time"
 )
 
@@ -36,7 +37,22 @@ type Options struct {
 	RootDir string
 	// SkipNetwork disables GitHub API calls (offline / CI sandbox).
 	SkipNetwork bool
+	// SourceDate is the reference instant used for relative-time display
+	// ("3h ago") and the sitemap <lastmod>. Defaults to the latest git commit
+	// date so builds of the same commit are byte-reproducible. Ignored if
+	// zero and git is unavailable (falls back to wall-clock).
+	SourceDate time.Time
 }
+
+// identRE matches URL-safe GitHub owner/repo identifiers. Used to validate
+// values that get interpolated into github.com / api.github.com / pkg.go.dev
+// URLs — a typo or malicious value with "/", "?", "#", or whitespace would
+// otherwise silently construct wrong links or, worse, a request to an
+// unexpected host.
+var identRE = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
+
+// moduleRE is like identRE but allows "/" (Go module paths are slash-bearing).
+var moduleRE = regexp.MustCompile(`^[A-Za-z0-9._/-]+$`)
 
 // Run executes the full site generation pipeline.
 func Run(ctx context.Context, opts Options) error {
@@ -47,17 +63,35 @@ func Run(ctx context.Context, opts Options) error {
 		opts.RootDir = "."
 	}
 	if opts.Owner == "" || opts.Repo == "" {
-		return fmt.Errorf("Owner and Repo are required")
+		return fmt.Errorf("owner and repo are required")
+	}
+	if !identRE.MatchString(opts.Owner) {
+		return fmt.Errorf("owner contains unsupported characters: %q", opts.Owner)
+	}
+	if !identRE.MatchString(opts.Repo) {
+		return fmt.Errorf("repo contains unsupported characters: %q", opts.Repo)
+	}
+	if opts.Module != "" && !moduleRE.MatchString(opts.Module) {
+		return fmt.Errorf("module contains unsupported characters: %q", opts.Module)
 	}
 
+	// SourceDate: explicit flag > latest git commit date > wall-clock now.
+	// Threading this through rendering makes the build byte-reproducible.
+	if opts.SourceDate.IsZero() {
+		if commitDate, ok := gitCommitDate(); ok {
+			opts.SourceDate = commitDate
+		}
+	}
+	setBuildClock(opts.SourceDate)
+
 	site := &SiteView{
-		Name:     firstNonEmpty(opts.Name, "Z.AI API Client"),
-		Tagline:  firstNonEmpty(opts.Tagline, "A Go CLI, library, and TUI for the Z.AI API"),
-		Owner:    opts.Owner,
-		Repo:     opts.Repo,
-		RepoURL:  "https://github.com/" + opts.Owner + "/" + opts.Repo,
-		Module:   firstNonEmpty(opts.Module, "github.com/"+opts.Owner+"/"+opts.Repo),
-		Commit:   safeGitFirst("rev-parse", "--short", "HEAD"),
+		Name:    firstNonEmpty(opts.Name, "Z.AI API Client"),
+		Tagline: firstNonEmpty(opts.Tagline, "A Go CLI, library, and TUI for the Z.AI API"),
+		Owner:   opts.Owner,
+		Repo:    opts.Repo,
+		RepoURL: "https://github.com/" + opts.Owner + "/" + opts.Repo,
+		Module:  firstNonEmpty(opts.Module, "github.com/"+opts.Owner+"/"+opts.Repo),
+		Commit:  safeGitFirst("rev-parse", "--short", "HEAD"),
 	}
 
 	// 1. Load templates + markdown renderer.
@@ -103,11 +137,11 @@ func Run(ctx context.Context, opts Options) error {
 			return fmt.Errorf("render %s README: %w", lang, err)
 		}
 		page := &Page{
-			Title:           "", // landing page has no per-page title; layout shows just the project name
-			Description:     site.Tagline,
-			Lang:            lang,
-			ActiveNav:       "home",
-			Body:            body,
+			Title:            "", // landing page has no per-page title; layout shows just the project name
+			Description:      site.Tagline,
+			Lang:             lang,
+			ActiveNav:        "home",
+			Body:             body,
 			AvailableLocales: LocaleLinksFor("index", lang),
 		}
 		attachURLs(page, "", lang)
@@ -132,7 +166,9 @@ func Run(ctx context.Context, opts Options) error {
 	}
 
 	// 7. Render per-doc pages for full-docs locales (en/ru/zh).
-	for lang := range localesWithFullDocs {
+	// Iterate the deterministic localesAll slice (not the map) so build
+	// output is byte-stable across runs of the same input.
+	for _, lang := range fullDocLocales() {
 		docDir := filepath.Join(opts.RootDir, "docs", lang)
 		entries, err := os.ReadDir(docDir)
 		if err != nil {
@@ -148,10 +184,12 @@ func Run(ctx context.Context, opts Options) error {
 			docName := strings.TrimSuffix(e.Name(), ".md")
 			src, err := os.ReadFile(filepath.Join(docDir, e.Name()))
 			if err != nil {
+				log.Printf("sitegen: skipping %s/%s: %v", lang, e.Name(), err)
 				continue
 			}
 			body, err := RenderMarkdown(src)
 			if err != nil {
+				log.Printf("sitegen: render %s/%s: %v", lang, e.Name(), err)
 				continue
 			}
 			page := &Page{
@@ -182,10 +220,12 @@ func Run(ctx context.Context, opts Options) error {
 	for _, meta := range []string{"CHANGELOG", "CONTRIBUTING", "SECURITY", "CODE_OF_CONDUCT"} {
 		src, err := os.ReadFile(filepath.Join(opts.RootDir, meta+".md"))
 		if err != nil {
+			log.Printf("sitegen: meta %s missing, skipping: %v", meta, err)
 			continue
 		}
 		body, err := RenderMarkdown(src)
 		if err != nil {
+			log.Printf("sitegen: render meta %s: %v", meta, err)
 			continue
 		}
 		page := &Page{
@@ -357,7 +397,7 @@ func writeSitemap(outDir string, site *SiteView) error {
 	for _, lang := range localesAll {
 		urls = append(urls, PageURL(lang, ""))
 	}
-	for lang := range localesWithFullDocs {
+	for _, lang := range fullDocLocales() {
 		for _, doc := range []string{"getting-started", "cli-reference", "accounts-and-quota", "coding-tools", "library-guide", "error-handling", "architecture", "roadmap"} {
 			urls = append(urls, PageURL(lang, doc))
 		}
@@ -379,16 +419,13 @@ func writeSitemap(outDir string, site *SiteView) error {
 		Host string
 		Now  string
 		URLs []string
-	}{Host: host, Now: time.Now().UTC().Format("2006-01-02"), URLs: urls}
+	}{Host: host, Now: buildClock().UTC().Format("2006-01-02"), URLs: urls}
 	var buf bytes.Buffer
 	if err := t.Execute(&buf, data); err != nil {
 		return err
 	}
 	return os.WriteFile(filepath.Join(outDir, "sitemap.xml"), buf.Bytes(), 0o644)
 }
-
-// Unused: silence imports if future paths diverge.
-var _ = io.Discard
 
 // enrichCommits fills in the GitHub web URL for each commit hash so the
 // activity feed can link to the full commit view.

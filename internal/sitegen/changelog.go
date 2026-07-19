@@ -2,6 +2,7 @@ package sitegen
 
 import (
 	"bufio"
+	"html/template"
 	"os"
 	"regexp"
 	"strings"
@@ -17,7 +18,7 @@ type ChangelogRelease struct {
 
 // ChangelogSection is a ### sub-heading within a release section.
 type ChangelogSection struct {
-	Name  string             // "Added", "Changed", "Security", …
+	Name  string // "Added", "Changed", "Security", …
 	Items []ChangelogItem
 }
 
@@ -124,12 +125,19 @@ func flushSection(cur *ChangelogRelease, sub *ChangelogSection) {
 var bulletLeadRE = regexp.MustCompile(`^\*\*([^*]+)\*\*\s*[—–-]\s*(.*)$`)
 
 // simplifyBullet strips leading "**Name** —" from bullets like "- **chat.go** — added foo".
+// The captured groups are HTML-escaped — this string is later interpolated
+// into a template as HTML markup, so untrusted CHANGELOG content must not
+// be concatenated in raw.
 func simplifyBullet(raw string) string {
 	if m := bulletLeadRE.FindStringSubmatch(raw); m != nil {
-		return "<strong>" + m[1] + "</strong> — " + m[2]
+		return "<strong>" + htmlEsc(m[1]) + "</strong> — " + htmlEsc(m[2])
 	}
-	return raw
+	return htmlEsc(raw)
 }
+
+// htmlEsc is a short alias for template.HTMLEscapeString to keep the call
+// sites in this file readable.
+func htmlEsc(s string) string { return template.HTMLEscapeString(s) }
 
 func matchGroup(re *regexp.Regexp, s string) string {
 	m := re.FindStringSubmatch(s)

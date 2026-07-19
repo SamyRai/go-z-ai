@@ -4,37 +4,38 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 )
 
 // GitHubRelease maps the fields we consume from the GitHub releases API.
 type GitHubRelease struct {
-	TagName     string         `json:"tag_name"`
-	Name        string         `json:"name"`
-	PublishedAt time.Time      `json:"published_at"`
-	HTMLURL     string         `json:"html_url"`
-	Body        string         `json:"body"`
-	Prerelease  bool           `json:"prerelease"`
-	Assets      []GitHubAsset  `json:"assets"`
+	TagName     string        `json:"tag_name"`
+	Name        string        `json:"name"`
+	PublishedAt time.Time     `json:"published_at"`
+	HTMLURL     string        `json:"html_url"`
+	Body        string        `json:"body"`
+	Prerelease  bool          `json:"prerelease"`
+	Assets      []GitHubAsset `json:"assets"`
 }
 
 // GitHubAsset is a single downloadable artifact attached to a release.
 type GitHubAsset struct {
-	Name      string `json:"name"`
-	Size      int64  `json:"size"`
-	Download  int    `json:"download_count"`
-	 BrowserURL string `json:"browser_download_url"`
+	Name       string `json:"name"`
+	Size       int64  `json:"size"`
+	Download   int    `json:"download_count"`
+	BrowserURL string `json:"browser_download_url"`
 }
 
 // GitHubRepo maps repo-summary fields we display on the landing page.
 type GitHubRepo struct {
-	Stars        int    `json:"stargazers_count"`
-	Forks        int    `json:"forks_count"`
-	Watchers     int    `json:"subscribers_count"`
-	OpenIssues   int    `json:"open_issues_count"`
-	Description  string `json:"description"`
-	Homepage     string `json:"homepage"`
+	Stars         int    `json:"stargazers_count"`
+	Forks         int    `json:"forks_count"`
+	Watchers      int    `json:"subscribers_count"`
+	OpenIssues    int    `json:"open_issues_count"`
+	Description   string `json:"description"`
+	Homepage      string `json:"homepage"`
 	DefaultBranch string `json:"default_branch"`
 }
 
@@ -78,5 +79,8 @@ func getJSON(ctx context.Context, client *http.Client, url string, v any) error 
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf("%s: %s", url, resp.Status)
 	}
-	return json.NewDecoder(resp.Body).Decode(v)
+	// Bound the response: GitHub's API responses are small (<<4 MiB) but a
+	// misrouted request or a non-JSON error page could otherwise stream
+	// unbounded bytes into the decoder.
+	return json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(v)
 }

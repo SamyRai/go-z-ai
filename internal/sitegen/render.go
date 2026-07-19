@@ -13,11 +13,11 @@ import (
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/lexers"
 	chromastyles "github.com/alecthomas/chroma/v2/styles"
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
 	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
-	gmhtml "github.com/yuin/goldmark/renderer/html"
 )
 
 // Page is the per-page view model passed to every template.
@@ -54,13 +54,13 @@ type LocaleLink struct {
 
 // SiteView is the static site metadata shared by all pages.
 type SiteView struct {
-	Name     string
-	Tagline  string
-	Owner    string
-	Repo     string
-	RepoURL  string
-	Module   string
-	Commit   string
+	Name    string
+	Tagline string
+	Owner   string
+	Repo    string
+	RepoURL string
+	Module  string
+	Commit  string
 }
 
 // ViewData is everything a template sees.
@@ -72,10 +72,10 @@ type ViewData struct {
 
 // LandingData is the optional dynamic content shown on the landing page only.
 type LandingData struct {
-	LatestVersion   string
-	Repo            GitHubRepo
-	Git             GitStats
-	RecentReleases  []GitHubRelease
+	LatestVersion     string
+	Repo              GitHubRepo
+	Git               GitStats
+	RecentReleases    []GitHubRelease
 	ChangelogReleases []ChangelogRelease
 }
 
@@ -96,6 +96,20 @@ var localesWithFullDocs = map[string]bool{"en": true, "ru": true, "zh": true}
 // localesAll is every locale with at least a root README.
 var localesAll = []string{"en", "ru", "zh", "de", "tt", "tr"}
 
+// fullDocLocales returns the locales that have a docs/<lang>/ tree, in the
+// stable order they appear in localesAll. Use this instead of ranging
+// localesWithFullDocs directly — Go map iteration is randomized, which would
+// make the build output non-deterministic.
+func fullDocLocales() []string {
+	out := make([]string, 0, len(localesWithFullDocs))
+	for _, lang := range localesAll {
+		if localesWithFullDocs[lang] {
+			out = append(out, lang)
+		}
+	}
+	return out
+}
+
 // mdRenderer is the shared goldmark instance.
 // chroma highlighter emits CSS classes (no inline styles); the actual colors
 // come from assets/syntax.css generated from Catppuccin Mocha (dark) and
@@ -105,6 +119,12 @@ var localesAll = []string{"en", "ru", "zh", "de", "tt", "tr"}
 //
 // WithHardWraps is intentionally OFF — docs authors expect soft-wrapped
 // paragraphs to flow, not single newlines to become <br>.
+//
+// Raw inline HTML in source markdown is escaped (no WithUnsafe): the output
+// of mdRenderer is then passed through the docSanitizer (below) so any inline
+// HTML that does survive is confined to a strict allowlist. This makes docs
+// contributions a non-XSS surface — important because the repo accepts
+// outside PRs and the rendered HTML ships to the public site.
 var mdRenderer = goldmark.New(
 	goldmark.WithExtensions(
 		extension.GFM,
@@ -122,7 +142,6 @@ var mdRenderer = goldmark.New(
 		),
 	),
 	goldmark.WithParserOptions(parser.WithAutoHeadingID()),
-	goldmark.WithRendererOptions(gmhtml.WithUnsafe()),
 )
 
 // linkFixRE matches href values that need rewriting for the static site.
@@ -154,19 +173,19 @@ var (
 // source convention `[X](getting-started)` → works on GitHub, broken in
 // static HTML.
 var knownDocBases = map[string]bool{
-	"getting-started":      true,
-	"cli-reference":        true,
-	"accounts-and-quota":   true,
-	"coding-tools":         true,
-	"library-guide":        true,
-	"error-handling":       true,
-	"architecture":         true,
-	"roadmap":              true,
-	"site-generation":      true,
-	"CHANGELOG":            true,
-	"CONTRIBUTING":         true,
-	"SECURITY":             true,
-	"CODE_OF_CONDUCT":      true,
+	"getting-started":    true,
+	"cli-reference":      true,
+	"accounts-and-quota": true,
+	"coding-tools":       true,
+	"library-guide":      true,
+	"error-handling":     true,
+	"architecture":       true,
+	"roadmap":            true,
+	"site-generation":    true,
+	"CHANGELOG":          true,
+	"CONTRIBUTING":       true,
+	"SECURITY":           true,
+	"CODE_OF_CONDUCT":    true,
 }
 
 // rewriteLinks takes goldmark-rendered HTML and rewrites internal markdown
@@ -175,13 +194,13 @@ var knownDocBases = map[string]bool{
 // site needs `accounts-and-quota.html`.
 //
 // Three classes of rewrite:
-//   1. `foo.md` (single name in same dir)  → `foo.html`
-//   2. `getting-started` (bare known name) → `getting-started.html`
-//   3. Any path with `../` segments or `docs/<lang>/...` prefix — these are
-//      repo-tree-relative paths that don't match the site's URL layout. We
-//      resolve them to the site-root-absolute URL of the target's basename.
-//      Example: from inside docs/ru/architecture.md, `../../CONTRIBUTING.md`
-//      → `/CONTRIBUTING.html`.
+//  1. `foo.md` (single name in same dir)  → `foo.html`
+//  2. `getting-started` (bare known name) → `getting-started.html`
+//  3. Any path with `../` segments or `docs/<lang>/...` prefix — these are
+//     repo-tree-relative paths that don't match the site's URL layout. We
+//     resolve them to the site-root-absolute URL of the target's basename.
+//     Example: from inside docs/ru/architecture.md, `../../CONTRIBUTING.md`
+//     → `/CONTRIBUTING.html`.
 func rewriteLinks(html []byte) []byte {
 	// Pass 1: `.md` (with optional anchor) → `.html`. README.md collapses to
 	// the directory (handled below in the path-resolution pass for non-trivial
@@ -241,14 +260,80 @@ func rewriteToSiteRoot(hrefOpen, name, trailer []byte) []byte {
 	return append(append(append([]byte{}, hrefOpen...), []byte(dst)...), trailer...)
 }
 
+// docSanitizer is the allowlist HTML policy applied to goldmark output.
+// Built on top of bluemonday's StrictPolicy (which allows no markup by
+// default) and re-enables the subset needed for rendered docs:
+//   - standard prose tags (p, headings, lists, blockquote, emphasis, …)
+//   - GFM: tables, task list inputs (disabled), strikethrough
+//   - code: pre/code/span (chroma emits <span class="…">)
+//   - inline semantic tags occasionally useful in docs: kbd, sub, sup, abbr,
+//     mark, details, summary
+//   - links and images with safe attributes only
+//
+// No scripts, iframes, styles, event handlers, or class values outside the
+// chroma-highlighting / syntax-css contract.
+var docSanitizer = buildDocSanitizer()
+
+func buildDocSanitizer() *bluemonday.Policy {
+	p := bluemonday.StrictPolicy()
+
+	// Prose + structure.
+	p.AllowElements(
+		"p", "br", "hr", "blockquote",
+		"h1", "h2", "h3", "h4", "h5", "h6",
+		"ul", "ol", "li", "dl", "dt", "dd",
+		"strong", "em", "b", "i", "s", "del", "ins", "mark",
+		"span", "div",
+		"sub", "sup", "abbr", "kbd", "small",
+		"details", "summary",
+	)
+	// Code blocks (goldmark) + chroma highlighting (class-based).
+	p.AllowElements("pre", "code", "tt")
+	// GFM tables.
+	p.AllowTables()
+
+	// Links and images — safe URL schemes and a short attribute allowlist.
+	p.AllowAttrs("href").OnElements("a")
+	p.AllowAttrs("src", "alt", "title").OnElements("img")
+	p.AllowAttrs("name").OnElements("a")
+	p.AllowStandardURLs()
+	// Rel/target hardening for external links.
+	p.RequireNoFollowOnLinks(true)
+	p.RequireNoReferrerOnLinks(true)
+	p.AddTargetBlankToFullyQualifiedLinks(true)
+
+	// Headings and table cells get align + id (goldmark auto-heading IDs).
+	p.AllowAttrs("id").OnElements("h1", "h2", "h3", "h4", "h5", "h6")
+	p.AllowAttrs("align").OnElements("th", "td", "col", "colgroup", "table")
+
+	// chroma emits <span class="k">, <span class="chroma">, etc. Allow the
+	// class attribute only on inline/code spans so prose can't pick up
+	// arbitrary styling hooks.
+	p.AllowAttrs("class").OnElements("span", "code", "pre", "div")
+
+	// GFM task lists render disabled checkboxes inside <li>.
+	p.AllowAttrs("disabled", "type").OnElements("input")
+
+	return p
+}
+
+// sanitizeHTML runs a doc through the allowlist policy. Defense-in-depth on
+// top of goldmark's escaping of raw inline HTML: even if a future extension
+// or renderer regression lets markup through, the policy strips it.
+func sanitizeHTML(in []byte) []byte {
+	return docSanitizer.SanitizeBytes(in)
+}
+
 // RenderMarkdown converts markdown bytes to HTML. Used by both landing and doc
-// rendering paths.
+// rendering paths. Output is sanitized via docSanitizer and safe to embed as
+// template.HTML.
 func RenderMarkdown(src []byte) (template.HTML, error) {
 	var buf bytes.Buffer
 	if err := mdRenderer.Convert(src, &buf); err != nil {
 		return "", err
 	}
 	out := rewriteLinks(buf.Bytes())
+	out = sanitizeHTML(out)
 	return template.HTML(out), nil
 }
 
@@ -284,12 +369,15 @@ func GenerateSyntaxCSS() ([]byte, error) {
 // top-level selectors from colliding with other CSS on the page.
 //
 // Chroma emits rules like:
-//   /* Background */ .bg { color: ...; background-color: ...; }
-//   /* PreWrapper */ .chroma { color: ...; background-color: ...; }
-//   /* Keyword */ .chroma .k { color: ... }
+//
+//	/* Background */ .bg { color: ...; background-color: ...; }
+//	/* PreWrapper */ .chroma { color: ...; background-color: ...; }
+//	/* Keyword */ .chroma .k { color: ... }
+//
 // We rewrite the selector list to:
-//   pre.chroma { ... }            (was .bg and .chroma — merged)
-//   pre.chroma .k { ... }         (was .chroma .k — descendant stays)
+//
+//	pre.chroma { ... }            (was .bg and .chroma — merged)
+//	pre.chroma .k { ... }         (was .chroma .k — descendant stays)
 func renderScopedTheme(formatter *chromahtml.Formatter, styleName, themePrefix string) ([]byte, error) {
 	style := chromastyles.Get(styleName)
 	if style == nil {
@@ -360,7 +448,12 @@ func LoadTemplates() (*template.Template, error) {
 				return ""
 			}
 		},
-		"default":      func(d, v any) any { if isEmpty(v) { return d }; return v },
+		"default": func(d, v any) any {
+			if isEmpty(v) {
+				return d
+			}
+			return v
+		},
 		"dict":         dict,
 		"langBase":     langBase,
 		"highlight":    highlightCode,
@@ -496,6 +589,24 @@ func highlightCode(src, lang string) template.HTML {
 	return template.HTML(buf.String())
 }
 
+// buildClock is the reference instant used for relative-time rendering
+// ("3h ago") and for the sitemap <lastmod>. It is set once per Run to make
+// output byte-reproducible across builds of the same commit (using
+// time.Since(time.Now()) here would make two builds of identical input
+// produce different HTML). Defaults to wall-clock time so callers that don't
+// set it behave as before.
+var buildClock = time.Now
+
+// setBuildClock configures the reference instant for relative-time rendering.
+// Called once at the start of Run with the chosen SourceDate.
+func setBuildClock(t time.Time) {
+	if t.IsZero() {
+		buildClock = time.Now
+		return
+	}
+	buildClock = func() time.Time { return t }
+}
+
 // relativeTime renders a time.Time as a human-friendly relative string:
 // "just now", "3h ago", "2d ago", "2026-07-19". Used in the activity feed.
 func relativeTime(t any) string {
@@ -509,7 +620,7 @@ func relativeTime(t any) string {
 	if tm.IsZero() {
 		return ""
 	}
-	d := time.Since(tm)
+	d := buildClock().Sub(tm)
 	switch {
 	case d < time.Minute:
 		return "just now"
