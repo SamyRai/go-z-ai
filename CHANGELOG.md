@@ -7,6 +7,16 @@ grouped by date; from `v0.1.0` on, sections are tagged.
 ## 2026-07-19 (post-v0.1.0)
 
 ### Added
+- **Observability hooks** (`pkg/client/hook.go`): a stdlib-only `Hook`
+  interface (`OnRequest`/`OnResponse`/`OnError`/`OnStreamChunk`) attached via
+  `Config.Hooks`. Fires on every request/response/error/stream-chunk through
+  the centralized `doRequest` facade and the new streaming iterators. Empty
+  by default — the no-hook path is zero-allocation. `RequestMeta` carries
+  `Service`/`Method`/`Endpoint`/`Model`/`Attempt`; `ResponseMeta` adds
+  `StatusCode`/`Duration`/`Usage`. Services stamp `Service`/`Model` into the
+  context via the public `WithService`/`WithModel` helpers; the facade reads
+  them back when building metadata. Concrete OTel/Langfuse implementations
+  land in `pkg/observe` in a follow-up.
 - **Iterator-based streaming** (`pkg/client/stream.go`):
   `ChatService.Stream(ctx, req) iter.Seq2[StreamChunk, error]` and
   `AnthropicService.Stream(ctx, req) iter.Seq2[AnthropicStreamEvent, error]`,

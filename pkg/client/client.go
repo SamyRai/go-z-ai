@@ -120,6 +120,12 @@ type Config struct {
 	// Override only when you need a distinct identifier (a downstream app, a
 	// proxy, an MCP server); the override string is sent verbatim.
 	UserAgent string
+	// Hooks attaches observability hooks (tracing, metrics, logging) that
+	// fire on every request/response/error/stream-chunk without wrapping the
+	// http.RoundTripper. Empty by default — the no-hook path is zero-cost.
+	// Concrete implementations live in pkg/observe (OTel, Langfuse); users
+	// can also provide their own (slog-based, custom metrics). See Hook.
+	Hooks []Hook
 }
 
 // Client represents the Z.AI API client
@@ -129,7 +135,11 @@ type Client struct {
 	// userAgent is the resolved User-Agent header value (Config.UserAgent if
 	// set, otherwise the package default "go-z-ai/<version>"). Resolved once
 	// in NewClient and reused on every request.
-	userAgent   string
+	userAgent string
+	// hooks is the resolved observability hook list (Config.Hooks). Empty
+	// when no hooks are configured — the no-hook path is zero-allocation
+	// (every callHooks* method early-returns on len==0).
+	hooks       []Hook
 	chat        *ChatService
 	models      *ModelsService
 	usage       *UsageService
@@ -211,6 +221,7 @@ func NewClient(config Config) (*Client, error) {
 		config:     config,
 		httpClient: config.HTTPClient,
 		userAgent:  effectiveUA,
+		hooks:      config.Hooks,
 	}
 
 	// Initialize services
@@ -336,28 +347,52 @@ func (c *Client) doRequestBaseKeyHeaders(ctx context.Context, baseURL, apiKey, m
 		maxRetries = 0
 	}
 
+	// hookBase is rebuilt per attempt (Attempt differs) but the Service/Model
+	// fields are constant across retries — they come from the context.
 	var lastErr error
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		if err := ctx.Err(); err != nil {
+			// Cancellation between attempts: surface as an error to hooks.
+			c.callHooksError(ctx, c.buildRequestMeta(ctx, method, endpoint, attempt), err)
 			return err
 		}
 
-		resp, err := c.sendHeaders(ctx, baseURL, apiKey, method, endpoint, body, headers)
+		// OnRequest fires per attempt (a retried request is a new request from
+		// the hook's perspective — spans, counters, etc. want one event per
+		// actual HTTP send). The hook may return a derived context (e.g. with
+		// a child span).
+		reqMeta := c.buildRequestMeta(ctx, method, endpoint, attempt)
+		hookCtx := c.callHooksRequest(ctx, reqMeta)
+
+		start := time.Now()
+		resp, err := c.sendHeaders(hookCtx, baseURL, apiKey, method, endpoint, body, headers)
 		if err != nil {
 			// Transport-level failure: no server response was produced, so the
 			// request is safe to retry (the server never answered).
 			lastErr = fmt.Errorf("failed to execute request: %w", err)
 			if attempt < maxRetries {
-				c.backoff(ctx, "", attempt)
+				c.backoff(hookCtx, "", attempt)
 				continue
 			}
+			c.callHooksError(hookCtx, reqMeta, lastErr)
 			return lastErr
 		}
 
 		if resp.StatusCode == http.StatusOK {
 			err = c.decodeBody(resp, result)
 			resp.Body.Close()
-			return err
+			if err != nil {
+				// Body parse failure after a 200 — treat as terminal error.
+				c.callHooksError(hookCtx, reqMeta, err)
+				return err
+			}
+			c.callHooksResponse(hookCtx, ResponseMeta{
+				RequestMeta: reqMeta,
+				StatusCode:  resp.StatusCode,
+				Duration:    time.Since(start),
+				Usage:       extractUsage(result),
+			})
+			return nil
 		}
 
 		// Non-200: classify via the structured API error mapping.
@@ -372,12 +407,38 @@ func (c *Client) doRequestBaseKeyHeaders(ctx context.Context, baseURL, apiKey, m
 
 		lastErr = apiErr
 		if attempt < maxRetries && retriable {
-			c.backoff(ctx, retryAfter, attempt)
+			c.backoff(hookCtx, retryAfter, attempt)
 			continue
 		}
+		c.callHooksError(hookCtx, reqMeta, apiErr)
 		return apiErr
 	}
+	// Loop exhausted; lastErr is the final retriable error.
+	if lastErr != nil {
+		c.callHooksError(ctx, c.buildRequestMeta(ctx, method, endpoint, maxRetries), lastErr)
+	}
 	return lastErr
+}
+
+// usageBearer is implemented by response types that carry a Usage field
+// (ChatResponse, AsyncResultResponse). Used by extractUsage to surface token
+// counts to OnResponse hooks without reflection or a type switch.
+type usageBearer interface {
+	GetUsage() *Usage
+}
+
+// extractUsage returns the Usage pointer from a parsed response, or nil when
+// the response type doesn't carry one (models list, file ops, etc.). The hook
+// gets nil Usage for those — it can distinguish "no usage reported" from
+// "zero tokens" by the nil check.
+func extractUsage(result any) *Usage {
+	if result == nil {
+		return nil
+	}
+	if u, ok := result.(usageBearer); ok {
+		return u.GetUsage()
+	}
+	return nil
 }
 
 // send builds and issues a single HTTP request against baseURL+endpoint,

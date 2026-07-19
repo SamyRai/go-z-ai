@@ -164,14 +164,38 @@ func (s *ChatService) Stream(ctx context.Context, req ChatRequest) iter.Seq2[Str
 	req.Stream = true
 	req.Tools = s.compatTools(req.Tools)
 
-	return pullStream[StreamChunk](ctx,
+	// Stamp service + model so hooks (OnRequest, OnStreamChunk) can attribute
+	// the stream. The connect path reads these via buildRequestMeta.
+	streamCtx := WithModel(WithService(ctx, "chat"), req.Model)
+
+	inner := pullStream[StreamChunk](streamCtx,
 		func() (*http.Response, error) {
-			return s.connectChatStream(ctx, req)
+			return s.connectChatStream(streamCtx, req)
 		},
 		func(resp *http.Response, yield func(StreamChunk) error) error {
-			return s.readSSE(ctx, resp, yield)
+			return s.readSSE(streamCtx, resp, yield)
 		},
 	)
+
+	// Wrap the iterator so each chunk handed to the caller also fires
+	// OnStreamChunk. pullStream still owns the connect/stream lifecycle;
+	// we only observe chunk delivery.
+	return func(yield func(StreamChunk, error) bool) {
+		meta := s.client.buildRequestMeta(streamCtx, "POST", "/chat/completions", 0)
+		for chunk, err := range inner {
+			if err != nil {
+				s.client.callHooksError(streamCtx, meta, err)
+				if !yield(chunk, err) {
+					return
+				}
+				return
+			}
+			s.client.callHooksStreamChunk(streamCtx, meta, chunk)
+			if !yield(chunk, nil) {
+				return
+			}
+		}
+	}
 }
 
 // connectChatStream runs the outer retry/backoff loop that CreateStream used
@@ -188,11 +212,15 @@ func (s *ChatService) connectChatStream(ctx context.Context, req ChatRequest) (*
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		resp, err := s.client.send(ctx, s.client.config.BaseURL, s.client.config.APIKey, "POST", "/chat/completions", req)
+		// OnRequest fires per attempt; the hook may return a derived ctx
+		// (e.g. child span) for the actual send.
+		reqMeta := s.client.buildRequestMeta(ctx, "POST", "/chat/completions", attempt)
+		hookCtx := s.client.callHooksRequest(ctx, reqMeta)
+		resp, err := s.client.send(hookCtx, s.client.config.BaseURL, s.client.config.APIKey, "POST", "/chat/completions", req)
 		if err != nil {
 			lastErr = fmt.Errorf("failed to execute request: %w", err)
 			if attempt < maxRetries {
-				s.client.backoff(ctx, "", attempt)
+				s.client.backoff(hookCtx, "", attempt)
 				continue
 			}
 			return nil, lastErr
@@ -209,7 +237,7 @@ func (s *ChatService) connectChatStream(ctx context.Context, req ChatRequest) (*
 		}
 		lastErr = apiErr
 		if attempt < maxRetries && retriable {
-			s.client.backoff(ctx, retryAfter, attempt)
+			s.client.backoff(hookCtx, retryAfter, attempt)
 			continue
 		}
 		return nil, apiErr
@@ -233,14 +261,33 @@ func (s *AnthropicService) Stream(ctx context.Context, req AnthropicMessageReque
 	req.Stream = true
 	req.Tools = s.compatTools(req.Tools)
 
-	return pullStream[AnthropicStreamEvent](ctx,
+	streamCtx := WithModel(WithService(ctx, "anthropic"), req.Model)
+
+	inner := pullStream[AnthropicStreamEvent](streamCtx,
 		func() (*http.Response, error) {
-			return s.connectAnthropicStream(ctx, req)
+			return s.connectAnthropicStream(streamCtx, req)
 		},
 		func(resp *http.Response, yield func(AnthropicStreamEvent) error) error {
-			return readAnthropicSSE(ctx, resp, yield)
+			return readAnthropicSSE(streamCtx, resp, yield)
 		},
 	)
+
+	return func(yield func(AnthropicStreamEvent, error) bool) {
+		meta := s.client.buildRequestMeta(streamCtx, "POST", anthropicMessagesEndpoint, 0)
+		for ev, err := range inner {
+			if err != nil {
+				s.client.callHooksError(streamCtx, meta, err)
+				if !yield(ev, err) {
+					return
+				}
+				return
+			}
+			s.client.callHooksStreamChunk(streamCtx, meta, ev)
+			if !yield(ev, nil) {
+				return
+			}
+		}
+	}
 }
 
 // connectAnthropicStream mirrors connectChatStream for the Anthropic surface.
@@ -254,11 +301,13 @@ func (s *AnthropicService) connectAnthropicStream(ctx context.Context, req Anthr
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		resp, err := s.client.sendHeaders(ctx, AnthropicBaseURL, s.client.config.APIKey, "POST", anthropicMessagesEndpoint, req, anthropicHeaders())
+		reqMeta := s.client.buildRequestMeta(ctx, "POST", anthropicMessagesEndpoint, attempt)
+		hookCtx := s.client.callHooksRequest(ctx, reqMeta)
+		resp, err := s.client.sendHeaders(hookCtx, AnthropicBaseURL, s.client.config.APIKey, "POST", anthropicMessagesEndpoint, req, anthropicHeaders())
 		if err != nil {
 			lastErr = fmt.Errorf("failed to execute request: %w", err)
 			if attempt < maxRetries {
-				s.client.backoff(ctx, "", attempt)
+				s.client.backoff(hookCtx, "", attempt)
 				continue
 			}
 			return nil, lastErr
@@ -275,7 +324,7 @@ func (s *AnthropicService) connectAnthropicStream(ctx context.Context, req Anthr
 		}
 		lastErr = apiErr
 		if attempt < maxRetries && retriable {
-			s.client.backoff(ctx, retryAfter, attempt)
+			s.client.backoff(hookCtx, retryAfter, attempt)
 			continue
 		}
 		return nil, apiErr

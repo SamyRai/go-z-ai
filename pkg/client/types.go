@@ -177,6 +177,12 @@ type ChatResponse struct {
 	WebSearch []WebSearchResult `json:"web_search,omitempty"`
 }
 
+// GetUsage returns the response's token usage as a pointer, implementing the
+// unexported usageBearer interface used by the observability Hook seam. The
+// value form (Usage) on the wire becomes a pointer for hook consumers;
+// &Usage is safe because ChatResponse is already heap-allocated in practice.
+func (r *ChatResponse) GetUsage() *Usage { return &r.Usage }
+
 // Choice represents a response choice
 type Choice struct {
 	Index        int         `json:"index"`

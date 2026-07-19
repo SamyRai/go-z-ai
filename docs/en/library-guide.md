@@ -10,6 +10,7 @@ calling this package. You can depend on it directly without the CLI at all.
 - [Chat completions](#chat-completions)
 - [Anthropic-compatible Messages API](#anthropic-compatible-messages-api)
 - [Error handling](#error-handling)
+- [Observability hooks](#observability-hooks)
 - [Multi-account credential management](#multi-account-credential-management)
 - [Testing your own code against this client](#testing-your-own-code-against-this-client)
 - [Architecture notes](#architecture-notes)
@@ -49,6 +50,7 @@ c, err := client.NewClientFromEnv() // reads ZAI_API_KEY, ZAI_API_BASE_URL
 | `ChinaAPIKey` | falls back to `APIKey` | Only needed if you hold a separate bigmodel.cn-only credential — see [Accounts & Quota](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn) |
 | `Region` | `RegionGlobal` | Selects the host for monitor/biz/agents/detection: `RegionGlobal` (api.z.ai) or `RegionChina` (open.bigmodel.cn). Does not override `BaseURL` (chat surface) or the Embeddings/Moderations host. See [Accounts & Quota](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn). |
 | `UserAgent` | `"go-z-ai/<version>"` | Overrides the `User-Agent` header sent on every request. The default identifies go-z-ai to Z.AI's API — important under the coding endpoint's [usage policy](coding-tools.md#compliance--usage-policy-). Override only when you need a distinct identifier (a downstream app, a proxy, an MCP server); the override string is sent verbatim. |
+| `Hooks` | `nil` | Observability hooks ([`Hook`](library-guide.md#observability-hooks)) that fire on every request/response/error/stream-chunk. Empty by default — the no-hook path is zero-cost. Concrete implementations live in `pkg/observe` (OTel, Langfuse). |
 
 Every service method takes `context.Context` as its first argument and
 propagates it all the way to the HTTP call — cancel it to abort a request or
@@ -301,6 +303,45 @@ API and is not yet live-verified here — see [Roadmap](roadmap.md).
 
 See [Error Handling](error-handling.md) for the full `APIError` reference,
 error codes, and the retry behavior you get by default.
+
+## Observability hooks
+
+`Config.Hooks` attaches observability hooks (tracing, metrics, logging) that
+fire on every request, response, error, and stream chunk — without you
+wrapping the `http.RoundTripper`. The interface is stdlib-only so `pkg/client`
+stays dependency-free; concrete implementations live in `pkg/observe`
+(OpenTelemetry, Langfuse) or you can write your own.
+
+```go
+import (
+    "github.com/SamyRai/go-z-ai/pkg/client"
+    "github.com/SamyRai/go-z-ai/pkg/observe"
+)
+
+c, _ := client.NewClient(client.Config{
+    APIKey: os.Getenv("ZAI_API_KEY"),
+    Hooks:  []client.Hook{observe.NewOTelHook("my-service")},
+})
+```
+
+A `Hook` fires:
+
+- `OnRequest(ctx, meta) context.Context` — per attempt, before the HTTP send;
+  the returned context replaces the input (attach tracing spans here).
+- `OnResponse(ctx, meta)` — after a successful non-streaming response, with
+  status code, duration, and token usage (when the response carries one).
+- `OnError(ctx, meta, err)` — on terminal failure, with the final error.
+- `OnStreamChunk(ctx, meta, chunk)` — for each chunk from `Chat().Stream` /
+  `Anthropic().Stream`.
+
+`RequestMeta` carries `Service`, `Method`, `Endpoint`, `Model`, and `Attempt`
+fields. Services stamp `Service`/`Model` into the context automatically (chat,
+anthropic, embeddings, rerank); other services leave them empty unless you
+stamp them yourself via `client.WithService(ctx, "...")` / `client.WithModel(ctx, "...")`
+before the call.
+
+A nil/empty `Hooks` slice skips all invocation — the no-hook path is
+zero-allocation and has no measurable overhead.
 
 ## Multi-account credential management
 
