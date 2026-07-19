@@ -4,22 +4,29 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strings"
+	"time"
 )
 
 // Commit is a recent commit summary for the activity feed.
 type Commit struct {
-	Hash    string // short hash
-	Subject string // first line of message
-	Author  string
+	Hash         string    // short hash
+	Subject      string    // first line of message (full, for tooltips)
+	Description  string    // description without the conventional-commit prefix
+	Author       string    // author name
+	Date         time.Time // commit date (for relative-time display)
+	URL          string    // full GitHub commit URL
+	Type         string    // conventional-commit type: feat, fix, docs, chore, etc.
+	Scope        string    // conventional-commit scope (e.g. "site", "ci")
 }
 
 // GitStats summarises repository activity from `git`.
 type GitStats struct {
-	Commits30d    int       // commits in last 30 days
-	Contributors  int       // unique authors across all history
-	RecentCommits []Commit  // last 10
-	LastRelease   string    // most recent tag, or empty
+	Commits30d    int      // commits in last 30 days
+	Contributors  int      // unique authors across all history
+	RecentCommits []Commit // last 10
+	LastRelease   string   // most recent tag, or empty
 }
 
 // CollectGitStats shells out to git. Any failure degrades to a zero-value
@@ -57,18 +64,39 @@ func safeGitInt(args ...string) int {
 	return strings.Count(out, "\n")
 }
 
+// conventionalCommitRE parses Conventional Commits format:
+//   type(scope): description    → type=scope, scope=scope
+//   type: description           → type=type, scope=""
+var conventionalCommitRE = regexp.MustCompile(`^([a-z]+)(?:\(([^)]+)\))?!?:\s*(.+)$`)
+
 func safeGitLog(arg string) []Commit {
-	out, err := gitOutput(`log`, `--pretty=format:%h|%s|%an`, `--no-merges`, `-n`, strings.TrimPrefix(arg, "-"))
+	out, err := gitOutput(`log`, `--pretty=format:%h|%s|%an|%aI`, `--no-merges`, `-n`, strings.TrimPrefix(arg, "-"))
 	if err != nil {
 		return nil
 	}
 	var commits []Commit
 	for _, line := range strings.Split(out, "\n") {
-		parts := strings.SplitN(line, "|", 3)
-		if len(parts) != 3 {
+		parts := strings.SplitN(line, "|", 4)
+		if len(parts) != 4 {
 			continue
 		}
-		commits = append(commits, Commit{Hash: parts[0], Subject: parts[1], Author: parts[2]})
+		c := Commit{
+			Hash:       parts[0],
+			Subject:    parts[1],
+			Author:     parts[2],
+			Description: parts[1], // default: full subject
+		}
+		if t, err := time.Parse(time.RFC3339, parts[3]); err == nil {
+			c.Date = t
+		}
+		// Parse conventional-commit type/scope and strip the prefix from the
+		// description so the type badge + scope badge don't duplicate it.
+		if m := conventionalCommitRE.FindStringSubmatch(parts[1]); m != nil {
+			c.Type = m[1]
+			c.Scope = m[2]
+			c.Description = m[3]
+		}
+		commits = append(commits, c)
 	}
 	return commits
 }

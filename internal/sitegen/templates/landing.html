@@ -85,13 +85,23 @@
   <h2>Recent activity</h2>
   <ul class="feed">
     {{- range .Data.Git.RecentCommits }}
-    <li>
-      <span class="hash">{{ .Hash }}</span>
-      <span class="subj">{{ .Subject }}</span>
-      <span class="who">{{ .Author }}</span>
+    <li class="feed-item">
+      <a class="feed-hash" href="{{ .URL }}" rel="external" title="View commit {{ .Hash }} on GitHub">{{ .Hash }}</a>
+      <div class="feed-body">
+        {{- if .Type }}
+        <span class="feed-type type-{{ .Type }}">{{ .Type }}</span>
+        {{- if .Scope }}<span class="feed-scope">{{ .Scope }}</span>{{- end }}
+        {{- end }}
+        <span class="feed-subj" title="{{ .Subject }}">{{ .Description }}</span>
+      </div>
+      <div class="feed-meta">
+        <span class="feed-author">{{ .Author }}</span>
+        {{- if .Date }}<time class="feed-date" datetime="{{ .Date.Format "2006-01-02T15:04:05Z" }}">{{ relativeTime .Date }}</time>{{- end }}
+      </div>
     </li>
     {{- end }}
   </ul>
+  <p><a href="{{ .Site.RepoURL }}/commits/main" rel="external">All commits →</a></p>
 </section>
 {{- end }}
 

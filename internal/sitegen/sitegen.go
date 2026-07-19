@@ -217,14 +217,18 @@ func Run(ctx context.Context, opts Options) error {
 
 // gatherData fetches all dynamic content, tolerating failures.
 func gatherData(ctx context.Context, opts Options) *LandingData {
+	repoURL := "https://github.com/" + opts.Owner + "/" + opts.Repo
 	if opts.SkipNetwork {
-		return &LandingData{Git: CollectGitStats()}
+		d := &LandingData{Git: CollectGitStats()}
+		enrichCommits(d.Git.RecentCommits, repoURL)
+		return d
 	}
 	client := &http.Client{Timeout: 8 * time.Second}
 	d := &LandingData{
 		Repo: FetchGitHubRepo(ctx, client, opts.Owner, opts.Repo),
 		Git:  CollectGitStats(),
 	}
+	enrichCommits(d.Git.RecentCommits, repoURL)
 	rs := FetchReleases(ctx, client, opts.Owner, opts.Repo, 5)
 	d.RecentReleases = rs
 	if len(rs) > 0 {
@@ -385,3 +389,13 @@ func writeSitemap(outDir string, site *SiteView) error {
 
 // Unused: silence imports if future paths diverge.
 var _ = io.Discard
+
+// enrichCommits fills in the GitHub web URL for each commit hash so the
+// activity feed can link to the full commit view.
+func enrichCommits(commits []Commit, repoURL string) {
+	for i := range commits {
+		if commits[i].Hash != "" {
+			commits[i].URL = repoURL + "/commit/" + commits[i].Hash
+		}
+	}
+}

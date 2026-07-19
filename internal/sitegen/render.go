@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/alecthomas/chroma/v2"
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
@@ -359,10 +360,11 @@ func LoadTemplates() (*template.Template, error) {
 				return ""
 			}
 		},
-		"default":   func(d, v any) any { if isEmpty(v) { return d }; return v },
-		"dict":      dict,
-		"langBase":  langBase,
-		"highlight": highlightCode,
+		"default":      func(d, v any) any { if isEmpty(v) { return d }; return v },
+		"dict":         dict,
+		"langBase":     langBase,
+		"highlight":    highlightCode,
+		"relativeTime": relativeTime,
 	})
 	// Walk every .html under the templates FS and parse into root.
 	err := fs.WalkDir(tfs, ".", func(p string, d fs.DirEntry, err error) error {
@@ -485,6 +487,34 @@ func highlightCode(src, lang string) template.HTML {
 		return template.HTML(template.HTMLEscapeString(src))
 	}
 	return template.HTML(buf.String())
+}
+
+// relativeTime renders a time.Time as a human-friendly relative string:
+// "just now", "3h ago", "2d ago", "2026-07-19". Used in the activity feed.
+func relativeTime(t any) string {
+	var tm time.Time
+	switch v := t.(type) {
+	case time.Time:
+		tm = v
+	default:
+		return ""
+	}
+	if tm.IsZero() {
+		return ""
+	}
+	d := time.Since(tm)
+	switch {
+	case d < time.Minute:
+		return "just now"
+	case d < time.Hour:
+		return fmt.Sprintf("%dm ago", int(d.Minutes()))
+	case d < 24*time.Hour:
+		return fmt.Sprintf("%dh ago", int(d.Hours()))
+	case d < 30*24*time.Hour:
+		return fmt.Sprintf("%dd ago", int(d.Hours()/24))
+	default:
+		return tm.Format("2006-01-02")
+	}
 }
 
 // PageURL returns the absolute site path for a (locale, docname) pair.
