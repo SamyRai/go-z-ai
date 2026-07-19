@@ -148,7 +148,14 @@ func (m *Model) syncBars() {
 
 func (m Model) View() tea.View {
 	if m.quota == nil {
-		return tea.NewView("loading quota…")
+		// Skeleton: a title + a few dimmed bar rows so the layout reads as
+		// "filling in" instead of a bare text label before first data.
+		body := uistyle.SectionTitle.Render("Quota") + "\n"
+		for range 3 {
+			body += uistyle.SkeletonRow(28) + "\n" +
+				uistyle.SkeletonRow(28) + "\n\n"
+		}
+		return tea.NewView(body)
 	}
 
 	left := m.renderQuotaPanel()
@@ -193,7 +200,10 @@ func (m Model) renderQuotaPanel() string {
 
 func (m Model) renderHeatmapPanel() string {
 	var body string
-	if m.models != nil && len(m.models.Data.ModelDataList) > 0 {
+	hasModels := m.models != nil && len(m.models.Data.ModelDataList) > 0
+	hasTools := m.tools != nil && len(m.tools.Data.ToolDataList) > 0
+
+	if hasModels {
 		body += uistyle.SectionTitle.Render("Model token usage (last 14d)") + "\n"
 		for _, series := range m.models.Data.ModelDataList {
 			body += fmt.Sprintf("  %-20s %s  %s tokens\n", series.ModelName, renderHeatmapRow(series.TokensUsage), usageview.FormatCount(series.TotalTokens))
@@ -203,11 +213,18 @@ func (m Model) renderHeatmapPanel() string {
 			usageview.FormatCount(m.models.Data.TotalUsage.TotalTokensUsage))
 	}
 
-	if m.tools != nil && len(m.tools.Data.ToolDataList) > 0 {
+	if hasTools {
 		body += uistyle.SectionTitle.Render("Tool usage (last 14d)") + "\n"
 		for _, series := range m.tools.Data.ToolDataList {
 			body += fmt.Sprintf("  %-20s %s  %s calls\n", series.ToolName, renderHeatmapRow(series.UsageCount), usageview.FormatCount(series.TotalUsageCount))
 		}
+	}
+
+	// If both sections came back empty (loaded successfully but no usage in the
+	// window), say so instead of silently rendering nothing — a blank panel
+	// reads as "broken", not "no data".
+	if !hasModels && !hasTools {
+		body += uistyle.Subtle.Render("no model or tool usage in the last 14 days") + "\n"
 	}
 	return body
 }

@@ -15,6 +15,7 @@ import (
 
 	"github.com/SamyRai/go-z-ai/internal/accounts"
 	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
+	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
 	"github.com/SamyRai/go-z-ai/internal/usageview"
 )
 
@@ -212,6 +213,14 @@ func (m Model) View() tea.View {
 	case modeConfirmDelete:
 		return tea.NewView(fmt.Sprintf("Remove account %q? (y/enter to confirm, any other key to cancel)", m.confirmName))
 	default:
+		// Friendly empty state with a CTA — the bare list empty rendering
+		// gives no hint that 'a' adds an account, and the list component
+		// itself only shows a muted "No items." line.
+		if len(m.list.Items()) == 0 {
+			body := uistyle.EmptyTitle.Render("No accounts yet") + "\n\n" +
+				uistyle.EmptyHint.Render("press 'a' to add your first Z.AI key")
+			return tea.NewView(body)
+		}
 		return tea.NewView(m.list.View())
 	}
 }

@@ -16,6 +16,7 @@ import (
 
 	"github.com/SamyRai/go-z-ai/internal/coding"
 	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
+	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
 )
 
 type item struct {
@@ -263,6 +264,15 @@ func (m Model) mcpTool(toolID string) tea.Cmd {
 func (m Model) View() tea.View {
 	if m.mode == modeAuth {
 		return tea.NewView(m.form.View())
+	}
+	// Friendly empty state: the coding tools list comes from a local scan,
+	// and an empty result usually means the scan hasn't run or found nothing
+	// installed — a CTA to refresh (or, after refresh, that nothing's
+	// installed) reads far better than the list's bare "No items."
+	if len(m.list.Items()) == 0 {
+		body := uistyle.EmptyTitle.Render("No coding tools detected") + "\n\n" +
+			uistyle.EmptyHint.Render("press 'r' to rescan installed agents")
+		return tea.NewView(body)
 	}
 	return tea.NewView(m.list.View())
 }

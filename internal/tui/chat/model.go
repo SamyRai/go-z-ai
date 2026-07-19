@@ -187,6 +187,11 @@ func (m Model) transcript() string {
 	if m.pending != "" {
 		out += "assistant:\n" + m.renderMarkdown(m.pending)
 	}
+	if out == "" {
+		// Welcome state: instead of a blank viewport, surface the active
+		// model and the send binding so the user knows what to type where.
+		out = fmt.Sprintf("model: %s\n\nType a message, ctrl+s to send.", m.model)
+	}
 	return out
 }
 
