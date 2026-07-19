@@ -79,6 +79,17 @@ func Run(ctx context.Context, opts Options) error {
 		return err
 	}
 
+	// 4a. Generate the chroma syntax-highlighting stylesheet at build time
+	// (Catppuccin Mocha for dark, Latte for light). Written next to the
+	// other assets and linked from layout.html.
+	syntaxCSS, err := GenerateSyntaxCSS()
+	if err != nil {
+		return fmt.Errorf("generate syntax css: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(opts.OutDir, "assets", "syntax.css"), syntaxCSS, 0o644); err != nil {
+		return err
+	}
+
 	// 5. Write .nojekyll so GitHub Pages serves our raw paths.
 	if err := os.WriteFile(filepath.Join(opts.OutDir, ".nojekyll"), nil, 0o644); err != nil {
 		return err

@@ -233,8 +233,10 @@
     border: 1px solid var(--color-border);
   }
 
-  /* Code — block */
-  pre {
+  /* Code — block. Both raw `<pre>` and goldmark-chroma's `<pre class="chroma">`
+   * get the same surface treatment so unstyled fences and highlighted ones
+   * stay visually consistent. */
+  pre, pre.chroma {
     background: var(--color-canvas-deep);
     border: 1px solid var(--color-border);
     padding: var(--space-5);
@@ -243,14 +245,22 @@
     line-height: var(--leading-normal);
     box-shadow: var(--shadow-sm);
     scrollbar-width: thin;
+    /* Code blocks read slightly larger than the old --text-sm: aligned to
+     * --text-base * 0.92 so the x-height visually matches body prose rather
+     * than feeling like a smaller, secondary voice. */
+    font-size: calc(var(--text-base) * 0.92);
   }
-  pre code {
-    font-size: var(--text-sm);
+  pre code, pre.chroma code {
+    font-size: inherit;
     background: none;
     border: 0;
     padding: 0;
     color: var(--color-text);
+    font-feature-settings: var(--font-mono-features);
   }
+  /* Chroma's "line" wrapper is a flex row — make sure it doesn't break
+   * horizontal scroll. */
+  pre.chroma .line { display: block; white-space: pre; }
 
   /* Tables */
   table { width: 100%; }
