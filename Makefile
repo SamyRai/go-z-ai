@@ -8,6 +8,10 @@ GOVULNCHECK ?= govulncheck
 MARKDOWNLINT ?= markdownlint-cli2
 LYCHEE ?= lychee
 MD_GLOBS := README*.md docs/**/*.md CONTRIBUTING.md examples/README.md .github/**/*.md
+# LYCHEE_FLAGS mirrors the args used in .github/workflows/ci.yml so a local
+# `make docs-lint` and CI agree. Exclude pkg.go.dev / docs.z.ai — both are
+# sometimes flaky under link-checker user agents.
+LYCHEE_FLAGS := --no-progress --max-cache-age 30d --max-concurrency 10 --exclude 'pkg\.go\.dev' --exclude 'docs\.z\.ai'
 
 .PHONY: help
 help: ## Show this help.
@@ -56,11 +60,11 @@ tidy: ## Run go mod tidy.
 .PHONY: docs-lint
 docs-lint: ## Lint markdown: structure (markdownlint-cli2) + links (lychee).
 	$(MARKDOWNLINT) $(MD_GLOBS)
-	$(LYCHEE) --no-progress --max-concurrency 10 $(MD_GLOBS)
+	$(LYCHEE) $(LYCHEE_FLAGS) $(MD_GLOBS)
 
 .PHONY: docs-lint-links
 docs-lint-links: ## Check markdown links only (local + external).
-	$(LYCHEE) --no-progress --cache --max-concurrency 10 $(MD_GLOBS)
+	$(LYCHEE) $(LYCHEE_FLAGS) --cache $(MD_GLOBS)
 
 .PHONY: docs-fix
 docs-fix: ## Auto-fix markdownlint-cli2 issues.

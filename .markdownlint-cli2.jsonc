@@ -6,8 +6,21 @@
   "config": {
     "default": true,
 
-    // Line length — unrealistic for CJK (no spaces) and verbose Russian/German.
-    "MD013": false,
+    // Line length — tuned (glab-style) rather than disabled. CJK prose has no
+    // spaces so the 800-char ceiling stays loose; code blocks and tables are
+    // exempt (they have their own formatting rules); headings are capped tight.
+    "MD013": {
+      "code_blocks": false,
+      "tables": false,
+      "line_length": 800,
+      "headings": true,
+      "heading_line_length": 100
+    },
+
+    // Duplicate headings — siblings_only catches real dupes within a section
+    // while still allowing the same sub-heading (e.g. "### Added") to repeat
+    // across sibling sections (matches CHANGELOG-style structure if re-added).
+    "MD024": { "siblings_only": true },
 
     // Inline HTML — used for <details>, <sub>, <sup>, badge <img> fallbacks.
     "MD033": false,
