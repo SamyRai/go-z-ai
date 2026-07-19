@@ -37,10 +37,15 @@ import (
 // twoColumnMinWidth is the terminal width at which the table splits into
 // table + live preview pane. Below this, only the table is shown and the user
 // opens the full detail with Enter. Same threshold name as the Usage tab.
+// compactWidth is the width below which the table drops the CAPS column and
+// shortens the price headers so the ID column stays readable on narrow
+// terminals (the preview pane is already hidden at this width).
 const (
 	twoColumnMinWidth = 100
+	compactWidth      = 70
 	previewWidth      = 42 // fixed pane width; the table takes the rest
 	tableColsTotal    = 28 + 9 + 8 + 9 + 12 // ID(28) Context(8) IN(9) OUT(9) CAPS(12) ≈ table min
+	tableColsCompact  = 28 + 7 + 7 + 7      // ID(28) Context(7) IN(7) OUT(7) — CAPS dropped
 )
 
 type filter int
@@ -179,14 +184,39 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // resize recomputes the table height/width and the detail viewport size from
 // the current terminal dimensions. The table takes the full width when no
 // preview pane is shown; when the pane is shown, the table is narrowed to
-// width - previewWidth - separator.
+// width - previewWidth - separator. Below compactWidth the CAPS column is
+// dropped and the price columns shortened so the ID column stays readable.
 func (m *Model) resize() {
+	// Pick the column set for the current width. The compact set drops CAPS
+	// and shortens IN/OUT headers so the model id stays readable on narrow
+	// terminals (where the preview pane is already hidden).
+	if m.width > 0 && m.width < compactWidth {
+		m.table.SetColumns([]table.Column{
+			{Title: "MODEL", Width: 28},
+			{Title: "CTX", Width: 7},
+			{Title: "IN", Width: 7},
+			{Title: "OUT", Width: 7},
+		})
+	} else {
+		m.table.SetColumns([]table.Column{
+			{Title: "MODEL", Width: 28},
+			{Title: "CONTEXT", Width: 8},
+			{Title: "IN/1M", Width: 8},
+			{Title: "OUT/1M", Width: 8},
+			{Title: "CAPS", Width: 12},
+		})
+	}
+
 	tableW := m.width
 	if m.width >= twoColumnMinWidth {
 		tableW = m.width - previewWidth - 2 // 2-col gutter between table and pane
 	}
-	if tableW < tableColsTotal {
-		tableW = tableColsTotal
+	colsMin := tableColsTotal
+	if m.width > 0 && m.width < compactWidth {
+		colsMin = tableColsCompact
+	}
+	if tableW < colsMin {
+		tableW = colsMin
 	}
 	m.table.SetWidth(tableW)
 	m.table.SetHeight(max(m.height-2, 3)) // leave a row for the filter pills
@@ -194,6 +224,12 @@ func (m *Model) resize() {
 	// Detail viewport fills the whole content area.
 	m.view.SetWidth(m.width)
 	m.view.SetHeight(max(m.height-1, 3))
+
+	// Re-apply the filter so row arity tracks the (possibly compacted)
+	// column set — otherwise SetRows panics when columns and rows disagree.
+	if len(m.all) > 0 {
+		m.applyFilter()
+	}
 }
 
 // Refresh reloads the model catalog. Implements the root model's refresher
@@ -290,8 +326,10 @@ func (m Model) updateDetail(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // applyFilter rebuilds the table rows from m.all, keeping only the models
 // matching the active filter. Pricing columns now come from the enriched
 // catalog (per-1M tokens, USD) — the previous "$/1K" header was a lie that
-// formatted the per-1M value with %.4f.
+// formatted the per-1M value with %.4f. In compact mode (width < compactWidth)
+// the CAPS column is omitted so the row arity matches the compact column set.
 func (m *Model) applyFilter() {
+	compact := m.width > 0 && m.width < compactWidth
 	rows := make([]table.Row, 0, len(m.all))
 	for _, md := range m.all {
 		if !m.matches(md) {
@@ -302,13 +340,22 @@ func (m *Model) applyFilter() {
 			in = formatPrice(md.Pricing.Input)
 			out = formatPrice(md.Pricing.Output)
 		}
-		rows = append(rows, table.Row{
-			md.ID,
-			formatContext(md.ContextSize),
-			in,
-			out,
-			formatCaps(md.Capabilities),
-		})
+		if compact {
+			rows = append(rows, table.Row{
+				md.ID,
+				formatContext(md.ContextSize),
+				in,
+				out,
+			})
+		} else {
+			rows = append(rows, table.Row{
+				md.ID,
+				formatContext(md.ContextSize),
+				in,
+				out,
+				formatCaps(md.Capabilities),
+			})
+		}
 	}
 	m.table.SetRows(rows)
 }

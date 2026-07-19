@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"fmt"
+
 	"github.com/rivo/uniseg"
 
 	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
@@ -44,9 +46,20 @@ func pillWidth(name string) int {
 	return w + 4 // 2 left + 2 right padding
 }
 
+// compactTabWidth is the terminal width below which the tab bar switches to a
+// compact numbered form ("1:Chat 2:Models …") so it still fits one line
+// without truncating the panel border or wrapping. The numbers are a visual
+// aid only — tab/shift+tab still cycle (numeric 1-7 switching would clash
+// with the Models screen's 1-4 filter keys, so it's intentionally not bound).
+const compactTabWidth = 78
+
 // renderTabBar renders the horizontal tab strip with the active tab
-// highlighted.
-func renderTabBar(active tab) string {
+// highlighted. Below compactTabWidth it switches to a compact numbered form
+// so the bar fits narrow terminals without wrapping over the panel.
+func renderTabBar(active tab, width int) string {
+	if width > 0 && width < compactTabWidth {
+		return renderTabBarCompact(active)
+	}
 	var bar string
 	for i, name := range tabNames {
 		if tab(i) == active {
@@ -54,6 +67,23 @@ func renderTabBar(active tab) string {
 		} else {
 			bar += uistyle.PillInactive.Render(name)
 		}
+	}
+	return bar
+}
+
+// renderTabBarCompact renders tabs as "N:Name" segments with a single space
+// between, highlighting the active one with the accent color. Narrower than
+// the padded pill form so it fits on ~60-col terminals.
+func renderTabBarCompact(active tab) string {
+	var bar string
+	for i, name := range tabNames {
+		seg := fmt.Sprintf("%d:%s", i+1, name)
+		if tab(i) == active {
+			seg = uistyle.Header.Render(seg) // accent + bold, no padding
+		} else {
+			seg = uistyle.PillInactive.Render(seg)
+		}
+		bar += seg + " "
 	}
 	return bar
 }

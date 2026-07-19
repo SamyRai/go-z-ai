@@ -27,6 +27,10 @@ const (
 	// twoColumnMinWidth is the terminal width below which the quota panel
 	// and the heatmap panel stack vertically instead of side by side.
 	twoColumnMinWidth = 100
+	// compactWidth is the width below which the heatmap panel collapses its
+	// per-series ramp rows into a one-line-per-section summary, since the
+	// ramps need ~45 cols each and wrap badly below this.
+	compactWidth = 70
 )
 
 type tickMsg time.Time
@@ -211,20 +215,45 @@ func (m Model) renderHeatmapPanel() string {
 	hasModels := m.models != nil && len(m.models.Data.ModelDataList) > 0
 	hasTools := m.tools != nil && len(m.tools.Data.ToolDataList) > 0
 
+	// Compact mode on narrow terminals: drop the per-series ramp rows (which
+	// need ~45 cols each and wrap badly below ~70) and show one summary line
+	// per section with totals only. The full ramp view returns above the
+	// threshold.
+	compact := m.width > 0 && m.width < compactWidth
+
 	if hasModels {
 		body += uistyle.SectionTitle.Render("Model token usage (last 14d)") + "\n"
-		for _, series := range m.models.Data.ModelDataList {
-			body += fmt.Sprintf("  %-20s %s  %s tokens\n", series.ModelName, renderHeatmapRow(series.TokensUsage), usageview.FormatCount(series.TotalTokens))
+		if compact {
+			body += fmt.Sprintf("  %s models · %s calls · %s tokens\n",
+				usageview.FormatCount(int64(len(m.models.Data.ModelDataList))),
+				usageview.FormatCount(m.models.Data.TotalUsage.TotalModelCallCount),
+				usageview.FormatCount(m.models.Data.TotalUsage.TotalTokensUsage))
+		} else {
+			for _, series := range m.models.Data.ModelDataList {
+				body += fmt.Sprintf("  %-20s %s  %s tokens\n", series.ModelName, renderHeatmapRow(series.TokensUsage), usageview.FormatCount(series.TotalTokens))
+			}
+			body += fmt.Sprintf("  Total: %s calls, %s tokens\n\n",
+				usageview.FormatCount(m.models.Data.TotalUsage.TotalModelCallCount),
+				usageview.FormatCount(m.models.Data.TotalUsage.TotalTokensUsage))
 		}
-		body += fmt.Sprintf("  Total: %s calls, %s tokens\n\n",
-			usageview.FormatCount(m.models.Data.TotalUsage.TotalModelCallCount),
-			usageview.FormatCount(m.models.Data.TotalUsage.TotalTokensUsage))
 	}
 
 	if hasTools {
 		body += uistyle.SectionTitle.Render("Tool usage (last 14d)") + "\n"
-		for _, series := range m.tools.Data.ToolDataList {
-			body += fmt.Sprintf("  %-20s %s  %s calls\n", series.ToolName, renderHeatmapRow(series.UsageCount), usageview.FormatCount(series.TotalUsageCount))
+		if compact {
+			// Sum the per-series counts (the tool total struct has no single
+			// aggregate field, only per-tool-type counts).
+			var total int64
+			for _, series := range m.tools.Data.ToolDataList {
+				total += series.TotalUsageCount
+			}
+			body += fmt.Sprintf("  %s tools · %s total calls\n",
+				usageview.FormatCount(int64(len(m.tools.Data.ToolDataList))),
+				usageview.FormatCount(total))
+		} else {
+			for _, series := range m.tools.Data.ToolDataList {
+				body += fmt.Sprintf("  %-20s %s  %s calls\n", series.ToolName, renderHeatmapRow(series.UsageCount), usageview.FormatCount(series.TotalUsageCount))
+			}
 		}
 	}
 

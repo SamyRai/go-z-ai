@@ -35,6 +35,13 @@ const (
 	// header occupies row 0; the tab bar is right below it. Used by the
 	// mouse-click handler to hit-test tab pills.
 	tabBarRow = 1
+	// minWidth/minHeight are the smallest terminal at which the full chrome
+	// (header + tabs + panel + status + help) renders readably. Below this,
+	// View short-circuits to a centered "please resize" message instead of a
+	// cramped, broken layout. The screens themselves still receive resize
+	// msgs and floor their own dimensions, so we never crash.
+	minWidth  = 60
+	minHeight = 20
 )
 
 // toastTTL is how long a toast stays visible before auto-dismissing. A newer
@@ -368,6 +375,19 @@ func (m *rootModel) ensureInit() tea.Cmd {
 }
 
 func (m *rootModel) View() tea.View {
+	// Min-size guard: below 60x20 the chrome would overlap itself, so render
+	// only a centered resize hint. WindowSizeMsg still flows to every screen
+	// (they floor their own dims), so growing back past the threshold resumes
+	// a correctly-laid-out app with no extra work.
+	if m.width > 0 && m.height > 0 && (m.width < minWidth || m.height < minHeight) {
+		msg := fmt.Sprintf("Terminal too small (%dx%d).\nResize to at least %dx%d to use the TUI.",
+			m.width, m.height, minWidth, minHeight)
+		centered := lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, msg)
+		v := tea.NewView(centered)
+		v.AltScreen = true
+		return v
+	}
+
 	innerW, innerH := m.innerSize()
 	body := m.screens[m.active].View()
 	panel := uistyle.Panel.Width(innerW).Height(innerH).Render(body.Content)
@@ -396,7 +416,7 @@ func (m *rootModel) View() tea.View {
 
 	content := lipgloss.JoinVertical(lipgloss.Left,
 		header,
-		renderTabBar(m.active),
+		renderTabBar(m.active, m.width),
 		panel,
 		status,
 		help,
