@@ -8,16 +8,16 @@
   <h1>{{ .Site.Name }}</h1>
   <p class="lead">{{ .Site.Tagline }}</p>
   <div class="ctas">
-    <a class="btn btn-primary" href="{{ langBase .Page.Lang }}getting-started.html">Get started →</a>
-    <a class="btn btn-secondary" href="{{ .Site.RepoURL }}">Source on GitHub</a>
+    <a class="btn btn-primary" href="{{ langBase .Page.Lang }}getting-started.html">Get started <span aria-hidden="true">→</span></a>
+    <a class="btn btn-secondary" href="{{ .Site.RepoURL }}" rel="external">Source on GitHub</a>
     <a class="btn btn-secondary" href="{{ langBase .Page.Lang }}cli-reference.html">CLI reference</a>
   </div>
-  <div class="badges" aria-label="project badges">
-    <img src="https://github.com/{{ .Site.Owner }}/{{ .Site.Repo }}/actions/workflows/ci.yml/badge.svg" alt="CI">
-    <img src="https://pkg.go.dev/badge/{{ .Site.Module }}.svg" alt="Go Reference">
-    <img src="https://img.shields.io/ossf-scorecard/github.com/{{ .Site.Owner }}/{{ .Site.Repo }}?label=openssf%20scorecard" alt="OpenSSF Scorecard">
-    <img src="https://img.shields.io/github/v/release/{{ .Site.Owner }}/{{ .Site.Repo }}" alt="Latest release">
-    <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License">
+  <div class="badges" role="list" aria-label="Project status badges">
+    <img role="listitem" loading="lazy" decoding="async" width="auto" height="20" src="https://github.com/{{ .Site.Owner }}/{{ .Site.Repo }}/actions/workflows/ci.yml/badge.svg" alt="CI build status">
+    <img role="listitem" loading="lazy" decoding="async" width="auto" height="20" src="https://pkg.go.dev/badge/{{ .Site.Module }}.svg" alt="Go Reference on pkg.go.dev">
+    <img role="listitem" loading="lazy" decoding="async" width="auto" height="20" src="https://img.shields.io/ossf-scorecard/github.com/{{ .Site.Owner }}/{{ .Site.Repo }}?label=openssf%20scorecard" alt="OpenSSF Scorecard">
+    <img role="listitem" loading="lazy" decoding="async" width="auto" height="20" src="https://img.shields.io/github/v/release/{{ .Site.Owner }}/{{ .Site.Repo }}" alt="Latest release">
+    <img role="listitem" loading="lazy" decoding="async" width="auto" height="20" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License: Apache 2.0">
   </div>
 </section>
 
@@ -84,10 +84,10 @@ func main() {
     <li><strong>Document understanding</strong> — layout OCR, handwriting OCR, document parser for RAG</li>
     <li><strong>Retrieval</strong> — embeddings, rerank, web search/reader/tokenizer tools</li>
     <li><strong>Agents, moderations, batch, files</strong></li>
-    <li><strong>GLM Coding Plan</strong> — quota/usage, multi-account, wiring Claude Code/Cursor/...</li>
+    <li><strong>GLM Coding Plan</strong> — quota/usage, multi-account, wiring Claude Code/Cursor/…</li>
     <li><strong>Full-screen TUI</strong> — <code>zai-client tui</code></li>
   </ul>
-  <p>Full surface: <a href="{{ langBase .Page.Lang }}cli-reference.html">CLI reference</a> · <a href="{{ langBase .Page.Lang }}library-guide.html">Library Guide</a></p>
+  <p>Full surface: <a href="{{ langBase .Page.Lang }}cli-reference.html">CLI reference</a> · <a href="{{ langBase .Page.Lang }}library-guide.html">Library guide</a></p>
 </section>
 
 {{- if .Data }}
@@ -98,12 +98,12 @@ func main() {
   <ul class="timeline">
     {{- range .Data.RecentReleases }}
     <li>
-      <h3><a href="{{ .HTMLURL }}">{{ .TagName }}</a></h3>
-      <p style="color: var(--subtext); font-size: 0.85rem;">{{ .PublishedAt.Format "2006-01-02" }} · {{ len .Assets }} assets{{ if .Prerelease }} · prerelease{{ end }}</p>
+      <h3><a href="{{ .HTMLURL }}" rel="external">{{ .TagName }}</a></h3>
+      <p style="color: var(--color-text-faint); font-size: var(--text-xs);">{{ .PublishedAt.Format "2006-01-02" }} · {{ len .Assets }} assets{{ if .Prerelease }} · prerelease{{ end }}</p>
     </li>
     {{- end }}
   </ul>
-  <p><a href="{{ .Site.RepoURL }}/releases">All releases →</a></p>
+  <p><a href="{{ .Site.RepoURL }}/releases" rel="external">All releases →</a></p>
 </section>
 {{- end }}
 

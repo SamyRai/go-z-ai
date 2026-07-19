@@ -6,9 +6,9 @@
 {{ define "content" }}
 <article class="prose">
 {{- if .Page.TranslationPending }}
-<div class="banner-pending">
-  ⚠️ This page is a placeholder pending translation. The English version is the source of truth — see <a href="{{ .Page.EnglishEquivHref | default "/en/" }}">/en/</a>.
-</div>
+<aside class="banner-pending" role="note">
+  <strong>Translation pending.</strong> This page is a placeholder. The English version is the source of truth — see <a href="{{ .Page.EnglishEquivHref | default "/en/" }}">the English docs</a>.
+</aside>
 {{- end }}
 {{ .Page.Body | safeHTML }}
 </article>

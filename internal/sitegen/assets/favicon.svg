@@ -4,8 +4,14 @@
       <stop offset="0%" stop-color="#cba6f7"/>
       <stop offset="100%" stop-color="#74c7ec"/>
     </linearGradient>
+    <style>
+      /* The "Z" glyph adapts to the user's theme — dark glyph on light mode,
+         light glyph on dark mode — by reacting to prefers-color-scheme. */
+      :root { color: #11111b; }
+      @media (prefers-color-scheme: dark) { :root { color: #cdd6f4; } }
+    </style>
   </defs>
   <rect width="64" height="64" rx="14" fill="url(#g)"/>
-  <path d="M20 22 L44 22 L24 42 L44 42" stroke="#11111b" stroke-width="5" fill="none"
+  <path d="M20 22 L44 22 L24 42 L44 42" stroke="currentColor" stroke-width="5" fill="none"
         stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

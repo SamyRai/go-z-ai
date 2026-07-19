@@ -7,7 +7,10 @@
 <html lang="{{ .Page.Lang }}">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="{{ if eq .Page.Lang "" }}#1e1e2e{{ end }}" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
   <title>{{ if .Page.Title }}{{ .Page.Title }} · {{ end }}{{ .Site.Name }}</title>
   <meta name="description" content="{{ .Page.Description | default .Site.Tagline }}">
   <link rel="canonical" href="{{ .Page.Canonical }}">
@@ -17,44 +20,62 @@
   {{- if .Page.HasXDefault }}
   <link rel="alternate" hreflang="x-default" href="{{ .Page.XDefault }}">
   {{- end }}
-  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
   <link rel="stylesheet" href="/assets/style.css">
   {{- if .Page.OpenGraph }}
   <meta property="og:title" content="{{ .Page.Title }}">
   <meta property="og:description" content="{{ .Page.Description | default .Site.Tagline }}">
   <meta property="og:type" content="{{ .Page.OGType | default "website" }}">
   <meta property="og:locale" content="{{ .Page.Lang }}">
+  <meta name="twitter:card" content="summary">
   {{- end }}
+  {{- /* Prevent FOUC on theme load: read persisted theme before paint. */}}
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
-<header class="site">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site" role="banner">
   <div class="container">
-    <a class="brand" href="{{ langBase .Page.Lang }}">
+    <a class="brand" href="{{ langBase .Page.Lang }}" aria-label="{{ .Site.Name }} home">
       <span class="brand-mark" aria-hidden="true">Z</span>
       <span>{{ .Site.Name }}</span>
     </a>
-    <nav class="site" aria-label="primary">
-      <a href="{{ langBase .Page.Lang }}" {{ if eq .Page.ActiveNav "home" }}class="active"{{ end }}>Home</a>
-      <a href="{{ langBase .Page.Lang }}getting-started.html" {{ if eq .Page.ActiveNav "docs" }}class="active"{{ end }}>Docs</a>
+    <nav class="site" aria-label="Primary">
+      <a href="{{ langBase .Page.Lang }}" {{ if eq .Page.ActiveNav "home" }}aria-current="page"{{ end }}>Home</a>
+      <a href="{{ langBase .Page.Lang }}getting-started.html" {{ if eq .Page.ActiveNav "docs" }}aria-current="page"{{ end }}>Docs</a>
       <a href="{{ langBase .Page.Lang }}cli-reference.html">CLI</a>
       <a href="{{ langBase .Page.Lang }}library-guide.html">Library</a>
       <a href="/CHANGELOG.html">Changelog</a>
-      <a href="{{ .Site.RepoURL }}">GitHub ↗</a>
+      <a href="{{ .Site.RepoURL }}" rel="external">GitHub ↗</a>
       {{- template "langswitch" . }}
-      <button class="theme-toggle" type="button" aria-label="Toggle theme" title="Toggle theme" onclick="document.documentElement.dataset.theme=(document.documentElement.dataset.theme==='light'?'dark':'light')">◐</button>
+      <button class="theme-toggle" type="button" aria-label="Toggle dark mode" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
     </nav>
   </div>
 </header>
 
-<main class="container">
+<main class="container" id="main" tabindex="-1">
 {{- block "content" . }}{{- end }}
 </main>
 
-<footer class="site">
+<footer class="site" role="contentinfo">
   <div class="container">
     <div>
       <strong>{{ .Site.Name }}</strong> — {{ .Site.Tagline }}<br>
-      <a href="{{ .Site.RepoURL }}">GitHub</a> ·
+      <a href="{{ .Site.RepoURL }}" rel="external">GitHub</a> ·
       <a href="{{ .Site.RepoURL }}/blob/main/LICENSE">Apache 2.0</a> ·
       Built from commit {{ .Site.Commit | default "main" }}
     </div>
@@ -66,16 +87,95 @@
     </div>
   </div>
 </footer>
+
+{{- /* Theme toggle + language switcher interactions. Inline at the end of
+     * body so it doesn't block paint; vanilla JS, no dependencies. */}}
+<script>
+  (function() {
+    // Theme toggle — flip data-theme and persist to localStorage. Honours
+    // the OS preference as the default if no manual choice is stored.
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Switch to light mode" : "Switch to dark mode");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        // If currently explicit-dark OR (auto and prefers dark) → switching to light.
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        // Simpler: toggle between explicit light and explicit dark.
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Switch to dark mode" : "Switch to light mode");
+      });
+    }
+    // Language switcher — close on outside click and on Escape.
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          // Close any other open switches.
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    // Close on menu-item click — expected behavior for a navigation picker.
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
 </body>
 </html>
 
 {{- define "langswitch" -}}
-<details class="lang-switch" {{ if .Page.LangSwitchOpen }}open{{ end }}>
-  <summary aria-haspopup="true">🌐 {{ index (dict "en" "English" "ru" "Русский" "zh" "简体中文" "de" "Deutsch" "tt" "Татарча" "tr" "Türkçe") .Page.Lang | default .Page.Lang }}</summary>
-  <div class="menu" role="menu">
+<details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>{{ index (dict "en" "English" "ru" "Русский" "zh" "简体中文" "de" "Deutsch" "tt" "Татарча" "tr" "Türkçe") .Page.Lang | default .Page.Lang }}</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
     {{- range .Page.AvailableLocales }}
-    <a role="menuitem" href="{{ .Href }}" {{ if eq .Lang $.Page.Lang }}class="current" aria-current="true"{{ end }}>{{ .Label }}</a>
+    <a role="menuitem" href="{{ .Href }}" {{ if eq .Lang $.Page.Lang }}aria-current="true"{{ end }}>{{ .Label }}</a>
     {{- end }}
   </div>
 </details>
+<script>
+  // Mirror the <details> open state to aria-expanded on the summary.
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
 {{- end -}}
