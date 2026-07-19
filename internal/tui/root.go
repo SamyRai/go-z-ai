@@ -108,6 +108,24 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, tea.Batch(cmds...)
 
+	case tea.BackgroundColorMsg:
+		// Re-resolve the whole palette against the terminal's actual
+		// background (light/dark) and rebuild every shared style, so the
+		// next frame uses the new theme everywhere at once. Forward to every
+		// screen too, so screens that cache theme-dependent state (e.g.
+		// chat's glamour renderer) can rebuild.
+		uistyle.SetDark(msg.IsDark())
+		var cmds []tea.Cmd
+		for i, s := range m.screens {
+			if s == nil {
+				continue
+			}
+			ns, cmd := s.Update(msg)
+			m.screens[i] = ns
+			cmds = append(cmds, cmd)
+		}
+		return m, tea.Batch(cmds...)
+
 	case tea.KeyPressMsg:
 		activeStreaming := false
 		if sc, ok := m.screens[m.active].(streamer); ok {
