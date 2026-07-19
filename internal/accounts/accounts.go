@@ -71,6 +71,9 @@ func ConfigPath() (string, error) {
 		base = filepath.Join(home, ".config")
 	}
 
+	// Directory is intentionally "zai-client" (not "go-z-ai"): the binary was
+	// renamed, but existing installs keep their accounts.json on upgrade. Do
+	// not "fix" this without a migration path.
 	return filepath.Join(base, "zai-client", "accounts.json"), nil
 }
 

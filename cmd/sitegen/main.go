@@ -32,26 +32,26 @@ import (
 
 func main() {
 	var (
-		out      = flag.String("out", "site", "output directory")
-		owner    = flag.String("owner", "SamyRai", "GitHub owner")
-		repo     = flag.String("repo", "go-z-ai", "GitHub repo name")
-		module   = flag.String("module", "github.com/SamyRai/go-z-ai", "Go module path")
-		name     = flag.String("name", "go-z-ai", "project display name")
-		tagline  = flag.String("tagline", "A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API", "one-line tagline")
-		rootDir  = flag.String("root", ".", "repo root (for reading markdown sources)")
-		offline  = flag.Bool("offline", false, "skip GitHub API calls (no live data)")
+		out     = flag.String("out", "site", "output directory")
+		owner   = flag.String("owner", "SamyRai", "GitHub owner")
+		repo    = flag.String("repo", "go-z-ai", "GitHub repo name")
+		module  = flag.String("module", "github.com/SamyRai/go-z-ai", "Go module path")
+		name    = flag.String("name", "go-z-ai", "project display name")
+		tagline = flag.String("tagline", "A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API", "one-line tagline")
+		rootDir = flag.String("root", ".", "repo root (for reading markdown sources)")
+		offline = flag.Bool("offline", false, "skip GitHub API calls (no live data)")
 	)
 	flag.Parse()
 
 	if err := sitegen.Run(context.Background(), sitegen.Options{
-		OutDir:       *out,
-		Owner:        *owner,
-		Repo:         *repo,
-		Module:       *module,
-		Name:         *name,
-		Tagline:      *tagline,
-		RootDir:      *rootDir,
-		SkipNetwork:  *offline,
+		OutDir:      *out,
+		Owner:       *owner,
+		Repo:        *repo,
+		Module:      *module,
+		Name:        *name,
+		Tagline:     *tagline,
+		RootDir:     *rootDir,
+		SkipNetwork: *offline,
 	}); err != nil {
 		log.Fatalf("sitegen: %v", err)
 	}
