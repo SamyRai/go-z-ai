@@ -72,6 +72,9 @@ type Model struct {
 func New(store *coding.Store) Model {
 	l := list.New(nil, list.NewDefaultDelegate(), 0, 0)
 	l.SetShowTitle(false)
+	// Enable the list's built-in fuzzy filter (sahilm/fuzzy, already an
+	// indirect dep): press '/' to start typing a query, 'esc' to clear.
+	l.SetFilteringEnabled(true)
 
 	return Model{store: store, list: l}
 }
@@ -285,5 +288,6 @@ func (m Model) ShortHelp() []key.Binding {
 		key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "unload")),
 		key.NewBinding(key.WithKeys("m"), key.WithHelp("m", "vision mcp")),
 		key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "refresh")),
+		key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "filter")),
 	}
 }

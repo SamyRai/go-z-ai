@@ -24,6 +24,7 @@ import (
 
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/table"
+	"charm.land/bubbles/v2/textinput"
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -71,12 +72,17 @@ type Model struct {
 	selfTab int // this screen's tab index, used to route the fetch result back
 	table   table.Model
 	view    viewport.Model // scrollable container for the detail view
+	search  textinput.Model
 	filter  filter
 	mode    mode
-	all     []client.ModelDetails
-	width   int
-	height  int
-	loading bool
+	// searching is true while the user is typing into the inline search box
+	// (toggled by '/'). While true, keypresses go to the search input; enter
+	// applies the filter and exits search, esc clears it.
+	searching bool
+	all       []client.ModelDetails
+	width     int
+	height    int
+	loading   bool
 }
 
 // New builds the Models screen. c must be non-nil. selfTab is this screen's tab
@@ -93,11 +99,14 @@ func New(c *client.Client, selfTab int) Model {
 		}),
 		table.WithFocused(true),
 	)
+	si := textinput.New()
+	si.Placeholder = "filter by name or capability…"
 	return Model{
 		client:  c,
 		selfTab: selfTab,
 		table:   t,
 		view:    viewport.New(),
+		search:  si,
 	}
 }
 
@@ -127,6 +136,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
+		m.search.SetWidth(msg.Width)
 		m.resize()
 		return m, nil
 
@@ -144,6 +154,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// the viewport (so pgup/pgdn scroll the detail).
 		if m.mode == modeDetail {
 			return m.updateDetail(msg)
+		}
+		// While the inline search box is open, it owns the keyboard. enter
+		// applies the filter and closes the box; esc clears it; everything
+		// else (including backspace, letters) edits the query, which
+		// re-applies the filter live on each keystroke.
+		if m.searching {
+			return m.updateSearch(msg)
 		}
 		return m.updateTable(msg)
 	}
@@ -201,6 +218,13 @@ func (m Model) updateTable(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.filter = filterFree
 		m.applyFilter()
 		return m, nil
+	case "/":
+		// Open the inline free-text search. The table has no built-in filter
+		// (unlike bubbles/list), so we layer one on top: the search input
+		// narrows rows by substring over model ID and capability names.
+		m.searching = true
+		m.search.Focus()
+		return m, nil
 	case "enter":
 		// Open the full-screen detail view for the highlighted row. Works on
 		// every terminal width — essential when the preview pane is hidden.
@@ -217,6 +241,28 @@ func (m Model) updateTable(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// no extra message to emit.
 	var cmd tea.Cmd
 	m.table, cmd = m.table.Update(msg)
+	return m, cmd
+}
+
+// updateSearch handles keys while the inline search box is open. enter commits
+// the query (closes the box, keeps the filter), esc clears it, every other key
+// edits the query — which re-applies the filter live.
+func (m Model) updateSearch(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "enter":
+		m.searching = false
+		m.search.Blur()
+		return m, nil
+	case "esc":
+		m.searching = false
+		m.search.Blur()
+		m.search.SetValue("")
+		m.applyFilter()
+		return m, nil
+	}
+	var cmd tea.Cmd
+	m.search, cmd = m.search.Update(msg)
+	m.applyFilter()
 	return m, cmd
 }
 
@@ -260,6 +306,18 @@ func (m *Model) applyFilter() {
 }
 
 func (m Model) matches(md client.ModelDetails) bool {
+	// The free-text search narrows by case-insensitive substring over the
+	// model ID and its capability names (so "vision" or "glm" both work).
+	// Empty query matches everything.
+	if q := strings.ToLower(m.search.Value()); q != "" {
+		hay := strings.ToLower(md.ID)
+		for _, c := range md.Capabilities {
+			hay += " " + strings.ToLower(c)
+		}
+		if !strings.Contains(hay, q) {
+			return false
+		}
+	}
 	switch m.filter {
 	case filterText:
 		// "Text" tab shows chat-capable models that are NOT vision models —
@@ -300,6 +358,13 @@ func (m Model) View() tea.View {
 	}
 
 	pills := uistyle.RenderPills(int(m.filter), filterNames[:])
+	// The inline search box sits between the filter pills and the table. It
+	// only renders while the user is actively editing the query (toggled by
+	// '/'), so the table gets a full row back when the filter is committed.
+	searchBox := ""
+	if m.searching {
+		searchBox = m.search.View()
+	}
 	var body string
 	if m.width >= twoColumnMinWidth {
 		// Wide: table on the left, live preview pane on the right.
@@ -321,11 +386,19 @@ func (m Model) View() tea.View {
 		}
 		tableCol := lipgloss.NewStyle().Width(m.width - previewWidth - 2).Render(tableArea)
 		previewCol := lipgloss.NewStyle().Width(previewWidth).Render(preview)
-		body = pills + "\n" + lipgloss.JoinHorizontal(lipgloss.Top, tableCol, "  ", previewCol)
+		body = pills + "\n"
+		if searchBox != "" {
+			body += searchBox + "\n"
+		}
+		body += lipgloss.JoinHorizontal(lipgloss.Top, tableCol, "  ", previewCol)
 	} else {
 		// Narrow: table only; Enter opens the full detail.
 		hint := uistyle.Subtle.Render("press enter for full detail")
-		body = pills + "\n" + m.table.View() + "\n" + hint
+		body = pills + "\n"
+		if searchBox != "" {
+			body += searchBox + "\n"
+		}
+		body += m.table.View() + "\n" + hint
 	}
 
 	if m.loading && len(m.all) > 0 {
@@ -343,6 +416,7 @@ func (m Model) ShortHelp() []key.Binding {
 	}
 	return []key.Binding{
 		key.NewBinding(key.WithKeys("1", "2", "3", "4"), key.WithHelp("1-4", "filter")),
+		key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "search")),
 		key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "detail")),
 		key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "refresh")),
 	}
