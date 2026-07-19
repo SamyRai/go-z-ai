@@ -18,7 +18,10 @@
 main.go               A five-line entrypoint: package main → internal/cli.Execute()
 internal/cli/         CLI commands (package cli), one file per command group:
                       chat.go, accounts_cli.go, coding_cli.go, ...
-pkg/client/           The Go library — one file per API service, no CLI/TUI dependency
+pkg/client/           The Go library — one file per API service, no CLI/TUI dependency,
+                      stdlib-only (no third-party imports)
+pkg/observe/          OpenTelemetry Hook implementations (depends on go.opentelemetry.io/otel);
+                      separate package so pkg/client stays stdlib-only
 internal/accounts/    Multi-account credential store (~/.config/go-z-ai/accounts.json)
 internal/coding/      GLM Coding Plan credential store + per-tool config writers
 internal/usageview/   Pure presentation helpers (time windows, heat maps, formatting) —
@@ -28,11 +31,16 @@ internal/fileinput/   FileOrURL: a URL passes through, a local path is base64-en
                       shared by `ocr parse` and the TUI media tab
 ```
 
-`pkg/client` has zero dependencies on anything CLI- or TUI-specific — it's
-designed to be imported standalone (see the [Library Guide](library-guide.md)),
-and is the **only** public package. Everything under `internal/` is
-implementation the compiler forbids outside code from importing, so the CLI/TUI
-layers can be refactored freely. The CLI and TUI are both thin callers of
+`pkg/client` is the core public package and is deliberately **stdlib-only** —
+zero third-party imports — so anyone can depend on the client without dragging
+the OTel SDK, MCP SDK, or other heavy observability/integration deps. The
+observability seam is a stdlib-only `Hook` interface (see
+[Library Guide — Observability hooks](library-guide.md#observability-hooks));
+concrete implementations live in `pkg/observe` (OpenTelemetry) and future
+packages (`pkg/mcp`, etc.), each with its own dependency set so users only pay
+for what they import. Everything under `internal/` is implementation the
+compiler forbids outside code from importing, so the CLI/TUI layers can be
+refactored freely. The CLI and TUI are both thin callers of
 `pkg/client`. `go install github.com/SamyRai/go-z-ai@latest` still builds the
 root `main.go` into the `go-z-ai` binary.
 

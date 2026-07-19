@@ -15,8 +15,17 @@ grouped by date; from `v0.1.0` on, sections are tagged.
   `Service`/`Method`/`Endpoint`/`Model`/`Attempt`; `ResponseMeta` adds
   `StatusCode`/`Duration`/`Usage`. Services stamp `Service`/`Model` into the
   context via the public `WithService`/`WithModel` helpers; the facade reads
-  them back when building metadata. Concrete OTel/Langfuse implementations
-  land in `pkg/observe` in a follow-up.
+  them back when building metadata.
+- **`pkg/observe` package** — concrete OpenTelemetry hook (`OTelHook`)
+  emitting GenAI semantic-convention spans and metrics: one span per request
+  attempt (retries produce N child spans), gen_ai.system=z.ai, request/response
+  model, HTTP status, token-usage counters (input/output, by model),
+  request-duration histogram, request-count by status. First public package
+  with third-party deps (go.opentelemetry.io/otel v1.40.0); pkg/client stays
+  stdlib-only. Construct via `observe.NewOTelHook(serviceName)` (uses global
+  providers) or `NewOTelHookWithProvider(...)` for isolated/test setups.
+- **`examples/observability`** — end-to-end demo wiring OTelHook onto a
+  client and streaming a chat completion with stdout span export.
 - **Iterator-based streaming** (`pkg/client/stream.go`):
   `ChatService.Stream(ctx, req) iter.Seq2[StreamChunk, error]` and
   `AnthropicService.Stream(ctx, req) iter.Seq2[AnthropicStreamEvent, error]`,
