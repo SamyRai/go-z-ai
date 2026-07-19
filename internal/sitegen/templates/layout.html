@@ -1,0 +1,81 @@
+{{- /* layout.html — base skeleton used by every page.
+     * Page templates embed this via {{define "content"}}…{{end}}.
+     * Required Pipeline fields: Page (with Title, Lang, Hreflang, Canonical,
+     * ActiveNav, CurrentLocale, AvailableLocales).
+     */ -}}
+<!doctype html>
+<html lang="{{ .Page.Lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ if .Page.Title }}{{ .Page.Title }} · {{ end }}{{ .Site.Name }}</title>
+  <meta name="description" content="{{ .Page.Description | default .Site.Tagline }}">
+  <link rel="canonical" href="{{ .Page.Canonical }}">
+  {{- range .Page.Hreflang }}
+  <link rel="alternate" hreflang="{{ .Lang }}" href="{{ .Href }}">
+  {{- end }}
+  {{- if .Page.HasXDefault }}
+  <link rel="alternate" hreflang="x-default" href="{{ .Page.XDefault }}">
+  {{- end }}
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/style.css">
+  {{- if .Page.OpenGraph }}
+  <meta property="og:title" content="{{ .Page.Title }}">
+  <meta property="og:description" content="{{ .Page.Description | default .Site.Tagline }}">
+  <meta property="og:type" content="{{ .Page.OGType | default "website" }}">
+  <meta property="og:locale" content="{{ .Page.Lang }}">
+  {{- end }}
+</head>
+<body>
+<header class="site">
+  <div class="container">
+    <a class="brand" href="{{ langBase .Page.Lang }}">
+      <span class="brand-mark" aria-hidden="true">Z</span>
+      <span>{{ .Site.Name }}</span>
+    </a>
+    <nav class="site" aria-label="primary">
+      <a href="{{ langBase .Page.Lang }}" {{ if eq .Page.ActiveNav "home" }}class="active"{{ end }}>Home</a>
+      <a href="{{ langBase .Page.Lang }}getting-started.html" {{ if eq .Page.ActiveNav "docs" }}class="active"{{ end }}>Docs</a>
+      <a href="{{ langBase .Page.Lang }}cli-reference.html">CLI</a>
+      <a href="{{ langBase .Page.Lang }}library-guide.html">Library</a>
+      <a href="/CHANGELOG.html">Changelog</a>
+      <a href="{{ .Site.RepoURL }}">GitHub ↗</a>
+      {{- template "langswitch" . }}
+      <button class="theme-toggle" type="button" aria-label="Toggle theme" title="Toggle theme" onclick="document.documentElement.dataset.theme=(document.documentElement.dataset.theme==='light'?'dark':'light')">◐</button>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+{{- block "content" . }}{{- end }}
+</main>
+
+<footer class="site">
+  <div class="container">
+    <div>
+      <strong>{{ .Site.Name }}</strong> — {{ .Site.Tagline }}<br>
+      <a href="{{ .Site.RepoURL }}">GitHub</a> ·
+      <a href="{{ .Site.RepoURL }}/blob/main/LICENSE">Apache 2.0</a> ·
+      Built from commit {{ .Site.Commit | default "main" }}
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Changelog</a> ·
+      <a href="/CONTRIBUTING.html">Contributing</a> ·
+      <a href="/SECURITY.html">Security</a> ·
+      <a href="/sitemap.xml">Sitemap</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
+
+{{- define "langswitch" -}}
+<details class="lang-switch" {{ if .Page.LangSwitchOpen }}open{{ end }}>
+  <summary aria-haspopup="true">🌐 {{ index (dict "en" "English" "ru" "Русский" "zh" "简体中文" "de" "Deutsch" "tt" "Татарча" "tr" "Türkçe") .Page.Lang | default .Page.Lang }}</summary>
+  <div class="menu" role="menu">
+    {{- range .Page.AvailableLocales }}
+    <a role="menuitem" href="{{ .Href }}" {{ if eq .Lang $.Page.Lang }}class="current" aria-current="true"{{ end }}>{{ .Label }}</a>
+    {{- end }}
+  </div>
+</details>
+{{- end -}}

@@ -1,0 +1,68 @@
+name: Pages
+
+# Renders the static site (cmd/sitegen) and deploys it to GitHub Pages.
+# Requires repo Settings → Pages → Source = "GitHub Actions".
+# Path filter keeps this from running on Go-only PRs (its own workflow, so
+# no required-check footgun).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'README*.md'
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+      - 'SECURITY.md'
+      - 'CODE_OF_CONDUCT.md'
+      - 'cmd/sitegen/**'
+      - 'internal/sitegen/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Generate site
+        run: go run ./cmd/sitegen -out site
+
+      - name: Disable Jekyll
+        run: touch site/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deploy
+        uses: actions/deploy-pages@v4

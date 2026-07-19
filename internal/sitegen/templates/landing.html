@@ -1,0 +1,131 @@
+{{- /* landing.html — the home/landing page for each locale.
+     * Embeds layout.html via the {{define "content"}} block.
+     */ -}}
+{{ template "layout.html" . }}
+
+{{ define "content" }}
+<section class="hero">
+  <h1>{{ .Site.Name }}</h1>
+  <p class="lead">{{ .Site.Tagline }}</p>
+  <div class="ctas">
+    <a class="btn btn-primary" href="{{ langBase .Page.Lang }}getting-started.html">Get started →</a>
+    <a class="btn btn-secondary" href="{{ .Site.RepoURL }}">Source on GitHub</a>
+    <a class="btn btn-secondary" href="{{ langBase .Page.Lang }}cli-reference.html">CLI reference</a>
+  </div>
+  <div class="badges" aria-label="project badges">
+    <img src="https://github.com/{{ .Site.Owner }}/{{ .Site.Repo }}/actions/workflows/ci.yml/badge.svg" alt="CI">
+    <img src="https://pkg.go.dev/badge/{{ .Site.Module }}.svg" alt="Go Reference">
+    <img src="https://img.shields.io/ossf-scorecard/github.com/{{ .Site.Owner }}/{{ .Site.Repo }}?label=openssf%20scorecard" alt="OpenSSF Scorecard">
+    <img src="https://img.shields.io/github/v/release/{{ .Site.Owner }}/{{ .Site.Repo }}" alt="Latest release">
+    <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License">
+  </div>
+</section>
+
+{{- if .Data }}
+
+<section class="block">
+  <h2>At a glance</h2>
+  <div class="stats-grid">
+    <div class="stat"><div class="num">{{ .Data.LatestVersion }}</div><div class="lbl">Latest release</div></div>
+    <div class="stat"><div class="num">{{ .Data.Repo.Stars }}</div><div class="lbl">GitHub stars</div></div>
+    <div class="stat"><div class="num">{{ .Data.Git.Contributors }}</div><div class="lbl">Contributors</div></div>
+    <div class="stat"><div class="num">{{ .Data.Git.Commits30d }}</div><div class="lbl">Commits / 30d</div></div>
+    <div class="stat"><div class="num">{{ .Data.Repo.OpenIssues }}</div><div class="lbl">Open issues</div></div>
+  </div>
+</section>
+
+{{- end }}
+
+<section class="block">
+  <h2>Install</h2>
+  <pre><code># Install the CLI
+go install {{ .Site.Module }}@latest
+
+# The binary is named go-z-ai — symlink or rename to zai-client
+ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+
+# Configure
+export ZAI_API_KEY=your_api_key_here
+
+# Use it
+zai-client chat create "Explain goroutines" --stream</code></pre>
+  <p>Or use it as a Go library — see <a href="{{ langBase .Page.Lang }}library-guide.html">the Library Guide</a>.</p>
+</section>
+
+<section class="block">
+  <h2>Quick example</h2>
+{{- /* godoccomment: the literal {{ below is escaped via a template string
+     to avoid clashing with Go template syntax. */ -}}
+  <pre><code>package main
+
+import (
+    "context"
+    "fmt"
+    "github.com/{{ .Site.Owner }}/{{ .Site.Repo }}/pkg/client"
+)
+
+func main() {
+    c, _ := client.NewClientFromEnv()
+    resp, _ := c.Chat().Create(context.Background(), client.ChatRequest{
+        Model:    "glm-5.2",
+        Messages: []client.Message{{ "{{" }}Role: "user", Content: "Hello"{{ "}}" }},
+    })
+    fmt.Println(resp.Choices[0].Message.Content)
+}</code></pre>
+</section>
+
+<section class="block">
+  <h2>What's covered</h2>
+  <p>This single binary gives you CLI, library, and TUI access to every Z.AI model surface:</p>
+  <ul>
+    <li><strong>Chat</strong> — streaming, structured output (JSON Schema), deep thinking, function/tool calling, vision</li>
+    <li><strong>Anthropic-compatible endpoint</strong> — the same surface Claude Code/Cursor hit on a GLM Coding Plan</li>
+    <li><strong>Media</strong> — image, video, audio transcription, TTS, voice cloning</li>
+    <li><strong>Document understanding</strong> — layout OCR, handwriting OCR, document parser for RAG</li>
+    <li><strong>Retrieval</strong> — embeddings, rerank, web search/reader/tokenizer tools</li>
+    <li><strong>Agents, moderations, batch, files</strong></li>
+    <li><strong>GLM Coding Plan</strong> — quota/usage, multi-account, wiring Claude Code/Cursor/...</li>
+    <li><strong>Full-screen TUI</strong> — <code>zai-client tui</code></li>
+  </ul>
+  <p>Full surface: <a href="{{ langBase .Page.Lang }}cli-reference.html">CLI reference</a> · <a href="{{ langBase .Page.Lang }}library-guide.html">Library Guide</a></p>
+</section>
+
+{{- if .Data }}
+
+{{- if .Data.RecentReleases }}
+<section class="block">
+  <h2>Recent releases</h2>
+  <ul class="timeline">
+    {{- range .Data.RecentReleases }}
+    <li>
+      <h3><a href="{{ .HTMLURL }}">{{ .TagName }}</a></h3>
+      <p style="color: var(--subtext); font-size: 0.85rem;">{{ .PublishedAt.Format "2006-01-02" }} · {{ len .Assets }} assets{{ if .Prerelease }} · prerelease{{ end }}</p>
+    </li>
+    {{- end }}
+  </ul>
+  <p><a href="{{ .Site.RepoURL }}/releases">All releases →</a></p>
+</section>
+{{- end }}
+
+{{- if .Data.Git.RecentCommits }}
+<section class="block">
+  <h2>Recent activity</h2>
+  <ul class="feed">
+    {{- range .Data.Git.RecentCommits }}
+    <li>
+      <span class="hash">{{ .Hash }}</span>
+      <span class="subj">{{ .Subject }}</span>
+      <span class="who">{{ .Author }}</span>
+    </li>
+    {{- end }}
+  </ul>
+</section>
+{{- end }}
+
+{{- end }}
+
+<section class="block">
+  <h2>How it relates to the official SDKs</h2>
+  <p>Z.AI publishes official SDKs for <strong>Python</strong>, <strong>Node</strong>, and <strong>Java</strong>. There is no official Go SDK — <code>go-z-ai</code> fills that gap, and layers a CLI, a TUI, regional gateway switching, and GLM Coding Plan multi-account management on top of the same API surface.</p>
+</section>
+{{- end -}}

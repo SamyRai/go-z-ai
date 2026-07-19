@@ -1,0 +1,15 @@
+{{- /* doc.html — generic markdown-content page.
+     * Body is already-rendered HTML; this template wraps it in the layout.
+     */ -}}
+{{ template "layout.html" . }}
+
+{{ define "content" }}
+<article class="prose">
+{{- if .Page.TranslationPending }}
+<div class="banner-pending">
+  ⚠️ This page is a placeholder pending translation. The English version is the source of truth — see <a href="{{ .Page.EnglishEquivHref | default "/en/" }}">/en/</a>.
+</div>
+{{- end }}
+{{ .Page.Body | safeHTML }}
+</article>
+{{- end -}}

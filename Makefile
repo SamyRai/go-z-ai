@@ -74,5 +74,31 @@ docs-fix: ## Auto-fix markdownlint-cli2 issues.
 ci-local: fmt-check vet lint test vuln docs-lint ## Run the full CI-equivalent check locally.
 
 .PHONY: clean
-clean: ## Remove built binary and coverage artifacts.
-	rm -f zai-client cover.out coverage.txt coverage.html
+clean: ## Remove built binary, coverage artifacts, and generated site.
+	rm -f zai-client sitegen cover.out coverage.txt coverage.html
+	rm -rf site
+
+# ─── Static site generation ────────────────────────────────────────────
+# The site generator renders the project's markdown docs + dynamic GitHub
+# data into static HTML at ./site. See docs/en/site-generation.md.
+
+SITEGEN ?= go run ./cmd/sitegen
+SITE_OUT ?= site
+
+.PHONY: site
+site: ## Generate the static HTML site into ./site.
+	$(SITEGEN) -out $(SITE_OUT)
+
+.PHONY: site-offline
+site-offline: ## Generate the site without GitHub API calls (sandbox / no network).
+	$(SITEGEN) -out $(SITE_OUT) -offline
+
+.PHONY: site-serve
+site-serve: ## Generate site and serve on http://localhost:8000.
+	$(SITEGEN) -out $(SITE_OUT)
+	@echo "Serving $(SITE_OUT) at http://localhost:8000 — Ctrl-C to stop"
+	@cd $(SITE_OUT) && python3 -m http.server 8000
+
+.PHONY: site-clean
+site-clean: ## Remove the generated site.
+	rm -rf $(SITE_OUT)

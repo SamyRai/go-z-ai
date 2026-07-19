@@ -9,6 +9,8 @@ before:
   hooks:
     - go mod tidy
     - go vet ./...
+    # Generate the static docs site so a snapshot ships with each release.
+    - go run ./cmd/sitegen -out site -offline
 
 builds:
   - id: zai-client
@@ -75,3 +77,8 @@ release:
   # release publish step fails with 404.
   discussion_category_name: Announcements
   name_template: '{{.Tag}}'
+  # Bundle the generated static docs site (offline-rendered snapshot) as a
+  # release artifact — mirrors what's deployed to GitHub Pages.
+  extra_files:
+    - glob: site/**
+      dst: docs-site-{{.Version}}
