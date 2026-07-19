@@ -23,3 +23,10 @@ type Routed struct {
 	Tab int
 	Msg any
 }
+
+// CloseOverlay tells the root model to dismiss the currently-open overlay.
+// Overlays (help, palette, model picker) emit this when the user presses esc,
+// selects an item, or otherwise finishes — they can't clear themselves off
+// the root's overlay slot without it, and they must not import the root
+// package (the root imports them).
+type CloseOverlay struct{}

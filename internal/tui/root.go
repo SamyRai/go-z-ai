@@ -58,6 +58,13 @@ type rootModel struct {
 	toastText  string
 	toastLevel toastLevel
 	toastID    int // monotonic; a toast's expiry tick only clears a matching id
+
+	// overlay, when non-nil, is a modal tea.Model rendered centered on top of
+	// the active screen (help, command palette, model picker). While open it
+	// receives keypresses first; resize/background-color msgs still reach the
+	// screens underneath so they stay correctly laid out when the overlay
+	// closes. Opening a new overlay replaces any existing one.
+	overlay tea.Model
 }
 
 func newRootModel(cfg Config) *rootModel {
@@ -106,6 +113,29 @@ func (m *rootModel) innerSize() (int, int) {
 }
 
 func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// An open overlay owns the keyboard; only resize / background-color /
+	// routed / toast msgs still flow to the screens underneath (so they stay
+	// correctly laid out and an in-flight async result still lands when the
+	// overlay closes). CloseOverlay dismisses the overlay regardless of msg.
+	if _, ok := msg.(uimsg.CloseOverlay); ok {
+		m.overlay = nil
+		return m, nil
+	}
+
+	if m.overlay != nil {
+		// WindowSizeMsg and BackgroundColorMsg must reach the screens beneath
+		// the overlay too, otherwise they'd render at the wrong size/theme
+		// the instant the overlay closes.
+		switch msg.(type) {
+		case tea.WindowSizeMsg, tea.BackgroundColorMsg, uimsg.Routed:
+			// fall through to the normal switch, then also forward to overlay
+		default:
+			ns, cmd := m.overlay.Update(msg)
+			m.overlay = ns
+			return m, cmd
+		}
+	}
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
@@ -118,6 +148,13 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			ns, cmd := s.Update(inner)
 			m.screens[i] = ns
+			cmds = append(cmds, cmd)
+		}
+		// Overlays get the inner content area too, so they resize with the
+		// terminal (and clamp their card size accordingly).
+		if m.overlay != nil {
+			ns, cmd := m.overlay.Update(inner)
+			m.overlay = ns
 			cmds = append(cmds, cmd)
 		}
 		return m, tea.Batch(cmds...)
@@ -138,6 +175,11 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.screens[i] = ns
 			cmds = append(cmds, cmd)
 		}
+		if m.overlay != nil {
+			ns, cmd := m.overlay.Update(msg)
+			m.overlay = ns
+			cmds = append(cmds, cmd)
+		}
 		return m, tea.Batch(cmds...)
 
 	case tea.KeyPressMsg:
@@ -150,9 +192,9 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// so an error/status line never lingers past the user's next action.
 		m.toastText = ""
 
-		// Tab navigation is blocked mid-stream for the same reason quit is:
-		// stream messages are only delivered to the active screen, so
-		// leaving the chat tab would stall the chunk pump.
+		// Tab navigation and global overlays are blocked mid-stream for the
+		// same reason quit is: stream messages are only delivered to the
+		// active screen, so leaving the chat tab would stall the chunk pump.
 		switch {
 		case key.Matches(msg, m.keys.Quit) && !activeStreaming:
 			return m, tea.Quit
@@ -162,6 +204,15 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keys.PrevTab) && !activeStreaming:
 			m.switchTab((m.active + tabCount - 1) % tabCount)
 			return m, m.ensureInit()
+		case key.Matches(msg, m.keys.Help) && !activeStreaming:
+			// Toggle: close if already open, else build a fresh overlay from
+			// the active screen's bindings.
+			if m.overlay != nil {
+				m.overlay = nil
+				return m, nil
+			}
+			m.overlay = m.openHelpOverlay()
+			return m, nil
 		}
 
 	case uimsg.Err:
@@ -198,6 +249,7 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *rootModel) switchTab(t tab) {
 	m.active = t
 	m.toastText = ""
+	m.overlay = nil // an overlay is bound to its opening screen; don't strand it
 }
 
 // setToast records a toast and schedules its auto-dismiss. Each toast gets a
@@ -225,6 +277,13 @@ func (m *rootModel) View() tea.View {
 	innerW, innerH := m.innerSize()
 	body := m.screens[m.active].View()
 	panel := uistyle.Panel.Width(innerW).Height(innerH).Render(body.Content)
+
+	// Composite any open overlay centered over the panel area. The overlay
+	// sees the same inner content area it was sized against in Update.
+	if m.overlay != nil {
+		ov := m.overlay.View()
+		panel = placeOverlay(innerW, innerH, ov.Content)
+	}
 
 	header := uistyle.Header.Render("go-z-ai") + " " + uistyle.StatusBar.Render(m.accountLabel())
 
@@ -265,8 +324,19 @@ func (m *rootModel) accountLabel() string {
 	return fmt.Sprintf("account: %s (%s)", acct.Name, acct.Type)
 }
 
+// openHelpOverlay builds the help overlay from the global keymap and the
+// active screen's ShortHelp bindings. Called when the user presses "?".
+func (m *rootModel) openHelpOverlay() tea.Model {
+	screenTitle := tabNames[m.active]
+	screenBindings := []key.Binding{}
+	if h, ok := m.screens[m.active].(helpProvider); ok {
+		screenBindings = h.ShortHelp()
+	}
+	return newHelpOverlay(m.keys, screenTitle, screenBindings)
+}
+
 func (m *rootModel) footerBindings() []key.Binding {
-	bindings := []key.Binding{m.keys.NextTab, m.keys.PrevTab, m.keys.Quit}
+	bindings := []key.Binding{m.keys.Help, m.keys.Palette, m.keys.NextTab, m.keys.PrevTab, m.keys.Quit}
 	if h, ok := m.screens[m.active].(helpProvider); ok {
 		bindings = append(h.ShortHelp(), bindings...)
 	}

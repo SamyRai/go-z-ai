@@ -9,6 +9,7 @@ type keyMap struct {
 	NextTab key.Binding
 	PrevTab key.Binding
 	Help    key.Binding
+	Palette key.Binding
 }
 
 func defaultKeyMap() keyMap {
@@ -30,7 +31,11 @@ func defaultKeyMap() keyMap {
 		),
 		Help: key.NewBinding(
 			key.WithKeys("?"),
-			key.WithHelp("?", "toggle help"),
+			key.WithHelp("?", "help"),
+		),
+		Palette: key.NewBinding(
+			key.WithKeys("ctrl+p"),
+			key.WithHelp("ctrl+p", "command palette"),
 		),
 	}
 }
