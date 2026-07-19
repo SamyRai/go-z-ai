@@ -6,17 +6,17 @@
 зарегистрируйте именованные аккаунты и переключайтесь между ними:
 
 ```bash
-zai-client accounts add personal --api-key sk-...          # тип определяется автоматически
-zai-client accounts add work --api-key sk-... --type coding_plan
+go-z-ai accounts add personal --api-key sk-...          # тип определяется автоматически
+go-z-ai accounts add work --api-key sk-... --type coding_plan
 
-zai-client accounts list
-zai-client accounts use personal        # задаёт значение по умолчанию для будущих команд
-zai-client accounts show                # показывает активный аккаунт
-zai-client accounts remove work --yes
+go-z-ai accounts list
+go-z-ai accounts use personal        # задаёт значение по умолчанию для будущих команд
+go-z-ai accounts show                # показывает активный аккаунт
+go-z-ai accounts remove work --yes
 ```
 
-Аккаунты хранятся в `$XDG_CONFIG_HOME/zai-client/accounts.json` (или
-`~/.config/zai-client/accounts.json`), запись выполняется атомарно с правами
+Аккаунты хранятся в `$XDG_CONFIG_HOME/go-z-ai/accounts.json` (или
+`~/.config/go-z-ai/accounts.json`), запись выполняется атомарно с правами
 `0600`.
 
 **Автоопределение типа:** `accounts add` опрашивает monitor/quota-эндпоинт,
@@ -46,11 +46,11 @@ zai-client accounts remove work --yes
 | Месячное | Вызовы MCP-инструментов (web search, web-reader, zread) | Фиксированное, сброс по календарному месяцу |
 
 ```bash
-zai-client accounts quota                    # по всем сохранённым аккаунтам
-zai-client accounts usage --days 14          # тепловая карта использования token/инструментов
-zai-client accounts usage --today            # сокращение для --days 1
-zai-client usage quota                       # одиночный активный аккаунт
-zai-client usage check --watch               # предупреждение, когда использование превышает 80%
+go-z-ai accounts quota                    # по всем сохранённым аккаунтам
+go-z-ai accounts usage --days 14          # тепловая карта использования token/инструментов
+go-z-ai accounts usage --today            # сокращение для --days 1
+go-z-ai usage quota                       # одиночный активный аккаунт
+go-z-ai usage check --watch               # предупреждение, когда использование превышает 80%
 ```
 
 Пример вывода `accounts quota`:
@@ -136,7 +136,7 @@ Embeddings/Moderations. Псевдонимы: `cn`, `bigmodel`, `west`; неиз
 от того, какой ключ вы используете. Каталог моделей аккаунта GLM Coding Plan
 содержит только чат — вызов этих сервисов с таким аккаунтом возвращает
 `400 Unknown Model` (код ошибки 1211) на любой из платформ. Это ожидаемое
-поведение, а не баг: проверьте `zai-client models list`, чтобы увидеть, что
+поведение, а не баг: проверьте `go-z-ai models list`, чтобы увидеть, что
 реально входит в каталог вашего аккаунта.
 
 Хосты китайского зеркала для monitor/biz/agents/detection повторяют структуру

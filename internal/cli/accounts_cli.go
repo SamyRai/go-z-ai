@@ -138,7 +138,7 @@ func runAccountsAdd(cmd *cobra.Command, args []string) error {
 		if confirmed {
 			fmt.Printf("✅ Detected type: %s (confirmed via monitor endpoint)\n", accountType)
 		} else {
-			fmt.Printf("⚠️  Detected type: %s (inferred by elimination — the monitor endpoint didn't confirm a coding-plan subscription; run 'zai-client usage detect' for a definitive check, or pass --type explicitly)\n", accountType)
+			fmt.Printf("⚠️  Detected type: %s (inferred by elimination — the monitor endpoint didn't confirm a coding-plan subscription; run 'go-z-ai usage detect' for a definitive check, or pass --type explicitly)\n", accountType)
 		}
 	}
 
@@ -221,7 +221,7 @@ func runAccountsList(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(list) == 0 {
-		fmt.Println("No accounts configured. Add one with: zai-client accounts add <name> --api-key <key>")
+		fmt.Println("No accounts configured. Add one with: go-z-ai accounts add <name> --api-key <key>")
 		return nil
 	}
 
@@ -294,7 +294,7 @@ func runAccountsShow(cmd *cobra.Command, args []string) error {
 	} else {
 		acct, found = store.ActiveAccount()
 		if !found {
-			return fmt.Errorf("no active account set (run 'zai-client accounts use <name>' or 'zai-client accounts list')")
+			return fmt.Errorf("no active account set (run 'go-z-ai accounts use <name>' or 'go-z-ai accounts list')")
 		}
 	}
 
@@ -404,7 +404,7 @@ func runAccountsQuota(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if len(targets) == 0 {
-		fmt.Println("No accounts configured. Add one with: zai-client accounts add <name> --api-key <key>")
+		fmt.Println("No accounts configured. Add one with: go-z-ai accounts add <name> --api-key <key>")
 		return nil
 	}
 
@@ -528,7 +528,7 @@ func runAccountsUsage(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if len(targets) == 0 {
-		fmt.Println("No accounts configured. Add one with: zai-client accounts add <name> --api-key <key>")
+		fmt.Println("No accounts configured. Add one with: go-z-ai accounts add <name> --api-key <key>")
 		return nil
 	}
 

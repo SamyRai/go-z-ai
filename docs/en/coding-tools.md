@@ -1,6 +1,6 @@
 # Coding Tools (GLM Coding Plan)
 
-`zai-client coding` configures third-party coding assistants to use your GLM
+`go-z-ai coding` configures third-party coding assistants to use your GLM
 Coding Plan instead of their default provider. It's a Go port of Z.AI's
 official `@z_ai/coding-helper` ("chelper") CLI, sharing the same credential
 file so the two tools can be used interchangeably.
@@ -15,7 +15,7 @@ file so the two tools can be used interchangeably.
 | Factory Droid | `~/.factory/settings.json` |
 | Cursor | OS-specific — `~/Library/Application Support/Cursor/User/settings.json` on macOS, `~/.cursor/settings.json` (or `~/.config/Cursor/User/settings.json`) elsewhere |
 
-Run `zai-client coding tools` to see install status and exact resolved paths
+Run `go-z-ai coding tools` to see install status and exact resolved paths
 on your machine.
 
 ## Plans
@@ -31,16 +31,16 @@ Pick whichever matches where your GLM Coding Plan subscription lives.
 
 ```bash
 # 1. Store and validate your GLM Coding Plan key (one-time)
-zai-client coding auth glm_coding_plan_global YOUR_KEY
+go-z-ai coding auth glm_coding_plan_global YOUR_KEY
 
 # 2. Load it into a tool
-zai-client coding load claude-code
+go-z-ai coding load claude-code
 # tool IDs: claude-code, opencode, crush, factory-droid, cursor
 # aliases also work: claude, droid, factory
 
 # 3. Check everything's wired up
-zai-client coding status
-zai-client coding doctor
+go-z-ai coding status
+go-z-ai coding doctor
 ```
 
 Credentials live at `~/.chelper/config.yaml` (byte-compatible with the
@@ -50,7 +50,7 @@ reads from it for every tool unless you pass `--key`/`--plan` overrides.
 To stop using Z.AI for a tool without losing your stored credential:
 
 ```bash
-zai-client coding unload claude-code
+go-z-ai coding unload claude-code
 ```
 
 This removes only the Z.AI-specific fields it added; it does not touch the
@@ -73,10 +73,10 @@ GLM models via `ANTHROPIC_DEFAULT_*_MODEL`, matching
 Override any tier, or opt out entirely:
 
 ```bash
-zai-client coding auth glm_coding_plan_global YOUR_KEY \
+go-z-ai coding auth glm_coding_plan_global YOUR_KEY \
   --sonnet glm-5.2 --opus glm-5.2
 
-zai-client coding auth glm_coding_plan_global YOUR_KEY --no-model-mapping
+go-z-ai coding auth glm_coding_plan_global YOUR_KEY --no-model-mapping
 ```
 
 Also configurable, all optional (0/omitted = don't set the env var):
@@ -93,9 +93,9 @@ way to `auth`, `load`, and `reload`.
 ## Key management
 
 ```bash
-zai-client coding auth revoke              # clear the stored key, keep the plan choice
-zai-client coding auth reload <tool>       # re-push stored creds into a tool
-zai-client coding load <tool> --key OTHER_KEY --plan glm_coding_plan_china  # one-off override
+go-z-ai coding auth revoke              # clear the stored key, keep the plan choice
+go-z-ai coding auth reload <tool>       # re-push stored creds into a tool
+go-z-ai coding load <tool> --key OTHER_KEY --plan glm_coding_plan_china  # one-off override
 ```
 
 By default, `coding auth` validates a new key against the API before storing
@@ -113,10 +113,10 @@ launched on demand via `npx`. `coding mcp` registers it in whichever tool
 you're using:
 
 ```bash
-zai-client coding mcp add claude-code     # uses the stored API key
-zai-client coding mcp add crush --key OTHER_KEY
-zai-client coding mcp status              # which tools have it configured
-zai-client coding mcp remove claude-code
+go-z-ai coding mcp add claude-code     # uses the stored API key
+go-z-ai coding mcp add crush --key OTHER_KEY
+go-z-ai coding mcp status              # which tools have it configured
+go-z-ai coding mcp remove claude-code
 ```
 
 **Requires Node.js.** The server itself runs via `npx -y @z_ai/mcp-server` —
@@ -144,7 +144,7 @@ should work but hasn't been Z.AI-confirmed for this specific server.
 ## Doctor
 
 ```bash
-zai-client coding doctor
+go-z-ai coding doctor
 ```
 
 Checks: is a credential stored, does it look well-formed, which supported

@@ -19,7 +19,7 @@ main.go               A five-line entrypoint: package main → internal/cli.Exec
 internal/cli/         CLI commands (package cli), one file per command group:
                       chat.go, accounts_cli.go, coding_cli.go, ...
 pkg/client/           The Go library — one file per API service, no CLI/TUI dependency
-internal/accounts/    Multi-account credential store (~/.config/zai-client/accounts.json)
+internal/accounts/    Multi-account credential store (~/.config/go-z-ai/accounts.json)
 internal/coding/      GLM Coding Plan credential store + per-tool config writers
 internal/usageview/   Pure presentation helpers (time windows, heat maps, formatting) —
                       shared by both the CLI and the TUI so their output can never drift

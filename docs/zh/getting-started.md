@@ -1,6 +1,6 @@
 # 快速开始
 
-本指南让你在几分钟内从零开始跑通第一条 `zai-client` 命令。
+本指南让你在几分钟内从零开始跑通第一条 `go-z-ai` 命令。
 
 ## 1. 安装
 
@@ -10,33 +10,27 @@
 go install github.com/SamyRai/go-z-ai@latest
 ```
 
-这会在你的 `$GOPATH/bin` 下放一个 `go-z-ai` 二进制文件。**本文档中的所有示例
-都使用更简短的名字 `zai-client`**，所以在继续之前，请在你的 shell 启动脚本里
-二选一地加上下面其中一种：
+安装后的二进制名为 `go-z-ai`。可选简写别名：
 
 ```bash
-# 方式 A —— 重命名（最简单）
-mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
-
-# 方式 B —— 别名（保留原名）
-echo "alias zai-client=go-z-ai" >> ~/.zshrc   # 或 ~/.bashrc
+ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai"
 ```
 
-或者直接从源码构建出你想要的名字：
+或者直接从源码构建：
 
 ```bash
 git clone https://github.com/SamyRai/go-z-ai.git
 cd go-z-ai
-go build -o zai-client .
+go build -o go-z-ai .
 ```
 
-无论你走哪条路径，都请确认 `zai-client` 能被解析到、并且位于你的 `PATH` 上：
+无论你走哪条路径，都请确认 `go-z-ai` 能被解析到、并且位于你的 `PATH` 上：
 
 ```bash
-zai-client --version
+go-z-ai --version
 ```
 
-本指南余下部分假设这个二进制文件叫做 `zai-client`。
+本指南余下部分假设这个二进制文件叫做 `go-z-ai`。
 
 ## 2. 鉴权
 
@@ -53,7 +47,7 @@ zai-client --version
 
 ```bash
 export ZAI_API_KEY=your_api_key_here
-zai-client validate
+go-z-ai validate
 ```
 
 `validate` 会发起一次真实的 API 调用，在继续之前确认 key 可用。
@@ -70,16 +64,16 @@ zai-client validate
 
 ```bash
 # 查看你能访问哪些模型
-zai-client models list
+go-z-ai models list
 
 # 发起一次聊天补全
-zai-client chat create "用一段话解释 goroutine"
+go-z-ai chat create "用一段话解释 goroutine"
 
 # 流式地逐 token 输出响应
-zai-client chat create "写一首关于 Go 的俳句" --stream
+go-z-ai chat create "写一首关于 Go 的俳句" --stream
 
 # 查看你的配额（GLM Coding Plan 账户）
-zai-client usage quota
+go-z-ai usage quota
 ```
 
 接下来：
@@ -88,7 +82,7 @@ zai-client usage quota
 - **多账户 / 配额监控：** [Accounts & Quota](accounts-and-quota.md)
 - **把 Claude Code / OpenCode / Crush / Factory Droid / Cursor 接入你的 GLM Coding Plan：** [Coding Tools](coding-tools.md)
 - **把本项目当作 Go 库使用，而不是 CLI：** [Library Guide](library-guide.md)
-- **全屏终端 UI**（把 chat、models、usage、accounts、coding、media、tools 这些标签页放到一个界面里）：`zai-client tui`
+- **全屏终端 UI**（把 chat、models、usage、accounts、coding、media、tools 这些标签页放到一个界面里）：`go-z-ai tui`
 
 ## 故障排查
 
@@ -100,7 +94,7 @@ zai-client usage quota
 
 **在 `embeddings`/`moderations`/`rerank`/`voice` 上出现 "Unknown Model"（错误 1211）**——
 这几乎总是账户的权益门槛，而不是 bug：你的账户套餐目录里不包含该模型。运行
-`zai-client models list` 来看看你的 key 实际能访问哪些模型。完整解释见
+`go-z-ai models list` 来看看你的 key 实际能访问哪些模型。完整解释见
 [Accounts & Quota](accounts-and-quota.md)。
 
 **其它问题**——[提一个 issue](https://github.com/SamyRai/go-z-ai/issues)，

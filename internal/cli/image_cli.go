@@ -59,7 +59,7 @@ func runImageGenerate(cmd *cobra.Command, args []string, apiClient *client.Clien
 		}
 		return emit(cmd, resp, func() error {
 			fmt.Printf("⏳ Task submitted: %s (status: %s)\n", resp.ID, resp.TaskStatus)
-			fmt.Printf("   Check with: zai-client image status %s\n", resp.ID)
+			fmt.Printf("   Check with: go-z-ai image status %s\n", resp.ID)
 			return nil
 		})
 	}

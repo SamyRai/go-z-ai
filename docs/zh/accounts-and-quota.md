@@ -5,17 +5,17 @@
 无需每次切换密钥都手动编辑 `.env`，注册一次具名账户后即可在它们之间切换：
 
 ```bash
-zai-client accounts add personal --api-key sk-...          # 类型自动检测
-zai-client accounts add work --api-key sk-... --type coding_plan
+go-z-ai accounts add personal --api-key sk-...          # 类型自动检测
+go-z-ai accounts add work --api-key sk-... --type coding_plan
 
-zai-client accounts list
-zai-client accounts use personal        # 为后续命令设置默认账户
-zai-client accounts show                # 显示当前激活的账户
-zai-client accounts remove work --yes
+go-z-ai accounts list
+go-z-ai accounts use personal        # 为后续命令设置默认账户
+go-z-ai accounts show                # 显示当前激活的账户
+go-z-ai accounts remove work --yes
 ```
 
-账户信息存储在 `$XDG_CONFIG_HOME/zai-client/accounts.json`（或
-`~/.config/zai-client/accounts.json`），以 `0600` 权限原子写入。
+账户信息存储在 `$XDG_CONFIG_HOME/go-z-ai/accounts.json`（或
+`~/.config/go-z-ai/accounts.json`），以 `0600` 权限原子写入。
 
 **类型自动检测：** `accounts add` 会通过一次免费（不消耗 token）调用去探测
 coding-plan 专属的 monitor/quota 端点。成功且结构良好的响应意味着
@@ -39,11 +39,11 @@ GLM Coding Plan 账户有三个相互独立的配额窗口：
 | 每月 | MCP 工具调用（web search、web-reader、zread） | 固定的自然月重置 |
 
 ```bash
-zai-client accounts quota                    # 跨所有已存储账户
-zai-client accounts usage --days 14          # token/工具用量热力图
-zai-client accounts usage --today            # --days 1 的简写
-zai-client usage quota                       # 单个激活账户
-zai-client usage check --watch               # 当用量超过 80% 时告警
+go-z-ai accounts quota                    # 跨所有已存储账户
+go-z-ai accounts usage --days 14          # token/工具用量热力图
+go-z-ai accounts usage --today            # --days 1 的简写
+go-z-ai usage quota                       # 单个激活账户
+go-z-ai usage check --watch               # 当用量超过 80% 时告警
 ```
 
 `accounts quota` 输出示例：
@@ -118,7 +118,7 @@ global。
 你能否从中国平台文档中提到的服务（Embeddings、Moderations、Rerank、Voice）拿到真实结果，
 取决于你账户的**套餐权益**，而非你用哪把密钥。GLM Coding Plan 账户的模型目录
 仅含 chat —— 用该账户调用这些服务会在任一平台上返回 `400 Unknown Model`
-（错误码 1211）。这是预期行为，不是 bug：通过 `zai-client models list` 查看
+（错误码 1211）。这是预期行为，不是 bug：通过 `go-z-ai models list` 查看
 你账户目录中实际包含的内容。
 
 中国镜像上 monitor/biz/agents/detection 的主机镜像了 `api.z.ai` 的路径布局，

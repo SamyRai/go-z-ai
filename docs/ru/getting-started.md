@@ -1,7 +1,7 @@
 # Начало работы
 
 Здесь вы за пару минут пройдёте путь от нуля до своей первой команды
-`zai-client`.
+`go-z-ai`.
 
 ## 1. Установка
 
@@ -12,16 +12,10 @@
 go install github.com/SamyRai/go-z-ai@latest
 ```
 
-Это поместит бинарник `go-z-ai` в ваш `$GOPATH/bin`. **Все примеры в этой
-документации используют более короткое имя `zai-client`**, поэтому добавьте
-одно из следующих в инициализацию вашей оболочки, прежде чем двигаться дальше:
+Бинарник устанавливается как `go-z-ai`. Необязательный короткий псевдоним:
 
 ```bash
-# Вариант A — переименование (самый простой)
-mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
-
-# Вариант B — алиас (сохраняет исходное имя)
-echo "alias zai-client=go-z-ai" >> ~/.zshrc   # или ~/.bashrc
+ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai"
 ```
 
 Либо соберите из исходников сразу с нужным именем:
@@ -29,17 +23,17 @@ echo "alias zai-client=go-z-ai" >> ~/.zshrc   # или ~/.bashrc
 ```bash
 git clone https://github.com/SamyRai/go-z-ai.git
 cd go-z-ai
-go build -o zai-client .
+go build -o go-z-ai .
 ```
 
-Каким бы путём вы ни пошли, убедитесь, что `zai-client` разрешается и лежит в
+Каким бы путём вы ни пошли, убедитесь, что `go-z-ai` разрешается и лежит в
 вашем `PATH`:
 
 ```bash
-zai-client --version
+go-z-ai --version
 ```
 
-Далее предполагается, что бинарник называется `zai-client`.
+Далее предполагается, что бинарник называется `go-z-ai`.
 
 ## 2. Аутентификация
 
@@ -57,7 +51,7 @@ zai-client --version
 
 ```bash
 export ZAI_API_KEY=your_api_key_here
-zai-client validate
+go-z-ai validate
 ```
 
 `validate` выполняет один реальный вызов API и подтверждает, что ключ
@@ -76,16 +70,16 @@ zai-client validate
 
 ```bash
 # Посмотреть, к каким моделям у вас есть доступ
-zai-client models list
+go-z-ai models list
 
 # Отправить завершение чата
-zai-client chat create "Объясни горутины одним абзацем"
+go-z-ai chat create "Объясни горутины одним абзацем"
 
 # Выводить ответ потоком token за token
-zai-client chat create "Напиши хайку про Go" --stream
+go-z-ai chat create "Напиши хайку про Go" --stream
 
 # Проверить свою квоту (аккаунты GLM Coding Plan)
-zai-client usage quota
+go-z-ai usage quota
 ```
 
 Дальше:
@@ -94,7 +88,7 @@ zai-client usage quota
 - **Несколько аккаунтов / мониторинг квоты:** [Аккаунты и квоты](accounts-and-quota.md)
 - **Подключение Claude Code / OpenCode / Crush / Factory Droid / Cursor к вашему GLM Coding Plan:** [Инструменты для кода](coding-tools.md)
 - **Использование проекта как библиотеки Go вместо CLI:** [Руководство по библиотеке](library-guide.md)
-- **Полноэкранный терминальный интерфейс** (вкладки чата, моделей, использования, аккаунтов, кодинга, медиа и инструментов в одном месте): `zai-client tui`
+- **Полноэкранный терминальный интерфейс** (вкладки чата, моделей, использования, аккаунтов, кодинга, медиа и инструментов в одном месте): `go-z-ai tui`
 
 ## Устранение неполадок
 
@@ -107,7 +101,7 @@ zai-client usage quota
 
 **"Unknown Model" (error 1211) на `embeddings`/`moderations`/`rerank`/`voice`** —
 почти всегда это ограничение по тарифу аккаунта, а не баг: в каталоге тарифа
-вашего аккаунта нет этой модели. Выполните `zai-client models list`, чтобы
+вашего аккаунта нет этой модели. Выполните `go-z-ai models list`, чтобы
 посмотреть, что реально доступно вашему ключу. Полное объяснение — в
 [Аккаунты и квоты](accounts-and-quota.md).
 

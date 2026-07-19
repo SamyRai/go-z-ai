@@ -1,7 +1,7 @@
 // Package coding implements the TUI's Coding tab: install/config status,
 // auth, load, and unload for supported coding-agent tools (Claude Code,
 // OpenCode, Crush, Factory Droid), backed by pkg/coding — the same package
-// the "zai-client coding" commands use.
+// the "go-z-ai coding" commands use.
 package coding
 
 import (

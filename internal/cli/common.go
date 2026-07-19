@@ -84,7 +84,7 @@ func resolveConfig() (client.Config, error) {
 	}
 
 	if apiKey == "" {
-		return client.Config{}, fmt.Errorf("API key is required. Set it via --api-key flag, ZAI_API_KEY environment variable, KEY environment variable, 'zai-client accounts use <name>', or --account <name>")
+		return client.Config{}, fmt.Errorf("API key is required. Set it via --api-key flag, ZAI_API_KEY environment variable, KEY environment variable, 'go-z-ai accounts use <name>', or --account <name>")
 	}
 
 	chinaAPIKey := viper.GetString("china-api-key")
@@ -131,7 +131,7 @@ func lookupAccount(name string) (accounts.Account, error) {
 	}
 	acct, found := store.Get(name)
 	if !found {
-		return accounts.Account{}, fmt.Errorf("account %q not found (run 'zai-client accounts list')", name)
+		return accounts.Account{}, fmt.Errorf("account %q not found (run 'go-z-ai accounts list')", name)
 	}
 	return acct, nil
 }

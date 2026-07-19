@@ -1,4 +1,4 @@
-// Package tui implements the zai-client interactive terminal UI: a Bubble
+// Package tui implements the go-z-ai interactive terminal UI: a Bubble
 // Tea v2 program with one tab per existing CLI command group, all wired to
 // the same pkg/client, pkg/accounts, and pkg/coding services the
 // non-interactive commands already use.

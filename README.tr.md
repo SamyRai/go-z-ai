@@ -1,4 +1,4 @@
-# Z.AI API İstemcisi
+# go-z-ai
 
 Z.AI (Zhipu AI / BigModel) platformu için bir Go **CLI**'sı, **kitaplığı** ve
 **TUI**'sı — tüm GLM model yüzeylerini tek bir araçta, ayrıca Claude Code,
@@ -21,7 +21,7 @@ export ZAI_API_KEY=your_api_key_here
 # veya: cp .env.example .env, sonra .env dosyasını düzenle
 
 # 2. CLI'yı kullan
-zai-client chat create "Goroutine'leri tek bir paragrafta açıkla" --stream
+go-z-ai chat create "Goroutine'leri tek bir paragrafta açıkla" --stream
 ```
 
 ```go
@@ -58,8 +58,8 @@ Anthropic `/v1/messages` uç noktası — [`examples/`](examples/) dizininde.
   dosya yükleme/listeleme/indirme.
 - **GLM Coding Plan** — kota/kullanım izleme, çoklu hesap yönetimi ve
   aboneliğinize Claude Code, OpenCode, Crush, Factory Droid ve Cursor'ı bağlamak
-  için `zai-client coding`.
-- **DX** — tam ekran terminal UI'ı (`zai-client tui`), bölgesel ağ geçidi
+  için `go-z-ai coding`.
+- **DX** — tam ekran terminal UI'ı (`go-z-ai tui`), bölgesel ağ geçidi
   değiştirme (`api.z.ai` ↔ `open.bigmodel.cn`), backoff + jitter ile otomatik
   yeniden deneme ve her Z.AI hata kodunun eşlendiği tipli bir `APIError`.
 
@@ -70,12 +70,9 @@ go install github.com/SamyRai/go-z-ai@latest
 ```
 
 Bu, `$GOPATH/bin` altında `go-z-ai` adlı bir ikili (binary) oluşturur.
-Aşağıdaki örnekler daha kısa olan **`zai-client`** adını kullanır — sembolik
-bağlayın veya yeniden adlandırın:
 
 ```bash
-ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
-# veya: mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+# İsteğe bağlı kısa alias: ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai"
 ```
 
 Go 1.26.4+ ve bir [Z.AI API anahtarı](https://z.ai/manage-apikey/apikey-list) gerektirir.
@@ -84,20 +81,20 @@ Kaynaktan derleme, ilk çalıştırmada kimlik doğrulama ve sorun giderme:
 
 ## CLI olarak
 
-Tüm yüzeyi kapsayan tek bir `zai-client` ikilisi. Her komut `--help`
+Tüm yüzeyi kapsayan tek bir `go-z-ai` ikilisi. Her komut `--help`
 destekler; hızlı tur:
 
 ```bash
-zai-client chat create "..." --stream          # sohbet (akış, araçlar, görsel giriş, yapılandırılmış çıktı)
-zai-client anthropic messages "..." --stream   # Anthropic uyumlu /v1/messages
-zai-client image|video|audio|voice ...         # medya üretimi, transkripsiyon, TTS, klonlama
-zai-client ocr|parser ...                      # OCR + belge ayrıştırma
-zai-client embeddings|rerank|moderations ...   # erişim + içerik moderasyonu
-zai-client models list                         # model kataloğu + fiyatlandırma
-zai-client accounts add|use|quota|usage ...    # çoklu hesap + GLM Coding Plan izleme
-zai-client coding auth|load|doctor|mcp ...     # Claude Code / Cursor / vb. öğeleri GLM Coding Plan'a bağla
-zai-client tui                                 # tam ekran terminal UI'ı (yukarıdakilerin tamamı)
-zai-client validate                            # anahtarınızın çalıştığını tek bir gerçek çağrıyla doğrula
+go-z-ai chat create "..." --stream          # sohbet (akış, araçlar, görsel giriş, yapılandırılmış çıktı)
+go-z-ai anthropic messages "..." --stream   # Anthropic uyumlu /v1/messages
+go-z-ai image|video|audio|voice ...         # medya üretimi, transkripsiyon, TTS, klonlama
+go-z-ai ocr|parser ...                      # OCR + belge ayrıştırma
+go-z-ai embeddings|rerank|moderations ...   # erişim + içerik moderasyonu
+go-z-ai models list                         # model kataloğu + fiyatlandırma
+go-z-ai accounts add|use|quota|usage ...    # çoklu hesap + GLM Coding Plan izleme
+go-z-ai coding auth|load|doctor|mcp ...     # Claude Code / Cursor / vb. öğeleri GLM Coding Plan'a bağla
+go-z-ai tui                                 # tam ekran terminal UI'ı (yukarıdakilerin tamamı)
+go-z-ai validate                            # anahtarınızın çalıştığını tek bir gerçek çağrıyla doğrula
 ```
 
 Sonuç üreten her komut `--format text|json` alır (JSON stdout'a, ilerleme
@@ -155,13 +152,13 @@ yüksek olan kazanır):
 | `--api-key <key>` bayrağı | Tek seferlik çağrılar, betikler, CI |
 | `--account <name>` bayrağı | [Kayıtlı hesaplar](docs/en/accounts-and-quota.md) arasında geçiş |
 | `ZAI_API_KEY` ortam değişkeni (veya `.env` dosyası) | Günlük yerel kabuk kullanımı |
-| Hesap deposunun aktif hesabı | `zai-client accounts use <name>`'dan sonra |
+| Hesap deposunun aktif hesabı | `go-z-ai accounts use <name>`'dan sonra |
 
 `.env` dosyası yaygın olanıdır — açıklamalı şablonu kopyalayın ve düzenleyin:
 
 ```bash
 cp .env.example .env
-# veya herhangi bir dosyayı gösterin: zai-client --config /path/to/config ...
+# veya herhangi bir dosyayı gösterin: go-z-ai --config /path/to/config ...
 ```
 
 ```dotenv
@@ -199,7 +196,7 @@ boşluğu doldurur ve aynı API yüzeyi üzerine bir CLI, bir TUI, bölgesel ağ
 geçidi değiştirme (`api.z.ai` ↔ `open.bigmodel.cn`) ve GLM Coding Plan çoklu
 hesap yönetimi ekler.
 
-> ℹ️ Repo kökündeki `zai-claude-config.json`, `zai-client coding load
+> ℹ️ Repo kökündeki `zai-claude-config.json`, `go-z-ai coding load
 > claude-code` tarafından kullanılan, yer tutucu değerler içeren
 > (`"your-zai-api-key-here"`) bir **şablondur**. Gerçek bir yapılandırma
 > değildir ve hiçbir kimlik bilgisi içermez.

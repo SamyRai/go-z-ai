@@ -1,6 +1,6 @@
 // Package accounts implements the TUI's Accounts tab: list, add, switch, and
 // remove stored Z.AI account credentials via pkg/accounts.Store, the same
-// store the "zai-client accounts" commands use.
+// store the "go-z-ai accounts" commands use.
 package accounts
 
 import (

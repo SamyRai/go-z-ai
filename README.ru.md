@@ -1,4 +1,4 @@
-# Клиент Z.AI API
+# go-z-ai
 
 **CLI**, **библиотека** и **TUI** на Go для платформы Z.AI (Zhipu AI /
 BigModel) — все возможности моделей GLM в одном инструменте, плюс порт
@@ -21,7 +21,7 @@ export ZAI_API_KEY=your_api_key_here
 # или: cp .env.example .env, затем отредактируйте .env
 
 # 2. Использование CLI
-zai-client chat create "Объясни горутины одним абзацем" --stream
+go-z-ai chat create "Объясни горутины одним абзацем" --stream
 ```
 
 ```go
@@ -57,9 +57,9 @@ fmt.Println(resp.Choices[0].Message.Content)
 - **Пакетная обработка и файлы** — пакетные задачи JSONL для завершения чата,
   загрузка/список/скачивание файлов.
 - **GLM Coding Plan** — мониторинг квоты/использования, управление несколькими
-  аккаунтами и `zai-client coding` для подключения Claude Code, OpenCode, Crush,
+  аккаунтами и `go-z-ai coding` для подключения Claude Code, OpenCode, Crush,
   Factory Droid и Cursor к вашей подписке.
-- **DX** — полноэкранный терминальный интерфейс (`zai-client tui`), переключение
+- **DX** — полноэкранный терминальный интерфейс (`go-z-ai tui`), переключение
   региональных шлюзов (`api.z.ai` ↔ `open.bigmodel.cn`), автоматический повтор с
   экспоненциальной задержкой и джиттером, а также типизированный `APIError` с
   маппингом всех кодов ошибок Z.AI.
@@ -70,12 +70,10 @@ fmt.Println(resp.Choices[0].Message.Content)
 go install github.com/SamyRai/go-z-ai@latest
 ```
 
-Это создаст бинарник `go-z-ai` в `$GOPATH/bin`. Примеры ниже используют более
-короткое имя **`zai-client`** — сделайте симлинк или переименуйте:
+Это создаст бинарник `go-z-ai` в `$GOPATH/bin`.
 
 ```bash
-ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
-# или: mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+# Необязательный короткий псевдоним: ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai"
 ```
 
 Требуется Go 1.26.4+ и [API-ключ Z.AI](https://z.ai/manage-apikey/apikey-list). Сборка из
@@ -84,20 +82,20 @@ ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
 
 ## Как CLI
 
-Один бинарник `zai-client` покрывает весь функционал. Каждая команда поддерживает
+Один бинарник `go-z-ai` покрывает весь функционал. Каждая команда поддерживает
 `--help`; краткий обзор:
 
 ```bash
-zai-client chat create "..." --stream          # чат (потоковая передача, инструменты, визуальный ввод, структурированный вывод)
-zai-client anthropic messages "..." --stream   # совместимый с Anthropic /v1/messages
-zai-client image|video|audio|voice ...         # генерация медиа, транскрипция, TTS, клонирование
-zai-client ocr|parser ...                      # OCR + разбор документов
-zai-client embeddings|rerank|moderations ...   # поиск + модерация контента
-zai-client models list                         # каталог моделей + цены
-zai-client accounts add|use|quota|usage ...    # несколько аккаунтов + мониторинг GLM Coding Plan
-zai-client coding auth|load|doctor|mcp ...     # подключение Claude Code / Cursor / и т.д. к GLM Coding Plan
-zai-client tui                                 # полноэкранный терминальный интерфейс (всё перечисленное выше)
-zai-client validate                            # проверка ключа одним реальным вызовом
+go-z-ai chat create "..." --stream          # чат (потоковая передача, инструменты, визуальный ввод, структурированный вывод)
+go-z-ai anthropic messages "..." --stream   # совместимый с Anthropic /v1/messages
+go-z-ai image|video|audio|voice ...         # генерация медиа, транскрипция, TTS, клонирование
+go-z-ai ocr|parser ...                      # OCR + разбор документов
+go-z-ai embeddings|rerank|moderations ...   # поиск + модерация контента
+go-z-ai models list                         # каталог моделей + цены
+go-z-ai accounts add|use|quota|usage ...    # несколько аккаунтов + мониторинг GLM Coding Plan
+go-z-ai coding auth|load|doctor|mcp ...     # подключение Claude Code / Cursor / и т.д. к GLM Coding Plan
+go-z-ai tui                                 # полноэкранный терминальный интерфейс (всё перечисленное выше)
+go-z-ai validate                            # проверка ключа одним реальным вызовом
 ```
 
 Каждая команда, возвращающая результат, принимает `--format text|json` (JSON
@@ -155,14 +153,14 @@ c, err := client.NewClient(client.Config{
 | флаг `--api-key <key>` | Разовые вызовы, скрипты, CI |
 | флаг `--account <name>` | Переключение между [сохранёнными аккаунтами](docs/ru/accounts-and-quota.md) |
 | env-переменная `ZAI_API_KEY` (или файл `.env`) | Повседневное локальное использование в shell |
-| Активный аккаунт из хранилища аккаунтов | После `zai-client accounts use <name>` |
+| Активный аккаунт из хранилища аккаунтов | После `go-z-ai accounts use <name>` |
 
 Файл `.env` — наиболее частый вариант: скопируйте аннотированный шаблон и
 отредактируйте его:
 
 ```bash
 cp .env.example .env
-# или укажите любой файл: zai-client --config /path/to/config ...
+# или укажите любой файл: go-z-ai --config /path/to/config ...
 ```
 
 ```dotenv
@@ -202,7 +200,7 @@ Coding Plan.
 
 > ℹ️ `zai-claude-config.json` в корне репозитория — это **шаблон** с
 > плейсхолдерами (`"your-zai-api-key-here"`), который используется командой
-> `zai-client coding load claude-code`. Это не настоящий конфиг, и в нём нет
+> `go-z-ai coding load claude-code`. Это не настоящий конфиг, и в нём нет
 > реальных учётных данных.
 
 ## Участие в проекте

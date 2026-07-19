@@ -19,7 +19,7 @@ main.go               一个五行的入口：package main → internal/cli.Exec
 internal/cli/         CLI 命令（package cli），每个命令组一个文件：
                       chat.go、accounts_cli.go、coding_cli.go ……
 pkg/client/           Go 库——每个 API 服务一个文件，不依赖 CLI/TUI
-internal/accounts/    多账户凭证存储（~/.config/zai-client/accounts.json）
+internal/accounts/    多账户凭证存储（~/.config/go-z-ai/accounts.json）
 internal/coding/      GLM Coding Plan 凭证存储 + 各工具的配置写入器
 internal/usageview/   纯展示辅助函数（时间窗口、热力图、格式化）——
                       由 CLI 和 TUI 共享，保证两者输出永远不会漂移

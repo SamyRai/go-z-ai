@@ -8,7 +8,7 @@
 
 ## For users
 
-Using the `zai-client` CLI.
+Using the `go-z-ai` CLI.
 
 | Doc | Covers |
 |---|---|

@@ -6,17 +6,17 @@ Instead of hand-editing `.env` every time you switch keys, register named
 accounts once and switch between them:
 
 ```bash
-zai-client accounts add personal --api-key sk-...          # type auto-detected
-zai-client accounts add work --api-key sk-... --type coding_plan
+go-z-ai accounts add personal --api-key sk-...          # type auto-detected
+go-z-ai accounts add work --api-key sk-... --type coding_plan
 
-zai-client accounts list
-zai-client accounts use personal        # sets the default for future commands
-zai-client accounts show                # shows the active account
-zai-client accounts remove work --yes
+go-z-ai accounts list
+go-z-ai accounts use personal        # sets the default for future commands
+go-z-ai accounts show                # shows the active account
+go-z-ai accounts remove work --yes
 ```
 
-Accounts are stored at `$XDG_CONFIG_HOME/zai-client/accounts.json` (or
-`~/.config/zai-client/accounts.json`), written atomically with `0600`
+Accounts are stored at `$XDG_CONFIG_HOME/go-z-ai/accounts.json` (or
+`~/.config/go-z-ai/accounts.json`), written atomically with `0600`
 permissions.
 
 **Type auto-detection:** `accounts add` probes the coding-plan-only
@@ -45,11 +45,11 @@ GLM Coding Plan accounts have three independent quota windows:
 | Monthly | MCP tool calls (web search, web-reader, zread) | Fixed calendar-month reset |
 
 ```bash
-zai-client accounts quota                    # across all stored accounts
-zai-client accounts usage --days 14          # token/tool usage heat map
-zai-client accounts usage --today            # shorthand for --days 1
-zai-client usage quota                       # single active account
-zai-client usage check --watch               # alert when usage crosses 80%
+go-z-ai accounts quota                    # across all stored accounts
+go-z-ai accounts usage --days 14          # token/tool usage heat map
+go-z-ai accounts usage --today            # shorthand for --days 1
+go-z-ai usage quota                       # single active account
+go-z-ai usage check --watch               # alert when usage crosses 80%
 ```
 
 Example `accounts quota` output:
@@ -131,7 +131,7 @@ Moderations, Rerank, Voice) depends on your account's **plan entitlement**,
 not which key you use. A GLM Coding Plan account's model catalog is
 chat-only — calling those with that account returns `400 Unknown Model`
 (error code 1211) on either platform. That's expected, not a bug: check
-`zai-client models list` to see what's actually in your account's catalog.
+`go-z-ai models list` to see what's actually in your account's catalog.
 
 The China mirror hosts for monitor/biz/agents/detection mirror the
 `api.z.ai` path layout but are **NOT VERIFIED LIVE** here — `open.bigmodel.cn`

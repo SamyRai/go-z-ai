@@ -1,5 +1,5 @@
 // Package models implements the TUI's Models tab: a browsable table of
-// available Z.AI models, backed by the same ModelsService the "zai-client
+// available Z.AI models, backed by the same ModelsService the "go-z-ai
 // models" commands already use.
 package models
 
