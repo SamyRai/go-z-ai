@@ -199,6 +199,14 @@ Coding Plan multi-account management on top of the same API surface.
 > placeholder values (`"your-zai-api-key-here"`) used by
 > `go-z-ai coding load claude-code`. It is not a real config and ships no
 > credentials.
+>
+> ⚠️ **Usage policy.** Z.AI's coding endpoint is restricted to "officially
+> supported tools" and prohibits SDK-based access; see
+> [Coding Tools — Compliance](docs/en/coding-tools.md#compliance--usage-policy-).
+> `go-z-ai` sends an identifying `User-Agent` header on every request and
+> its `coding` subcommand wires officially-supported tools. Using `pkg/client`
+> directly against the coding endpoint from a custom integration is at your
+> own risk until explicit listing.
 
 ## Contributing
 

@@ -113,12 +113,23 @@ type Config struct {
 	// RegionChina when the key was issued on open.bigmodel.cn so those calls
 	// land on the matching host. See region.go.
 	Region Region
+	// UserAgent overrides the default User-Agent header ("go-z-ai/<version>")
+	// sent on every request. The default identifies go-z-ai to Z.AI's API —
+	// important under the coding endpoint's usage policy, which treats
+	// unidentified clients as policy violations (see docs/en/coding-tools.md).
+	// Override only when you need a distinct identifier (a downstream app, a
+	// proxy, an MCP server); the override string is sent verbatim.
+	UserAgent string
 }
 
 // Client represents the Z.AI API client
 type Client struct {
-	config      Config
-	httpClient  *http.Client
+	config     Config
+	httpClient *http.Client
+	// userAgent is the resolved User-Agent header value (Config.UserAgent if
+	// set, otherwise the package default "go-z-ai/<version>"). Resolved once
+	// in NewClient and reused on every request.
+	userAgent   string
 	chat        *ChatService
 	models      *ModelsService
 	usage       *UsageService
@@ -189,9 +200,17 @@ func NewClient(config Config) (*Client, error) {
 		config.RetryDelay = DefaultRetryDelay
 	}
 
+	// Resolve the User-Agent: Config.UserAgent overrides the package default.
+	// Computed once here so the send* paths don't re-check on every request.
+	effectiveUA := userAgent
+	if config.UserAgent != "" {
+		effectiveUA = config.UserAgent
+	}
+
 	client := &Client{
 		config:     config,
 		httpClient: config.HTTPClient,
+		userAgent:  effectiveUA,
 	}
 
 	// Initialize services
@@ -390,6 +409,7 @@ func (c *Client) sendHeaders(ctx context.Context, baseURL, apiKey, method, endpo
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept-Language", "en-US,en")
+	req.Header.Set("User-Agent", c.userAgent)
 	if body != nil {
 		req.Header.Set("Accept", "application/json")
 	}
@@ -413,6 +433,7 @@ func (c *Client) sendMultipart(ctx context.Context, endpoint, contentType string
 	req.Header.Set("Authorization", "Bearer "+c.config.APIKey)
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", c.userAgent)
 
 	return c.httpClient.Do(req)
 }

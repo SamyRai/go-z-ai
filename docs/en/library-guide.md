@@ -48,6 +48,7 @@ c, err := client.NewClientFromEnv() // reads ZAI_API_KEY, ZAI_API_BASE_URL
 | `RetryDelay` | 200ms | Base exponential-backoff delay |
 | `ChinaAPIKey` | falls back to `APIKey` | Only needed if you hold a separate bigmodel.cn-only credential — see [Accounts & Quota](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn) |
 | `Region` | `RegionGlobal` | Selects the host for monitor/biz/agents/detection: `RegionGlobal` (api.z.ai) or `RegionChina` (open.bigmodel.cn). Does not override `BaseURL` (chat surface) or the Embeddings/Moderations host. See [Accounts & Quota](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn). |
+| `UserAgent` | `"go-z-ai/<version>"` | Overrides the `User-Agent` header sent on every request. The default identifies go-z-ai to Z.AI's API — important under the coding endpoint's [usage policy](coding-tools.md#compliance--usage-policy-). Override only when you need a distinct identifier (a downstream app, a proxy, an MCP server); the override string is sent verbatim. |
 
 Every service method takes `context.Context` as its first argument and
 propagates it all the way to the HTTP call — cancel it to abort a request or

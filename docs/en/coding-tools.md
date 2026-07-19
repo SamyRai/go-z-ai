@@ -151,3 +151,37 @@ Checks: is a credential stored, does it look well-formed, which supported
 tools are installed on `PATH`, and which of those already have a Z.AI
 configuration (including the Vision MCP server, if registered). Good first
 step when something isn't working.
+
+## Compliance & usage policy ⚠️
+
+Z.AI's coding endpoint (`/api/coding/paas/v4`) is restricted by the
+[usage policy](https://docs.z.ai/devpack/usage-policy) to "officially
+supported tools," and "SDK-based access" is explicitly prohibited. Three
+violations result in an account ban. Unidentified third-party clients are
+indistinguishable from prohibited access at the server
+([pi#4187](https://github.com/earendil-works/pi/issues/4187)).
+
+`go-z-ai` mitigates this in two ways:
+
+1. **The `coding` subcommand wires officially-supported tools** (Claude Code,
+   OpenCode, Crush, Factory Droid, Cursor) into their native config formats
+   — exactly what Z.AI's own `@z_ai/coding-helper` does. The wiring itself
+   is the supported path; `go-z-ai` just automates it from a Go binary.
+2. **Every request carries an identifying `User-Agent: go-z-ai/<version>`
+   header** (overridable via `Config.UserAgent` for downstream apps, proxies,
+   and MCP servers that need their own identifier). This is the minimum
+   hygiene that distinguishes go-z-ai from anonymous/prohibited access.
+
+What this does **not** do:
+
+- It does **not** make go-z-ai an "officially supported tool" — only Z.AI can
+  confer that status. Until then, using the `coding` subcommand to wire a
+  supported tool is the compliant path; using `pkg/client` directly against
+  `/api/coding/paas/v4` from a custom integration is at the user's own risk.
+- It does **not** spoof or evade detection. The header honestly identifies
+  the client; the goal is to be a good citizen, not to hide.
+
+If you are building a downstream tool, proxy, or MCP server on top of
+`pkg/client`, set a distinct `Config.UserAgent` (e.g.
+`"my-tool/1.0 (go-z-ai)"`) so Z.AI can identify your traffic separately and
+so you inherit go-z-ai's good-citizen default rather than weakening it.

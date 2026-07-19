@@ -28,6 +28,11 @@ builds:
       - -X main.version={{.Version}}
       - -X main.commit={{.ShortCommit}}
       - -X main.date={{.Date}}
+      # Also inject into the library-level version var so pkg/client.Version()
+      # and the default User-Agent ("go-z-ai/<version>") are correct for
+      # library users, not just CLI users. main.go's copy stays for the CLI's
+      # --version flag (legacy); both receive identical values at release time.
+      - -X github.com/SamyRai/go-z-ai/pkg/client.version={{.Version}}
 
 archives:
   - formats: [tar.gz]

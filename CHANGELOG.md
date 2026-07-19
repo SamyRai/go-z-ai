@@ -4,6 +4,42 @@ Notable changes to this project, loosely following
 [Keep a Changelog](https://keepachangelog.com/). Entries before `v0.1.0` are
 grouped by date; from `v0.1.0` on, sections are tagged.
 
+## 2026-07-19 (post-v0.1.0)
+
+### Added
+- **Curated model catalog** (`pkg/client/models_catalog.go`) — the single
+  source of truth for the model metadata `/models` does not return (context
+  window, max output, pricing, capabilities, family/tier, release date,
+  description). 15 models spanning GLM-5.x/4.x/OCR. `ModelDetails` gains
+  enrichment-only fields (`MaxOutput`, `Family`, `Tier`, `Capabilities`,
+  `CatalogName`, `CatalogDescription`). `GetTextModels`/`GetVisionModels`/
+  `GetFreeModels` switch from substring heuristics to `HasCapability`/
+  `IsFree`. CLI gains FAMILY/CONTEXT/MAXOUT/CAPS columns; TUI gains a
+  detail view (Enter on any model). Pricing/context transcribed from
+  `docs.z.ai/guides/overview/pricing` (verified 2026-07-19, noted in source).
+  Live API values always win when present, so the day Z.AI starts sending
+  `max_context` or pricing in `/models` the real numbers take over.
+- **Identifying `User-Agent` header** on every request (`go-z-ai/<version>`),
+  overridable via `Config.UserAgent`. Compliance hygiene under Z.AI's coding-
+  endpoint usage policy (which prohibits unidentified SDK access).
+- **`pkg/client.Version()`** and **`pkg/client.UserAgent()`** exports —
+  library-visible version populated by GoReleaser ldflags
+  (`-X github.com/SamyRai/go-z-ai/pkg/client.version=x.y.z`). Defaults to
+  `"dev"` for from-source builds. Enables downstream feature detection and
+  identifier reuse.
+
+### Fixed
+- `internal/tui/overlay.go`: removed dead `backdrop` computation in
+  `placeOverlay` (the variable was built and trimmed but never passed to
+  `lipgloss.Place`).
+- `Makefile`: `LYCHEE_FLAGS` now includes `--exclude 'localhost'` so local
+  `make docs-lint` matches CI (the parity the comment claimed but didn't
+  deliver).
+- `docs/en/architecture.md`: collapsed two MD012 double-blank-line runs and
+  stripped trailing whitespace at EOF.
+- `internal/tui/models/detail.go`: `fmt.Fprintf` over
+  `WriteString(fmt.Sprintf(...))` per staticcheck QF1012.
+
 ## 2026-07-19
 
 Open-source readiness pass: community files, examples, CI hardening, and the
