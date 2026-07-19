@@ -235,7 +235,10 @@
 
   /* Code — block. Both raw `<pre>` and goldmark-chroma's `<pre class="chroma">`
    * get the same surface treatment so unstyled fences and highlighted ones
-   * stay visually consistent. */
+   * stay visually consistent. Font-size at 0.875em is the 2026 consensus
+   * (GitHub Primer, MDN, dev.to) — monospace fonts have a larger visual
+   * em-box than proportional sans, so ~14px on a 16px base aligns x-height
+   * with body prose. */
   pre, pre.chroma {
     background: var(--color-canvas-deep);
     border: 1px solid var(--color-border);
@@ -245,10 +248,7 @@
     line-height: var(--leading-normal);
     box-shadow: var(--shadow-sm);
     scrollbar-width: thin;
-    /* Code blocks read slightly larger than the old --text-sm: aligned to
-     * --text-base * 0.92 so the x-height visually matches body prose rather
-     * than feeling like a smaller, secondary voice. */
-    font-size: calc(var(--text-base) * 0.92);
+    font-size: 0.875em;
   }
   pre code, pre.chroma code {
     font-size: inherit;
@@ -258,8 +258,8 @@
     color: var(--color-text);
     font-feature-settings: var(--font-mono-features);
   }
-  /* Chroma's "line" wrapper is a flex row — make sure it doesn't break
-   * horizontal scroll. */
+  /* Chroma's "line" wrapper is a flex row by default — force block + pre
+   * so it doesn't break horizontal scroll on long lines. */
   pre.chroma .line { display: block; white-space: pre; }
 
   /* Tables */

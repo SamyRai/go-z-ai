@@ -38,40 +38,13 @@
 
 <section class="block">
   <h2>Install</h2>
-  <pre><code># Install the CLI
-go install {{ .Site.Module }}@latest
-
-# The binary is named go-z-ai — symlink or rename to zai-client
-ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
-
-# Configure
-export ZAI_API_KEY=your_api_key_here
-
-# Use it
-zai-client chat create "Explain goroutines" --stream</code></pre>
+  <pre class="chroma"><code>{{ highlight (printf "# Install the CLI\ngo install %s@latest\n\n# The binary is named go-z-ai — symlink or rename to zai-client\nln -s \"$(go env GOPATH)/bin/go-z-ai\" \"$(go env GOPATH)/bin/zai-client\"\n\n# Configure\nexport ZAI_API_KEY=your_api_key_here\n\n# Use it\nzai-client chat create \"Explain goroutines\" --stream\n" .Site.Module) "bash" | safeHTML }}</code></pre>
   <p>Or use it as a Go library — see <a href="{{ langBase .Page.Lang }}library-guide.html">the Library Guide</a>.</p>
 </section>
 
 <section class="block">
   <h2>Quick example</h2>
-{{- /* godoccomment: the literal {{ below is escaped via a template string
-     to avoid clashing with Go template syntax. */ -}}
-  <pre><code>package main
-
-import (
-    "context"
-    "fmt"
-    "github.com/{{ .Site.Owner }}/{{ .Site.Repo }}/pkg/client"
-)
-
-func main() {
-    c, _ := client.NewClientFromEnv()
-    resp, _ := c.Chat().Create(context.Background(), client.ChatRequest{
-        Model:    "glm-5.2",
-        Messages: []client.Message{{ "{{" }}Role: "user", Content: "Hello"{{ "}}" }},
-    })
-    fmt.Println(resp.Choices[0].Message.Content)
-}</code></pre>
+  <pre class="chroma"><code>{{ highlight (printf "package main\n\nimport (\n    \"context\"\n    \"fmt\"\n    \"github.com/%s/%s/pkg/client\"\n)\n\nfunc main() {\n    c, _ := client.NewClientFromEnv()\n    resp, _ := c.Chat().Create(context.Background(), client.ChatRequest{\n        Model:    \"glm-5.2\",\n        Messages: []client.Message{{Role: \"user\", Content: \"Hello\"}},\n    })\n    fmt.Println(resp.Choices[0].Message.Content)\n}\n" .Site.Owner .Site.Repo) "go" | safeHTML }}</code></pre>
 </section>
 
 <section class="block">
