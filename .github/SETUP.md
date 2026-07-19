@@ -112,7 +112,18 @@ score 0); Dependabot keeps them current via its `github-actions` ecosystem
 > its badge service on July 1, 2026 after 11 years; the badge endpoint now
 > returns a static "retired" placeholder for every repo regardless of grade.
 
+## CODEOWNERS (already in place)
+
+`.github/CODEOWNERS` routes every path to `@SamyRai` today, with `/pkg/`,
+`.github/`, `.goreleaser.yml`, `Makefile`, and `go.mod` called out as the
+public-API / release-critical surface. The file exists so that when
+collaborators join, they edit it to take ownership of specific paths and
+GitHub surfaces the right reviewer automatically — no further config needed.
+
 ## Later, if this grows
 
-- **CODEOWNERS** — add when regular outside contributors arrive (today the
-  ruleset deliberately skips required reviews).
+- **Required reviews.** The `main-branch-baseline` ruleset sets
+  `required_approving_review_count: 0` because a single maintainer cannot
+  approve their own PRs. Once a second regular reviewer exists, bump to `1`
+  and flip `require_code_owner_review: true` so PRs touching `/pkg/` (the
+  semver contract) get a mandatory owner review.
