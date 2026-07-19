@@ -19,7 +19,7 @@ release) reads:
 …and renders everything through embedded HTML templates into static files at
 `site/`:
 
-```
+```text
 site/
 ├── index.html              # English landing (also at /)
 ├── en/, ru/, zh/           # full-docs locales (landing + 8 doc pages each)
