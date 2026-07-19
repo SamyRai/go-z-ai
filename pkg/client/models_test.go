@@ -7,37 +7,44 @@ import (
 	"testing"
 )
 
-// isTextModel and isVisionModel must be logical opposites for every ID —
-// they used to each hardcode their own copy of the vision-model list,
-// which could silently drift apart (e.g. a new vision model added to only
-// one list would make both functions return true for it). Now isTextModel
-// is defined as !isVisionModel, so this is a regression test against that
-// class of bug reappearing, not just a snapshot of current behavior.
-func TestIsTextVisionModelAreOpposites(t *testing.T) {
-	ids := []string{
-		"glm-4.6", "glm-4.5-air", "glm-5", "glm-5-turbo",
-		"glm-5v", "glm-4.6v", "glm-4.5v", "glm-ocr",
-		"glm-5v-turbo", "some-glm-ocr-variant",
+// HasCapability is now the single source of truth for whether a model is
+// vision-capable, text-capable, etc. — replacing the two parallel substring
+// heuristics (visionModelMarkers in the client, a different list in the TUI)
+// that used to drift apart. This test pins the catalog's capability claims so
+// a future catalog edit that drops CapVision from a vision model fails loudly.
+func TestCatalogCapabilities(t *testing.T) {
+	vision := []string{"glm-5v", "glm-4.6v", "glm-4.5v", "glm-ocr"}
+	for _, id := range vision {
+		m := enrichModel(ModelDetails{ID: id})
+		if !m.HasCapability(CapVision) {
+			t.Errorf("expected %q to be vision-capable after enrichment, capabilities=%v", id, m.Capabilities)
+		}
 	}
-	for _, id := range ids {
-		if isTextModel(id) == isVisionModel(id) {
-			t.Errorf("isTextModel(%q) = %v, isVisionModel(%q) = %v — must be opposites", id, isTextModel(id), id, isVisionModel(id))
+	text := []string{"glm-4.6", "glm-4.5-air", "glm-5", "glm-5-turbo", "glm-5.2"}
+	for _, id := range text {
+		m := enrichModel(ModelDetails{ID: id})
+		if !m.HasCapability(CapText) {
+			t.Errorf("expected %q to be text-capable after enrichment, capabilities=%v", id, m.Capabilities)
+		}
+		if m.HasCapability(CapVision) {
+			t.Errorf("expected %q to NOT be vision-capable, capabilities=%v", id, m.Capabilities)
 		}
 	}
 }
 
-func TestIsVisionModel(t *testing.T) {
-	vision := []string{"glm-5v", "glm-4.6v", "glm-4.5v", "glm-ocr", "glm-5v-turbo"}
-	for _, id := range vision {
-		if !isVisionModel(id) {
-			t.Errorf("expected %q to be a vision model", id)
-		}
+// A model with no catalog entry must not crash, must not fabricate
+// capabilities, and must not be reported as free — the polarity bug that
+// previously made every unknown model appear free.
+func TestUncatalogedModelIsSafe(t *testing.T) {
+	m := enrichModel(ModelDetails{ID: "totally-unknown-model"})
+	if m.HasCapability(CapVision) || m.HasCapability(CapText) {
+		t.Errorf("uncataloged model should have no capabilities, got %v", m.Capabilities)
 	}
-	text := []string{"glm-4.6", "glm-4.5-air", "glm-5", "glm-5-turbo"}
-	for _, id := range text {
-		if isVisionModel(id) {
-			t.Errorf("expected %q to not be a vision model", id)
-		}
+	if m.IsFree() {
+		t.Error("uncataloged model with nil Pricing must not be reported as free")
+	}
+	if m.ContextSize != 0 || m.Pricing != nil {
+		t.Errorf("uncataloged model should have no fabricated data, got context=%d pricing=%v", m.ContextSize, m.Pricing)
 	}
 }
 

@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 )
 
@@ -33,6 +32,15 @@ func (s *ModelsService) List(ctx context.Context) (*ModelsInfo, error) {
 	err := s.client.doRequest(ctx, "GET", "/models", nil, &response)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list models: %w", err)
+	}
+
+	// Overlay catalog metadata (context, pricing, capabilities, name,
+	// description) onto each model the API returned. The /models endpoint
+	// currently sends only the OpenAI-bare {id, object, created, owned_by}
+	// shape, so without this every Context/Pricing cell renders as `-`/0.
+	// See models_catalog.go for the source of truth and the refresh notes.
+	for i := range response.Data {
+		response.Data[i] = enrichModel(response.Data[i])
 	}
 
 	modelsInfo := &ModelsInfo{
@@ -85,21 +93,24 @@ func (s *ModelsService) filterModels(ctx context.Context, keep func(ModelDetails
 	return result, nil
 }
 
-// GetTextModels returns all text-only models
+// GetTextModels returns all text-capable models (every chat model advertises
+// the "text" capability in the catalog; vision models do too, since they also
+// chat). If you want text-ONLY models (excluding vision), filter on
+// HasCapability("text") && !HasCapability("vision") at the callsite.
 func (s *ModelsService) GetTextModels(ctx context.Context) ([]ModelDetails, error) {
-	return s.filterModels(ctx, func(m ModelDetails) bool { return isTextModel(m.ID) })
+	return s.filterModels(ctx, func(m ModelDetails) bool { return m.HasCapability(CapText) })
 }
 
-// GetVisionModels returns all vision-capable models
+// GetVisionModels returns all vision-capable models.
 func (s *ModelsService) GetVisionModels(ctx context.Context) ([]ModelDetails, error) {
-	return s.filterModels(ctx, func(m ModelDetails) bool { return isVisionModel(m.ID) })
+	return s.filterModels(ctx, func(m ModelDetails) bool { return m.HasCapability(CapVision) })
 }
 
-// GetFreeModels returns all free models
+// GetFreeModels returns all genuinely-free models — those with a non-nil
+// Pricing whose input and output rates are both zero. See ModelDetails.IsFree
+// for why nil Pricing is treated as "unknown", not "free".
 func (s *ModelsService) GetFreeModels(ctx context.Context) ([]ModelDetails, error) {
-	return s.filterModels(ctx, func(m ModelDetails) bool {
-		return m.Pricing != nil && m.Pricing.Input == 0 && m.Pricing.Output == 0
-	})
+	return s.filterModels(ctx, func(m ModelDetails) bool { return m.IsFree() })
 }
 
 // RefreshCache clears and refreshes the models cache
@@ -110,23 +121,4 @@ func (s *ModelsService) RefreshCache(ctx context.Context) error {
 
 	_, err := s.List(ctx)
 	return err
-}
-
-// visionModelMarkers are substrings identifying vision-capable model IDs —
-// the single source of truth isTextModel/isVisionModel both read, so the
-// two categorizations can never drift out of sync with each other (they
-// previously each hardcoded their own copy of this list).
-var visionModelMarkers = []string{"glm-5v", "glm-4.6v", "glm-4.5v", "glm-ocr"}
-
-func isVisionModel(modelID string) bool {
-	for _, vm := range visionModelMarkers {
-		if strings.Contains(modelID, vm) {
-			return true
-		}
-	}
-	return false
-}
-
-func isTextModel(modelID string) bool {
-	return !isVisionModel(modelID)
 }

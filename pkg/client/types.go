@@ -234,7 +234,16 @@ type ModelsInfo struct {
 	Models []ModelDetails `json:"data"`
 }
 
-// ModelDetails represents individual model information
+// ModelDetails represents individual model information.
+//
+// Fields up through Pricing are populated from the upstream /models response;
+// the trailing fields (Created, MaxOutput, Family, Tier, Capabilities,
+// CatalogName, CatalogDescription) are filled in by enrichModel from a
+// hand-curated catalog (models_catalog.go), because Z.AI's /models endpoint
+// currently returns only the OpenAI-bare {id, object, created, owned_by}
+// shape. Enrichment fields are tagged json:"-" so they never affect wire
+// decoding; live API values always win over catalog values when both are
+// present (see enrichModel).
 type ModelDetails struct {
 	ID          string   `json:"id"`
 	Name        string   `json:"name"`
@@ -242,6 +251,33 @@ type ModelDetails struct {
 	ContextSize int      `json:"max_context"`
 	OwnedBy     string   `json:"owned_by"`
 	Pricing     *Pricing `json:"pricing,omitempty"`
+
+	// Created is the model's release epoch as the API reports it. Populated
+	// from the catalog when the API omits it (some entries do).
+	Created int64 `json:"created"`
+
+	// --- Enrichment-only fields below (never decoded from wire) ---
+
+	// MaxOutput is the maximum number of tokens a model can generate in one
+	// response. Zero means unknown.
+	MaxOutput int `json:"-"`
+
+	// Family groups related variants (e.g. "GLM-5", "GLM-4.6"); Tier is a
+	// short label like "flagship", "fast", "air", "vision", "ocr".
+	Family string `json:"-"`
+	Tier   string `json:"-"`
+
+	// Capabilities is the set of capability codes a model supports, drawn
+	// from the well-known set in capability.go (text, vision, thinking,
+	// tools, code, ...). Empty means unknown.
+	Capabilities []string `json:"-"`
+
+	// CatalogName / CatalogDescription hold the human-readable name and
+	// blurb from the catalog, used to populate Name/Description when the
+	// API doesn't send them (which is always, today). Kept as separate
+	// fields so a future API that does send Name/Description wins cleanly.
+	CatalogName        string `json:"-"`
+	CatalogDescription string `json:"-"`
 }
 
 // Pricing represents model pricing information

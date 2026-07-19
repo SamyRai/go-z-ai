@@ -43,7 +43,7 @@ import (
 const (
 	twoColumnMinWidth = 100
 	compactWidth      = 70
-	previewWidth      = 42 // fixed pane width; the table takes the rest
+	previewWidth      = 42                  // fixed pane width; the table takes the rest
 	tableColsTotal    = 28 + 9 + 8 + 9 + 12 // ID(28) Context(8) IN(9) OUT(9) CAPS(12) ≈ table min
 	tableColsCompact  = 28 + 7 + 7 + 7      // ID(28) Context(7) IN(7) OUT(7) — CAPS dropped
 )
