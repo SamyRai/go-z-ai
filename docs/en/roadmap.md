@@ -44,8 +44,8 @@ captures a real success response closes each item.
   The `Choices`/`Usage` success shape is modeled from docs only.
 - **Voice `Clone` / `Delete`** (`TestVerifyVoiceClone`, `TestVerifyVoiceDelete`)
   — `Voice List` is confirmed live; clone/delete need an uploaded sample
-  audio and a real cloned voice ID to record. Clone needs `ZAI_VOICE_SAMPLE_FILE_ID`
-  + `ZAI_VOICE_NAME`; delete needs `ZAI_VOICE_ID`.
+  audio and a real cloned voice ID to record. Clone needs
+  `ZAI_VOICE_SAMPLE_FILE_ID` + `ZAI_VOICE_NAME`; delete needs `ZAI_VOICE_ID`.
 - **Batch and Files endpoints generally** — no dedicated `TestVerify*`
   scaffold yet; would need an entitled PAYG account to record.
 
@@ -70,8 +70,8 @@ but NOT VERIFIED LIVE until a cassette pins the exact wire shape. Each has a
   standalone web-search tool); placement as a top-level array is modeled from
   the docs.
 - **`ThinkingConfig.Effort = "xhigh"`** — added to the validated enum
-  (`xhigh`→`max`, GLM-5.2 only). No dedicated test; covered by any thinking
-  + xhigh cassette.
+  (`xhigh`→`max`, GLM-5.2 only). No dedicated test; covered by any
+  thinking + xhigh cassette.
 - **`FinishReason*` constants** (`sensitive`, `model_context_window_exceeded`,
   `network_error`) — added from the docs; no cassette reproduces these
   termination paths yet.

@@ -4,7 +4,7 @@ This gets you from zero to your first `zai-client` command in a couple of minute
 
 ## 1. Install
 
-**Prerequisites:** Go 1.26.4+, a Z.AI API key ([create one here](https://z.ai/manage-apikey)).
+**Prerequisites:** Go 1.26.4+, a Z.AI API key ([create one here](https://z.ai/manage-apikey/apikey-list)).
 
 ```bash
 go install github.com/SamyRai/go-z-ai@latest
@@ -97,7 +97,7 @@ From here:
 Double check `echo $ZAI_API_KEY`, or pass `--api-key` explicitly to confirm.
 
 **"invalid API key" / HTTP 401** — the key was found but Z.AI rejected it.
-Regenerate it at [z.ai/manage-apikey](https://z.ai/manage-apikey).
+Regenerate it at [z.ai/manage-apikey](https://z.ai/manage-apikey/apikey-list).
 
 **"Unknown Model" (error 1211) on `embeddings`/`moderations`/`rerank`/`voice`** —
 this is almost always an account-entitlement gate, not a bug: your account's

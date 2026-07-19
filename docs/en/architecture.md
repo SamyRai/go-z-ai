@@ -14,7 +14,7 @@
 
 ## Package layout
 
-```
+```text
 main.go               A five-line entrypoint: package main → internal/cli.Execute()
 internal/cli/         CLI commands (package cli), one file per command group:
                       chat.go, accounts_cli.go, coding_cli.go, ...
@@ -56,7 +56,7 @@ stderr so stdout stays valid JSON.
 Every service method funnels through one of three `Client` methods —
 services never build their own `http.Client` or issue a raw request:
 
-```
+```text
 doRequest(ctx, method, endpoint, body, result)
   → doRequestBase(ctx, baseURL, method, endpoint, body, result)   // for non-default base URLs
     → doRequestBaseKey(ctx, baseURL, apiKey, method, endpoint, body, result)  // for a different credential
