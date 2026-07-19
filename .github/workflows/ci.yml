@@ -135,6 +135,7 @@ jobs:
             --max-concurrency 10
             --exclude 'pkg\.go\.dev'
             --exclude 'docs\.z\.ai'
+            --exclude 'localhost'
             README*.md docs/**/*.md CONTRIBUTING.md examples/README.md .github/**/*.md
           fail: true
         env:
