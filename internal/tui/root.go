@@ -14,6 +14,7 @@ import (
 	"github.com/SamyRai/go-z-ai/internal/tui/coding"
 	"github.com/SamyRai/go-z-ai/internal/tui/media"
 	"github.com/SamyRai/go-z-ai/internal/tui/models"
+	"github.com/SamyRai/go-z-ai/internal/tui/modelpicker"
 	"github.com/SamyRai/go-z-ai/internal/tui/palette"
 	"github.com/SamyRai/go-z-ai/internal/tui/tools"
 	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
@@ -111,6 +112,19 @@ type refresher interface {
 	Refresh() (tea.Model, tea.Cmd)
 }
 
+// chatModelSetter is implemented by the chat screen: the model-picker overlay
+// returns a chosen id, and the root forwards it via SetModel so the chat
+// screen stays the source of truth for the active model.
+type chatModelSetter interface {
+	SetModel(id string) (tea.Model, tea.Cmd)
+}
+
+// chatModelGetter is implemented by the chat screen so the root can pass the
+// currently-selected model id into the picker (to highlight it in the list).
+type chatModelGetter interface {
+	ModelID() string
+}
+
 // innerSize returns the content area available to the active screen, after
 // subtracting the header/tab-bar/footer rows and the bordered panel's own
 // border+padding.
@@ -142,6 +156,35 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if res, ok := msg.(palette.Result); ok {
 		m.overlay = nil
 		return m, m.runPaletteAction(res)
+	}
+
+	// The chat screen asks the root to open the model picker (ctrl+m, or via
+	// the palette). The root owns the client and the overlay slot, so it
+	// builds the picker. Blocked mid-stream like the other overlays.
+	if _, ok := msg.(uimsg.OpenModelPicker); ok {
+		activeStreaming := false
+		if sc, ok := m.screens[m.active].(streamer); ok {
+			activeStreaming = sc.Streaming()
+		}
+		if !activeStreaming {
+			m.overlay = m.openModelPicker()
+			return m, m.overlay.Init()
+		}
+		return m, nil
+	}
+
+	// The model picker returned a chosen id — forward it to the chat screen
+	// and dismiss the overlay.
+	if picked, ok := msg.(modelpicker.Picked); ok {
+		m.overlay = nil
+		if s, ok := m.screens[tabChat].(chatModelSetter); ok {
+			ns, cmd := s.SetModel(picked.Model)
+			m.screens[tabChat] = ns
+			return m, tea.Batch(cmd, func() tea.Msg {
+				return uimsg.Status{Text: "chat model: " + picked.Model}
+			})
+		}
+		return m, nil
 	}
 
 	if m.overlay != nil {
@@ -391,6 +434,18 @@ func (m *rootModel) openHelpOverlay() tea.Model {
 	return newHelpOverlay(m.keys, screenTitle, screenBindings)
 }
 
+// openModelPicker builds the model-picker overlay from the chat screen's
+// current model (to highlight it) and the root's client (to fetch the
+// catalog). The picker fetches on Init; the root kicks that off after
+// assigning the overlay slot.
+func (m *rootModel) openModelPicker() tea.Model {
+	current := ""
+	if g, ok := m.screens[tabChat].(chatModelGetter); ok {
+		current = g.ModelID()
+	}
+	return modelpicker.New(m.cfg.Client, current)
+}
+
 // openPalette builds the command-palette overlay. Tab names are passed in so
 // the palette needn't import the tab enum; the static action set (refresh,
 // toggle help, switch chat model, quit) is the same regardless of the active
@@ -438,12 +493,18 @@ func (m *rootModel) runPaletteAction(res palette.Result) tea.Cmd {
 		m.overlay = m.openHelpOverlay()
 		return nil
 	case palette.ActionOpenModelPicker:
-		// Implemented alongside the chat model picker; until then, jump to
-		// the chat tab so the user can pick via the chat-screen binding.
-		if m.screens[tabChat] != nil {
+		// Switch to the chat tab (the model picker is chat-scoped) and open
+		// the picker overlay. If already on chat, just open the picker.
+		if m.screens[tabChat] != nil && m.active != tabChat {
 			m.switchTab(tabChat)
-			return m.ensureInit()
+			if cmd := m.ensureInit(); cmd != nil {
+				// ensureInit returns nil once chat has been initialized; we
+				// still open the picker regardless, so drop the cmd only if
+				// present and chain it.
+				return tea.Batch(cmd, func() tea.Msg { return uimsg.OpenModelPicker{} })
+			}
 		}
+		return func() tea.Msg { return uimsg.OpenModelPicker{} }
 	case palette.ActionQuit:
 		return tea.Quit
 	}

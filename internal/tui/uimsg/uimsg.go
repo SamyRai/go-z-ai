@@ -30,3 +30,10 @@ type Routed struct {
 // the root's overlay slot without it, and they must not import the root
 // package (the root imports them).
 type CloseOverlay struct{}
+
+// OpenModelPicker asks the root to open the chat model-picker overlay. The
+// chat screen emits this on ctrl+m; the root builds the picker (it owns the
+// client) and, on pick, forwards the chosen id back to chat. Splitting it
+// this way keeps the picker as a root-owned overlay (consistent with help /
+// palette) while the chat screen stays the source of truth for the model.
+type OpenModelPicker struct{}
