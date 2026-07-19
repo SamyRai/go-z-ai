@@ -124,7 +124,7 @@ func runChatCreate(cmd *cobra.Command, args []string, apiClient *client.Client) 
 		if err != nil {
 			return fmt.Errorf("failed to submit async chat completion: %w", err)
 		}
-		fmt.Printf("Task submitted: %s (poll with 'zai-client chat async-result %s')\n", task.ID, task.ID)
+		fmt.Printf("Task submitted: %s (poll with 'go-z-ai chat async-result %s')\n", task.ID, task.ID)
 		return nil
 	}
 

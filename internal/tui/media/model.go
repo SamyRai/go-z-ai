@@ -1,7 +1,7 @@
 // Package media implements the TUI's Media tab: image generation, video
 // generation, audio transcription, and OCR/layout parsing over pkg/client's
 // ImagesService/VideosService/AudioService/LayoutService — the same
-// services the "zai-client image/video/audio/ocr" commands use.
+// services the "go-z-ai image/video/audio/ocr" commands use.
 package media
 
 import (

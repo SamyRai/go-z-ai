@@ -26,7 +26,7 @@ func init() {
 
 func runTUI(cmd *cobra.Command, args []string) error {
 	if !term.IsTerminal(int(os.Stdout.Fd())) {
-		fmt.Fprintln(os.Stderr, "zai-client tui: stdout is not a terminal (piped or non-interactive); the TUI requires an interactive terminal. Use the individual subcommands instead (chat, models, usage, accounts, coding, tools).")
+		fmt.Fprintln(os.Stderr, "go-z-ai tui: stdout is not a terminal (piped or non-interactive); the TUI requires an interactive terminal. Use the individual subcommands instead (chat, models, usage, accounts, coding, tools).")
 		return fmt.Errorf("not a tty")
 	}
 

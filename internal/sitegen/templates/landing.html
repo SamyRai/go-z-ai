@@ -38,7 +38,7 @@
 
 <section class="block">
   <h2>{{ T "landing.section.install" }}</h2>
-  <pre class="chroma"><code>{{ highlight (printf "# Install the CLI\ngo install %s@latest\n\n# The binary is named go-z-ai — symlink or rename to zai-client\nln -s \"$(go env GOPATH)/bin/go-z-ai\" \"$(go env GOPATH)/bin/zai-client\"\n\n# Configure\nexport ZAI_API_KEY=your_api_key_here\n\n# Use it\nzai-client chat create \"Explain goroutines\" --stream\n" .Site.Module) "bash" | safeHTML }}</code></pre>
+  <pre class="chroma"><code>{{ highlight (printf "# Install\ngo install %s@latest\n\n# Optional short alias: ln -s \"$(go env GOPATH)/bin/go-z-ai\" \"$(go env GOPATH)/bin/zai\"\n\n# Configure\nexport ZAI_API_KEY=your_api_key_here\n\n# Use it\ngo-z-ai chat create \"Explain goroutines\" --stream\n" .Site.Module) "bash" | safeHTML }}</code></pre>
   <p>{{ T "landing.text.install_or_library" }} <a href="{{ langBase .Page.Lang }}library-guide.html">{{ T "landing.text.library_guide_link" }}</a>.</p>
 </section>
 
@@ -58,7 +58,7 @@
     <li><strong>Retrieval</strong> — embeddings, rerank, web search/reader/tokenizer tools</li>
     <li><strong>Agents, moderations, batch, files</strong></li>
     <li><strong>GLM Coding Plan</strong> — quota/usage, multi-account, wiring Claude Code/Cursor/…</li>
-    <li><strong>Full-screen TUI</strong> — <code>zai-client tui</code></li>
+    <li><strong>Full-screen TUI</strong> — <code>go-z-ai tui</code></li>
   </ul>
   <p>{{ T "landing.text.full_surface" }}: <a href="{{ langBase .Page.Lang }}cli-reference.html">{{ T "nav.cli" }} {{ T "landing.cta.cli_ref" | lower }}</a> · <a href="{{ langBase .Page.Lang }}library-guide.html">{{ T "landing.text.library_guide_link" }}</a></p>
 </section>

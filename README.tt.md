@@ -1,4 +1,4 @@
-# Z.AI API клиенты
+# go-z-ai
 
 Z.AI (Zhipu AI / BigModel) платформасы өчен Go **CLI**, **китапханә** һәм
 **TUI** — һемин GLM модель өслеген бер инструментта, шулай ук `@z_ai/coding-helper`’ның
@@ -21,7 +21,7 @@ export ZAI_API_KEY=your_api_key_here
 # яки: cp .env.example .env, аннары .env файлын үзгәрт
 
 # 2. CLI куллану
-zai-client chat create "Горутиналарны бер абзацта аңлат" --stream
+go-z-ai chat create "Горутиналарны бер абзацта аңлат" --stream
 ```
 
 ```go
@@ -58,8 +58,8 @@ fmt.Println(resp.Choices[0].Message.Content)
   файл йөкләү/исемлек/йөкләп алу.
 - **GLM Coding Plan** — квота/куллану мониторингы, күп аккаунт идарәсе
   һәм Claude Code, OpenCode, Crush, Factory Droid һәм Cursor’ны сезнең
-  подпискаңызга тоташтыру өчен `zai-client coding`.
-- **DX** — тулы экранлы терминал интерфейсы (`zai-client tui`), төбәк шлюзын
+  подпискаңызга тоташтыру өчен `go-z-ai coding`.
+- **DX** — тулы экранлы терминал интерфейсы (`go-z-ai tui`), төбәк шлюзын
   алмаштыру (`api.z.ai` ↔ `open.bigmodel.cn`), экспоненциаль кичектерү һәм
   джиттер белән автоматик кабатлау, шулай ук һәр Z.AI хата коды тәкъдим ителгән
   типлаштырылган `APIError`.
@@ -70,13 +70,10 @@ fmt.Println(resp.Choices[0].Message.Content)
 go install github.com/SamyRai/go-z-ai@latest
 ```
 
-Бу сезнең `$GOPATH/bin` эчендә `go-z-ai` дигән бинарник булдыра. Астагы
-мисаллар кыскарак исемне куллана — **`zai-client`** — символик сылтама яки
-исемен үзгәртегез:
+Бу сезнең `$GOPATH/bin` эчендә `go-z-ai` дигән бинарник булдыра.
 
 ```bash
-ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
-# яки: mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+# Мөмкин булган кыска псевдоним: ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai"
 ```
 
 Go 1.26.4+ һәм [Z.AI API-аскычы](https://z.ai/manage-apikey/apikey-list) кирәк. Чыганактан
@@ -85,20 +82,20 @@ Go 1.26.4+ һәм [Z.AI API-аскычы](https://z.ai/manage-apikey/apikey-list
 
 ## CLI буларак
 
-Бер генә `zai-client` бинарнигы тулы өслекне каплый. Һәр команда `--help`
+Бер генә `go-z-ai` бинарнигы тулы өслекне каплый. Һәр команда `--help`
 кабул итә; тиз күзәтү:
 
 ```bash
-zai-client chat create "..." --stream          # чат (агымлы тапшыру, инструментлар, визуаль кертү, структураләштерелгән чыгыш)
-zai-client anthropic messages "..." --stream   # Anthropic-белән туры килүче /v1/messages
-zai-client image|video|audio|voice ...         # медиа генерациясе, язып алу, TTS, клонлау
-zai-client ocr|parser ...                      # OCR + документ парсингы
-zai-client embeddings|rerank|moderations ...   # эзләү + контент модерациясе
-zai-client models list                         # модель каталогы + бәяләр
-zai-client accounts add|use|quota|usage ...    # күп аккаунт + GLM Coding Plan мониторингы
-zai-client coding auth|load|doctor|mcp ...     # Claude Code / Cursor һ.б.-ны GLM Coding Plan’га тоташтыру
-zai-client tui                                 # тулы экранлы терминал интерфейсы (өстәге барысы)
-zai-client validate                            # аскычыгызның бер чын шакырту белән эшләвен раслагыз
+go-z-ai chat create "..." --stream          # чат (агымлы тапшыру, инструментлар, визуаль кертү, структураләштерелгән чыгыш)
+go-z-ai anthropic messages "..." --stream   # Anthropic-белән туры килүче /v1/messages
+go-z-ai image|video|audio|voice ...         # медиа генерациясе, язып алу, TTS, клонлау
+go-z-ai ocr|parser ...                      # OCR + документ парсингы
+go-z-ai embeddings|rerank|moderations ...   # эзләү + контент модерациясе
+go-z-ai models list                         # модель каталогы + бәяләр
+go-z-ai accounts add|use|quota|usage ...    # күп аккаунт + GLM Coding Plan мониторингы
+go-z-ai coding auth|load|doctor|mcp ...     # Claude Code / Cursor һ.б.-ны GLM Coding Plan’га тоташтыру
+go-z-ai tui                                 # тулы экранлы терминал интерфейсы (өстәге барысы)
+go-z-ai validate                            # аскычыгызның бер чын шакырту белән эшләвен раслагыз
 ```
 
 Нәтиҗә китерүче һәр команда `--format text|json` кабул итә (JSON — stdout’ка,
@@ -156,14 +153,14 @@ c, err := client.NewClient(client.Config{
 | `--api-key <key>` флагы | Бер тапкыр чакырулар, скриптлар, CI |
 | `--account <исем>` флагы | [Сакланган аккаунтлар](docs/ru/accounts-and-quota.md) арасында алыштыру |
 | `ZAI_API_KEY` env-үзгәрүчән (яки `.env` файлы) | Гадәттәге җирле shell кулланышы |
-| Аккаунтлар саклагычының актив аккаунты | `zai-client accounts use <исем>`’дан соң |
+| Аккаунтлар саклагычының актив аккаунты | `go-z-ai accounts use <исем>`’дан соң |
 
 `.env` файлы — иң таралган очрак — аннотацияләнгән шаблонны күчерегез һәм
 аны үзгәртегез:
 
 ```bash
 cp .env.example .env
-# яки теләсә нинди файлны күрсәтегзез: zai-client --config /path/to/config ...
+# яки теләсә нинди файлны күрсәтегзез: go-z-ai --config /path/to/config ...
 ```
 
 ```dotenv
@@ -202,7 +199,7 @@ Z.AI / Zhipu **Python**
 идарәсен өсти.
 
 > ℹ️ Репозиторий тамырындагы `zai-claude-config.json` — бу placeholder’лар
-> булган **шаблон** (`"your-zai-api-key-here"`), аны `zai-client coding load
+> булган **шаблон** (`"your-zai-api-key-here"`), аны `go-z-ai coding load
 > claude-code` куллана. Ул чын конфиг түгел һәм аңа бернинди дә
 > аутентификация мәгълүматы кертелмәгән.
 

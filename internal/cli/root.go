@@ -12,7 +12,7 @@ import (
 var cfgFile string
 
 // buildInfo is set by Execute() from main.go's ldflag-populated vars so that
-// `zai-client --version` reports the GoReleaser build metadata.
+// `go-z-ai --version` reports the GoReleaser build metadata.
 var buildInfo = struct {
 	version string
 	commit  string
@@ -20,7 +20,7 @@ var buildInfo = struct {
 }{version: "dev", commit: "none", date: "unknown"}
 
 var rootCmd = &cobra.Command{
-	Use:     "zai-client",
+	Use:     "go-z-ai",
 	Short:   "Z.AI API Client",
 	Long:    `A comprehensive CLI client for the Z.AI (Zhipu AI) API platform.`,
 	Version: "dev",

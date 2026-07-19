@@ -1,5 +1,5 @@
 // Package chat implements the TUI's Chat tab: a streaming conversation over
-// pkg/client's ChatService, the same service "zai-client chat" uses.
+// pkg/client's ChatService, the same service "go-z-ai chat" uses.
 package chat
 
 import (

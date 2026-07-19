@@ -1,6 +1,6 @@
 # 编码工具（GLM Coding Plan）
 
-`zai-client coding` 用于把第三方编码助手配置为使用你的 GLM
+`go-z-ai coding` 用于把第三方编码助手配置为使用你的 GLM
 Coding Plan，而不是它们默认的供应商。它是 Z.AI 官方
 `@z_ai/coding-helper`（"chelper"）CLI 的 Go 移植版，共享同一个凭证文件，因此
 两者可以互换使用。
@@ -15,7 +15,7 @@ Coding Plan，而不是它们默认的供应商。它是 Z.AI 官方
 | Factory Droid | `~/.factory/settings.json` |
 | Cursor | 随操作系统而异——macOS 上为 `~/Library/Application Support/Cursor/User/settings.json`，其他平台为 `~/.cursor/settings.json`（或 `~/.config/Cursor/User/settings.json`） |
 
-运行 `zai-client coding tools` 可以查看本机上的安装状态以及解析出的精确路径。
+运行 `go-z-ai coding tools` 可以查看本机上的安装状态以及解析出的精确路径。
 
 ## 套餐
 
@@ -30,16 +30,16 @@ Coding Plan，而不是它们默认的供应商。它是 Z.AI 官方
 
 ```bash
 # 1. 存储并校验你的 GLM Coding Plan key（一次性）
-zai-client coding auth glm_coding_plan_global YOUR_KEY
+go-z-ai coding auth glm_coding_plan_global YOUR_KEY
 
 # 2. 把它加载到某个工具中
-zai-client coding load claude-code
+go-z-ai coding load claude-code
 # 工具 ID：claude-code, opencode, crush, factory-droid, cursor
 # 也支持别名：claude, droid, factory
 
 # 3. 检查是否一切就绪
-zai-client coding status
-zai-client coding doctor
+go-z-ai coding status
+go-z-ai coding doctor
 ```
 
 凭证存放在 `~/.chelper/config.yaml`（与官方 Node 助手字节兼容）——`coding auth`
@@ -49,7 +49,7 @@ zai-client coding doctor
 如果想让某个工具停止使用 Z.AI，但又不丢失已存储的凭证：
 
 ```bash
-zai-client coding unload claude-code
+go-z-ai coding unload claude-code
 ```
 
 这只会移除它添加的 Z.AI 专属字段，不会动你现有配置文件的其余部分。
@@ -72,10 +72,10 @@ zai-client coding unload claude-code
 可以覆盖任意层级，或完全停用模型映射：
 
 ```bash
-zai-client coding auth glm_coding_plan_global YOUR_KEY \
+go-z-ai coding auth glm_coding_plan_global YOUR_KEY \
   --sonnet glm-5.2 --opus glm-5.2
 
-zai-client coding auth glm_coding_plan_global YOUR_KEY --no-model-mapping
+go-z-ai coding auth glm_coding_plan_global YOUR_KEY --no-model-mapping
 ```
 
 以下 flag 也可配置，均为可选（值为 0 或省略则不设置对应环境变量）：
@@ -92,9 +92,9 @@ zai-client coding auth glm_coding_plan_global YOUR_KEY --no-model-mapping
 ## Key 管理
 
 ```bash
-zai-client coding auth revoke              # 清除已存储的 key，保留所选套餐
-zai-client coding auth reload <tool>       # 重新把已存储的凭证推送到某个工具
-zai-client coding load <tool> --key OTHER_KEY --plan glm_coding_plan_china  # 一次性覆盖
+go-z-ai coding auth revoke              # 清除已存储的 key，保留所选套餐
+go-z-ai coding auth reload <tool>       # 重新把已存储的凭证推送到某个工具
+go-z-ai coding load <tool> --key OTHER_KEY --plan glm_coding_plan_china  # 一次性覆盖
 ```
 
 默认情况下，`coding auth` 在存储新 key 前会先对 API 进行校验（发起一次真实的
@@ -111,10 +111,10 @@ GLM-4.6V 的通用图像/视频分析，通过 `npx` 按需启动。`coding mcp`
 正在使用的工具中：
 
 ```bash
-zai-client coding mcp add claude-code     # 使用已存储的 API Key
-zai-client coding mcp add crush --key OTHER_KEY
-zai-client coding mcp status              # 查看哪些工具已配置
-zai-client coding mcp remove claude-code
+go-z-ai coding mcp add claude-code     # 使用已存储的 API Key
+go-z-ai coding mcp add crush --key OTHER_KEY
+go-z-ai coding mcp status              # 查看哪些工具已配置
+go-z-ai coding mcp remove claude-code
 ```
 
 **需要 Node.js。** 该 server 本身通过 `npx -y @z_ai/mcp-server` 运行——Z.AI 自家
@@ -140,7 +140,7 @@ Cursor 文档中对任意 server 通用的 MCP 结构，理论上应可用，但
 ## Doctor
 
 ```bash
-zai-client coding doctor
+go-z-ai coding doctor
 ```
 
 检查内容：是否已存储凭证、凭证格式是否正确、`PATH` 上安装了哪些受支持的工具，

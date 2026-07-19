@@ -21,7 +21,7 @@ help: ## Show this help.
 .PHONY: build
 build: ## Build all packages and the CLI binary.
 	$(GO) build ./...
-	$(GO) build -o zai-client .
+	$(GO) build -o go-z-ai .
 
 .PHONY: vet
 vet: ## Run go vet.
@@ -75,7 +75,7 @@ ci-local: fmt-check vet lint test vuln docs-lint ## Run the full CI-equivalent c
 
 .PHONY: clean
 clean: ## Remove built binary, coverage artifacts, and generated site.
-	rm -f zai-client sitegen cover.out coverage.txt coverage.html
+	rm -f go-z-ai sitegen cover.out coverage.txt coverage.html
 	rm -rf site
 
 # ─── Static site generation ────────────────────────────────────────────

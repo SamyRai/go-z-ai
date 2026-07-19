@@ -5,7 +5,7 @@ from the markdown docs + live GitHub data by a tiny Go generator.
 
 ## What it does
 
-`cmd/sitegen` (a separate binary in this repo, *not* part of the `zai-client`
+`cmd/sitegen` (a separate binary in this repo, *not* part of the `go-z-ai`
 release) reads:
 
 - The 6 root `README*.md` files → one landing page per locale.

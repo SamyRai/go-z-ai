@@ -1,6 +1,6 @@
 # Инструменты для кода (GLM Coding Plan)
 
-`zai-client coding` настраивает сторонние ассистенты для кода на использование
+`go-z-ai coding` настраивает сторонние ассистенты для кода на использование
 вашего GLM Coding Plan вместо их стандартного провайдера. Это порт на Go
 официальной утилиты `@z_ai/coding-helper` ("chelper") от Z.AI, использующий тот
 же файл учётных данных, поэтому оба инструмента можно применять
@@ -16,7 +16,7 @@
 | Factory Droid | `~/.factory/settings.json` |
 | Cursor | Зависит от ОС — `~/Library/Application Support/Cursor/User/settings.json` на macOS, `~/.cursor/settings.json` (или `~/.config/Cursor/User/settings.json`) в остальных системах |
 
-Выполните `zai-client coding tools`, чтобы увидеть статус установки и точные
+Выполните `go-z-ai coding tools`, чтобы увидеть статус установки и точные
 резолвленные пути на вашей машине.
 
 ## Тарифы
@@ -32,16 +32,16 @@
 
 ```bash
 # 1. Сохранить и провалидировать ключ GLM Coding Plan (один раз)
-zai-client coding auth glm_coding_plan_global YOUR_KEY
+go-z-ai coding auth glm_coding_plan_global YOUR_KEY
 
 # 2. Загрузить его в инструмент
-zai-client coding load claude-code
+go-z-ai coding load claude-code
 # ID инструментов: claude-code, opencode, crush, factory-droid, cursor
 # также работают алиасы: claude, droid, factory
 
 # 3. Проверить, что всё настроено
-zai-client coding status
-zai-client coding doctor
+go-z-ai coding status
+go-z-ai coding doctor
 ```
 
 Учётные данные хранятся в `~/.chelper/config.yaml` (побайтово совместим с
@@ -53,7 +53,7 @@ load` читает оттуда для каждого инструмента, е
 учётных данных:
 
 ```bash
-zai-client coding unload claude-code
+go-z-ai coding unload claude-code
 ```
 
 Это удаляет только добавленные Z.AI-специфичные поля; остальную часть
@@ -76,10 +76,10 @@ zai-client coding unload claude-code
 Переопределите любой уровень или полностью отключите сопоставление:
 
 ```bash
-zai-client coding auth glm_coding_plan_global YOUR_KEY \
+go-z-ai coding auth glm_coding_plan_global YOUR_KEY \
   --sonnet glm-5.2 --opus glm-5.2
 
-zai-client coding auth glm_coding_plan_global YOUR_KEY --no-model-mapping
+go-z-ai coding auth glm_coding_plan_global YOUR_KEY --no-model-mapping
 ```
 
 Также настраивается, всё опционально (0/опущено = не задавать env-переменную):
@@ -96,9 +96,9 @@ zai-client coding auth glm_coding_plan_global YOUR_KEY --no-model-mapping
 ## Управление ключами
 
 ```bash
-zai-client coding auth revoke              # очистить сохранённый ключ, сохранив выбор тарифа
-zai-client coding auth reload <tool>       # повторно загрузить сохранённые учётные данные в инструмент
-zai-client coding load <tool> --key OTHER_KEY --plan glm_coding_plan_china  # разовое переопределение
+go-z-ai coding auth revoke              # очистить сохранённый ключ, сохранив выбор тарифа
+go-z-ai coding auth reload <tool>       # повторно загрузить сохранённые учётные данные в инструмент
+go-z-ai coding load <tool> --key OTHER_KEY --plan glm_coding_plan_china  # разовое переопределение
 ```
 
 По умолчанию `coding auth` валидирует новый ключ через API перед сохранением
@@ -117,10 +117,10 @@ GLM-4.6V, запускаемый по требованию через `npx`. `co
 в любом используемом вами инструменте:
 
 ```bash
-zai-client coding mcp add claude-code     # использует сохранённый API-ключ
-zai-client coding mcp add crush --key OTHER_KEY
-zai-client coding mcp status              # в каких инструментах он настроен
-zai-client coding mcp remove claude-code
+go-z-ai coding mcp add claude-code     # использует сохранённый API-ключ
+go-z-ai coding mcp add crush --key OTHER_KEY
+go-z-ai coding mcp status              # в каких инструментах он настроен
+go-z-ai coding mcp remove claude-code
 ```
 
 **Требуется Node.js.** Сам сервер запускается через `npx -y @z_ai/mcp-server` —
@@ -149,7 +149,7 @@ Z.AI для конкретно этого сервера.
 ## Doctor
 
 ```bash
-zai-client coding doctor
+go-z-ai coding doctor
 ```
 
 Проверяет: сохранены ли учётные данные, выглядят ли они корректно, какие из

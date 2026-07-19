@@ -1,4 +1,4 @@
-# Z.AI API Client
+# go-z-ai
 
 Eine Go-**CLI**, **Bibliothek** und ein **TUI** für die Z.AI-Plattform
 (Zhipu AI / BigModel) — jede Modell-Schnittstelle von GLM in einem einzigen
@@ -21,7 +21,7 @@ export ZAI_API_KEY=your_api_key_here
 # oder: cp .env.example .env, dann .env bearbeiten
 
 # 2. CLI verwenden
-zai-client chat create "Erkläre Goroutinen in einem Absatz" --stream
+go-z-ai chat create "Erkläre Goroutinen in einem Absatz" --stream
 ```
 
 ```go
@@ -57,9 +57,9 @@ der Anthropic-Endpunkt `/v1/messages` — finden Sie unter [`examples/`](example
 - **Batch & Dateien** — JSONL-Batch-Jobs für Chat-Completions,
   Datei-Upload/-Auflistung/-Download.
 - **GLM Coding Plan** — Überwachung von Kontingent/Nutzung, Mehrfachkonten-Verwaltung
-  und `zai-client coding`, um Claude Code, OpenCode, Crush, Factory Droid und
+  und `go-z-ai coding`, um Claude Code, OpenCode, Crush, Factory Droid und
   Cursor an Ihr Abonnement anzubinden.
-- **DX** — Terminal-Vollbild-UI (`zai-client tui`), Umschalten zwischen regionalen
+- **DX** — Terminal-Vollbild-UI (`go-z-ai tui`), Umschalten zwischen regionalen
   Gateways (`api.z.ai` ↔ `open.bigmodel.cn`), automatische Wiederholung mit
   Backoff + Jitter sowie ein typisiertes `APIError`, in dem jeder Z.AI-Fehlercode
   abgebildet ist.
@@ -70,13 +70,10 @@ der Anthropic-Endpunkt `/v1/messages` — finden Sie unter [`examples/`](example
 go install github.com/SamyRai/go-z-ai@latest
 ```
 
-Dies erzeugt einen Binary namens `go-z-ai` in Ihrem `$GOPATH/bin`. Die
-Beispiele unten verwenden den kürzeren Namen **`zai-client`** — verlinken
-oder benennen Sie ihn um:
+Dies erzeugt einen Binary namens `go-z-ai` in Ihrem `$GOPATH/bin`.
 
 ```bash
-ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
-# oder: mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+# Optionaler Kurz-Alias: ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai"
 ```
 
 Setzt Go 1.26.4+ und einen [Z.AI API-Key](https://z.ai/manage-apikey/apikey-list) voraus.
@@ -85,20 +82,20 @@ Build aus dem Quellcode, Erstanmeldung und Fehlerbehebung:
 
 ## Als CLI
 
-Ein einzelner `zai-client`-Binary deckt die gesamte Oberfläche ab. Jeder Befehl
+Ein einzelner `go-z-ai`-Binary deckt die gesamte Oberfläche ab. Jeder Befehl
 unterstützt `--help`; hier der Schnelldurchlauf:
 
 ```bash
-zai-client chat create "..." --stream          # Chat (Streaming, Tools, Vision, strukturierte Ausgabe)
-zai-client anthropic messages "..." --stream   # Anthropic-kompatibel /v1/messages
-zai-client image|video|audio|voice ...         # Medien-Generierung, Transkription, TTS, Klonen
-zai-client ocr|parser ...                      # OCR + Dokumenten-Parsing
-zai-client embeddings|rerank|moderations ...   # Retrieval + Inhaltsmoderation
-zai-client models list                         # Modellkatalog + Preise
-zai-client accounts add|use|quota|usage ...    # Mehrfachkonten + GLM-Coding-Plan-Überwachung
-zai-client coding auth|load|doctor|mcp ...     # Claude Code / Cursor / usw. an GLM Coding Plan anbinden
-zai-client tui                                 # Terminal-Vollbild-UI (alles oben Genannte)
-zai-client validate                            # mit einem echten Aufruf prüfen, ob Ihr Key funktioniert
+go-z-ai chat create "..." --stream          # Chat (Streaming, Tools, Vision, strukturierte Ausgabe)
+go-z-ai anthropic messages "..." --stream   # Anthropic-kompatibel /v1/messages
+go-z-ai image|video|audio|voice ...         # Medien-Generierung, Transkription, TTS, Klonen
+go-z-ai ocr|parser ...                      # OCR + Dokumenten-Parsing
+go-z-ai embeddings|rerank|moderations ...   # Retrieval + Inhaltsmoderation
+go-z-ai models list                         # Modellkatalog + Preise
+go-z-ai accounts add|use|quota|usage ...    # Mehrfachkonten + GLM-Coding-Plan-Überwachung
+go-z-ai coding auth|load|doctor|mcp ...     # Claude Code / Cursor / usw. an GLM Coding Plan anbinden
+go-z-ai tui                                 # Terminal-Vollbild-UI (alles oben Genannte)
+go-z-ai validate                            # mit einem echten Aufruf prüfen, ob Ihr Key funktioniert
 ```
 
 Jeder Befehl, der Ergebnisse liefert, akzeptiert `--format text|json` (JSON geht
@@ -157,14 +154,14 @@ Drei Wege, Anmeldedaten anzugeben, aufgelöst in dieser Reihenfolge
 | `--api-key <key>` Flag | Einmalige Aufrufe, Skripte, CI |
 | `--account <name>` Flag | Wechseln zwischen [gespeicherten Konten](docs/en/accounts-and-quota.md) |
 | `ZAI_API_KEY` Umgebungsvariable (oder `.env`-Datei) | Tägliche lokale Shell-Nutzung |
-| Aktives Konto des Account-Stores | Nach `zai-client accounts use <name>` |
+| Aktives Konto des Account-Stores | Nach `go-z-ai accounts use <name>` |
 
 Die `.env`-Datei ist der Normalfall — kopieren Sie die kommentierte Vorlage und
 bearbeiten Sie sie:
 
 ```bash
 cp .env.example .env
-# oder auf eine beliebige Datei zeigen: zai-client --config /path/to/config ...
+# oder auf eine beliebige Datei zeigen: go-z-ai --config /path/to/config ...
 ```
 
 ```dotenv
@@ -204,7 +201,7 @@ GLM Coding Plan über derselben API-Oberfläche auf.
 
 > ℹ️ `zai-claude-config.json` im Repo-Root ist eine **Vorlage** mit
 > Platzhaltern (`"your-zai-api-key-here"`), die von
-> `zai-client coding load claude-code` verwendet wird. Es handelt sich nicht um
+> `go-z-ai coding load claude-code` verwendet wird. Es handelt sich nicht um
 > eine echte Konfiguration, und es werden keine Anmeldedaten mitgeliefert.
 
 ## Mitwirken

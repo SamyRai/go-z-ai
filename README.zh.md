@@ -1,4 +1,4 @@
-# Z.AI API 客户端
+# go-z-ai
 
 面向 Z.AI（智谱 AI / BigModel）平台的 Go **CLI**、**库** 与 **TUI**——把所有
 GLM 模型能力收进一个工具，并附带 `@z_ai/coding-helper` 的 Go 移植版，用于将
@@ -20,7 +20,7 @@ export ZAI_API_KEY=your_api_key_here
 # 或者：cp .env.example .env，然后编辑 .env
 
 # 2. 使用 CLI
-zai-client chat create "用一段话解释 goroutine" --stream
+go-z-ai chat create "用一段话解释 goroutine" --stream
 ```
 
 ```go
@@ -49,9 +49,9 @@ fmt.Println(resp.Choices[0].Message.Content)
 - **内容审核**——通过国内平台端点提供内容审核。
 - **Agent**——Z.AI 的专用 Agent（翻译、幻灯片 / 海报生成、视频特效）。
 - **批量任务与文件**——用于聊天补全的 JSONL 批量任务，以及文件上传 / 列出 / 下载。
-- **GLM Coding Plan**——配额 / 用量监控、多账户管理，以及通过 `zai-client coding`
+- **GLM Coding Plan**——配额 / 用量监控、多账户管理，以及通过 `go-z-ai coding`
   把 Claude Code、OpenCode、Crush、Factory Droid 和 Cursor 接入你的订阅。
-- **DX**——全屏终端 UI（`zai-client tui`）、区域网关切换（`api.z.ai` ↔
+- **DX**——全屏终端 UI（`go-z-ai tui`）、区域网关切换（`api.z.ai` ↔
   `open.bigmodel.cn`）、自动重试（退避 + 抖动），以及强类型的 `APIError`（涵盖
   每一个 Z.AI 错误码）。
 
@@ -61,12 +61,10 @@ fmt.Println(resp.Choices[0].Message.Content)
 go install github.com/SamyRai/go-z-ai@latest
 ```
 
-这会在 `$GOPATH/bin` 下生成一个名为 `go-z-ai` 的二进制。下面的示例都使用更短的
-名字 **`zai-client`**——做软链或重命名即可：
+这会在 `$GOPATH/bin` 下生成一个名为 `go-z-ai` 的二进制。
 
 ```bash
-ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
-# 或者：mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+# 可选简写别名: ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai"
 ```
 
 需要 Go 1.26.4+ 以及一个 [Z.AI API key](https://z.ai/manage-apikey/apikey-list)。
@@ -74,19 +72,19 @@ ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
 
 ## 作为 CLI 使用
 
-单个 `zai-client` 二进制覆盖全部能力。每条命令都支持 `--help`；下面是快速导览：
+单个 `go-z-ai` 二进制覆盖全部能力。每条命令都支持 `--help`；下面是快速导览：
 
 ```bash
-zai-client chat create "..." --stream          # 聊天（流式、工具调用、视觉输入、结构化输出）
-zai-client anthropic messages "..." --stream   # Anthropic 兼容的 /v1/messages
-zai-client image|video|audio|voice ...         # 图像 / 视频生成、音频转写、TTS、声音克隆
-zai-client ocr|parser ...                      # OCR + 文档解析
-zai-client embeddings|rerank|moderations ...   # 检索 + 内容审核
-zai-client models list                         # 模型目录 + 定价
-zai-client accounts add|use|quota|usage ...    # 多账户 + GLM Coding Plan 监控
-zai-client coding auth|load|doctor|mcp ...     # 把 Claude Code / Cursor / 等接入 GLM Coding Plan
-zai-client tui                                 # 全屏终端 UI（包含上述全部能力）
-zai-client validate                            # 用一次真实调用验证你的 key 可用
+go-z-ai chat create "..." --stream          # 聊天（流式、工具调用、视觉输入、结构化输出）
+go-z-ai anthropic messages "..." --stream   # Anthropic 兼容的 /v1/messages
+go-z-ai image|video|audio|voice ...         # 图像 / 视频生成、音频转写、TTS、声音克隆
+go-z-ai ocr|parser ...                      # OCR + 文档解析
+go-z-ai embeddings|rerank|moderations ...   # 检索 + 内容审核
+go-z-ai models list                         # 模型目录 + 定价
+go-z-ai accounts add|use|quota|usage ...    # 多账户 + GLM Coding Plan 监控
+go-z-ai coding auth|load|doctor|mcp ...     # 把 Claude Code / Cursor / 等接入 GLM Coding Plan
+go-z-ai tui                                 # 全屏终端 UI（包含上述全部能力）
+go-z-ai validate                            # 用一次真实调用验证你的 key 可用
 ```
 
 所有会产生结果的命令都支持 `--format text|json`（JSON 输出到 stdout，进度信息输出
@@ -142,13 +140,13 @@ c, err := client.NewClient(client.Config{
 | `--api-key <key>` 参数 | 一次性调用、脚本、CI |
 | `--account <name>` 参数 | 在[已存储的账户](docs/zh/accounts-and-quota.md)之间切换 |
 | `ZAI_API_KEY` 环境变量（或 `.env` 文件） | 日常本地 shell 使用 |
-| 账户库的活动账户 | 在执行 `zai-client accounts use <name>` 之后 |
+| 账户库的活动账户 | 在执行 `go-z-ai accounts use <name>` 之后 |
 
 `.env` 文件是最常见的做法——复制带注释的模板然后编辑即可：
 
 ```bash
 cp .env.example .env
-# 或者指向任意文件：zai-client --config /path/to/config ...
+# 或者指向任意文件：go-z-ai --config /path/to/config ...
 ```
 
 ```dotenv
@@ -185,7 +183,7 @@ API 之上叠加了 CLI、TUI、区域网关切换（`api.z.ai` ↔ `open.bigmod
 Coding Plan 多账户管理。
 
 > ℹ️ 仓库根目录下的 `zai-claude-config.json` 是一个**模板**，其中是占位值
->（`"your-zai-api-key-here"`），供 `zai-client coding load claude-code` 使用。
+>（`"your-zai-api-key-here"`），供 `go-z-ai coding load claude-code` 使用。
 > 它不是真实配置，也不携带任何凭据。
 
 ## 贡献指南

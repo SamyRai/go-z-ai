@@ -1,6 +1,6 @@
 // Package tools implements the TUI's Tools tab: three independent
 // request/response forms (web search, web reader, tokenizer) over
-// pkg/client's ToolsService, the same service the "zai-client tools"
+// pkg/client's ToolsService, the same service the "go-z-ai tools"
 // commands use.
 package tools
 

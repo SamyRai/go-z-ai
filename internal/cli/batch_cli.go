@@ -12,7 +12,7 @@ var batchCmd = &cobra.Command{
 	Short: "Async bulk-processing jobs",
 	Long: `Submit and manage batch jobs: many chat-completion or embedding requests
 processed asynchronously from a JSONL input file. Upload the input file first
-with "zai-client files upload --purpose batch <file.jsonl>", then create the
+with "go-z-ai files upload --purpose batch <file.jsonl>", then create the
 batch with the resulting file ID.`,
 }
 
@@ -67,7 +67,7 @@ func runBatchCreate(cmd *cobra.Command, args []string, apiClient *client.Client)
 
 	return emit(cmd, b, func() error {
 		fmt.Printf("⏳ Batch submitted: %s (status: %s)\n", b.ID, b.Status)
-		fmt.Printf("   Check with: zai-client batch status %s\n", b.ID)
+		fmt.Printf("   Check with: go-z-ai batch status %s\n", b.ID)
 		return nil
 	})
 }
@@ -84,7 +84,7 @@ func runBatchStatus(cmd *cobra.Command, args []string, apiClient *client.Client)
 			fmt.Printf("Requests: %d/%d completed, %d failed\n", b.RequestCounts.Completed, b.RequestCounts.Total, b.RequestCounts.Failed)
 		}
 		if b.OutputFileID != "" {
-			fmt.Printf("Output file: %s (download with: zai-client files download %s <path>)\n", b.OutputFileID, b.OutputFileID)
+			fmt.Printf("Output file: %s (download with: go-z-ai files download %s <path>)\n", b.OutputFileID, b.OutputFileID)
 		}
 		if b.ErrorFileID != "" {
 			fmt.Printf("Error file: %s\n", b.ErrorFileID)

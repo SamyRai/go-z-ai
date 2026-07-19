@@ -173,7 +173,7 @@ func (m *rootModel) View() tea.View {
 	body := m.screens[m.active].View()
 	panel := uistyle.Panel.Width(innerW).Height(innerH).Render(body.Content)
 
-	header := uistyle.Header.Render("zai-client") + " " + uistyle.StatusBar.Render(m.accountLabel())
+	header := uistyle.Header.Render("go-z-ai") + " " + uistyle.StatusBar.Render(m.accountLabel())
 
 	footer := m.help.ShortHelpView(m.footerBindings())
 	if m.toastText != "" {

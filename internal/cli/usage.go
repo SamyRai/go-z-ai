@@ -191,7 +191,7 @@ func runUsageBilling(cmd *cobra.Command, args []string, apiClient *client.Client
 	fmt.Println("💳 Billing Information")
 	fmt.Println("\nZ.AI doesn't provide billing API endpoints.")
 	fmt.Println("Please manage billing at:", apiClient.Usage().GetWebDashboardURL())
-	fmt.Println("\n💡 Tip: Use 'zai-client usage status' to check account accessibility")
+	fmt.Println("\n💡 Tip: Use 'go-z-ai usage status' to check account accessibility")
 
 	return nil
 }

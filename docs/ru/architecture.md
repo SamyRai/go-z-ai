@@ -19,7 +19,7 @@ main.go               Пятистрочная точка входа: package ma
 internal/cli/         Команды CLI (пакет cli), по одному файлу на группу команд:
                       chat.go, accounts_cli.go, coding_cli.go, ...
 pkg/client/           Библиотека на Go — по одному файлу на сервис API, без зависимостей от CLI/TUI
-internal/accounts/    Хранилище учётных данных нескольких аккаунтов (~/.config/zai-client/accounts.json)
+internal/accounts/    Хранилище учётных данных нескольких аккаунтов (~/.config/go-z-ai/accounts.json)
 internal/coding/      Хранилище учётных данных GLM Coding Plan + генераторы конфигураций для инструментов
 internal/usageview/   Чисто презентационные помощники (временные окна, тепловые карты, форматирование) —
                       используются и CLI, и TUI, поэтому их вывод не может разойтись

@@ -3,7 +3,7 @@
 # Docs: https://goreleaser.com
 version: 2
 
-project_name: zai-client
+project_name: go-z-ai
 
 before:
   hooks:
@@ -13,9 +13,9 @@ before:
     - go run ./cmd/sitegen -out site -offline
 
 builds:
-  - id: zai-client
+  - id: go-z-ai
     main: .
-    binary: zai-client
+    binary: go-z-ai
     env:
       - CGO_ENABLED=0
     targets:

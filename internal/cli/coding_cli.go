@@ -157,14 +157,14 @@ func runCodingAuth(cmd *cobra.Command, args []string) error {
 		return nil
 	case "reload":
 		if len(args) < 2 {
-			return fmt.Errorf("usage: zai-client coding auth reload <tool>")
+			return fmt.Errorf("usage: go-z-ai coding auth reload <tool>")
 		}
 		return loadToolInto(store, args[1])
 	}
 
 	// Otherwise: auth <plan> <key>
 	if len(args) < 2 {
-		return fmt.Errorf("usage: zai-client coding auth <plan> <key>  |  revoke  |  reload <tool>")
+		return fmt.Errorf("usage: go-z-ai coding auth <plan> <key>  |  revoke  |  reload <tool>")
 	}
 	plan, key := args[0], args[1]
 	if !coding.IsValidPlan(plan) {
@@ -233,7 +233,7 @@ func runCodingStatus(cmd *cobra.Command, args []string) error {
 	if c.APIKey != "" {
 		fmt.Printf("  Key:  %s\n", maskAPIKey(c.APIKey))
 	} else {
-		fmt.Println("  Key:  (none — run 'zai-client coding auth <plan> <key>')")
+		fmt.Println("  Key:  (none — run 'go-z-ai coding auth <plan> <key>')")
 	}
 
 	fmt.Println("\nCoding tools")
@@ -283,7 +283,7 @@ func runCodingDoctor(cmd *cobra.Command, args []string) error {
 	}
 	c, _ := store.Load()
 	if c.Plan == "" || c.APIKey == "" {
-		fmt.Println("⚠  No credentials stored (run 'zai-client coding auth <plan> <key>')")
+		fmt.Println("⚠  No credentials stored (run 'go-z-ai coding auth <plan> <key>')")
 		allGood = false
 	} else {
 		fmt.Printf("✓ Credentials: %s / %s\n", coding.DisplayName(c.Plan), maskAPIKey(c.APIKey))
@@ -396,7 +396,7 @@ func resolveMcpKey(store *coding.Store) (string, error) {
 		return "", err
 	}
 	if c.APIKey == "" {
-		return "", fmt.Errorf("no API key configured (run 'zai-client coding auth <plan> <key>' or pass --key)")
+		return "", fmt.Errorf("no API key configured (run 'go-z-ai coding auth <plan> <key>' or pass --key)")
 	}
 	return c.APIKey, nil
 }
@@ -496,7 +496,7 @@ func resolveCodingCreds(store *coding.Store) (plan, key string, err error) {
 		}
 	}
 	if plan == "" || key == "" {
-		return "", "", fmt.Errorf("no credentials configured (run 'zai-client coding auth <plan> <key>' or pass --plan/--key)")
+		return "", "", fmt.Errorf("no credentials configured (run 'go-z-ai coding auth <plan> <key>' or pass --plan/--key)")
 	}
 	if !coding.IsValidPlan(plan) {
 		return "", "", fmt.Errorf("invalid plan %q", plan)

@@ -1,6 +1,6 @@
 // Package usage implements the TUI's Usage tab: a live quota + token/tool
 // usage dashboard, backed by the same QuotaService/UsageService the
-// "zai-client usage"/"accounts quota"/"accounts usage" commands use. It
+// "go-z-ai usage"/"accounts quota"/"accounts usage" commands use. It
 // replaces the CLI's naive time.Sleep polling loop ("usage check --watch")
 // with a non-blocking tea.Tick refresh.
 package usage

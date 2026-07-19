@@ -1,6 +1,6 @@
 # Getting Started
 
-This gets you from zero to your first `zai-client` command in a couple of minutes.
+This gets you from zero to your first `go-z-ai` command in a couple of minutes.
 
 ## 1. Install
 
@@ -10,33 +10,27 @@ This gets you from zero to your first `zai-client` command in a couple of minute
 go install github.com/SamyRai/go-z-ai@latest
 ```
 
-This puts a `go-z-ai` binary on your `$GOPATH/bin`. **Every example in these
-docs uses the shorter name `zai-client`**, so add one of these to your shell
-startup before going further:
+The binary installs as `go-z-ai`. Optional short alias:
 
 ```bash
-# Option A — rename (simplest)
-mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
-
-# Option B — alias (keeps the original name)
-echo "alias zai-client=go-z-ai" >> ~/.zshrc   # or ~/.bashrc
+ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai"
 ```
 
-Or build from source with the name you want directly:
+Or build from source directly:
 
 ```bash
 git clone https://github.com/SamyRai/go-z-ai.git
 cd go-z-ai
-go build -o zai-client .
+go build -o go-z-ai .
 ```
 
-Whichever path you took, confirm `zai-client` resolves and is on your `PATH`:
+Whichever path you took, confirm `go-z-ai` resolves and is on your `PATH`:
 
 ```bash
-zai-client --version
+go-z-ai --version
 ```
 
-The rest of this guide assumes the binary is called `zai-client`.
+The rest of this guide assumes the binary is called `go-z-ai`.
 
 ## 2. Authenticate
 
@@ -53,7 +47,7 @@ For a single key, the fastest path:
 
 ```bash
 export ZAI_API_KEY=your_api_key_here
-zai-client validate
+go-z-ai validate
 ```
 
 `validate` makes one real API call and confirms the key works before you go
@@ -71,16 +65,16 @@ nothing extra (a regular `ZAI_API_KEY` authenticates on both platforms).
 
 ```bash
 # See what models you have access to
-zai-client models list
+go-z-ai models list
 
 # Send a chat completion
-zai-client chat create "Explain goroutines in one paragraph"
+go-z-ai chat create "Explain goroutines in one paragraph"
 
 # Stream the response token-by-token
-zai-client chat create "Write a haiku about Go" --stream
+go-z-ai chat create "Write a haiku about Go" --stream
 
 # Check your quota (GLM Coding Plan accounts)
-zai-client usage quota
+go-z-ai usage quota
 ```
 
 From here:
@@ -89,7 +83,7 @@ From here:
 - **Multiple accounts / quota monitoring:** [Accounts & Quota](accounts-and-quota.md)
 - **Wire up Claude Code / OpenCode / Crush / Factory Droid / Cursor to your GLM Coding Plan:** [Coding Tools](coding-tools.md)
 - **Using this as a Go library instead of a CLI:** [Library Guide](library-guide.md)
-- **Full-screen terminal UI** (chat, models, usage, accounts, coding, media, tools tabs in one place): `zai-client tui`
+- **Full-screen terminal UI** (chat, models, usage, accounts, coding, media, tools tabs in one place): `go-z-ai tui`
 
 ## Troubleshooting
 
@@ -101,7 +95,7 @@ Regenerate it at [z.ai/manage-apikey](https://z.ai/manage-apikey/apikey-list).
 
 **"Unknown Model" (error 1211) on `embeddings`/`moderations`/`rerank`/`voice`** —
 this is almost always an account-entitlement gate, not a bug: your account's
-plan doesn't include that model in its catalog. Run `zai-client models list`
+plan doesn't include that model in its catalog. Run `go-z-ai models list`
 to see what's actually available to your key. See
 [Accounts & Quota](accounts-and-quota.md) for the full explanation.
 

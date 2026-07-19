@@ -1,4 +1,4 @@
-# Z.AI API Client
+# go-z-ai
 
 A Go **CLI**, **library**, and **TUI** for the Z.AI (Zhipu AI / BigModel)
 platform — every GLM model surface in one tool, plus a Go port of
@@ -21,7 +21,7 @@ export ZAI_API_KEY=your_api_key_here
 # or: cp .env.example .env  &&  edit .env
 
 # 2. Use the CLI
-zai-client chat create "Explain goroutines in one paragraph" --stream
+go-z-ai chat create "Explain goroutines in one paragraph" --stream
 ```
 
 ```go
@@ -57,9 +57,9 @@ More runnable programs — streaming, async image polling, the Anthropic
 - **Batch & files** — JSONL batch jobs for chat completions, file
   upload/list/download.
 - **GLM Coding Plan** — quota/usage monitoring, multi-account management,
-  and `zai-client coding` to wire Claude Code, OpenCode, Crush, Factory
+  and `go-z-ai coding` to wire Claude Code, OpenCode, Crush, Factory
   Droid, and Cursor to your subscription.
-- **DX** — full-screen terminal UI (`zai-client tui`), regional gateway
+- **DX** — full-screen terminal UI (`go-z-ai tui`), regional gateway
   switching (`api.z.ai` ↔ `open.bigmodel.cn`), automatic retry with
   backoff + jitter, and a typed `APIError` with every Z.AI error code mapped.
 
@@ -69,12 +69,10 @@ More runnable programs — streaming, async image polling, the Anthropic
 go install github.com/SamyRai/go-z-ai@latest
 ```
 
-This produces a binary named `go-z-ai` on your `$GOPATH/bin`. The examples
-below use the shorter name **`zai-client`** — symlink or rename it:
+This produces a binary named `go-z-ai` on your `$GOPATH/bin`.
 
 ```bash
-ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
-# or: mv "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai-client"
+# Optional short alias: ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai"
 ```
 
 Requires Go 1.26.4+ and a [Z.AI API key](https://z.ai/manage-apikey/apikey-list).
@@ -83,20 +81,20 @@ Building from source, first-run auth, and troubleshooting:
 
 ## As a CLI
 
-A single `zai-client` binary covering the full surface. Every command
+A single `go-z-ai` binary covering the full surface. Every command
 supports `--help`; the quick tour:
 
 ```bash
-zai-client chat create "..." --stream          # chat (streaming, tools, vision, structured output)
-zai-client anthropic messages "..." --stream   # Anthropic-compatible /v1/messages
-zai-client image|video|audio|voice ...         # media generation, transcription, TTS, cloning
-zai-client ocr|parser ...                      # OCR + document parsing
-zai-client embeddings|rerank|moderations ...   # retrieval + content moderation
-zai-client models list                         # model catalog + pricing
-zai-client accounts add|use|quota|usage ...    # multi-account + GLM Coding Plan monitoring
-zai-client coding auth|load|doctor|mcp ...     # wire Claude Code / Cursor / etc. to GLM Coding Plan
-zai-client tui                                 # full-screen terminal UI (all of the above)
-zai-client validate                            # confirm your key works with one real call
+go-z-ai chat create "..." --stream          # chat (streaming, tools, vision, structured output)
+go-z-ai anthropic messages "..." --stream   # Anthropic-compatible /v1/messages
+go-z-ai image|video|audio|voice ...         # media generation, transcription, TTS, cloning
+go-z-ai ocr|parser ...                      # OCR + document parsing
+go-z-ai embeddings|rerank|moderations ...   # retrieval + content moderation
+go-z-ai models list                         # model catalog + pricing
+go-z-ai accounts add|use|quota|usage ...    # multi-account + GLM Coding Plan monitoring
+go-z-ai coding auth|load|doctor|mcp ...     # wire Claude Code / Cursor / etc. to GLM Coding Plan
+go-z-ai tui                                 # full-screen terminal UI (all of the above)
+go-z-ai validate                            # confirm your key works with one real call
 ```
 
 Every result-producing command takes `--format text|json` (JSON goes to
@@ -154,13 +152,13 @@ Three ways to provide credentials, resolved in this priority order
 | `--api-key <key>` flag | One-off calls, scripts, CI |
 | `--account <name>` flag | Switch between [stored accounts](docs/en/accounts-and-quota.md) |
 | `ZAI_API_KEY` env var (or `.env` file) | Everyday local shell use |
-| Accounts store's active account | After `zai-client accounts use <name>` |
+| Accounts store's active account | After `go-z-ai accounts use <name>` |
 
 The `.env` file is the common case — copy the annotated template and edit it:
 
 ```bash
 cp .env.example .env
-# or point at any file: zai-client --config /path/to/config ...
+# or point at any file: go-z-ai --config /path/to/config ...
 ```
 
 ```dotenv
@@ -199,7 +197,7 @@ Coding Plan multi-account management on top of the same API surface.
 
 > ℹ️ `zai-claude-config.json` at the repo root is a **template** with
 > placeholder values (`"your-zai-api-key-here"`) used by
-> `zai-client coding load claude-code`. It is not a real config and ships no
+> `go-z-ai coding load claude-code`. It is not a real config and ships no
 > credentials.
 
 ## Contributing

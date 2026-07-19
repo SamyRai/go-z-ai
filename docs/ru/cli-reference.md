@@ -1,8 +1,8 @@
 # Справочник по CLI
 
 Каждая команда поддерживает `--help` для получения актуального и достоверного
-списка флагов (`zai-client <command> --help`,
-`zai-client <command> <subcommand> --help`). Эта страница — структурированный
+списка флагов (`go-z-ai <command> --help`,
+`go-z-ai <command> <subcommand> --help`). Эта страница — структурированный
 обзор; считайте `--help` источником истины, если когда-либо возникнут
 расхождения.
 
@@ -53,9 +53,9 @@ embedings/модераций (всегда китайская платформа
 ## Чат
 
 ```bash
-zai-client chat create [message] [flags]
-zai-client chat simple [model] [message]
-zai-client chat async-result [task-id]
+go-z-ai chat create [message] [flags]
+go-z-ai chat simple [model] [message]
+go-z-ai chat async-result [task-id]
 ```
 
 `chat create` — основная точка входа:
@@ -76,9 +76,9 @@ zai-client chat async-result [task-id]
 | `--format text\|json` | Формат вывода |
 
 ```bash
-zai-client chat create "Summarize this in 3 bullets" --model glm-5.2 --stream
-zai-client chat create "Describe this" --image @photo.jpg --model glm-4.6v
-zai-client chat create "Extract fields" --json-schema @schema.json
+go-z-ai chat create "Summarize this in 3 bullets" --model glm-5.2 --stream
+go-z-ai chat create "Describe this" --image @photo.jpg --model glm-4.6v
+go-z-ai chat create "Extract fields" --json-schema @schema.json
 ```
 
 Вызовы инструментов печатаются, а не выполняются CLI — см.
@@ -100,9 +100,9 @@ zai-client chat create "Extract fields" --json-schema @schema.json
 ## Модели
 
 ```bash
-zai-client models list [--pricing]
-zai-client models get [model-id]
-zai-client models text | vision | free
+go-z-ai models list [--pricing]
+go-z-ai models get [model-id]
+go-z-ai models text | vision | free
 ```
 
 ## Аккаунты, использование и квота
@@ -110,18 +110,18 @@ zai-client models text | vision | free
 Подробно описано в [Аккаунты и квоты](accounts-and-quota.md). Краткая справка:
 
 ```bash
-zai-client accounts add <name> --api-key <key> [--type coding_plan|pay_as_you_go]
-zai-client accounts list [--format json] [--reveal]   # ключи по умолчанию скрыты; --reveal для экспорта
-zai-client accounts use <name>
-zai-client accounts show [name] [--format json] [--reveal]
-zai-client accounts current                            # сокращение для 'accounts show' (активный аккаунт)
-zai-client accounts quota [--only name...]
-zai-client accounts usage [--days N] [--today] [--metric model|tool|both]
-zai-client accounts remove <name> [--yes]
+go-z-ai accounts add <name> --api-key <key> [--type coding_plan|pay_as_you_go]
+go-z-ai accounts list [--format json] [--reveal]   # ключи по умолчанию скрыты; --reveal для экспорта
+go-z-ai accounts use <name>
+go-z-ai accounts show [name] [--format json] [--reveal]
+go-z-ai accounts current                            # сокращение для 'accounts show' (активный аккаунт)
+go-z-ai accounts quota [--only name...]
+go-z-ai accounts usage [--days N] [--today] [--metric model|tool|both]
+go-z-ai accounts remove <name> [--yes]
 
-zai-client usage quota | summary | account | billing | check [--watch] | detect
-zai-client account info | status
-zai-client validate
+go-z-ai usage quota | summary | account | billing | check [--watch] | detect
+go-z-ai account info | status
+go-z-ai validate
 ```
 
 ## Инструменты для кода (GLM Coding Plan)
@@ -131,32 +131,32 @@ zai-client validate
 кода](coding-tools.md).
 
 ```bash
-zai-client coding auth <plan> <key>      # проверить и сохранить учётные данные
-zai-client coding auth revoke
-zai-client coding auth reload <tool>     # повторно записать сохранённые учётные данные в конфиг инструмента
-zai-client coding load <tool>            # записать в конфиг инструмента
-zai-client coding unload <tool>
-zai-client coding status
-zai-client coding tools                  # список поддерживаемых инструментов + статус установки
-zai-client coding doctor                 # проверка работоспособности
+go-z-ai coding auth <plan> <key>      # проверить и сохранить учётные данные
+go-z-ai coding auth revoke
+go-z-ai coding auth reload <tool>     # повторно записать сохранённые учётные данные в конфиг инструмента
+go-z-ai coding load <tool>            # записать в конфиг инструмента
+go-z-ai coding unload <tool>
+go-z-ai coding status
+go-z-ai coding tools                  # список поддерживаемых инструментов + статус установки
+go-z-ai coding doctor                 # проверка работоспособности
 
-zai-client coding mcp add <tool>         # зарегистрировать MCP-сервер Vision от Z.AI
-zai-client coding mcp status
-zai-client coding mcp remove <tool>
+go-z-ai coding mcp add <tool>         # зарегистрировать MCP-сервер Vision от Z.AI
+go-z-ai coding mcp status
+go-z-ai coding mcp remove <tool>
 ```
 
 ## Файлы и пакетная обработка
 
 ```bash
-zai-client files upload <file> [--purpose batch|code-interpreter|agent|voice-clone-input]
-zai-client files list [--purpose ...]
-zai-client files delete <file-id>
-zai-client files download <file-id> <output-path>
+go-z-ai files upload <file> [--purpose batch|code-interpreter|agent|voice-clone-input]
+go-z-ai files list [--purpose ...]
+go-z-ai files delete <file-id>
+go-z-ai files download <file-id> <output-path>
 
-zai-client batch create <input-file-id> [--endpoint ...]
-zai-client batch status <batch-id>
-zai-client batch list [--after ...] [--limit N]
-zai-client batch cancel <batch-id>
+go-z-ai batch create <input-file-id> [--endpoint ...]
+go-z-ai batch status <batch-id>
+go-z-ai batch list [--after ...] [--limit N]
+go-z-ai batch cancel <batch-id>
 ```
 
 Пакетные задачи обрабатывают множество запросов завершения чата из JSONL-файла
@@ -167,35 +167,35 @@ zai-client batch cancel <batch-id>
 
 ```bash
 # Изображения — модель по умолчанию glm-image (также поддерживается cogview-4-250304)
-zai-client image generate <prompt> [--model ...] [--size ...] [--quality hd|standard] [--async]
-zai-client image status <id>
+go-z-ai image generate <prompt> [--model ...] [--size ...] [--quality hd|standard] [--async]
+go-z-ai image status <id>
 # --quality: hd по умолчанию (~20 с); standard быстрее (~5-10 с).
 
 # Видео — всегда асинхронно (cogvideox-3 | viduq1-text | viduq1-image | vidu2-image | ...)
-zai-client video generate --prompt "..." [--model ...] [--duration N] [--aspect-ratio ...]
-zai-client video status <id>
+go-z-ai video generate --prompt "..." [--model ...] [--duration N] [--aspect-ratio ...]
+go-z-ai video status <id>
 
 # Аудио
-zai-client audio transcribe <file>                       # glm-asr, .wav/.mp3, <=25MB, <=30s
-zai-client audio speech <text> <output-path> [--voice ...] [--speed N] [--format wav|pcm]
+go-z-ai audio transcribe <file>                       # glm-asr, .wav/.mp3, <=25MB, <=30s
+go-z-ai audio speech <text> <output-path> [--voice ...] [--speed N] [--format wav|pcm]
 
 # Клонирование голоса (работает в паре с audio speech --voice)
-zai-client voice clone <voice-name> <sample-file-id> <preview-text>
-zai-client voice list [--name ...] [--type OFFICIAL|PRIVATE]
-zai-client voice delete <voice-id>
+go-z-ai voice clone <voice-name> <sample-file-id> <preview-text>
+go-z-ai voice list [--name ...] [--type OFFICIAL|PRIVATE]
+go-z-ai voice delete <voice-id>
 ```
 
 ## Разбор документов и OCR
 
 ```bash
 # Layout OCR — изображение/PDF в Markdown
-zai-client ocr parse <file-or-url> [--start-page N] [--end-page N]
-zai-client ocr handwriting <file> [--probability]
+go-z-ai ocr parse <file-or-url> [--start-page N] [--end-page N]
+go-z-ai ocr handwriting <file> [--probability]
 
 # Разбор документов (препроцессинг для RAG/извлечения) — отдельный продукт, не OCR
-zai-client parser parse <file> <file-type>              # синхронно
-zai-client parser create <file> <tool-type> <file-type> # асинхронно: lite|expert|prime
-zai-client parser result <task-id> <format>              # text|download_link
+go-z-ai parser parse <file> <file-type>              # синхронно
+go-z-ai parser create <file> <tool-type> <file-type> # асинхронно: lite|expert|prime
+go-z-ai parser result <task-id> <format>              # text|download_link
 ```
 
 `parser` и `ocr` решают разные задачи: OCR извлекает layout/текст из
@@ -205,8 +205,8 @@ zai-client parser result <task-id> <format>              # text|download_link
 ## Вспомогательные инструменты поиска
 
 ```bash
-zai-client embeddings create <text> [--model embedding-3|embedding-2] [--dimensions N]
-zai-client rerank <query> <documents...> [--top-n N]
+go-z-ai embeddings create <text> [--model embedding-3|embedding-2] [--dimensions N]
+go-z-ai rerank <query> <documents...> [--top-n N]
 ```
 
 Embeddings направляются на `open.bigmodel.cn` — см.
@@ -217,7 +217,7 @@ Embeddings направляются на `open.bigmodel.cn` — см.
 ## Модерация контента
 
 ```bash
-zai-client moderations check <text>
+go-z-ai moderations check <text>
 ```
 
 Также направляется на `open.bigmodel.cn` — та же заметка, что и для embeddings
@@ -226,8 +226,8 @@ zai-client moderations check <text>
 ## Агенты
 
 ```bash
-zai-client agents invoke <agent-id> <message> [--source-lang ...] [--target-lang ...]
-zai-client agents async-result <agent-id> <async-id>
+go-z-ai agents invoke <agent-id> <message> [--source-lang ...] [--target-lang ...]
+go-z-ai agents async-result <agent-id> <async-id>
 ```
 
 Вызывает специализированных агентов Z.AI (перевод, генерация слайдов/постеров,
@@ -238,15 +238,15 @@ zai-client agents async-result <agent-id> <async-id>
 ## Инструменты (веб-поиск, reader, токенизатор)
 
 ```bash
-zai-client tools web-search <query> [--engine ...] [--count N]
-zai-client tools web-reader <url> [--no-images]
-zai-client tools tokenizer <text> [--model ...]
+go-z-ai tools web-search <query> [--engine ...] [--count N]
+go-z-ai tools web-reader <url> [--no-images]
+go-z-ai tools tokenizer <text> [--model ...]
 ```
 
 ## Эндпоинт, совместимый с Anthropic
 
 ```bash
-zai-client anthropic messages <prompt> [--model glm-4.6] [--max-tokens 1024] \
+go-z-ai anthropic messages <prompt> [--model glm-4.6] [--max-tokens 1024] \
     [--system ...] [--temperature ...] [--thinking-budget N] [--stream]
 ```
 
@@ -261,7 +261,7 @@ OpenAI-стиля `chat create`. Печатает текст сообщения 
 ## Терминальный UI
 
 ```bash
-zai-client tui
+go-z-ai tui
 ```
 
 Запускает полноэкранный терминальный UI с вкладками Chat, Models, Usage,

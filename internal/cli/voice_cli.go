@@ -10,13 +10,13 @@ import (
 var voiceCmd = &cobra.Command{
 	Use:   "voice",
 	Short: "Manage GLM-TTS voice clones",
-	Long:  `Create, delete, and list custom voice clones for use with "zai-client audio speech --voice".`,
+	Long:  `Create, delete, and list custom voice clones for use with "go-z-ai audio speech --voice".`,
 }
 
 var voiceCloneCmd = &cobra.Command{
 	Use:   "clone [voice-name] [sample-file-id] [preview-text]",
 	Short: "Clone a voice from a sample audio file",
-	Long:  `Clone a voice from a sample audio file already uploaded via "zai-client files upload --purpose voice-clone-input".`,
+	Long:  `Clone a voice from a sample audio file already uploaded via "go-z-ai files upload --purpose voice-clone-input".`,
 	Args:  cobra.ExactArgs(3),
 	RunE:  runWithClient(runVoiceClone),
 }

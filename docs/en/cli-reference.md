@@ -1,7 +1,7 @@
 # CLI Reference
 
 Every command supports `--help` for its authoritative, always-up-to-date flag
-list (`zai-client <command> --help`, `zai-client <command> <subcommand> --help`).
+list (`go-z-ai <command> --help`, `go-z-ai <command> <subcommand> --help`).
 This page is the organized tour; treat `--help` as the source of truth if the
 two ever disagree.
 
@@ -50,9 +50,9 @@ China platform). See [Accounts & Quota § Regional gateways](accounts-and-quota.
 ## Chat
 
 ```bash
-zai-client chat create [message] [flags]
-zai-client chat simple [model] [message]
-zai-client chat async-result [task-id]
+go-z-ai chat create [message] [flags]
+go-z-ai chat simple [model] [message]
+go-z-ai chat async-result [task-id]
 ```
 
 `chat create` is the main entry point:
@@ -73,9 +73,9 @@ zai-client chat async-result [task-id]
 | `--format text\|json` | Output format |
 
 ```bash
-zai-client chat create "Summarize this in 3 bullets" --model glm-5.2 --stream
-zai-client chat create "Describe this" --image @photo.jpg --model glm-4.6v
-zai-client chat create "Extract fields" --json-schema @schema.json
+go-z-ai chat create "Summarize this in 3 bullets" --model glm-5.2 --stream
+go-z-ai chat create "Describe this" --image @photo.jpg --model glm-4.6v
+go-z-ai chat create "Extract fields" --json-schema @schema.json
 ```
 
 Tool calls are printed, not executed, by the CLI — see
@@ -95,9 +95,9 @@ Go `RunWithTools` auto-executing loop.
 ## Models
 
 ```bash
-zai-client models list [--pricing]
-zai-client models get [model-id]
-zai-client models text | vision | free
+go-z-ai models list [--pricing]
+go-z-ai models get [model-id]
+go-z-ai models text | vision | free
 ```
 
 ## Accounts, usage, and quota
@@ -105,18 +105,18 @@ zai-client models text | vision | free
 Covered in depth in [Accounts & Quota](accounts-and-quota.md). Quick reference:
 
 ```bash
-zai-client accounts add <name> --api-key <key> [--type coding_plan|pay_as_you_go]
-zai-client accounts list [--format json] [--reveal]   # keys masked by default; --reveal for export
-zai-client accounts use <name>
-zai-client accounts show [name] [--format json] [--reveal]
-zai-client accounts current                            # shorthand for 'accounts show' (active account)
-zai-client accounts quota [--only name...]
-zai-client accounts usage [--days N] [--today] [--metric model|tool|both]
-zai-client accounts remove <name> [--yes]
+go-z-ai accounts add <name> --api-key <key> [--type coding_plan|pay_as_you_go]
+go-z-ai accounts list [--format json] [--reveal]   # keys masked by default; --reveal for export
+go-z-ai accounts use <name>
+go-z-ai accounts show [name] [--format json] [--reveal]
+go-z-ai accounts current                            # shorthand for 'accounts show' (active account)
+go-z-ai accounts quota [--only name...]
+go-z-ai accounts usage [--days N] [--today] [--metric model|tool|both]
+go-z-ai accounts remove <name> [--yes]
 
-zai-client usage quota | summary | account | billing | check [--watch] | detect
-zai-client account info | status
-zai-client validate
+go-z-ai usage quota | summary | account | billing | check [--watch] | detect
+go-z-ai account info | status
+go-z-ai validate
 ```
 
 ## Coding tools (GLM Coding Plan)
@@ -125,32 +125,32 @@ Wires Claude Code, OpenCode, Crush, Factory Droid, or Cursor to use your GLM
 Coding Plan. Full walkthrough: [Coding Tools](coding-tools.md).
 
 ```bash
-zai-client coding auth <plan> <key>      # validate + store a credential
-zai-client coding auth revoke
-zai-client coding auth reload <tool>     # re-push stored creds into a tool's config
-zai-client coding load <tool>            # write it into a tool's config
-zai-client coding unload <tool>
-zai-client coding status
-zai-client coding tools                  # list supported tools + install status
-zai-client coding doctor                 # health check
+go-z-ai coding auth <plan> <key>      # validate + store a credential
+go-z-ai coding auth revoke
+go-z-ai coding auth reload <tool>     # re-push stored creds into a tool's config
+go-z-ai coding load <tool>            # write it into a tool's config
+go-z-ai coding unload <tool>
+go-z-ai coding status
+go-z-ai coding tools                  # list supported tools + install status
+go-z-ai coding doctor                 # health check
 
-zai-client coding mcp add <tool>         # register Z.AI's Vision MCP server
-zai-client coding mcp status
-zai-client coding mcp remove <tool>
+go-z-ai coding mcp add <tool>         # register Z.AI's Vision MCP server
+go-z-ai coding mcp status
+go-z-ai coding mcp remove <tool>
 ```
 
 ## Files & batch
 
 ```bash
-zai-client files upload <file> [--purpose batch|code-interpreter|agent|voice-clone-input]
-zai-client files list [--purpose ...]
-zai-client files delete <file-id>
-zai-client files download <file-id> <output-path>
+go-z-ai files upload <file> [--purpose batch|code-interpreter|agent|voice-clone-input]
+go-z-ai files list [--purpose ...]
+go-z-ai files delete <file-id>
+go-z-ai files download <file-id> <output-path>
 
-zai-client batch create <input-file-id> [--endpoint ...]
-zai-client batch status <batch-id>
-zai-client batch list [--after ...] [--limit N]
-zai-client batch cancel <batch-id>
+go-z-ai batch create <input-file-id> [--endpoint ...]
+go-z-ai batch status <batch-id>
+go-z-ai batch list [--after ...] [--limit N]
+go-z-ai batch cancel <batch-id>
 ```
 
 Batch jobs process many chat-completion requests from a JSONL file
@@ -161,35 +161,35 @@ file ID.
 
 ```bash
 # Images — default model glm-image (cogview-4-250304 also supported)
-zai-client image generate <prompt> [--model glm-image|cogview-4-250304] [--size ...] [--quality hd|standard] [--async]
-zai-client image status <id>
+go-z-ai image generate <prompt> [--model glm-image|cogview-4-250304] [--size ...] [--quality hd|standard] [--async]
+go-z-ai image status <id>
 # --quality: hd is the default (~20s); standard is faster (~5-10s).
 
 # Video — always async (cogvideox-3 | viduq1-text | viduq1-image | vidu2-image | ...)
-zai-client video generate --prompt "..." [--model ...] [--duration N] [--aspect-ratio ...]
-zai-client video status <id>
+go-z-ai video generate --prompt "..." [--model ...] [--duration N] [--aspect-ratio ...]
+go-z-ai video status <id>
 
 # Audio
-zai-client audio transcribe <file>                       # glm-asr, .wav/.mp3, <=25MB, <=30s
-zai-client audio speech <text> <output-path> [--voice ...] [--speed N] [--format wav|pcm]
+go-z-ai audio transcribe <file>                       # glm-asr, .wav/.mp3, <=25MB, <=30s
+go-z-ai audio speech <text> <output-path> [--voice ...] [--speed N] [--format wav|pcm]
 
 # Voice cloning (pairs with audio speech --voice)
-zai-client voice clone <voice-name> <sample-file-id> <preview-text>
-zai-client voice list [--name ...] [--type OFFICIAL|PRIVATE]
-zai-client voice delete <voice-id>
+go-z-ai voice clone <voice-name> <sample-file-id> <preview-text>
+go-z-ai voice list [--name ...] [--type OFFICIAL|PRIVATE]
+go-z-ai voice delete <voice-id>
 ```
 
 ## Document parsing & OCR
 
 ```bash
 # Layout OCR — image/PDF into Markdown
-zai-client ocr parse <file-or-url> [--start-page N] [--end-page N]
-zai-client ocr handwriting <file> [--probability]
+go-z-ai ocr parse <file-or-url> [--start-page N] [--end-page N]
+go-z-ai ocr handwriting <file> [--probability]
 
 # Document parser (RAG/retrieval preprocessing) — a separate product from OCR
-zai-client parser parse <file> <file-type>              # synchronous
-zai-client parser create <file> <tool-type> <file-type> # async: lite|expert|prime
-zai-client parser result <task-id> <format>              # text|download_link
+go-z-ai parser parse <file> <file-type>              # synchronous
+go-z-ai parser create <file> <tool-type> <file-type> # async: lite|expert|prime
+go-z-ai parser result <task-id> <format>              # text|download_link
 ```
 
 `parser` and `ocr` solve different problems: OCR extracts layout/text from
@@ -199,8 +199,8 @@ accepts more tool tiers.
 ## Retrieval helpers
 
 ```bash
-zai-client embeddings create <text> [--model embedding-3|embedding-2] [--dimensions N]
-zai-client rerank <query> <documents...> [--top-n N]
+go-z-ai embeddings create <text> [--model embedding-3|embedding-2] [--dimensions N]
+go-z-ai rerank <query> <documents...> [--top-n N]
 ```
 
 Embeddings route to `open.bigmodel.cn` — see
@@ -211,7 +211,7 @@ for why, and what that means for authentication. Rerank uses the default
 ## Content moderation
 
 ```bash
-zai-client moderations check <text>
+go-z-ai moderations check <text>
 ```
 
 Routes to `open.bigmodel.cn` — same note as Embeddings above.
@@ -219,8 +219,8 @@ Routes to `open.bigmodel.cn` — same note as Embeddings above.
 ## Agents
 
 ```bash
-zai-client agents invoke <agent-id> <message> [--source-lang ...] [--target-lang ...]
-zai-client agents async-result <agent-id> <async-id>
+go-z-ai agents invoke <agent-id> <message> [--source-lang ...] [--target-lang ...]
+go-z-ai agents async-result <agent-id> <async-id>
 ```
 
 Invokes Z.AI's specialized agents (translation, slide/poster generation, video
@@ -231,15 +231,15 @@ reports that failure from the response body, not as a command error.
 ## Tools (web search, reader, tokenizer)
 
 ```bash
-zai-client tools web-search <query> [--engine ...] [--count N]
-zai-client tools web-reader <url> [--no-images]
-zai-client tools tokenizer <text> [--model ...]
+go-z-ai tools web-search <query> [--engine ...] [--count N]
+go-z-ai tools web-reader <url> [--no-images]
+go-z-ai tools tokenizer <text> [--model ...]
 ```
 
 ## Anthropic-compatible endpoint
 
 ```bash
-zai-client anthropic messages <prompt> [--model glm-4.6] [--max-tokens 1024] \
+go-z-ai anthropic messages <prompt> [--model glm-4.6] [--max-tokens 1024] \
     [--system ...] [--temperature ...] [--thinking-budget N] [--stream]
 ```
 
@@ -254,7 +254,7 @@ Go API.
 ## Terminal UI
 
 ```bash
-zai-client tui
+go-z-ai tui
 ```
 
 Launches a full-screen terminal UI with Chat, Models, Usage, Accounts, Coding,
