@@ -1,0 +1,45 @@
+{
+  "nav.home": "Баш бит",
+  "nav.docs": "Документация",
+  "nav.cli": "CLI",
+  "nav.library": "Китапханә",
+  "nav.changelog": "Үзгәрешләр журналы",
+  "nav.github": "GitHub",
+
+  "a11y.skip_to_content": "Эчтәлеккә сикерү",
+  "a11y.theme_toggle": "Теманы алмаштыру",
+  "a11y.theme_light": "Ачык режимга күчәргә",
+  "a11y.theme_dark": "Караңгы режимга күчәргә",
+  "a11y.badges": "Проект статусы бейджлары",
+  "a11y.lang_menu": "Тел",
+
+  "landing.cta.get_started": "Башлау",
+  "landing.cta.source": "GitHub'та чыганак",
+  "landing.cta.cli_ref": "CLI белешмәсе",
+  "landing.section.at_a_glance": "Кыскача",
+  "landing.section.install": "Урнаштыру",
+  "landing.section.quick_example": "Тиз мисал",
+  "landing.section.whats_covered": "Нәрсә каплана",
+  "landing.section.recent_releases": "Соңгы чыгарылышлар",
+  "landing.section.recent_activity": "Соңгы эшчәнлек",
+  "landing.section.sdk_relation": "Рәсми SDK'лар белән бәйләнеш",
+
+  "landing.stat.latest_release": "Соңгы чыгарылыш",
+  "landing.stat.stars": "GitHub йолдызлары",
+  "landing.stat.contributors": "Өлеш кертүчеләр",
+  "landing.stat.commits_30d": "Коммитлар / 30 көн",
+  "landing.stat.open_issues": "Ачык мәсьәләләр",
+
+  "landing.text.install_or_library": "Яки Go китапханәсе буларак кулланыгыз — карагыз",
+  "landing.text.library_guide_link": "китапханә кулланмасы",
+  "landing.text.covered_intro": "Бу бер генә бинарник Z.AI'ның һәр модель өслегенә CLI, китапханә һәм TUI аша керү мөмкинлеген бирә:",
+  "landing.text.full_surface": "Тулы өслек",
+  "landing.text.all_releases": "Барлык чыгарылышлар",
+  "landing.text.all_commits": "Барлык коммитлар",
+  "landing.text.sdk_body": "Z.AI Python, Node һәм Java өчен рәсми SDK'лар чыгара. Рәсми Go SDK юк — go-z-ai бу бушлыкны тулдыра һәм шундый ук API өстендә CLI, TUI, төбәк шлюзларын алмаштыруны һәм күп аккаунтлы GLM Coding Plan идарәсен өсти.",
+
+  "footer.built_from": "{0} коммитыннан җыелган",
+  "footer.contributing": "Өлеш кертү",
+  "footer.security": "Иминлек",
+  "footer.sitemap": "Сайт хәритәсе"
+}

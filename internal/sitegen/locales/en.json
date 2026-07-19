@@ -1,0 +1,45 @@
+{
+  "nav.home": "Home",
+  "nav.docs": "Docs",
+  "nav.cli": "CLI",
+  "nav.library": "Library",
+  "nav.changelog": "Changelog",
+  "nav.github": "GitHub",
+
+  "a11y.skip_to_content": "Skip to content",
+  "a11y.theme_toggle": "Toggle theme",
+  "a11y.theme_light": "Switch to light mode",
+  "a11y.theme_dark": "Switch to dark mode",
+  "a11y.badges": "Project status badges",
+  "a11y.lang_menu": "Language",
+
+  "landing.cta.get_started": "Get started",
+  "landing.cta.source": "Source on GitHub",
+  "landing.cta.cli_ref": "CLI reference",
+  "landing.section.at_a_glance": "At a glance",
+  "landing.section.install": "Install",
+  "landing.section.quick_example": "Quick example",
+  "landing.section.whats_covered": "What's covered",
+  "landing.section.recent_releases": "Recent releases",
+  "landing.section.recent_activity": "Recent activity",
+  "landing.section.sdk_relation": "How it relates to the official SDKs",
+
+  "landing.stat.latest_release": "Latest release",
+  "landing.stat.stars": "GitHub stars",
+  "landing.stat.contributors": "Contributors",
+  "landing.stat.commits_30d": "Commits / 30d",
+  "landing.stat.open_issues": "Open issues",
+
+  "landing.text.install_or_library": "Or use it as a Go library — see",
+  "landing.text.library_guide_link": "the Library Guide",
+  "landing.text.covered_intro": "This single binary gives you CLI, library, and TUI access to every Z.AI model surface:",
+  "landing.text.full_surface": "Full surface",
+  "landing.text.all_releases": "All releases",
+  "landing.text.all_commits": "All commits",
+  "landing.text.sdk_body": "Z.AI publishes official SDKs for Python, Node, and Java. There is no official Go SDK — go-z-ai fills that gap, and layers a CLI, a TUI, regional gateway switching, and GLM Coding Plan multi-account management on top of the same API surface.",
+
+  "footer.built_from": "Built from commit {0}",
+  "footer.contributing": "Contributing",
+  "footer.security": "Security",
+  "footer.sitemap": "Sitemap"
+}

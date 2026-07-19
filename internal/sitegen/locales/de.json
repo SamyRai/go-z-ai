@@ -1,0 +1,45 @@
+{
+  "nav.home": "Start",
+  "nav.docs": "Dokumentation",
+  "nav.cli": "CLI",
+  "nav.library": "Bibliothek",
+  "nav.changelog": "Changelog",
+  "nav.github": "GitHub",
+
+  "a11y.skip_to_content": "Zum Inhalt springen",
+  "a11y.theme_toggle": "Theme umschalten",
+  "a11y.theme_light": "Zum hellen Modus wechseln",
+  "a11y.theme_dark": "Zum dunklen Modus wechseln",
+  "a11y.badges": "Status-Badges des Projekts",
+  "a11y.lang_menu": "Sprache",
+
+  "landing.cta.get_started": "Erste Schritte",
+  "landing.cta.source": "Quellcode auf GitHub",
+  "landing.cta.cli_ref": "CLI-Referenz",
+  "landing.section.at_a_glance": "Auf einen Blick",
+  "landing.section.install": "Installation",
+  "landing.section.quick_example": "Schnelles Beispiel",
+  "landing.section.whats_covered": "Was abgedeckt wird",
+  "landing.section.recent_releases": "Aktuelle Releases",
+  "landing.section.recent_activity": "Letzte Aktivität",
+  "landing.section.sdk_relation": "Verhältnis zu den offiziellen SDKs",
+
+  "landing.stat.latest_release": "Aktuelles Release",
+  "landing.stat.stars": "GitHub-Sterne",
+  "landing.stat.contributors": "Mitwirkende",
+  "landing.stat.commits_30d": "Commits / 30 T.",
+  "landing.stat.open_issues": "Offene Issues",
+
+  "landing.text.install_or_library": "Oder als Go-Bibliothek verwenden — siehe",
+  "landing.text.library_guide_link": "die Bibliotheksanleitung",
+  "landing.text.covered_intro": "Diese einzelne Binary bietet Ihnen CLI-, Bibliotheks- und TUI-Zugriff auf jede Modell-Schnittstelle von Z.AI:",
+  "landing.text.full_surface": "Vollständige Oberfläche",
+  "landing.text.all_releases": "Alle Releases",
+  "landing.text.all_commits": "Alle Commits",
+  "landing.text.sdk_body": "Z.AI veröffentlicht offizielle SDKs für Python, Node und Java. Es gibt kein offizielles Go-SDK — go-z-ai schließt diese Lücke und schichtet eine CLI, eine TUI, das Umschalten regionaler Gateways und die Mehrfachkonten-Verwaltung für den GLM Coding Plan über derselben API-Oberfläche auf.",
+
+  "footer.built_from": "Erstellt aus Commit {0}",
+  "footer.contributing": "Mitwirken",
+  "footer.security": "Sicherheit",
+  "footer.sitemap": "Sitemap"
+}

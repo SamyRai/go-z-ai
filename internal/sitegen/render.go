@@ -365,6 +365,10 @@ func LoadTemplates() (*template.Template, error) {
 		"langBase":     langBase,
 		"highlight":    highlightCode,
 		"relativeTime": relativeTime,
+		"lower":        strings.ToLower,
+		// T is a placeholder so templates parse cleanly; ExecuteTemplate
+		// replaces it with the locale-specific translateFunc on each clone.
+		"T": func(key string, args ...any) string { return key },
 	})
 	// Walk every .html under the templates FS and parse into root.
 	err := fs.WalkDir(tfs, ".", func(p string, d fs.DirEntry, err error) error {
@@ -395,6 +399,12 @@ func ExecuteTemplate(t *template.Template, name string, vd *ViewData) ([]byte, e
 	if err != nil {
 		return nil, fmt.Errorf("clone templates: %w", err)
 	}
+	// Register the per-locale T function on the clone so templates can use
+	// {{ T "key" }} to pull translated strings. Falls back to English for
+	// missing keys, warns to stderr at build time.
+	bundle := LoadLocale(vd.Page.Lang)
+	clone.Funcs(template.FuncMap{"T": translateFunc(bundle)})
+
 	// Re-parse the requested page template into the clone so its "content"
 	// block is the one that layout.html invokes via {{ block "content" . }}.
 	pageSrc, err := fs.ReadFile(TemplateFS(), name)
@@ -405,9 +415,6 @@ func ExecuteTemplate(t *template.Template, name string, vd *ViewData) ([]byte, e
 		return nil, fmt.Errorf("re-parse %s: %w", name, err)
 	}
 	var buf bytes.Buffer
-	// The page template invokes {{ template "layout.html" . }} at the top;
-	// layout.html then renders {{ block "content" . }} which is satisfied by
-	// the {{ define "content" }}…{{ end }} block we just re-parsed.
 	if err := clone.ExecuteTemplate(&buf, name, vd); err != nil {
 		return nil, fmt.Errorf("execute %s: %w", name, err)
 	}

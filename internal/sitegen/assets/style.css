@@ -26,7 +26,7 @@
   table { border-collapse: collapse; }
   ul[role="list"], ol[role="list"] { list-style: none; padding: 0; }
   @media (prefers-reduced-motion: no-preference) {
-    :has(:target) { scroll-margin-block: 6rem; }
+    :has(:target) { scroll-margin-block: var(--scroll-offset); }
     html { scroll-behavior: smooth; }
   }
 }
@@ -130,8 +130,8 @@
     --tracking-wide: 0.04em;
     --tracking-wider: 0.08em;
 
-    /* Spacing scale (1.250 ratio, base 0.25rem). Every padding/margin/gap
-     * reads from this so rhythm is consistent everywhere. */
+    /* Spacing scale (1.250 major-third ratio, base 0.25rem). Every
+     * padding/margin/gap reads from this so rhythm is consistent everywhere. */
     --space-1: 0.25rem;
     --space-2: 0.5rem;
     --space-3: 0.75rem;
@@ -140,9 +140,19 @@
     --space-6: 1.5rem;
     --space-7: 2rem;
     --space-8: 2.5rem;
-    --space-9: 3.5rem;
-    --space-10: 5rem;
-    --space-11: 7rem;
+    --space-9: 3.125rem;
+    --space-10: 4rem;
+    --space-11: 5rem;
+    --space-12: 6rem;
+
+    /* Special-purpose length tokens (not part of the spacing rhythm). */
+    --scroll-offset: 5rem;        /* scroll-margin for sticky-header clearance */
+    --scrollbar-size: 10px;       /* WebKit scrollbar width/height */
+    --blur-md: 12px;              /* backdrop-filter blur radius */
+    --focus-offset: 2px;          /* :focus-visible outline offset */
+    --nav-height: 4rem;           /* sticky header min-height */
+    --touch-target: 2.75rem;      /* WCAG 2.2 AA minimum touch target */
+    --touch-target-lg: 3rem;      /* touch-coarse pointer minimum */
 
     /* Sizing tokens */
     --container-max: 72rem;
@@ -278,7 +288,7 @@
 
   /* Scrollbars (WebKit) */
   * { scrollbar-width: thin; scrollbar-color: var(--color-border-strong) transparent; }
-  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar { width: var(--scrollbar-size); height: var(--scrollbar-size); }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
     background: var(--color-border-strong);
@@ -289,7 +299,7 @@
   /* Focus ring — visible only on keyboard nav, never on mouse click. */
   :focus-visible {
     outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
+    outline-offset: var(--focus-offset);
     border-radius: var(--radius-xs);
   }
   :focus:not(:focus-visible) { outline: none; }
@@ -350,7 +360,7 @@
   /* Heading anchors — goldmark emits <h2 id="...">. Add a hover-only pilcrow
    * so deep-linking is discoverable but unobtrusive. */
   .prose :is(h2, h3, h4)[id] {
-    scroll-margin-block-start: 6rem;
+    scroll-margin-block-start: var(--scroll-offset);
     position: relative;
   }
   .prose :is(h2, h3, h4)[id]::after {
@@ -399,14 +409,14 @@
     z-index: var(--z-sticky);
     border-block-end: 1px solid var(--color-border);
     background: color-mix(in oklch, var(--color-canvas-recessed) 88%, transparent);
-    backdrop-filter: blur(12px) saturate(1.4);
-    -webkit-backdrop-filter: blur(12px) saturate(1.4);
+    backdrop-filter: blur(var(--blur-md)) saturate(1.4);
+    -webkit-backdrop-filter: blur(var(--blur-md)) saturate(1.4);
   }
   header.site .container {
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    min-block-size: 4rem;
+    min-block-size: var(--nav-height);
     flex-wrap: wrap;
   }
 
@@ -504,8 +514,8 @@
 
   /* Theme toggle */
   .theme-toggle {
-    inline-size: 2.25rem;
-    block-size: 2.25rem;
+    inline-size: var(--touch-target);
+    block-size: var(--touch-target);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -522,7 +532,7 @@
   .theme-toggle[aria-pressed="true"] { color: var(--color-accent); }
 
   /* Hero */
-  .hero { padding-block: clamp(var(--space-8), 8vw, var(--space-11)) clamp(var(--space-7), 5vw, var(--space-9)); }
+  .hero { padding-block: clamp(var(--space-7), 6vw, var(--space-10)) clamp(var(--space-6), 4vw, var(--space-8)); }
   .hero h1 {
     font-size: var(--text-3xl);
     font-weight: 700;
@@ -546,7 +556,7 @@
     justify-content: center;
     gap: var(--space-2);
     padding: var(--space-3) var(--space-5);
-    min-block-size: 2.75rem;
+    min-block-size: var(--touch-target);
     border-radius: var(--radius-sm);
     font-weight: 500;
     font-size: var(--text-sm);
@@ -591,20 +601,22 @@
     border-radius: var(--radius-xs);
   }
 
-  /* Section block — vertical rhythm container */
+  /* Section block — vertical rhythm container. Tighter than before to
+   * eliminate the "unnecessary padding" around the activity feed: section
+   * padding is now 1.5× the inner item padding, not 3-4×. */
   section.block {
-    padding-block: clamp(var(--space-7), 5vw, var(--space-9));
+    padding-block: clamp(var(--space-6), 3.5vw, var(--space-8));
     border-block-start: 1px solid var(--color-border);
   }
   section.block:first-of-type { border-block-start: 0; }
   section.block > h2 {
     font-size: var(--text-xl);
-    margin-block-end: var(--space-5);
+    margin-block-end: var(--space-4);
     letter-spacing: var(--tracking-tight);
   }
   section.block > h3 {
     font-size: var(--text-md);
-    margin-block: var(--space-6) var(--space-3);
+    margin-block: var(--space-5) var(--space-3);
     color: var(--color-accent-2);
   }
   section.block ul, section.block ol { padding-inline-start: var(--space-6); }
@@ -661,9 +673,9 @@
   .feed-item {
     display: grid;
     grid-template-columns: auto 1fr auto;
-    gap: var(--space-4);
-    align-items: start;
-    padding: var(--space-3) var(--space-4);
+    gap: var(--space-3);
+    align-items: center;
+    padding: var(--space-2) var(--space-3);
     border-block-end: 1px solid var(--color-border);
     transition: background-color var(--duration-fast) var(--ease-out);
     border-radius: var(--radius-sm);
@@ -810,7 +822,7 @@
   /* Touch-coarse devices — bigger hit targets. */
   @media (pointer: coarse) {
     nav.site a { padding: var(--space-3); }
-    .btn { min-block-size: 3rem; }
+    .btn { min-block-size: var(--touch-target-lg); }
   }
 
   /* Print — strip backgrounds, force black-on-white. */

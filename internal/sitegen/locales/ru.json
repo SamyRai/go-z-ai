@@ -1,0 +1,45 @@
+{
+  "nav.home": "Главная",
+  "nav.docs": "Документация",
+  "nav.cli": "CLI",
+  "nav.library": "Библиотека",
+  "nav.changelog": "Журнал изменений",
+  "nav.github": "GitHub",
+
+  "a11y.skip_to_content": "Перейти к содержимому",
+  "a11y.theme_toggle": "Переключить тему",
+  "a11y.theme_light": "Перейти в светлую тему",
+  "a11y.theme_dark": "Перейти в тёмную тему",
+  "a11y.badges": "Значки статуса проекта",
+  "a11y.lang_menu": "Язык",
+
+  "landing.cta.get_started": "Начало работы",
+  "landing.cta.source": "Исходный код на GitHub",
+  "landing.cta.cli_ref": "Справочник по CLI",
+  "landing.section.at_a_glance": "Кратко",
+  "landing.section.install": "Установка",
+  "landing.section.quick_example": "Быстрый пример",
+  "landing.section.whats_covered": "Что входит",
+  "landing.section.recent_releases": "Недавние релизы",
+  "landing.section.recent_activity": "Недавняя активность",
+  "landing.section.sdk_relation": "Связь с официальными SDK",
+
+  "landing.stat.latest_release": "Последний релиз",
+  "landing.stat.stars": "Звёзды на GitHub",
+  "landing.stat.contributors": "Контрибьюторы",
+  "landing.stat.commits_30d": "Коммитов / 30 дн.",
+  "landing.stat.open_issues": "Открытые issues",
+
+  "landing.text.install_or_library": "Или используйте как Go-библиотеку — см.",
+  "landing.text.library_guide_link": "Руководство по библиотеке",
+  "landing.text.covered_intro": "Единый бинарник даёт доступ через CLI, библиотеку и TUI ко всем моделям Z.AI:",
+  "landing.text.full_surface": "Полный список",
+  "landing.text.all_releases": "Все релизы",
+  "landing.text.all_commits": "Все коммиты",
+  "landing.text.sdk_body": "Z.AI выпускает официальные SDK для Python, Node и Java. Официального SDK для Go нет — go-z-ai заполняет этот пробел и поверх того же API добавляет CLI, TUI, переключение региональных шлюзов и управление несколькими аккаунтами GLM Coding Plan.",
+
+  "footer.built_from": "Собрано из коммита {0}",
+  "footer.contributing": "Участие в проекте",
+  "footer.security": "Безопасность",
+  "footer.sitemap": "Карта сайта"
+}

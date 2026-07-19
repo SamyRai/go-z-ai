@@ -1,0 +1,45 @@
+{
+  "nav.home": "首页",
+  "nav.docs": "文档",
+  "nav.cli": "CLI",
+  "nav.library": "库",
+  "nav.changelog": "更新日志",
+  "nav.github": "GitHub",
+
+  "a11y.skip_to_content": "跳到正文",
+  "a11y.theme_toggle": "切换主题",
+  "a11y.theme_light": "切换到浅色模式",
+  "a11y.theme_dark": "切换到深色模式",
+  "a11y.badges": "项目状态徽章",
+  "a11y.lang_menu": "语言",
+
+  "landing.cta.get_started": "快速开始",
+  "landing.cta.source": "在 GitHub 查看源码",
+  "landing.cta.cli_ref": "CLI 参考",
+  "landing.section.at_a_glance": "概览",
+  "landing.section.install": "安装",
+  "landing.section.quick_example": "快速示例",
+  "landing.section.whats_covered": "覆盖范围",
+  "landing.section.recent_releases": "最近发布",
+  "landing.section.recent_activity": "最近活动",
+  "landing.section.sdk_relation": "与官方 SDK 的对比",
+
+  "landing.stat.latest_release": "最新版本",
+  "landing.stat.stars": "GitHub 星标",
+  "landing.stat.contributors": "贡献者",
+  "landing.stat.commits_30d": "提交 / 30 天",
+  "landing.stat.open_issues": "未关闭 issue",
+
+  "landing.text.install_or_library": "或作为 Go 库使用——见",
+  "landing.text.library_guide_link": "库使用指南",
+  "landing.text.covered_intro": "这一个二进制即可通过 CLI、库和 TUI 访问 Z.AI 的全部模型能力：",
+  "landing.text.full_surface": "全部能力",
+  "landing.text.all_releases": "全部版本",
+  "landing.text.all_commits": "全部提交",
+  "landing.text.sdk_body": "Z.AI 为 Python、Node 和 Java 提供了官方 SDK。目前没有官方的 Go SDK——go-z-ai 填补了这一空白，并在同一套 API 之上叠加了 CLI、TUI、区域网关切换以及 GLM Coding Plan 多账户管理。",
+
+  "footer.built_from": "基于提交 {0} 构建",
+  "footer.contributing": "贡献指南",
+  "footer.security": "安全",
+  "footer.sitemap": "站点地图"
+}

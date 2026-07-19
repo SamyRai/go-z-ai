@@ -1,0 +1,45 @@
+{
+  "nav.home": "Ana sayfa",
+  "nav.docs": "Belgeler",
+  "nav.cli": "CLI",
+  "nav.library": "Kitaplık",
+  "nav.changelog": "Değişiklik Günlüğü",
+  "nav.github": "GitHub",
+
+  "a11y.skip_to_content": "İçeriğe atla",
+  "a11y.theme_toggle": "Temayı değiştir",
+  "a11y.theme_light": "Açık moda geç",
+  "a11y.theme_dark": "Koyu moda geç",
+  "a11y.badges": "Proje durumu rozetleri",
+  "a11y.lang_menu": "Dil",
+
+  "landing.cta.get_started": "Başlarken",
+  "landing.cta.source": "GitHub'da kaynak",
+  "landing.cta.cli_ref": "CLI Referansı",
+  "landing.section.at_a_glance": "Bir bakışta",
+  "landing.section.install": "Kurulum",
+  "landing.section.quick_example": "Hızlı örnek",
+  "landing.section.whats_covered": "Neler kapsıyor",
+  "landing.section.recent_releases": "Son sürümler",
+  "landing.section.recent_activity": "Son etkinlik",
+  "landing.section.sdk_relation": "Resmî SDK'lar ile ilişkisi",
+
+  "landing.stat.latest_release": "Son sürüm",
+  "landing.stat.stars": "GitHub yıldızları",
+  "landing.stat.contributors": "Katkıda bulunanlar",
+  "landing.stat.commits_30d": "Commit / 30 gün",
+  "landing.stat.open_issues": "Açık issue'lar",
+
+  "landing.text.install_or_library": "Veya bir Go kitaplığı olarak kullanın — bkz.",
+  "landing.text.library_guide_link": "Kitaplık Kılavuzu",
+  "landing.text.covered_intro": "Bu tek ikili (binary), Z.AI'nin her model yüzeyine CLI, kitaplık ve TUI erişimi sağlar:",
+  "landing.text.full_surface": "Tam yüzey",
+  "landing.text.all_releases": "Tüm sürümler",
+  "landing.text.all_commits": "Tüm commit'ler",
+  "landing.text.sdk_body": "Z.AI; Python, Node ve Java için resmî SDK'lar yayımlar. Resmî bir Go SDK'sı yoktur — go-z-ai bu boşluğu doldurur ve aynı API yüzeyi üzerine bir CLI, bir TUI, bölgesel ağ geçidi değiştirme ve GLM Coding Plan çoklu hesap yönetimi ekler.",
+
+  "footer.built_from": "{0} commit'inden oluşturuldu",
+  "footer.contributing": "Katkıda Bulunma",
+  "footer.security": "Güvenlik",
+  "footer.sitemap": "Site haritası"
+}

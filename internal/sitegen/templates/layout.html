@@ -45,23 +45,23 @@
   </script>
 </head>
 <body>
-<a class="skip-link" href="#main">Skip to content</a>
+<a class="skip-link" href="#main">{{ T "a11y.skip_to_content" }}</a>
 
 <header class="site" role="banner">
   <div class="container">
-    <a class="brand" href="{{ langBase .Page.Lang }}" aria-label="{{ .Site.Name }} home">
+    <a class="brand" href="{{ langBase .Page.Lang }}" aria-label="{{ .Site.Name }}">
       <span class="brand-mark" aria-hidden="true">Z</span>
       <span>{{ .Site.Name }}</span>
     </a>
     <nav class="site" aria-label="Primary">
-      <a href="{{ langBase .Page.Lang }}" {{ if eq .Page.ActiveNav "home" }}aria-current="page"{{ end }}>Home</a>
-      <a href="{{ langBase .Page.Lang }}getting-started.html" {{ if eq .Page.ActiveNav "docs" }}aria-current="page"{{ end }}>Docs</a>
-      <a href="{{ langBase .Page.Lang }}cli-reference.html">CLI</a>
-      <a href="{{ langBase .Page.Lang }}library-guide.html">Library</a>
-      <a href="/CHANGELOG.html">Changelog</a>
-      <a href="{{ .Site.RepoURL }}" rel="external">GitHub ↗</a>
+      <a href="{{ langBase .Page.Lang }}" {{ if eq .Page.ActiveNav "home" }}aria-current="page"{{ end }}>{{ T "nav.home" }}</a>
+      <a href="{{ langBase .Page.Lang }}getting-started.html" {{ if eq .Page.ActiveNav "docs" }}aria-current="page"{{ end }}>{{ T "nav.docs" }}</a>
+      <a href="{{ langBase .Page.Lang }}cli-reference.html">{{ T "nav.cli" }}</a>
+      <a href="{{ langBase .Page.Lang }}library-guide.html">{{ T "nav.library" }}</a>
+      <a href="/CHANGELOG.html">{{ T "nav.changelog" }}</a>
+      <a href="{{ .Site.RepoURL }}" rel="external">{{ T "nav.github" }} ↗</a>
       {{- template "langswitch" . }}
-      <button class="theme-toggle" type="button" aria-label="Toggle dark mode" aria-pressed="false" data-theme-toggle>
+      <button class="theme-toggle" type="button" aria-label="{{ T "a11y.theme_toggle" }}" aria-pressed="false" data-theme-toggle>
         <span aria-hidden="true">◐</span>
       </button>
     </nav>
@@ -76,15 +76,15 @@
   <div class="container">
     <div>
       <strong>{{ .Site.Name }}</strong> — {{ .Site.Tagline }}<br>
-      <a href="{{ .Site.RepoURL }}" rel="external">GitHub</a> ·
+      <a href="{{ .Site.RepoURL }}" rel="external">{{ T "nav.github" }}</a> ·
       <a href="{{ .Site.RepoURL }}/blob/main/LICENSE">Apache 2.0</a> ·
-      Built from commit {{ .Site.Commit | default "main" }}
+      {{ T "footer.built_from" .Site.Commit }}
     </div>
     <div>
-      <a href="/CHANGELOG.html">Changelog</a> ·
-      <a href="/CONTRIBUTING.html">Contributing</a> ·
-      <a href="/SECURITY.html">Security</a> ·
-      <a href="/sitemap.xml">Sitemap</a>
+      <a href="/CHANGELOG.html">{{ T "nav.changelog" }}</a> ·
+      <a href="/CONTRIBUTING.html">{{ T "footer.contributing" }}</a> ·
+      <a href="/SECURITY.html">{{ T "footer.security" }}</a> ·
+      <a href="/sitemap.xml">{{ T "footer.sitemap" }}</a>
     </div>
   </div>
 </footer>
@@ -104,7 +104,7 @@
       var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
       var currentlyDark = explicitDark || (!explicitLight && prefersDark);
       btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
-      btn.setAttribute("aria-label", currentlyDark ? "Switch to light mode" : "Switch to dark mode");
+      btn.setAttribute("aria-label", currentlyDark ? "{{ T "a11y.theme_light" }}" : "{{ T "a11y.theme_dark" }}");
       btn.addEventListener("click", function() {
         var root = document.documentElement;
         var isLight = root.dataset.theme === "light";
@@ -117,7 +117,7 @@
         root.dataset.theme = nextLight ? "light" : "dark";
         try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
         btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
-        btn.setAttribute("aria-label", nextLight ? "Switch to dark mode" : "Switch to light mode");
+        btn.setAttribute("aria-label", nextLight ? "{{ T "a11y.theme_dark" }}" : "{{ T "a11y.theme_light" }}");
       });
     }
     // Language switcher — close on outside click and on Escape.
