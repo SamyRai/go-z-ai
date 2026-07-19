@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"time"
 
 	"charm.land/bubbles/v2/help"
 	"charm.land/bubbles/v2/key"
@@ -19,14 +20,26 @@ import (
 	"github.com/SamyRai/go-z-ai/internal/tui/usage"
 )
 
-// chrome rows: header line + tab bar + footer, plus the bordered panel's own
-// top/bottom border. Panel padding is 1 col each side, border 1 col each
-// side, so 4 columns of horizontal overhead too.
+// chrome rows: header line + tab bar + status line + help bar, plus the
+// bordered panel's own top/bottom border. The status line is always reserved
+// (blank when no toast is active) so the inner content area never shifts when
+// a toast appears or expires. Panel padding is 1 col each side, border 1 col
+// each side, so 4 columns of horizontal overhead too.
 const (
-	chromeRows     = 3
+	chromeRows     = 4
 	panelVOverhead = 2
 	panelHOverhead = 4
 )
+
+// toastTTL is how long a toast stays visible before auto-dismissing. A newer
+// toast supersedes an older one (each gets its own timer and monotonic id, so
+// a stale tick can't clear a fresh toast).
+const toastTTL = 4 * time.Second
+
+// toastExpiredMsg clears a toast after its TTL. It carries the id of the
+// toast it was scheduled for, so a stale tick from an older toast can't
+// dismiss a newer one.
+type toastExpiredMsg struct{ id int }
 
 // rootModel owns the tab bar and delegates Update/View to the active
 // screen's tea.Model. Screens are constructed once, up front, from cfg — no
@@ -44,6 +57,7 @@ type rootModel struct {
 
 	toastText  string
 	toastLevel toastLevel
+	toastID    int // monotonic; a toast's expiry tick only clears a matching id
 }
 
 func newRootModel(cfg Config) *rootModel {
@@ -132,6 +146,10 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			activeStreaming = sc.Streaming()
 		}
 
+		// Any keypress dismisses a lingering toast (in addition to the TTL),
+		// so an error/status line never lingers past the user's next action.
+		m.toastText = ""
+
 		// Tab navigation is blocked mid-stream for the same reason quit is:
 		// stream messages are only delivered to the active screen, so
 		// leaving the chat tab would stall the chunk pump.
@@ -147,11 +165,17 @@ func (m *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case uimsg.Err:
-		m.toastText, m.toastLevel = describeErr(msg.Err)
-		return m, nil
+		return m, m.setToast(describeErr(msg.Err))
 
 	case uimsg.Status:
-		m.toastText, m.toastLevel = msg.Text, toastInfo
+		return m, m.setToast(msg.Text, toastInfo)
+
+	case toastExpiredMsg:
+		// Only clear if this tick was for the currently-visible toast — a
+		// newer toast (higher id) must not be dismissed by a stale tick.
+		if msg.id == m.toastID {
+			m.toastText = ""
+		}
 		return m, nil
 
 	case uimsg.Routed:
@@ -176,6 +200,17 @@ func (m *rootModel) switchTab(t tab) {
 	m.toastText = ""
 }
 
+// setToast records a toast and schedules its auto-dismiss. Each toast gets a
+// fresh monotonic id and its own tea.Tick, so a newer toast supersedes an
+// older one and a stale tick can't clear the wrong toast.
+func (m *rootModel) setToast(text string, level toastLevel) tea.Cmd {
+	m.toastText = text
+	m.toastLevel = level
+	m.toastID++
+	id := m.toastID
+	return tea.Tick(toastTTL, func(time.Time) tea.Msg { return toastExpiredMsg{id: id} })
+}
+
 // ensureInit lazily calls Init on a tab the first time it becomes active, so
 // switching tabs doesn't fire every screen's API calls on startup.
 func (m *rootModel) ensureInit() tea.Cmd {
@@ -193,16 +228,25 @@ func (m *rootModel) View() tea.View {
 
 	header := uistyle.Header.Render("go-z-ai") + " " + uistyle.StatusBar.Render(m.accountLabel())
 
-	footer := m.help.ShortHelpView(m.footerBindings())
+	help := m.help.ShortHelpView(m.footerBindings())
+	// The status line is always present: the toast when one is active,
+	// otherwise a subtle hint surfacing the two power-user shortcuts that
+	// aren't in the per-screen help (the help overlay and the command
+	// palette). Keeping the line reserved means the panel never shifts when a
+	// toast appears or expires.
+	var status string
 	if m.toastText != "" {
-		footer = toastStyleFor(m.toastLevel)(m.toastText)
+		status = toastStyleFor(m.toastLevel)(m.toastText)
+	} else {
+		status = uistyle.Subtle.Render("? help · ctrl+p command palette")
 	}
 
 	content := lipgloss.JoinVertical(lipgloss.Left,
 		header,
 		renderTabBar(m.active),
 		panel,
-		footer,
+		status,
+		help,
 	)
 
 	v := tea.NewView(content)
