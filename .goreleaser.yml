@@ -1,4 +1,4 @@
-# GoReleaser config for zai-client.
+# GoReleaser config for go-z-ai.
 # Triggered by .github/workflows/release.yml on tag pushes matching v*.
 # Docs: https://goreleaser.com
 version: 2
@@ -42,7 +42,7 @@ checksum:
   name_template: 'checksums.txt'
 
 sboms:
-  - id: zai-client
+  - id: go-z-ai
     artifacts: archive
 
 signs:

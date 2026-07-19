@@ -4,7 +4,9 @@
 *.dll
 *.so
 *.dylib
-zai-client
+/go-z-ai
+# Legacy pre-rename binary still produced by older checkouts.
+/zai-client
 
 # Test binary, built with `go test -c`
 *.test
