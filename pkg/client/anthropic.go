@@ -217,56 +217,20 @@ type AnthropicStreamEvent struct {
 // once per SSE event. Returning a non-nil error from onEvent aborts the stream.
 // Connect-level transient failures (429/5xx/network) are retried like Create;
 // once the stream has begun, mid-stream failures are surfaced, not retried.
+//
+// Deprecated: use Stream, which returns an iter.Seq2[AnthropicStreamEvent,
+// error] compatible with Go 1.23+'s range-over-func. CreateStream delegates
+// to Stream and will be removed in v1.0.
 func (s *AnthropicService) CreateStream(ctx context.Context, req AnthropicMessageRequest, onEvent func(AnthropicStreamEvent) error) error {
-	if err := validateAnthropicRequest(&req); err != nil {
-		return fmt.Errorf("invalid anthropic request: %w", err)
-	}
-	req.Stream = true
-	req.Tools = s.compatTools(req.Tools)
-
-	maxRetries := s.client.config.MaxRetries
-	if maxRetries < 0 {
-		maxRetries = 0
-	}
-
-	var lastErr error
-	for attempt := 0; attempt <= maxRetries; attempt++ {
-		if err := ctx.Err(); err != nil {
+	for ev, err := range s.Stream(ctx, req) {
+		if err != nil {
 			return err
 		}
-
-		resp, err := s.client.sendHeaders(ctx, AnthropicBaseURL, s.client.config.APIKey, "POST", anthropicMessagesEndpoint, req, anthropicHeaders())
-		if err != nil {
-			lastErr = fmt.Errorf("failed to execute request: %w", err)
-			if attempt < maxRetries {
-				s.client.backoff(ctx, "", attempt)
-				continue
-			}
-			return lastErr
+		if err := onEvent(ev); err != nil {
+			return err
 		}
-
-		if resp.StatusCode != http.StatusOK {
-			retryAfter := resp.Header.Get("Retry-After")
-			apiErr := parseAPIError(resp)
-			resp.Body.Close()
-
-			retriable := false
-			if ae, ok := apiErr.(*APIError); ok {
-				retriable = ae.IsRetriable
-			}
-			lastErr = apiErr
-			if attempt < maxRetries && retriable {
-				s.client.backoff(ctx, retryAfter, attempt)
-				continue
-			}
-			return apiErr
-		}
-
-		err = readAnthropicSSE(ctx, resp, onEvent)
-		resp.Body.Close()
-		return err
 	}
-	return lastErr
+	return nil
 }
 
 // readAnthropicSSE parses Anthropic's `event:`/`data:` SSE framing, pairing

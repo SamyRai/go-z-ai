@@ -1,5 +1,5 @@
 // Command chat-streaming is a minimal example of streaming a chat completion
-// token-by-token with the Z.AI Go client.
+// token-by-token with the Z.AI Go client, using the Go 1.23+ iterator API.
 //
 // Usage:
 //
@@ -33,16 +33,16 @@ func main() {
 		TopP:     0.95,
 	}
 
-	// CreateStream forces Stream=true on the wire and invokes onChunk for every
-	// SSE event, retrying transient connect-level failures per Config.MaxRetries.
-	err = c.Chat().CreateStream(context.Background(), req, func(ch client.StreamChunk) error {
-		if len(ch.Choices) > 0 {
-			fmt.Print(ch.Choices[0].Delta.Content)
+	// Stream returns an iter.Seq2[StreamChunk, error] you range over. It forces
+	// Stream=true on the wire and retries transient connect-level failures per
+	// Config.MaxRetries. Context cancellation tears down the in-flight SSE read.
+	for chunk, err := range c.Chat().Stream(context.Background(), req) {
+		if err != nil {
+			log.Fatalf("stream: %v", err)
 		}
-		return nil
-	})
-	if err != nil {
-		log.Fatalf("stream: %v", err)
+		if len(chunk.Choices) > 0 {
+			fmt.Print(chunk.Choices[0].Delta.Content)
+		}
 	}
 	fmt.Println()
 }

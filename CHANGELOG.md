@@ -7,6 +7,15 @@ grouped by date; from `v0.1.0` on, sections are tagged.
 ## 2026-07-19 (post-v0.1.0)
 
 ### Added
+- **Iterator-based streaming** (`pkg/client/stream.go`):
+  `ChatService.Stream(ctx, req) iter.Seq2[StreamChunk, error]` and
+  `AnthropicService.Stream(ctx, req) iter.Seq2[AnthropicStreamEvent, error]`,
+  compatible with Go 1.23+'s range-over-func. The recommended streaming API
+  going forward. Producer goroutine + buffered channel adapts the existing
+  SSE parsers (`readSSE`, `readAnthropicSSE`) to `iter.Seq2`; context
+  cancellation tears down the in-flight stream without leaking the producer.
+  Connect-phase retry/backoff is preserved verbatim (extracted into
+  `connectChatStream`/`connectAnthropicStream`, shared by both APIs).
 - **Curated model catalog** (`pkg/client/models_catalog.go`) — the single
   source of truth for the model metadata `/models` does not return (context
   window, max output, pricing, capabilities, family/tier, release date,
@@ -28,8 +37,14 @@ grouped by date; from `v0.1.0` on, sections are tagged.
   `"dev"` for from-source builds. Enables downstream feature detection and
   identifier reuse.
 
+### Deprecated
+- `ChatService.CreateStream` and `AnthropicService.CreateStream` (the
+  callback-based streaming APIs) — replaced by `Stream` (iter.Seq2). The
+  deprecated variants delegate to `Stream` so existing callers keep working
+  unchanged; both will be removed in v1.0. All internal callers (CLI `chat`
+  and `anthropic` subcommands, TUI chat stream) migrated to `Stream`.
+
 ### Fixed
-- `internal/tui/overlay.go`: removed dead `backdrop` computation in
   `placeOverlay` (the variable was built and trimmed but never passed to
   `lipgloss.Place`).
 - `Makefile`: `LYCHEE_FLAGS` now includes `--exclude 'localhost'` so local

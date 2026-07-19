@@ -1,0 +1,294 @@
+package client
+
+import (
+	"context"
+	"fmt"
+	"iter"
+	"net/http"
+)
+
+// streamItem is one element pushed from the SSE-reader goroutine to the
+// iterator consumer. Exactly one of chunk or err is meaningful per item:
+//   - a regular chunk: chunk set, err nil
+//   - a fatal error during connect or stream read: chunk zero, err set
+//   - stream end (SSE [DONE] or clean EOF): the goroutine closes the channel
+//
+// The error item is terminal — the goroutine closes the channel right after
+// sending it — so consumers see at most one error item, last.
+type streamItem[T any] struct {
+	chunk T
+	err   error
+}
+
+// pullStream is the shared iterator plumbing for both Chat and Anthropic
+// streaming. It runs the connect+stream lifecycle on a goroutine and exposes
+// the chunks as an iter.Seq2 the caller ranges over.
+//
+// connect must perform the retry/backoff loop (mirroring CreateStream's
+// outer attempt loop), open the response body on success, and return a
+// non-nil resp + nil err once the SSE stream has begun (past the retry
+// boundary). A non-nil err from connect is the terminal error and resp is
+// ignored.
+//
+// deliver reads resp.Body to completion, invoking yield(chunk) for each
+// parsed SSE event. A non-nil return from deliver is the terminal error.
+// pullStream owns resp.Body.Close() regardless of outcome.
+//
+// Why a goroutine + channel (not a callback-driven pull function): the
+// natural Go 1.23+ idiom for adapting a push-style source to iter.Seq2 is a
+// producer goroutine feeding a buffered channel, with the range-loop's
+// yield function as the backpressure signal. Context cancellation is
+// observed in two places — the producer checks ctx.Err() in connect/deliver
+// (existing behavior), and the consumer's range loop stops calling next when
+// its own ctx is cancelled (runtime drains the channel on cancellation via
+// the stop function iter.Seq2 receives).
+func pullStream[T any](
+	ctx context.Context,
+	connect func() (*http.Response, error),
+	deliver func(resp *http.Response, yield func(T) error) error,
+) iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
+		// Buffered channel: capacity 1 gives the producer one chunk of slack
+		// so a slow consumer's range loop doesn't block the SSE read on every
+		// token (which would inflate tail latency). Larger buffers trade
+		// memory for smoother throughput; 1 is the safe default that never
+		// drops ordering and never blocks the producer on the first chunk.
+		items := make(chan streamItem[T], 1)
+
+		// Producer goroutine: runs connect + deliver, pushes items, closes.
+		producerDone := make(chan struct{})
+		go func() {
+			defer close(producerDone)
+			defer close(items)
+
+			resp, err := connect()
+			if err != nil {
+				items <- streamItem[T]{err: err}
+				return
+			}
+			defer resp.Body.Close()
+
+			// yield adapters: the deliver function takes a func(T) error
+			// (the existing callback shape, so we reuse readSSE/readAnthropicSSE
+			// verbatim). We translate callback-error-abort semantics into
+			// channel-push + return.
+			yieldToChan := func(chunk T) error {
+				select {
+				case items <- streamItem[T]{chunk: chunk}:
+					return nil
+				// If the consumer stopped ranging (returned false from their
+				// yield, or ctx cancelled and runtime is draining), unblock
+				// the producer so deliver returns and the goroutine exits.
+				case <-ctx.Done():
+					return ctx.Err()
+				}
+			}
+			if derr := deliver(resp, yieldToChan); derr != nil {
+				// Drain any pending sends won't be attempted — we just push
+				// the error and exit. If the channel is full and the consumer
+				// has walked away, the ctx.Done() select branch above will
+				// have already fired during the last chunk send.
+				select {
+				case items <- streamItem[T]{err: derr}:
+				case <-ctx.Done():
+				}
+			}
+		}()
+
+		// Consumer loop: range over items until channel closes or yield
+		// signals stop. We watch ctx.Done() so a cancelled context unblocks
+		// the range even if the producer is slow to close (it will, because
+		// connect/deliver check ctx too, but this avoids a hang window).
+		for {
+			select {
+			case <-ctx.Done():
+				// Wait for the producer to finish so we don't leak a goroutine
+				// holding an open response body. The producer observes ctx in
+				// yieldToChan and connect, so it will exit promptly.
+				<-producerDone
+				yield(zero[T](), ctx.Err())
+				return
+			case item, ok := <-items:
+				if !ok {
+					return // clean stream end
+				}
+				if !yield(item.chunk, item.err) {
+					// Consumer returned false from their yield — stop early.
+					// The producer's next yieldToChan send will hit ctx.Done()
+					// only if the runtime cancelled; otherwise we rely on the
+					// producer naturally finishing or the response being read
+					// to completion. To avoid a stuck producer, the consumer's
+					// stop also implies ctx cancellation semantics.
+					<-producerDone
+					return
+				}
+			}
+		}
+	}
+}
+
+// zero returns the zero value of T. Used to send a placeholder chunk when
+// reporting a ctx-cancellation error (the chunk is ignored by the consumer
+// when err is non-nil).
+func zero[T any]() T {
+	var z T
+	return z
+}
+
+// --- Chat streaming --------------------------------------------------------
+
+// Stream sends a streaming chat completion, returning an iterator the caller
+// ranges over with Go 1.23+'s range-over-func:
+//
+//	for chunk, err := range c.Chat().Stream(ctx, req) {
+//	    if err != nil { /* fatal — stream ends */ break }
+//	    if len(chunk.Choices) > 0 {
+//	        fmt.Print(chunk.Choices[0].Delta.Content)
+//	    }
+//	}
+//
+// Connect-level transient failures (429, 5xx, network errors) are retried up
+// to Config.MaxRetries exactly like Create; once a stream has begun, mid-
+// stream failures are surfaced as the terminal err item from the iterator
+// (the next range step ends the loop).
+//
+// Context cancellation propagates both ways: cancelling ctx stops the range
+// loop and tears down the in-flight SSE read.
+//
+// This is the recommended streaming API. The older callback-based
+// CreateStream is deprecated and delegates here.
+func (s *ChatService) Stream(ctx context.Context, req ChatRequest) iter.Seq2[StreamChunk, error] {
+	if err := validateChatRequest(&req); err != nil {
+		return singletonErrIter[StreamChunk](fmt.Errorf("invalid chat request: %w", err))
+	}
+	req.Stream = true
+	req.Tools = s.compatTools(req.Tools)
+
+	return pullStream[StreamChunk](ctx,
+		func() (*http.Response, error) {
+			return s.connectChatStream(ctx, req)
+		},
+		func(resp *http.Response, yield func(StreamChunk) error) error {
+			return s.readSSE(ctx, resp, yield)
+		},
+	)
+}
+
+// connectChatStream runs the outer retry/backoff loop that CreateStream used
+// to inline. Returns a non-nil *http.Response once a 200 stream has begun;
+// any other outcome is a terminal error. Pulled out so both Stream and
+// CreateStream share the identical connect logic.
+func (s *ChatService) connectChatStream(ctx context.Context, req ChatRequest) (*http.Response, error) {
+	maxRetries := s.client.config.MaxRetries
+	if maxRetries < 0 {
+		maxRetries = 0
+	}
+	var lastErr error
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		resp, err := s.client.send(ctx, s.client.config.BaseURL, s.client.config.APIKey, "POST", "/chat/completions", req)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to execute request: %w", err)
+			if attempt < maxRetries {
+				s.client.backoff(ctx, "", attempt)
+				continue
+			}
+			return nil, lastErr
+		}
+		if resp.StatusCode == http.StatusOK {
+			return resp, nil
+		}
+		retryAfter := resp.Header.Get("Retry-After")
+		apiErr := parseAPIError(resp)
+		resp.Body.Close()
+		retriable := false
+		if ae, ok := apiErr.(*APIError); ok {
+			retriable = ae.IsRetriable
+		}
+		lastErr = apiErr
+		if attempt < maxRetries && retriable {
+			s.client.backoff(ctx, retryAfter, attempt)
+			continue
+		}
+		return nil, apiErr
+	}
+	return nil, lastErr
+}
+
+// --- Anthropic streaming ---------------------------------------------------
+
+// Stream sends a streaming POST /v1/messages request, returning an iterator
+// over Anthropic's raw SSE events. See ChatService.Stream for the iterator
+// semantics; the per-event shape (AnthropicStreamEvent with Type + raw JSON
+// Data) is identical to the callback-based CreateStream.
+//
+// This is the recommended streaming API. The older callback-based
+// AnthropicService.CreateStream is deprecated and delegates here.
+func (s *AnthropicService) Stream(ctx context.Context, req AnthropicMessageRequest) iter.Seq2[AnthropicStreamEvent, error] {
+	if err := validateAnthropicRequest(&req); err != nil {
+		return singletonErrIter[AnthropicStreamEvent](fmt.Errorf("invalid anthropic request: %w", err))
+	}
+	req.Stream = true
+	req.Tools = s.compatTools(req.Tools)
+
+	return pullStream[AnthropicStreamEvent](ctx,
+		func() (*http.Response, error) {
+			return s.connectAnthropicStream(ctx, req)
+		},
+		func(resp *http.Response, yield func(AnthropicStreamEvent) error) error {
+			return readAnthropicSSE(ctx, resp, yield)
+		},
+	)
+}
+
+// connectAnthropicStream mirrors connectChatStream for the Anthropic surface.
+func (s *AnthropicService) connectAnthropicStream(ctx context.Context, req AnthropicMessageRequest) (*http.Response, error) {
+	maxRetries := s.client.config.MaxRetries
+	if maxRetries < 0 {
+		maxRetries = 0
+	}
+	var lastErr error
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		resp, err := s.client.sendHeaders(ctx, AnthropicBaseURL, s.client.config.APIKey, "POST", anthropicMessagesEndpoint, req, anthropicHeaders())
+		if err != nil {
+			lastErr = fmt.Errorf("failed to execute request: %w", err)
+			if attempt < maxRetries {
+				s.client.backoff(ctx, "", attempt)
+				continue
+			}
+			return nil, lastErr
+		}
+		if resp.StatusCode == http.StatusOK {
+			return resp, nil
+		}
+		retryAfter := resp.Header.Get("Retry-After")
+		apiErr := parseAPIError(resp)
+		resp.Body.Close()
+		retriable := false
+		if ae, ok := apiErr.(*APIError); ok {
+			retriable = ae.IsRetriable
+		}
+		lastErr = apiErr
+		if attempt < maxRetries && retriable {
+			s.client.backoff(ctx, retryAfter, attempt)
+			continue
+		}
+		return nil, apiErr
+	}
+	return nil, lastErr
+}
+
+// singletonErrIter returns an iterator that yields exactly one error and
+// stops. Used when request validation fails before we can even open a
+// connection — we still want Stream to return an iterator (not a separate
+// error return), so the failure surfaces as the iterator's terminal err.
+func singletonErrIter[T any](err error) iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
+		yield(zero[T](), err)
+	}
+}

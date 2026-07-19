@@ -100,7 +100,31 @@ fmt.Println(resp.Choices[0].Message.Content)
 
 ### Streaming
 
+The recommended streaming API returns a Go 1.23+ iterator you range over:
+
 ```go
+for chunk, err := range c.Chat().Stream(ctx, req) {
+    if err != nil {
+        // Fatal — the stream ends after this iteration.
+        break
+    }
+    if len(chunk.Choices) > 0 {
+        fmt.Print(chunk.Choices[0].Delta.Content)
+    }
+}
+```
+
+Context cancellation propagates both ways: cancelling `ctx` stops the range
+loop and tears down the in-flight SSE read without leaking the producer
+goroutine. Connect-phase transient failures (429/5xx/network) are retried up
+to `Config.MaxRetries` exactly like `Create`; once a stream has begun,
+mid-stream failures surface as the terminal `err` from the iterator.
+
+The older callback-based API still works but is deprecated and will be
+removed in v1.0:
+
+```go
+// Deprecated: prefer Stream (range-over-func).
 err := c.Chat().CreateStream(ctx, req, func(chunk client.StreamChunk) error {
     if len(chunk.Choices) > 0 {
         fmt.Print(chunk.Choices[0].Delta.Content)
@@ -108,6 +132,10 @@ err := c.Chat().CreateStream(ctx, req, func(chunk client.StreamChunk) error {
     return nil // a non-nil return aborts the stream
 })
 ```
+
+The Anthropic-compatible surface has the same pair: `c.Anthropic().Stream`
+returns `iter.Seq2[AnthropicStreamEvent, error]`; `c.Anthropic().CreateStream`
+is the deprecated callback variant.
 
 Set `req.StreamToolCall = true` (GLM-4.6+) to stream tool-call deltas
 incrementally in `chunk.Choices[0].Delta.ToolCalls` across multiple events,
