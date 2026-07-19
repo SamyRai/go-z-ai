@@ -81,3 +81,6 @@ accounts.json
 # local sessions and plans and must never ship in the public repo.
 .zcode/
 .claude/
+
+# Operational / promotion & outreach working notes (local only, never shipped)
+/ops/

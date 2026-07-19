@@ -239,7 +239,6 @@ muted label paired with a role-colored value.
 A spacer line sits above and below the tab strip so the chrome has breathing
 room; `chromeRows` accounts for both spacers when sizing the inner panel.
 
-
 - **`internal/tui/uistyle`** — the lipgloss style vocabulary and a dual
   light/dark palette. The root model resolves the palette against the
   terminal's actual background (`tea.BackgroundColorMsg`) and rebuilds every
@@ -289,4 +288,3 @@ Below **60×22** the root renders only a centered "terminal too small — resize
 to at least 60×22" message instead of overlapping chrome. Screens still
 receive `WindowSizeMsg` and floor their own dimensions, so growing back past
 the threshold resumes a correctly-laid-out app with no extra work.
-

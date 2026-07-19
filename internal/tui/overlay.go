@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"strings"
-
 	"charm.land/lipgloss/v2"
 
 	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
@@ -19,13 +17,9 @@ func placeOverlay(width, height int, content string) string {
 	if width < 1 || height < 1 {
 		return content
 	}
-	// Build a solid backdrop: `height` lines of `width` spaces, so Place()
-	// has something to composite onto and the screen underneath is obscured.
-	bg := strings.Repeat(" ", width)
-	backdrop := strings.Repeat(bg+"\n", height)
-	// Place strips the final newline implicitly via whitespace handling; the
-	// trailing \n keeps the rows distinct during JoinVertical elsewhere.
-	backdrop = strings.TrimRight(backdrop, "\n")
+	// lipgloss.Place composites content onto a solid backdrop of `width`x`height`
+	// whitespace cells (configured via WithWhitespaceChars); no explicit backdrop
+	// string is needed.
 	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, content,
 		lipgloss.WithWhitespaceChars(" "),
 	)

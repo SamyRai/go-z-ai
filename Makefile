@@ -10,8 +10,10 @@ LYCHEE ?= lychee
 MD_GLOBS := README*.md docs/**/*.md CONTRIBUTING.md examples/README.md .github/**/*.md
 # LYCHEE_FLAGS mirrors the args used in .github/workflows/ci.yml so a local
 # `make docs-lint` and CI agree. Exclude pkg.go.dev / docs.z.ai — both are
-# sometimes flaky under link-checker user agents.
-LYCHEE_FLAGS := --no-progress --max-cache-age 30d --max-concurrency 10 --exclude 'pkg\.go\.dev' --exclude 'docs\.z\.ai'
+# sometimes flaky under link-checker user agents. Exclude localhost so the
+# site-generation doc's `http://localhost:8000/` examples don't fail when no
+# local server is running.
+LYCHEE_FLAGS := --no-progress --max-cache-age 30d --max-concurrency 10 --exclude 'pkg\.go\.dev' --exclude 'docs\.z\.ai' --exclude 'localhost'
 
 .PHONY: help
 help: ## Show this help.
