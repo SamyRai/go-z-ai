@@ -1,0 +1,37 @@
+name: Dependency review
+
+# Supply-chain gate: runs on every PR targeting main and fails if a newly
+# added/changed dependency has a known vulnerability or a banned license.
+# Distinct from Dependabot (which alerts after merge); this blocks the PR.
+# Requires the dependency graph (auto-enabled on public repos).
+# Free for public repos. Docs: https://github.com/actions/dependency-review-action
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write   # comment-summary-in-pr
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Review changed dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        # actions/checkout@v7.0.0
+        uses: actions/checkout@9c091bb21b7c1c1991bb908d89e4e9dddfe3e0
+
+      - name: Dependency review
+        # actions/dependency-review-action@v5.0.0
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294
+        with:
+          # Fail the PR on moderate-or-worse vulnerabilities introduced by the diff.
+          fail-on-severity: moderate
+          # Post a summary comment only when the check fails (keeps PRs clean).
+          comment-summary-in-pr: on-failure
