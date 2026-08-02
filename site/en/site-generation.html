@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Site generation · go-z-ai</title>
+  <meta name="description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <link rel="canonical" href="/en/site-generation.html">
+  <link rel="alternate" hreflang="en" href="/en/site-generation.html">
+  <link rel="alternate" hreflang="ru" href="/ru/site-generation.html">
+  <link rel="alternate" hreflang="zh" href="/zh/site-generation.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/site-generation.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Site generation · go-z-ai">
+  <meta property="og:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/en/site-generation.html">
+  <meta property="og:locale" content="en">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Site generation · go-z-ai">
+  <meta name="twitter:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/en/site-generation.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Site generation","inLanguage":"en","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Site generation","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/en/site-generation.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/en/site-generation.html","name":"Site generation","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/en/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">Z</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/en/" >Home</a>
+      <a href="/en/getting-started.html" aria-current="page">Docs</a>
+      <a href="/en/cli-reference.html">CLI</a>
+      <a href="/en/library-guide.html">Library</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Changelog</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>English</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/site-generation.html" aria-current="true">English</a>
+    <a role="menuitem" href="/ru/site-generation.html" >Русский</a>
+    <a role="menuitem" href="/zh/site-generation.html" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="site-generation">Site generation</h1>
+<p>The project ships an auto-generated static HTML site under <code>site/</code>, rendered
+from the markdown docs + live GitHub data by a tiny Go generator.</p>
+<h2 id="what-it-does">What it does</h2>
+<p><code>cmd/sitegen</code> (a separate binary in this repo, <em>not</em> part of the <code>go-z-ai</code>
+release) reads:</p>
+<ul>
+<li>The 6 root <code>README*.md</code> files → one landing page per locale.</li>
+<li><code>docs/{en,ru,zh}/*.md</code> (27 files) → per-locale doc pages.</li>
+<li><code>CHANGELOG.md</code>, <code>CONTRIBUTING.md</code>, <code>SECURITY.md</code>, <code>CODE_OF_CONDUCT.md</code> →
+top-level meta pages.</li>
+<li>Live GitHub data (latest release, star count, contributors, recent commits)
+via the unauthenticated GitHub REST API.</li>
+<li>Local <code>git log</code> for activity metrics.</li>
+</ul>
+<p>…and renders everything through embedded HTML templates into static files at
+<code>site/</code>:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">site/
+</span></span><span class="line"><span class="cl">├── index.html              # English landing (also at /)
+</span></span><span class="line"><span class="cl">├── en/, ru/, zh/           # full-docs locales (landing + 8 doc pages each)
+</span></span><span class="line"><span class="cl">├── de/, tt/, tr/           # README-only locales (landing page only)
+</span></span><span class="line"><span class="cl">├── CHANGELOG.html, CONTRIBUTING.html, …
+</span></span><span class="line"><span class="cl">├── assets/                 # CSS, favicon, robots.txt
+</span></span><span class="line"><span class="cl">└── sitemap.xml
+</span></span></code></pre><h2 id="run-it">Run it</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">make site          <span class="c1"># generate into ./site</span>
+</span></span><span class="line"><span class="cl">make site-offline  <span class="c1"># same, but skip the live GitHub API calls</span>
+</span></span><span class="line"><span class="cl">make site-serve    <span class="c1"># generate + serve on http://localhost:8000</span>
+</span></span><span class="line"><span class="cl">make site-clean    <span class="c1"># remove ./site</span>
+</span></span></code></pre><p><code>make site-serve</code> is the fastest feedback loop for previewing changes — open
+<a href="http://localhost:8000/en/" rel="nofollow noreferrer noopener" target="_blank">http://localhost:8000/en/</a> and you’ll see the landing page.</p>
+<h2 id="design-choices">Design choices</h2>
+<p><strong>Zero new runtime dependencies.</strong> The generator uses only the Go stdlib plus
+<a href="https://github.com/yuin/goldmark" rel="nofollow noreferrer noopener" target="_blank"><code>github.com/yuin/goldmark</code></a>, which was
+already transitively in <code>go.sum</code> via <code>charm.land/glamour</code>. Promoting it to a
+direct dependency added zero bytes to the release artifacts. There is no Hugo,
+no Jekyll, no Node toolchain, no JS framework, no web font.</p>
+<p><strong>Catppuccin Mocha / Latte theme.</strong> The CSS palette is sourced from
+<a href="https://catppuccin.com/palette" rel="nofollow noreferrer noopener" target="_blank">Catppuccin</a> (MIT licensed) — already in the
+Go dependency tree via <code>github.com/catppuccin/go</code>. Dark mode (Mocha) is the
+default; light mode (Latte) is auto-selected by <code>@media (prefers-color-scheme)</code>
+and can be toggled manually via the header button. No CSS framework — about
+300 lines of hand-written modern CSS using custom properties, <code>color-mix()</code>,
+and logical properties.</p>
+<p><strong>Localization.</strong> Pages live at subdirectory permalinks (<code>/en/</code>, <code>/ru/</code>, …)
+matching <code>docs/&lt;lang&gt;/</code> one-to-one. Every page emits self-referencing
+<code>hreflang</code> + alternates + <code>x-default</code> → <code>/en/</code>. The language switcher is a
+plain <code>&lt;details&gt;</code> dropdown of <code>&lt;a&gt;</code> links — no JavaScript state, deep-linkable,
+SEO-correct. For locales that have only a root README (de/tt/tr), the switcher
+links those locales back to their landing page; doc-page links for those
+locales point to <code>/en/…</code> equivalents.</p>
+<p><strong>Graceful degradation.</strong> If the GitHub API is unreachable at build time (rate
+limits, sandboxed CI without network), the landing page still renders — it
+just shows zeros for stars/releases. Pass <code>-offline</code> to skip the network calls
+deliberately.</p>
+<h2 id="deployment">Deployment</h2>
+<p>The site is auto-deployed to GitHub Pages on every push to <code>main</code> by
+<a href="../../.github/workflows/pages.yml" rel="nofollow noreferrer"><code>.github/workflows/pages.yml</code></a>. One-time
+setup:</p>
+<ol>
+<li>Repo Settings → Pages → Source: <strong>GitHub Actions</strong> (not “Deploy from a
+branch”). The workflow handles the rest.</li>
+<li>Confirm the deploy job’s environment <code>github-pages</code> exists (Actions
+creates it on first run).</li>
+</ol>
+<p>Each release also bundles an offline-rendered snapshot of the site via
+<code>release.extra_files</code> in <code>.goreleaser.yml</code>, so <code>docs-site-&lt;version&gt;.tar.gz</code>
+ships as a release artifact alongside the binaries.</p>
+<h2 id="adding-a-new-locale">Adding a new locale</h2>
+<ol>
+<li>Add the new code to <code>localesAll</code> in <code>internal/sitegen/render.go</code>.</li>
+<li>Add the code → endonym mapping in <code>localeLabels</code>.</li>
+<li>If you’re shipping a full docs tree (not just a README), also add the code
+to <code>localesWithFullDocs</code> — the generator will then walk <code>docs/&lt;lang&gt;/*.md</code>.</li>
+<li>Add the language switcher entry to each root <code>README.&lt;lang&gt;.md</code> (see the
+existing <code>**English** | [简体中文]…</code> line).</li>
+</ol>
+<h2 id="files">Files</h2>
+<ul>
+<li><code>cmd/sitegen/main.go</code> — entrypoint; flags + invokes <code>sitegen.Run</code>.</li>
+<li><code>internal/sitegen/sitegen.go</code> — orchestrator.</li>
+<li><code>internal/sitegen/render.go</code> — goldmark setup, template loading, URL helpers.</li>
+<li><code>internal/sitegen/data.go</code> — GitHub API client.</li>
+<li><code>internal/sitegen/changelog.go</code> — CHANGELOG.md parser.</li>
+<li><code>internal/sitegen/git.go</code> — <code>git log</code> / <code>git shortlog</code> wrappers.</li>
+<li><code>internal/sitegen/embed.go</code> — <code>//go:embed</code> for templates + assets.</li>
+<li><code>internal/sitegen/templates/*.html</code> — layout, landing, doc.</li>
+<li><code>internal/sitegen/assets/*</code> — CSS, SVG favicon, robots.txt.</li>
+</ul>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API<br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      <a href="https://github.com/SamyRai/go-z-ai/blob/main/LICENSE">Apache 2.0</a> ·
+      Built from commit 2c4beb8
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Changelog</a> ·
+      <a href="/CONTRIBUTING.html">Contributing</a> ·
+      <a href="/SECURITY.html">Security</a> ·
+      <a href="/sitemap.xml">Sitemap</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Switch to light mode" : "Switch to dark mode");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Switch to dark mode" : "Switch to light mode");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

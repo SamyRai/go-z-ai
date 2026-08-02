@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Architecture · go-z-ai</title>
+  <meta name="description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <link rel="canonical" href="/en/architecture.html">
+  <link rel="alternate" hreflang="en" href="/en/architecture.html">
+  <link rel="alternate" hreflang="ru" href="/ru/architecture.html">
+  <link rel="alternate" hreflang="zh" href="/zh/architecture.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/architecture.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Architecture · go-z-ai">
+  <meta property="og:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/en/architecture.html">
+  <meta property="og:locale" content="en">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Architecture · go-z-ai">
+  <meta name="twitter:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/en/architecture.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Architecture","inLanguage":"en","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Architecture","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/en/architecture.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/en/architecture.html","name":"Architecture","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/en/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">Z</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/en/" >Home</a>
+      <a href="/en/getting-started.html" aria-current="page">Docs</a>
+      <a href="/en/cli-reference.html">CLI</a>
+      <a href="/en/library-guide.html">Library</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Changelog</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>English</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/architecture.html" aria-current="true">English</a>
+    <a role="menuitem" href="/ru/architecture.html" >Русский</a>
+    <a role="menuitem" href="/zh/architecture.html" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="architecture">Architecture</h1>
+<h2 id="contents">Contents</h2>
+<ul>
+<li><a href="#package-layout" rel="nofollow noreferrer">Package layout</a></li>
+<li><a href="#cli-conventions" rel="nofollow noreferrer">CLI conventions</a></li>
+<li><a href="#the-request-facade" rel="nofollow noreferrer">The request facade</a></li>
+<li><a href="#retry-and-timeout-design" rel="nofollow noreferrer">Retry and timeout design</a></li>
+<li><a href="#why-some-services-hit-a-different-host" rel="nofollow noreferrer">Why some services hit a different host</a></li>
+<li><a href="#the-live-verification-convention" rel="nofollow noreferrer">The live-verification convention</a></li>
+<li><a href="#extending-a-structured-lookup-table" rel="nofollow noreferrer">Extending a structured lookup table</a></li>
+<li><a href="#credential-file-safety" rel="nofollow noreferrer">Credential file safety</a></li>
+<li><a href="#the-tui" rel="nofollow noreferrer">The TUI</a></li>
+</ul>
+<h2 id="package-layout">Package layout</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">main.go               A five-line entrypoint: package main → internal/cli.Execute()
+</span></span><span class="line"><span class="cl">internal/cli/         CLI commands (package cli), one file per command group:
+</span></span><span class="line"><span class="cl">                      chat.go, accounts_cli.go, coding_cli.go, ...
+</span></span><span class="line"><span class="cl">pkg/client/           The Go library — one file per API service, no CLI/TUI dependency
+</span></span><span class="line"><span class="cl">internal/accounts/    Multi-account credential store (~/.config/go-z-ai/accounts.json)
+</span></span><span class="line"><span class="cl">internal/coding/      GLM Coding Plan credential store + per-tool config writers
+</span></span><span class="line"><span class="cl">internal/usageview/   Pure presentation helpers (time windows, heat maps, formatting) —
+</span></span><span class="line"><span class="cl">                      shared by both the CLI and the TUI so their output can never drift
+</span></span><span class="line"><span class="cl">internal/tui/         Bubble Tea terminal UI, one subpackage per tab
+</span></span><span class="line"><span class="cl">internal/fileinput/   FileOrURL: a URL passes through, a local path is base64-encoded —
+</span></span><span class="line"><span class="cl">                      shared by `ocr parse` and the TUI media tab
+</span></span></code></pre><p><code>pkg/client</code> has zero dependencies on anything CLI- or TUI-specific — it’s
+designed to be imported standalone (see the <a href="library-guide.html" rel="nofollow noreferrer">Library Guide</a>),
+and is the <strong>only</strong> public package. Everything under <code>internal/</code> is
+implementation the compiler forbids outside code from importing, so the CLI/TUI
+layers can be refactored freely. The CLI and TUI are both thin callers of
+<code>pkg/client</code>. <code>go install github.com/SamyRai/go-z-ai@latest</code> still builds the
+root <code>main.go</code> into the <code>go-z-ai</code> binary.</p>
+<h2 id="cli-conventions">CLI conventions</h2>
+<p>Command handlers that need an API client are registered as
+<code>RunE: runWithClient(runX)</code> and take the resolved <code>*client.Client</code> as a third
+parameter — <code>runWithClient</code> (in <code>internal/cli/common.go</code>) resolves it once via
+<code>getClient</code>, so the handlers don’t each repeat the resolve-and-check preamble.
+Credential precedence itself lives in <code>resolveConfig</code> (flag → <code>--account</code> →
+<code>ZAI_API_KEY</code>/<code>KEY</code> → active account), unit-tested in <code>credentials_test.go</code>.</p>
+<p>Output format is uniform: every command that prints a result registers the
+shared <code>--format</code> flag via <code>addFormatFlag</code> and renders through <code>emit(cmd, v, textFn)</code>, which emits pretty JSON for <code>--format json</code> and otherwise runs the
+human-readable <code>textFn</code>. Progress chatter on JSON-capable commands goes to
+stderr so stdout stays valid JSON.</p>
+<h2 id="the-request-facade">The request facade</h2>
+<p>Every service method funnels through one of three <code>Client</code> methods —
+services never build their own <code>http.Client</code> or issue a raw request:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">doRequest(ctx, method, endpoint, body, result)
+</span></span><span class="line"><span class="cl">  → doRequestBase(ctx, baseURL, method, endpoint, body, result)   // for non-default base URLs
+</span></span><span class="line"><span class="cl">    → doRequestBaseKey(ctx, baseURL, apiKey, method, endpoint, body, result)  // for a different credential
+</span></span></code></pre><p>This is what centralizes retry/backoff, error parsing, and auth for every
+endpoint in one place. A service that needs a different base URL (Agents) or
+a different credential (Embeddings/Moderations, which use <code>ChinaAPIKey</code>) calls
+further down the chain — it never bypasses it.</p>
+<p><code>sendMultipart</code> is the parallel path for multipart/form-data uploads (files,
+audio transcription, document parsing) — it does <strong>not</strong> retry, since
+re-uploading a file on a transient failure is a caller decision, not a safe
+default.</p>
+<h2 id="retry-and-timeout-design">Retry and timeout design</h2>
+<ul>
+<li><code>Config.Timeout</code> bounds dial + TLS handshake + waiting for response
+headers — deliberately <strong>not</strong> the whole <code>http.Client.Timeout</code>, which would
+truncate a long-running <code>CreateStream</code> SSE read partway through a
+generation.</li>
+<li>Retries apply to 429/5xx/network errors, with exponential backoff, jitter
+(up to 25%), and <code>Retry-After</code> header support, up to <code>Config.MaxRetries</code>
+(default 3). Every retry checks <code>ctx.Err()</code> first so a cancelled context
+aborts immediately instead of sleeping through a backoff first.</li>
+<li>Streaming (<code>CreateStream</code>) retries only the <em>connection</em> attempt — once the
+SSE stream has actually started, a mid-stream failure is surfaced to the
+caller, not silently retried (there’s no way to know how much of the
+response the caller already consumed).</li>
+</ul>
+<h2 id="why-some-services-hit-a-different-host">Why some services hit a different host</h2>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Base URL</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Embeddings, Moderations</td>
+<td><code>open.bigmodel.cn</code></td>
+<td>The only platform that documents these endpoints — <code>api.z.ai</code>’s doc index doesn’t mention either. Live-verified that a regular z.ai key authenticates identically on both platforms, so <code>Config.ChinaAPIKey</code> falls back to <code>Config.APIKey</code> by default.</td>
+</tr>
+<tr>
+<td>Agents</td>
+<td><code>https://api.z.ai/api</code> (bare root, no <code>/paas/v4</code>) by default; <code>https://open.bigmodel.cn/api</code> under <code>Config.Region = RegionChina</code></td>
+<td>Verified live — nesting <code>/v1/agents</code> under the chat-completions base 404s.</td>
+</tr>
+<tr>
+<td>Everything else</td>
+<td><code>Config.BaseURL</code> (<code>/api/paas/v4</code>, or <code>/api/coding/paas/v4</code> for GLM Coding Plan accounts)</td>
+<td>The general case.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="regional-gateway-selection-configregion">Regional gateway selection (Config.Region)</h3>
+<p>Z.AI serves the same GLM model family from two regional gateways: the
+international host <code>api.z.ai</code> and the China-mainland mirror
+<code>open.bigmodel.cn</code>. Most services pick their host via <code>Config.BaseURL</code> (chat,
+files, tools, etc.) or a fixed constant (Embeddings/Moderations always use the
+China host). Four services — <strong>monitor</strong> (quota/usage), <strong>biz</strong> (account
+info), <strong>agents</strong>, and <strong>account-type detection</strong> — used to be hardcoded to
+<code>api.z.ai</code>, which left a <code>glm_coding_plan_china</code> key unable to reach its own
+region’s monitor/usage endpoints (and got mis-classified by
+<code>accounts add</code>/<code>account detect</code>).</p>
+<p><code>Config.Region</code> (<code>RegionGlobal</code>, the default, or <code>RegionChina</code>) selects the
+host for those four region-scoped services only. It does <strong>not</strong> override
+<code>Config.BaseURL</code> (the chat surface) or the Embeddings/Moderations host.
+From the CLI, use <code>--region {global,china}</code> or <code>ZAI_REGION</code> (aliases: <code>cn</code>,
+<code>bigmodel</code>, <code>west</code>). An unknown value falls back to global rather than
+erroring, so a typo never blocks an unrelated command.</p>
+<p>The China mirror hosts for monitor/biz/agents/detection are modeled by
+mirroring the <code>api.z.ai</code> path layout on <code>open.bigmodel.cn</code> and marked
+<code>NOT VERIFIED LIVE</code> — the China platform is live-verified to serve the same
+OpenAPI surface for <code>/models</code> and <code>/chat/completions</code> (see <code>BigModelBaseURL</code>),
+but the monitor/biz/agents hosts on the China side have not been captured by a
+cassette yet. Pin them with <code>ZAI_RECORD=1</code> if you hold an entitled China key.</p>
+<h2 id="the-live-verification-convention">The live-verification convention</h2>
+<p>Z.AI’s own SDKs and docs sometimes disagree with each other, and sometimes
+with what the live API actually returns (an endpoint documented as optional
+that 400s without it; an error embedded in a 200 response body; a field typed
+differently across two official SDKs). Rather than trust a single source,
+new services here are checked against a real API call and the interaction is
+recorded as a <a href="https://github.com/dnaeon/go-vcr" rel="nofollow noreferrer noopener" target="_blank">go-vcr</a> cassette
+(<code>pkg/client/testdata/cassettes/</code>), replayed in <code>ModeReplayOnly</code> so the test
+suite never touches the network.</p>
+<p>Two files in <code>pkg/client</code> carry the live-verification work, with distinct
+roles: <strong><code>live_replay_test.go</code></strong> holds the <code>Test*Live</code> tests that replay the
+committed cassettes as frozen findings (entitlement gates, the
+200-with-embedded-failure quirk, the single-key-across-hosts claim); it is the
+running log of what’s been confirmed and why it mattered. <strong><code>live_verify_test.go</code></strong>
+holds the <code>TestVerify*</code> recording harness — each test SKIPS until you capture a
+new success-path cassette with <code>ZAI_RECORD=1</code>, then replays it; it’s the
+to-do list of shapes still pending a real capture.</p>
+<p>If you’re extending a service, see
+<a href="/CONTRIBUTING.html" rel="nofollow noreferrer">Contributing § the live-verification convention</a> before
+you add a new cassette.</p>
+<h2 id="extending-a-structured-lookup-table">Extending a structured lookup table</h2>
+<p>Several types in this codebase map a small, closed set of API-defined values
+to human-readable metadata via a config table plus a lookup function, rather
+than a chain of <code>if</code>/<code>switch</code> conditionals — <code>pkg/client/quota.go</code>’s
+<code>quotaWindowConfigs</code>/<code>findWindowConfig</code> is the clearest example:</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">quotaWindowConfigs</span> <span class="p">=</span> <span class="p">[]</span><span class="nx">QuotaWindowConfig</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="nx">Type</span><span class="p">:</span> <span class="nx">QuotaTypeTokensLimit</span><span class="p">,</span> <span class="nx">UnitCode</span><span class="p">:</span> <span class="nx">UnitCodeHourly</span><span class="p">,</span> <span class="nx">Number</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="nx">Description</span><span class="p">:</span> <span class="s">&#34;5-hour rolling token window&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="nx">Type</span><span class="p">:</span> <span class="nx">QuotaTypeTokensLimit</span><span class="p">,</span> <span class="nx">UnitCode</span><span class="p">:</span> <span class="nx">UnitCodeWeekly</span><span class="p">,</span> <span class="nx">Number</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nx">Description</span><span class="p">:</span> <span class="s">&#34;weekly token window&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="nx">Type</span><span class="p">:</span> <span class="nx">QuotaTypeTimeLimit</span><span class="p">,</span> <span class="nx">UnitCode</span><span class="p">:</span> <span class="nx">UnitCodeMonthly</span><span class="p">,</span> <span class="nx">Number</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nx">Description</span><span class="p">:</span> <span class="s">&#34;monthly MCP tools quota&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre><p>When Z.AI adds a new window type, the change is additive (append a row) and
+localized, with a generic fallback description for anything not yet in the
+table rather than a hard failure. The same pattern shows up for model
+categorization (<code>pkg/client/models_catalog.go</code>’s <code>modelsCatalog</code> table —
+each row carries a <code>Capabilities []string</code> that <code>ModelDetails.HasCapability</code>
+reads, replacing the old divergent <code>visionModelMarkers</code> substring lists) and
+for account-type-to-endpoint resolution (<code>internal/coding/plans.go</code>).
+Prefer this shape over adding another conditional branch when you’re adding a
+new recognized value to an existing concept.</p>
+<p><code>modelsCatalog</code> is also the fix for a data-availability gap: Z.AI’s <code>/models</code>
+endpoint returns only the OpenAI-bare <code>{id, object, created, owned_by}</code>
+shape, so without enrichment every <code>Context</code>/<code>Pricing</code>/<code>Capabilities</code> cell
+renders as <code>-</code>/<code>0</code>. <code>ModelsService.List</code> runs each decoded model through
+<code>enrichModel</code>, which overlays catalog fields but lets <strong>live API values
+win</strong> when both are present — so the day Z.AI starts sending <code>max_context</code>
+or <code>pricing</code> in <code>/models</code>, the real numbers take over with no code change.
+Pricing/context figures are transcribed from
+<a href="https://docs.z.ai/guides/overview/pricing" rel="nofollow noreferrer noopener" target="_blank">https://docs.z.ai/guides/overview/pricing</a> and need periodic manual
+refresh (the API gives no signal when they change); the file header carries
+the “last verified” date. Uncataloged models still appear from <code>/models</code>
+with sparse data rather than being hidden or guessed at.</p>
+<h2 id="credential-file-safety">Credential file safety</h2>
+<p>Both <code>internal/accounts</code> (the multi-account store) and <code>internal/coding</code> (the GLM
+Coding Plan credential store, plus every third-party tool config it writes —
+Claude Code, OpenCode, Crush, Factory Droid, Cursor) write via a temp-file
+atomic write followed by rename, never a direct in-place write. A crash or
+kill mid-write leaves the original file untouched instead of truncated —
+important here specifically because several of these are <em>other programs’</em>
+real config files being merged into, not files this project owns outright.
+Files containing a key are created <code>0600</code>; directories <code>0700</code>.</p>
+<h2 id="the-tui">The TUI</h2>
+<p><code>internal/tui</code> is a <a href="https://github.com/charmbracelet/bubbletea" rel="nofollow noreferrer noopener" target="_blank">Bubble Tea</a>
+program with one tab per subpackage (<code>chat</code>, <code>models</code>, <code>usage</code>, <code>accounts</code>,
+<code>coding</code>, <code>media</code>, <code>tools</code>). Each tab is an independent <code>tea.Model</code> with its
+own <code>Update</code>/<code>View</code>; <code>internal/tui/root.go</code> dispatches between them. Long-running
+work (an API call, a filesystem operation) is wrapped in a <code>tea.Cmd</code> closure,
+which Bubble Tea runs on its own goroutine — code called from a <code>tea.Cmd</code>
+must not rely on package-level mutable state being uncontended (this bit us
+once with <code>http.DefaultClient.Timeout</code>; see the fix in
+<code>internal/coding/validator.go</code>’s doc comment for the specifics).</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API<br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      <a href="https://github.com/SamyRai/go-z-ai/blob/main/LICENSE">Apache 2.0</a> ·
+      Built from commit 2c4beb8
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Changelog</a> ·
+      <a href="/CONTRIBUTING.html">Contributing</a> ·
+      <a href="/SECURITY.html">Security</a> ·
+      <a href="/sitemap.xml">Sitemap</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Switch to light mode" : "Switch to dark mode");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Switch to dark mode" : "Switch to light mode");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>CLI reference · go-z-ai</title>
+  <meta name="description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <link rel="canonical" href="/en/cli-reference.html">
+  <link rel="alternate" hreflang="en" href="/en/cli-reference.html">
+  <link rel="alternate" hreflang="ru" href="/ru/cli-reference.html">
+  <link rel="alternate" hreflang="zh" href="/zh/cli-reference.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/cli-reference.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="CLI reference · go-z-ai">
+  <meta property="og:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/en/cli-reference.html">
+  <meta property="og:locale" content="en">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="CLI reference · go-z-ai">
+  <meta name="twitter:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/en/cli-reference.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"CLI reference","inLanguage":"en","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"CLI reference","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/en/cli-reference.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/en/cli-reference.html","name":"CLI reference","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/en/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">Z</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/en/" >Home</a>
+      <a href="/en/getting-started.html" aria-current="page">Docs</a>
+      <a href="/en/cli-reference.html">CLI</a>
+      <a href="/en/library-guide.html">Library</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Changelog</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>English</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/cli-reference.html" aria-current="true">English</a>
+    <a role="menuitem" href="/ru/cli-reference.html" >Русский</a>
+    <a role="menuitem" href="/zh/cli-reference.html" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="cli-reference">CLI Reference</h1>
+<p>Every command supports <code>--help</code> for its authoritative, always-up-to-date flag
+list (<code>go-z-ai &lt;command&gt; --help</code>, <code>go-z-ai &lt;command&gt; &lt;subcommand&gt; --help</code>).
+This page is the organized tour; treat <code>--help</code> as the source of truth if the
+two ever disagree.</p>
+<h2 id="contents">Contents</h2>
+<ul>
+<li><a href="#global-flags" rel="nofollow noreferrer">Global flags</a></li>
+<li><a href="#chat" rel="nofollow noreferrer">Chat</a></li>
+<li><a href="#models" rel="nofollow noreferrer">Models</a></li>
+<li><a href="#accounts-usage-and-quota" rel="nofollow noreferrer">Accounts, usage, and quota</a></li>
+<li><a href="#coding-tools-glm-coding-plan" rel="nofollow noreferrer">Coding tools (GLM Coding Plan)</a></li>
+<li><a href="#files--batch" rel="nofollow noreferrer">Files &amp; batch</a></li>
+<li><a href="#media-generation" rel="nofollow noreferrer">Media generation</a></li>
+<li><a href="#document-parsing--ocr" rel="nofollow noreferrer">Document parsing &amp; OCR</a></li>
+<li><a href="#retrieval-helpers" rel="nofollow noreferrer">Retrieval helpers</a></li>
+<li><a href="#content-moderation" rel="nofollow noreferrer">Content moderation</a></li>
+<li><a href="#agents" rel="nofollow noreferrer">Agents</a></li>
+<li><a href="#tools-web-search-reader-tokenizer" rel="nofollow noreferrer">Tools (web search, reader, tokenizer)</a></li>
+<li><a href="#anthropic-compatible-endpoint" rel="nofollow noreferrer">Anthropic-compatible endpoint</a></li>
+<li><a href="#terminal-ui" rel="nofollow noreferrer">Terminal UI</a></li>
+</ul>
+<h2 id="global-flags">Global flags</h2>
+<p>These apply to every command:</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--api-key string</code></td>
+<td>Z.AI API key (or <code>ZAI_API_KEY</code> env var)</td>
+</tr>
+<tr>
+<td><code>--base-url string</code></td>
+<td>API base URL (default: <code>https://api.z.ai/api/paas/v4</code>)</td>
+</tr>
+<tr>
+<td><code>--account string</code></td>
+<td>Use a stored account by name for this command (see <a href="accounts-and-quota.html" rel="nofollow noreferrer">Accounts &amp; Quota</a>)</td>
+</tr>
+<tr>
+<td><code>--china-api-key string</code></td>
+<td>open.bigmodel.cn key for Embeddings/Moderations (or <code>ZAI_CHINA_API_KEY</code>; falls back to <code>--api-key</code>)</td>
+</tr>
+<tr>
+<td><code>--region string</code></td>
+<td>Regional gateway for monitor/biz/agents/detection: <code>global</code> (api.z.ai, default) or <code>china</code> (open.bigmodel.cn). Aliases <code>cn</code>, <code>bigmodel</code>, <code>west</code>. Or <code>ZAI_REGION</code> env. Does not override <code>--base-url</code>. Unknown values fall back to global.</td>
+</tr>
+<tr>
+<td><code>--config string</code></td>
+<td>Config file (default: <code>.env</code>)</td>
+</tr>
+<tr>
+<td><code>--version</code></td>
+<td>Print version (tag, commit, build date) and exit. Populated by GoReleaser ldflags in release builds; <code>dev</code> otherwise.</td>
+</tr>
+</tbody>
+</table>
+<p>Every result-producing command takes <code>--format text\|json</code> (a few default to
+<code>json</code> where the payload is machine-oriented — e.g. <code>embeddings</code>,
+<code>moderations</code>). In <code>json</code> mode, progress/status chatter goes to stderr so
+stdout stays valid JSON you can pipe into <code>jq</code>.</p>
+<p>Set <code>--region china</code> (or <code>ZAI_REGION=china</code>) when your key was issued on
+<code>open.bigmodel.cn</code>, so quota/usage, account-info, agents, and account-type
+detection land on the matching host. It does <strong>not</strong> change the chat base URL
+(use <code>--base-url</code> for that) or the Embeddings/Moderations host (always the
+China platform). See <a href="accounts-and-quota.html#regional-gateways-apiza--openbigmodelcn" rel="nofollow noreferrer">Accounts &amp; Quota § Regional gateways</a>.</p>
+<h2 id="chat">Chat</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai chat create <span class="o">[</span>message<span class="o">]</span> <span class="o">[</span>flags<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai chat simple <span class="o">[</span>model<span class="o">]</span> <span class="o">[</span>message<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai chat async-result <span class="o">[</span>task-id<span class="o">]</span>
+</span></span></code></pre><p><code>chat create</code> is the main entry point:</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--model string</code></td>
+<td>Default <code>glm-5.2</code></td>
+</tr>
+<tr>
+<td><code>--stream</code></td>
+<td>Token-by-token streaming</td>
+</tr>
+<tr>
+<td><code>--async</code></td>
+<td>Submit without waiting; poll with <code>chat async-result &lt;task-id&gt;</code></td>
+</tr>
+<tr>
+<td><code>--temperature float</code>, <code>--top-p float</code>, <code>--max-tokens int</code></td>
+<td>Sampling controls</td>
+</tr>
+<tr>
+<td><code>--system string</code></td>
+<td>System message</td>
+</tr>
+<tr>
+<td><code>--thinking string</code>, <code>--effort string</code></td>
+<td>Deep-thinking mode and effort level (<code>max|xhigh|high|medium|low|minimal|none</code>; <code>xhigh</code>→<code>max</code> is GLM-5.2 only)</td>
+</tr>
+<tr>
+<td><code>--show-reasoning</code></td>
+<td>Print <code>reasoning_content</code> to stderr</td>
+</tr>
+<tr>
+<td><code>--json-schema string</code></td>
+<td>Structured output: <code>@file.json</code> or inline JSON</td>
+</tr>
+<tr>
+<td><code>--tool string</code></td>
+<td>Function-calling tool declarations: <code>@tools.json</code> or inline JSON array</td>
+</tr>
+<tr>
+<td><code>--image string</code> (repeatable)</td>
+<td>Attach an image: a URL, or <code>@path</code> to a local file (base64-encoded). Requires a vision model (<code>glm-4.6v</code>/<code>glm-4.5v</code>)</td>
+</tr>
+<tr>
+<td><code>--stop strings</code></td>
+<td>Stop sequences (repeatable, max 4)</td>
+</tr>
+<tr>
+<td><code>--format text|json</code></td>
+<td>Output format</td>
+</tr>
+</tbody>
+</table>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai chat create <span class="s2">&#34;Summarize this in 3 bullets&#34;</span> --model glm-5.2 --stream
+</span></span><span class="line"><span class="cl">go-z-ai chat create <span class="s2">&#34;Describe this&#34;</span> --image @photo.jpg --model glm-4.6v
+</span></span><span class="line"><span class="cl">go-z-ai chat create <span class="s2">&#34;Extract fields&#34;</span> --json-schema @schema.json
+</span></span></code></pre><p>Tool calls are printed, not executed, by the CLI — see
+<a href="library-guide.html#function-calling" rel="nofollow noreferrer">Library Guide § Function calling</a> for the
+Go <code>RunWithTools</code> auto-executing loop.</p>
+<blockquote>
+<p><strong>Vision + tool-calling can return HTTP 401.</strong> Community reports (e.g.
+<a href="https://github.com/musistudio/claude-code-router/issues/1491" rel="nofollow noreferrer noopener" target="_blank">claude-code-router#1491</a>)
+show that combining a vision model (<code>--image</code> on <code>glm-4.6v</code>/<code>glm-4.5v</code>) with
+function-calling tools (<code>--tool</code>) in the same request is rejected with a 401
+on some GLM configurations — an authenticated key still fails only for that
+combination. If you hit this, split the work: use a vision model for the
+image turn and a text model (<code>glm-5.2</code>) for the tool-calling turn, rather
+than sending images and tools together. Not yet reproduced against a live
+account here — see <a href="roadmap.html" rel="nofollow noreferrer">Roadmap</a>.</p>
+</blockquote>
+<h2 id="models">Models</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai models list <span class="o">[</span>--pricing<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai models get <span class="o">[</span>model-id<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai models text <span class="p">|</span> vision <span class="p">|</span> free
+</span></span></code></pre><h2 id="accounts-usage-and-quota">Accounts, usage, and quota</h2>
+<p>Covered in depth in <a href="accounts-and-quota.html" rel="nofollow noreferrer">Accounts &amp; Quota</a>. Quick reference:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai accounts add &lt;name&gt; --api-key &lt;key&gt; <span class="o">[</span>--type coding_plan<span class="p">|</span>pay_as_you_go<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts list <span class="o">[</span>--format json<span class="o">]</span> <span class="o">[</span>--reveal<span class="o">]</span>   <span class="c1"># keys masked by default; --reveal for export</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts use &lt;name&gt;
+</span></span><span class="line"><span class="cl">go-z-ai accounts show <span class="o">[</span>name<span class="o">]</span> <span class="o">[</span>--format json<span class="o">]</span> <span class="o">[</span>--reveal<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts current                            <span class="c1"># shorthand for &#39;accounts show&#39; (active account)</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts quota <span class="o">[</span>--only name...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts usage <span class="o">[</span>--days N<span class="o">]</span> <span class="o">[</span>--today<span class="o">]</span> <span class="o">[</span>--metric model<span class="p">|</span>tool<span class="p">|</span>both<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts remove &lt;name&gt; <span class="o">[</span>--yes<span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">go-z-ai usage quota <span class="p">|</span> summary <span class="p">|</span> account <span class="p">|</span> billing <span class="p">|</span> check <span class="o">[</span>--watch<span class="o">]</span> <span class="p">|</span> detect
+</span></span><span class="line"><span class="cl">go-z-ai account info <span class="p">|</span> status
+</span></span><span class="line"><span class="cl">go-z-ai validate
+</span></span></code></pre><h2 id="coding-tools-glm-coding-plan">Coding tools (GLM Coding Plan)</h2>
+<p>Wires Claude Code, OpenCode, Crush, Factory Droid, or Cursor to use your GLM
+Coding Plan. Full walkthrough: <a href="coding-tools.html" rel="nofollow noreferrer">Coding Tools</a>.</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding auth &lt;plan&gt; &lt;key&gt;      <span class="c1"># validate + store a credential</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding auth revoke
+</span></span><span class="line"><span class="cl">go-z-ai coding auth reload &lt;tool&gt;     <span class="c1"># re-push stored creds into a tool&#39;s config</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding load &lt;tool&gt;            <span class="c1"># write it into a tool&#39;s config</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding unload &lt;tool&gt;
+</span></span><span class="line"><span class="cl">go-z-ai coding status
+</span></span><span class="line"><span class="cl">go-z-ai coding tools                  <span class="c1"># list supported tools + install status</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding doctor                 <span class="c1"># health check</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp add &lt;tool&gt;         <span class="c1"># register Z.AI&#39;s Vision MCP server</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp status
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp remove &lt;tool&gt;
+</span></span></code></pre><h2 id="files--batch">Files &amp; batch</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai files upload &lt;file&gt; <span class="o">[</span>--purpose batch<span class="p">|</span>code-interpreter<span class="p">|</span>agent<span class="p">|</span>voice-clone-input<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai files list <span class="o">[</span>--purpose ...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai files delete &lt;file-id&gt;
+</span></span><span class="line"><span class="cl">go-z-ai files download &lt;file-id&gt; &lt;output-path&gt;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">go-z-ai batch create &lt;input-file-id&gt; <span class="o">[</span>--endpoint ...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai batch status &lt;batch-id&gt;
+</span></span><span class="line"><span class="cl">go-z-ai batch list <span class="o">[</span>--after ...<span class="o">]</span> <span class="o">[</span>--limit N<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai batch cancel &lt;batch-id&gt;
+</span></span></code></pre><p>Batch jobs process many chat-completion requests from a JSONL file
+asynchronously — upload it first, then create the batch with the resulting
+file ID.</p>
+<h2 id="media-generation">Media generation</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="c1"># Images — default model glm-image (cogview-4-250304 also supported)</span>
+</span></span><span class="line"><span class="cl">go-z-ai image generate &lt;prompt&gt; <span class="o">[</span>--model glm-image<span class="p">|</span>cogview-4-250304<span class="o">]</span> <span class="o">[</span>--size ...<span class="o">]</span> <span class="o">[</span>--quality hd<span class="p">|</span>standard<span class="o">]</span> <span class="o">[</span>--async<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai image status &lt;id&gt;
+</span></span><span class="line"><span class="cl"><span class="c1"># --quality: hd is the default (~20s); standard is faster (~5-10s).</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Video — always async (cogvideox-3 | viduq1-text | viduq1-image | vidu2-image | ...)</span>
+</span></span><span class="line"><span class="cl">go-z-ai video generate --prompt <span class="s2">&#34;...&#34;</span> <span class="o">[</span>--model ...<span class="o">]</span> <span class="o">[</span>--duration N<span class="o">]</span> <span class="o">[</span>--aspect-ratio ...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai video status &lt;id&gt;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Audio</span>
+</span></span><span class="line"><span class="cl">go-z-ai audio transcribe &lt;file&gt;                       <span class="c1"># glm-asr, .wav/.mp3, &lt;=25MB, &lt;=30s</span>
+</span></span><span class="line"><span class="cl">go-z-ai audio speech &lt;text&gt; &lt;output-path&gt; <span class="o">[</span>--voice ...<span class="o">]</span> <span class="o">[</span>--speed N<span class="o">]</span> <span class="o">[</span>--format wav<span class="p">|</span>pcm<span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Voice cloning (pairs with audio speech --voice)</span>
+</span></span><span class="line"><span class="cl">go-z-ai voice clone &lt;voice-name&gt; &lt;sample-file-id&gt; &lt;preview-text&gt;
+</span></span><span class="line"><span class="cl">go-z-ai voice list <span class="o">[</span>--name ...<span class="o">]</span> <span class="o">[</span>--type OFFICIAL<span class="p">|</span>PRIVATE<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai voice delete &lt;voice-id&gt;
+</span></span></code></pre><h2 id="document-parsing--ocr">Document parsing &amp; OCR</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="c1"># Layout OCR — image/PDF into Markdown</span>
+</span></span><span class="line"><span class="cl">go-z-ai ocr parse &lt;file-or-url&gt; <span class="o">[</span>--start-page N<span class="o">]</span> <span class="o">[</span>--end-page N<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai ocr handwriting &lt;file&gt; <span class="o">[</span>--probability<span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Document parser (RAG/retrieval preprocessing) — a separate product from OCR</span>
+</span></span><span class="line"><span class="cl">go-z-ai parser parse &lt;file&gt; &lt;file-type&gt;              <span class="c1"># synchronous</span>
+</span></span><span class="line"><span class="cl">go-z-ai parser create &lt;file&gt; &lt;tool-type&gt; &lt;file-type&gt; <span class="c1"># async: lite|expert|prime</span>
+</span></span><span class="line"><span class="cl">go-z-ai parser result &lt;task-id&gt; &lt;format&gt;              <span class="c1"># text|download_link</span>
+</span></span></code></pre><p><code>parser</code> and <code>ocr</code> solve different problems: OCR extracts layout/text from
+images; the parser is built for turning documents into RAG-ready text and
+accepts more tool tiers.</p>
+<h2 id="retrieval-helpers">Retrieval helpers</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai embeddings create &lt;text&gt; <span class="o">[</span>--model embedding-3<span class="p">|</span>embedding-2<span class="o">]</span> <span class="o">[</span>--dimensions N<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai rerank &lt;query&gt; &lt;documents...&gt; <span class="o">[</span>--top-n N<span class="o">]</span>
+</span></span></code></pre><p>Embeddings route to <code>open.bigmodel.cn</code> — see
+<a href="accounts-and-quota.html#regional-gateways-apiza--openbigmodelcn" rel="nofollow noreferrer">Accounts &amp; Quota § Regional gateways</a>
+for why, and what that means for authentication. Rerank uses the default
+<code>--base-url</code> (it is not pinned to the China host).</p>
+<h2 id="content-moderation">Content moderation</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai moderations check &lt;text&gt;
+</span></span></code></pre><p>Routes to <code>open.bigmodel.cn</code> — same note as Embeddings above.</p>
+<h2 id="agents">Agents</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai agents invoke &lt;agent-id&gt; &lt;message&gt; <span class="o">[</span>--source-lang ...<span class="o">]</span> <span class="o">[</span>--target-lang ...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai agents async-result &lt;agent-id&gt; &lt;async-id&gt;
+</span></span></code></pre><p>Invokes Z.AI’s specialized agents (translation, slide/poster generation, video
+effect templates). Note: the Agents API returns HTTP 200 even when an
+invocation fails at the business level (e.g. insufficient balance) — the CLI
+reports that failure from the response body, not as a command error.</p>
+<h2 id="tools-web-search-reader-tokenizer">Tools (web search, reader, tokenizer)</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai tools web-search &lt;query&gt; <span class="o">[</span>--engine ...<span class="o">]</span> <span class="o">[</span>--count N<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai tools web-reader &lt;url&gt; <span class="o">[</span>--no-images<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai tools tokenizer &lt;text&gt; <span class="o">[</span>--model ...<span class="o">]</span>
+</span></span></code></pre><h2 id="anthropic-compatible-endpoint">Anthropic-compatible endpoint</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai anthropic messages &lt;prompt&gt; <span class="o">[</span>--model glm-4.6<span class="o">]</span> <span class="o">[</span>--max-tokens 1024<span class="o">]</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    <span class="o">[</span>--system ...<span class="o">]</span> <span class="o">[</span>--temperature ...<span class="o">]</span> <span class="o">[</span>--thinking-budget N<span class="o">]</span> <span class="o">[</span>--stream<span class="o">]</span>
+</span></span></code></pre><p>Calls Z.AI’s Anthropic-protocol surface (<code>/api/anthropic/v1/messages</code>) — the
+same endpoint the GLM Coding Plan points Claude Code at — instead of the
+OpenAI-style <code>chat create</code>. Prints the message text (or streams text deltas
+with <code>--stream</code>); <code>--thinking-budget N</code> enables extended thinking and prints
+the reasoning to stderr. See the
+<a href="library-guide.html#anthropic-compatible-messages-api" rel="nofollow noreferrer">Library Guide</a> for the
+Go API.</p>
+<h2 id="terminal-ui">Terminal UI</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai tui
+</span></span></code></pre><p>Launches a full-screen terminal UI with Chat, Models, Usage, Accounts, Coding,
+Media, and Tools tabs — the same functionality as the CLI commands above, in
+one interactive session.</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API<br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      <a href="https://github.com/SamyRai/go-z-ai/blob/main/LICENSE">Apache 2.0</a> ·
+      Built from commit 2c4beb8
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Changelog</a> ·
+      <a href="/CONTRIBUTING.html">Contributing</a> ·
+      <a href="/SECURITY.html">Security</a> ·
+      <a href="/sitemap.xml">Sitemap</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Switch to light mode" : "Switch to dark mode");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Switch to dark mode" : "Switch to light mode");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

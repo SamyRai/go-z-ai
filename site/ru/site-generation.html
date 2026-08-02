@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Site generation · go-z-ai</title>
+  <meta name="description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <link rel="canonical" href="/ru/site-generation.html">
+  <link rel="alternate" hreflang="en" href="/en/site-generation.html">
+  <link rel="alternate" hreflang="ru" href="/ru/site-generation.html">
+  <link rel="alternate" hreflang="zh" href="/zh/site-generation.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/site-generation.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Site generation · go-z-ai">
+  <meta property="og:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/ru/site-generation.html">
+  <meta property="og:locale" content="ru">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Site generation · go-z-ai">
+  <meta name="twitter:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/ru/site-generation.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Site generation","inLanguage":"ru","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Site generation","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/ru/site-generation.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/ru/site-generation.html","name":"Site generation","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержимому</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/ru/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">Z</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/ru/" >Главная</a>
+      <a href="/ru/getting-started.html" aria-current="page">Документация</a>
+      <a href="/ru/cli-reference.html">CLI</a>
+      <a href="/ru/library-guide.html">Библиотека</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Журнал изменений</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Русский</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/site-generation.html" >English</a>
+    <a role="menuitem" href="/ru/site-generation.html" aria-current="true">Русский</a>
+    <a role="menuitem" href="/zh/site-generation.html" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Переключить тему" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="-">Генерация сайта</h1>
+<p>Проект поставляет автоматически сгенерированный статический HTML-сайт в <code>site/</code>,
+созданный из markdown-документации и живых данных GitHub небольшим
+Go-генератором.</p>
+<p>Полное описание архитектуры и инструкция по добавлению новых локалей — в
+<a href="/en/site-generation.html" rel="nofollow noreferrer">английской версии</a>.</p>
+<h2 id="heading">Запуск</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">make site          <span class="c1"># сгенерировать в ./site</span>
+</span></span><span class="line"><span class="cl">make site-offline  <span class="c1"># то же, но без обращений к GitHub API</span>
+</span></span><span class="line"><span class="cl">make site-serve    <span class="c1"># сгенерировать + отдавать на http://localhost:8000</span>
+</span></span></code></pre><h2 id="--1">Что используется</h2>
+<ul>
+<li><strong>goldmark</strong> для рендеринга markdown в HTML (уже в <code>go.sum</code> через glamour).</li>
+<li><strong>Только стандартная библиотека Go</strong> в остальном.</li>
+<li><strong>Тема Catppuccin Mocha/Latte</strong> (MIT), уже в <code>go.sum</code> через <code>catppuccin/go</code>.</li>
+<li>Никакого JS-фреймворка, веб-шрифтов или внешних CSS-зависимостей.</li>
+</ul>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API<br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      <a href="https://github.com/SamyRai/go-z-ai/blob/main/LICENSE">Apache 2.0</a> ·
+      Собрано из коммита 2c4beb8
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Журнал изменений</a> ·
+      <a href="/CONTRIBUTING.html">Участие в проекте</a> ·
+      <a href="/SECURITY.html">Безопасность</a> ·
+      <a href="/sitemap.xml">Карта сайта</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Перейти в светлую тему" : "Перейти в тёмную тему");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Перейти в тёмную тему" : "Перейти в светлую тему");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

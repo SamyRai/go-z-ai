@@ -20,5 +20,5 @@
 /Makefile      @SamyRai
 /go.mod        @SamyRai
 
-# Catch-all: everything else (CLI, TUI, sitegen, docs, examples).
+# Catch-all: everything else (CLI, TUI, docs, examples).
 *              @SamyRai

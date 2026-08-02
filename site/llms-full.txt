@@ -1,0 +1,1790 @@
+# go-z-ai — full documentation
+
+> A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API
+
+Source: https://github.com/SamyRai/go-z-ai
+
+
+---
+
+<!-- source: go-z-ai -->
+
+# go-z-ai
+
+A Go **CLI**, **library**, and **TUI** for the Z.AI (Zhipu AI / BigModel)
+platform — every GLM model surface in one tool, plus a Go port of
+`@z_ai/coding-helper` that wires Claude Code, OpenCode, Crush, Factory Droid,
+and Cursor to your GLM Coding Plan.
+
+**English** | [简体中文](README.zh.md) | [Русский](README.ru.md) | [Deutsch](README.de.md) | [Татарча](README.tt.md) | [Türkçe](README.tr.md)
+
+[![CI](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/SamyRai/go-z-ai.svg)](https://pkg.go.dev/github.com/SamyRai/go-z-ai)
+[![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/SamyRai/go-z-ai?label=openssf%20scorecard)](https://securityscorecards.dev/viewer/?uri=github.com/SamyRai/go-z-ai)
+[![Latest release](https://img.shields.io/github/v/release/SamyRai/go-z-ai)](https://github.com/SamyRai/go-z-ai/releases)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
+## Quick example
+
+```bash
+# 1. Configure (any of these works — env var, .env file, or --config <file>)
+export ZAI_API_KEY=your_api_key_here
+# or: cp .env.example .env  &&  edit .env
+
+# 2. Use the CLI
+go-z-ai chat create "Explain goroutines in one paragraph" --stream
+```
+
+```go
+// …or import the library — no CLI required.
+import "github.com/SamyRai/go-z-ai/pkg/client"
+
+c, _ := client.NewClientFromEnv()
+resp, _ := c.Chat().Create(ctx, client.ChatRequest{
+    Model:    "glm-5.2",
+    Messages: []client.Message{{Role: "user", Content: "Explain goroutines in one paragraph"}},
+})
+fmt.Println(resp.Choices[0].Message.Content)
+```
+
+More runnable programs — streaming, async image polling, the Anthropic
+`/v1/messages` endpoint — live under [`examples/`](examples/).
+
+## Features
+
+- **Chat** — streaming, structured output (JSON Schema), deep thinking,
+  function/tool calling, vision (`glm-4.6v`/`glm-4.5v`), and an
+  **Anthropic-compatible `/v1/messages`** endpoint (the same one Claude Code
+  and Cursor hit when wired to a GLM Coding Plan).
+- **Media** — image generation, video generation (always async), audio
+  transcription, TTS, and GLM-TTS voice cloning.
+- **Document understanding** — layout OCR, handwriting OCR, and a document
+  parser for RAG preprocessing.
+- **Retrieval** — embeddings, rerank, built-in web search / web reader /
+  tokenizer tools.
+- **Moderations** — content moderation via the China-platform endpoint.
+- **Agents** — Z.AI's specialized agents (translation, slide/poster
+  generation, video effects).
+- **Batch & files** — JSONL batch jobs for chat completions, file
+  upload/list/download.
+- **GLM Coding Plan** — quota/usage monitoring, multi-account management,
+  and `go-z-ai coding` to wire Claude Code, OpenCode, Crush, Factory
+  Droid, and Cursor to your subscription.
+- **DX** — full-screen terminal UI (`go-z-ai tui`), regional gateway
+  switching (`api.z.ai` ↔ `open.bigmodel.cn`), automatic retry with
+  backoff + jitter, and a typed `APIError` with every Z.AI error code mapped.
+
+## Install
+
+```bash
+go install github.com/SamyRai/go-z-ai@latest
+```
+
+This produces a binary named `go-z-ai` on your `$GOPATH/bin`.
+
+```bash
+# Optional short alias: ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai"
+```
+
+Requires Go 1.26.4+ and a [Z.AI API key](https://z.ai/manage-apikey/apikey-list).
+Building from source, first-run auth, and troubleshooting:
+**[Getting Started →](docs/en/getting-started.md)**
+
+## As a CLI
+
+A single `go-z-ai` binary covering the full surface. Every command
+supports `--help`; the quick tour:
+
+```bash
+go-z-ai chat create "..." --stream          # chat (streaming, tools, vision, structured output)
+go-z-ai anthropic messages "..." --stream   # Anthropic-compatible /v1/messages
+go-z-ai image|video|audio|voice ...         # media generation, transcription, TTS, cloning
+go-z-ai ocr|parser ...                      # OCR + document parsing
+go-z-ai embeddings|rerank|moderations ...   # retrieval + content moderation
+go-z-ai models list                         # model catalog + pricing
+go-z-ai accounts add|use|quota|usage ...    # multi-account + GLM Coding Plan monitoring
+go-z-ai coding auth|load|doctor|mcp ...     # wire Claude Code / Cursor / etc. to GLM Coding Plan
+go-z-ai tui                                 # full-screen terminal UI (all of the above)
+go-z-ai validate                            # confirm your key works with one real call
+```
+
+Every result-producing command takes `--format text|json` (JSON goes to
+stdout, progress chatter to stderr, so you can pipe into `jq`).
+
+→ Full command list: **[CLI Reference](docs/en/cli-reference.md)**
+
+## As a Go library
+
+`pkg/client` is the only public importable package; everything under
+`internal/` is implementation detail. Retry, timeout, regional gateway
+selection, and error mapping are centralized — services never build their own
+`http.Client` or issue raw requests.
+
+```bash
+go get github.com/SamyRai/go-z-ai
+```
+
+```go
+import "github.com/SamyRai/go-z-ai/pkg/client"
+
+c, err := client.NewClient(client.Config{
+    APIKey: os.Getenv("ZAI_API_KEY"),
+    // Optional: BaseURL, Timeout, MaxRetries, RetryDelay, ChinaAPIKey, Region
+})
+```
+
+Services, all following `c.<Service>().<Method>(ctx, …)`:
+
+| Accessor | Covers |
+|---|---|
+| `c.Chat()` | Completions, streaming, async, `RunWithTools` |
+| `c.Anthropic()` | Anthropic-protocol `/v1/messages` (Create, CreateStream) |
+| `c.Models()` | List, Get, text/vision/free filters |
+| `c.Images()` / `c.Videos()` | Image (sync/async), video (always async) |
+| `c.Audio()` / `c.Voice()` | Transcription, TTS, voice cloning |
+| `c.Layout()` / `c.FileParser()` | OCR + document-to-text for RAG |
+| `c.Files()` / `c.Batch()` | Upload, batch jobs |
+| `c.Agents()` | Z.AI specialized agents |
+| `c.Embeddings()` / `c.Rerank()` / `c.Moderations()` | Retrieval + moderation |
+| `c.Tools()` | WebSearch, WebReader, Tokenize |
+| `c.Usage()` / `c.Quota()` / `c.Account()` / `c.Detection()` | GLM Coding Plan monitoring |
+| `c.GetAsyncResult()` / `c.WaitForResult()` | Shared polling for async tasks |
+
+→ Full API with examples: **[Library Guide](docs/en/library-guide.md)**
+→ Generated reference: [pkg.go.dev](https://pkg.go.dev/github.com/SamyRai/go-z-ai)
+
+## Configuration
+
+Three ways to provide credentials, resolved in this priority order
+(highest wins):
+
+| Method | When to use |
+|---|---|
+| `--api-key <key>` flag | One-off calls, scripts, CI |
+| `--account <name>` flag | Switch between [stored accounts](docs/en/accounts-and-quota.md) |
+| `ZAI_API_KEY` env var (or `.env` file) | Everyday local shell use |
+| Accounts store's active account | After `go-z-ai accounts use <name>` |
+
+The `.env` file is the common case — copy the annotated template and edit it:
+
+```bash
+cp .env.example .env
+# or point at any file: go-z-ai --config /path/to/config ...
+```
+
+```dotenv
+ZAI_API_KEY=your_api_key_here
+# ZAI_API_BASE_URL=https://api.z.ai/api/paas/v4     # override the chat endpoint
+# ZAI_REGION=china                                   # if your key was issued on open.bigmodel.cn
+# ZAI_CHINA_API_KEY=...                              # separate bigmodel.cn credential
+# ZAI_ENV=production
+```
+
+→ Full reference (multi-account, regional gateways, quota windows):
+**[Accounts & Quota](docs/en/accounts-and-quota.md)**
+
+## Documentation
+
+**[Full documentation index →](docs/en/README.md)**
+
+| | |
+|---|---|
+| [Getting Started](docs/en/getting-started.md) | [CLI Reference](docs/en/cli-reference.md) |
+| [Accounts & Quota](docs/en/accounts-and-quota.md) | [Coding Tools](docs/en/coding-tools.md) |
+| [Library Guide](docs/en/library-guide.md) | [Error Handling](docs/en/error-handling.md) |
+| [Architecture](docs/en/architecture.md) | [Roadmap & Known Limitations](docs/en/roadmap.md) |
+| [Contributing](CONTRIBUTING.md) | [Security Policy](SECURITY.md) |
+| [Code of Conduct](CODE_OF_CONDUCT.md) | [Changelog](CHANGELOG.md) |
+
+## How it relates to the official SDKs
+
+Z.AI / Zhipu publish official SDKs for **Python**
+([zai-org/z-ai-sdk-python](https://github.com/zai-org/z-ai-sdk-python), PyPI
+`zai-sdk`), **Node** ([MetaGLM/zhipuai-sdk-nodejs-v4](https://github.com/MetaGLM/zhipuai-sdk-nodejs-v4)),
+and **Java** ([MetaGLM/zhipuai-sdk-java-v4](https://github.com/MetaGLM/zhipuai-sdk-java-v4)).
+There is **no official Go SDK** — `go-z-ai` fills that gap, and layers a CLI,
+a TUI, regional gateway switching (`api.z.ai` ↔ `open.bigmodel.cn`), and GLM
+Coding Plan multi-account management on top of the same API surface.
+
+> ℹ️ `zai-claude-config.json` at the repo root is a **template** with
+> placeholder values (`"your-zai-api-key-here"`) used by
+> `go-z-ai coding load claude-code`. It is not a real config and ships no
+> credentials.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) — in particular, this project's
+live-verification convention (recorded API cassettes instead of hand-wished
+fixtures) if you're adding or changing a service.
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE).
+
+## Support
+
+- **Z.AI API docs**: [https://docs.z.ai](https://docs.z.ai)
+- **Issues**: [GitHub Issues](https://github.com/SamyRai/go-z-ai/issues)
+- **Security**: see [SECURITY.md](SECURITY.md) — please don't file vulnerabilities as public issues
+
+
+---
+
+<!-- source: accounts-and-quota -->
+
+# Accounts & Quota
+
+## Multiple accounts
+
+Instead of hand-editing `.env` every time you switch keys, register named
+accounts once and switch between them:
+
+```bash
+go-z-ai accounts add personal --api-key sk-...          # type auto-detected
+go-z-ai accounts add work --api-key sk-... --type coding_plan
+
+go-z-ai accounts list
+go-z-ai accounts use personal        # sets the default for future commands
+go-z-ai accounts show                # shows the active account
+go-z-ai accounts remove work --yes
+```
+
+Accounts are stored at `$XDG_CONFIG_HOME/go-z-ai/accounts.json` (or
+`~/.config/go-z-ai/accounts.json`), written atomically with `0600`
+permissions.
+
+**Type auto-detection:** `accounts add` probes the coding-plan-only
+monitor/quota endpoint with a single free (no token cost) call. A successful,
+well-formed response means `coding_plan`; anything else falls back to
+`pay_as_you_go` — this is an inference by elimination, not a positive
+confirmation, since no endpoint is known to exist that's specific to
+pay-as-you-go keys. Pass `--type` explicitly to skip the probe. The probe
+respects `--region`: a `glm_coding_plan_china` key probes
+`open.bigmodel.cn`'s coding endpoint instead of `api.z.ai`'s, so it classifies
+against the right platform (see [Regional gateways](#regional-gateways-apiza--openbigmodelcn)
+below).
+
+**Resolution order** — see [Getting Started](getting-started.md#2-authenticate)
+for the full priority list across `--api-key`, `--account`, env vars, and the
+active stored account.
+
+## Quota and usage monitoring
+
+GLM Coding Plan accounts have three independent quota windows:
+
+| Window | Tracks | Type |
+|---|---|---|
+| 5-hour rolling | API request tokens | Rolling — usage in the last 5 hours, not a fixed period |
+| Weekly rolling | API request tokens | Rolling — usage in the last 7 days |
+| Monthly | MCP tool calls (web search, web-reader, zread) | Fixed calendar-month reset |
+
+```bash
+go-z-ai accounts quota                    # across all stored accounts
+go-z-ai accounts usage --days 14          # token/tool usage heat map
+go-z-ai accounts usage --today            # shorthand for --days 1
+go-z-ai usage quota                       # single active account
+go-z-ai usage check --watch               # alert when usage crosses 80%
+```
+
+Example `accounts quota` output:
+
+```text
+📊 GLM Coding Plan Usage (PRO tier)
+
+• 5-hour rolling token window
+  Usage: 62%
+  Resets: 2026-07-11 09:30:00 CEST (in 2h 14m)
+  Pace: 62% used at 55% of window elapsed — on pace to run out ~24m before reset
+
+• weekly token window
+  Usage: 41%
+  Resets: 2026-07-17 09:17:18 CEST (in 5d 22h)
+  Pace: 41% used at 15% of window elapsed — on pace to run out ~4d before reset
+
+• monthly MCP tools quota
+  Usage: 574/1000 (57%) — 426 remaining
+  Resets: 2026-07-26 09:17:18 CEST (in 18d 6h)
+  By tool:
+    - search-prime: 470
+    - web-reader: 97
+    - zread: 7
+```
+
+The **Pace** line (token windows only) answers "am I burning too fast?" — it
+extrapolates the window's *own* reported usage against how much of the window
+has elapsed, so you find out you're on track to run out early *before* you
+actually hit the wall. It's straight-line math on the numbers the API returns
+(no assumption about peak/off-peak pricing).
+
+Not every account shows every window — plan tier and account type both affect
+which windows apply (`accounts show <name>` reports the account's type;
+`pay_as_you_go` accounts are skipped by `accounts quota`/`accounts usage`
+entirely, since the coding-plan monitor endpoint doesn't apply to them).
+
+### Why "usage doesn't exist" is wrong
+
+If you find older notes online (or in this repo's git history) claiming Z.AI
+has no usage/quota API — that was true only of the general
+`/api/paas/v4` surface tested in isolation. The coding-plan monitor endpoints
+(`/monitor/usage/quota/limit`, `/monitor/usage/model-usage`,
+`/monitor/usage/tool-usage`) are real, documented, and what `pkg/client`'s
+`QuotaService`/`UsageService` are built on. If `accounts quota` returns
+nothing for an account, check its type first (`pay_as_you_go` accounts
+genuinely don't have this data) before assuming the API is broken.
+
+## Regional gateways (api.z.ai / open.bigmodel.cn)
+
+Z.AI serves the same GLM model family from two regional gateways: the
+international host `api.z.ai` (the default) and the China-mainland mirror
+`open.bigmodel.cn`. Two separate concerns decide which host a given call
+lands on:
+
+**1. Embeddings and Moderations always route to `open.bigmodel.cn`** —
+they're the only services pinned to the China host in code
+(`pkg/client/embeddings.go`, `pkg/client/moderations.go` both call
+`doRequestBaseKey(BigModelBaseURL, …)`). `--china-api-key` /
+`ZAI_CHINA_API_KEY` is the credential knob here; it's optional because a
+regular `ZAI_API_KEY` authenticates identically on both platforms (same
+`/models` catalog, same billing-level errors — live-verified), so the
+fallback is the common case. Set a separate China key only if you hold a
+distinct bigmodel.cn-only credential. Rerank and Voice use the default
+`--base-url` (`api.z.ai` by default) — they're documented only on the
+China platform but the client doesn't force-route them.
+
+**2. monitor / biz / agents / detection route to `open.bigmodel.cn` when
+`--region china` (or `ZAI_REGION=china`)** is set; otherwise they route to
+`api.z.ai`. This is the knob a `glm_coding_plan_china` user needs so quota /
+usage, account info, agents, and account-type detection land on the right
+host — without it, those calls hit `api.z.ai` and a China-issued key can fail
+auth or get mis-classified. `--region` does **not** change the chat base URL
+(use `--base-url` for that) or the Embeddings/Moderations host. Aliases:
+`cn`, `bigmodel`, `west`; an unknown value falls back to global.
+
+Whether you get real results from the China-documented services (Embeddings,
+Moderations, Rerank, Voice) depends on your account's **plan entitlement**,
+not which key you use. A GLM Coding Plan account's model catalog is
+chat-only — calling those with that account returns `400 Unknown Model`
+(error code 1211) on either platform. That's expected, not a bug: check
+`go-z-ai models list` to see what's actually in your account's catalog.
+
+The China mirror hosts for monitor/biz/agents/detection mirror the
+`api.z.ai` path layout but are **NOT VERIFIED LIVE** here — `open.bigmodel.cn`
+is live-verified to serve the same OpenAPI surface for `/models` and
+`/chat/completions`, but the monitor/biz/agents paths on the China side
+haven't been captured by a cassette yet. See [Roadmap](roadmap.md).
+
+## Error codes
+
+`APIError` (see [Error Handling](error-handling.md)) categorizes every Z.AI
+error code Client code has seen. The two most common ones you'll hit around
+quota:
+
+| Code | Meaning | Retriable |
+|---|---|---|
+| 1113 | Insufficient balance / no resource package | No — recharge or switch account |
+| 1308 | Usage limit reached for the current window | No — wait for reset |
+| 1211 | Unknown model | No — usually an entitlement gate, see above |
+| 1302 | Rate limit reached | Yes — the client already retries this with backoff |
+
+See [Error Handling](error-handling.md) for the complete table and how to
+branch on `APIError.Category` in your own code.
+
+
+---
+
+<!-- source: architecture -->
+
+# Architecture
+
+## Contents
+
+- [Package layout](#package-layout)
+- [CLI conventions](#cli-conventions)
+- [The request facade](#the-request-facade)
+- [Retry and timeout design](#retry-and-timeout-design)
+- [Why some services hit a different host](#why-some-services-hit-a-different-host)
+- [The live-verification convention](#the-live-verification-convention)
+- [Extending a structured lookup table](#extending-a-structured-lookup-table)
+- [Credential file safety](#credential-file-safety)
+- [The TUI](#the-tui)
+
+## Package layout
+
+```text
+main.go               A five-line entrypoint: package main → internal/cli.Execute()
+internal/cli/         CLI commands (package cli), one file per command group:
+                      chat.go, accounts_cli.go, coding_cli.go, ...
+pkg/client/           The Go library — one file per API service, no CLI/TUI dependency
+internal/accounts/    Multi-account credential store (~/.config/go-z-ai/accounts.json)
+internal/coding/      GLM Coding Plan credential store + per-tool config writers
+internal/usageview/   Pure presentation helpers (time windows, heat maps, formatting) —
+                      shared by both the CLI and the TUI so their output can never drift
+internal/tui/         Bubble Tea terminal UI, one subpackage per tab
+internal/fileinput/   FileOrURL: a URL passes through, a local path is base64-encoded —
+                      shared by `ocr parse` and the TUI media tab
+```
+
+`pkg/client` has zero dependencies on anything CLI- or TUI-specific — it's
+designed to be imported standalone (see the [Library Guide](library-guide.md)),
+and is the **only** public package. Everything under `internal/` is
+implementation the compiler forbids outside code from importing, so the CLI/TUI
+layers can be refactored freely. The CLI and TUI are both thin callers of
+`pkg/client`. `go install github.com/SamyRai/go-z-ai@latest` still builds the
+root `main.go` into the `go-z-ai` binary.
+
+## CLI conventions
+
+Command handlers that need an API client are registered as
+`RunE: runWithClient(runX)` and take the resolved `*client.Client` as a third
+parameter — `runWithClient` (in `internal/cli/common.go`) resolves it once via
+`getClient`, so the handlers don't each repeat the resolve-and-check preamble.
+Credential precedence itself lives in `resolveConfig` (flag → `--account` →
+`ZAI_API_KEY`/`KEY` → active account), unit-tested in `credentials_test.go`.
+
+Output format is uniform: every command that prints a result registers the
+shared `--format` flag via `addFormatFlag` and renders through `emit(cmd, v,
+textFn)`, which emits pretty JSON for `--format json` and otherwise runs the
+human-readable `textFn`. Progress chatter on JSON-capable commands goes to
+stderr so stdout stays valid JSON.
+
+## The request facade
+
+Every service method funnels through one of three `Client` methods —
+services never build their own `http.Client` or issue a raw request:
+
+```text
+doRequest(ctx, method, endpoint, body, result)
+  → doRequestBase(ctx, baseURL, method, endpoint, body, result)   // for non-default base URLs
+    → doRequestBaseKey(ctx, baseURL, apiKey, method, endpoint, body, result)  // for a different credential
+```
+
+This is what centralizes retry/backoff, error parsing, and auth for every
+endpoint in one place. A service that needs a different base URL (Agents) or
+a different credential (Embeddings/Moderations, which use `ChinaAPIKey`) calls
+further down the chain — it never bypasses it.
+
+`sendMultipart` is the parallel path for multipart/form-data uploads (files,
+audio transcription, document parsing) — it does **not** retry, since
+re-uploading a file on a transient failure is a caller decision, not a safe
+default.
+
+## Retry and timeout design
+
+- `Config.Timeout` bounds dial + TLS handshake + waiting for response
+  headers — deliberately **not** the whole `http.Client.Timeout`, which would
+  truncate a long-running `CreateStream` SSE read partway through a
+  generation.
+- Retries apply to 429/5xx/network errors, with exponential backoff, jitter
+  (up to 25%), and `Retry-After` header support, up to `Config.MaxRetries`
+  (default 3). Every retry checks `ctx.Err()` first so a cancelled context
+  aborts immediately instead of sleeping through a backoff first.
+- Streaming (`CreateStream`) retries only the *connection* attempt — once the
+  SSE stream has actually started, a mid-stream failure is surfaced to the
+  caller, not silently retried (there's no way to know how much of the
+  response the caller already consumed).
+
+## Why some services hit a different host
+
+| Service | Base URL | Why |
+|---|---|---|
+| Embeddings, Moderations | `open.bigmodel.cn` | The only platform that documents these endpoints — `api.z.ai`'s doc index doesn't mention either. Live-verified that a regular z.ai key authenticates identically on both platforms, so `Config.ChinaAPIKey` falls back to `Config.APIKey` by default. |
+| Agents | `https://api.z.ai/api` (bare root, no `/paas/v4`) by default; `https://open.bigmodel.cn/api` under `Config.Region = RegionChina` | Verified live — nesting `/v1/agents` under the chat-completions base 404s. |
+| Everything else | `Config.BaseURL` (`/api/paas/v4`, or `/api/coding/paas/v4` for GLM Coding Plan accounts) | The general case. |
+
+### Regional gateway selection (Config.Region)
+
+Z.AI serves the same GLM model family from two regional gateways: the
+international host `api.z.ai` and the China-mainland mirror
+`open.bigmodel.cn`. Most services pick their host via `Config.BaseURL` (chat,
+files, tools, etc.) or a fixed constant (Embeddings/Moderations always use the
+China host). Four services — **monitor** (quota/usage), **biz** (account
+info), **agents**, and **account-type detection** — used to be hardcoded to
+`api.z.ai`, which left a `glm_coding_plan_china` key unable to reach its own
+region's monitor/usage endpoints (and got mis-classified by
+`accounts add`/`account detect`).
+
+`Config.Region` (`RegionGlobal`, the default, or `RegionChina`) selects the
+host for those four region-scoped services only. It does **not** override
+`Config.BaseURL` (the chat surface) or the Embeddings/Moderations host.
+From the CLI, use `--region {global,china}` or `ZAI_REGION` (aliases: `cn`,
+`bigmodel`, `west`). An unknown value falls back to global rather than
+erroring, so a typo never blocks an unrelated command.
+
+The China mirror hosts for monitor/biz/agents/detection are modeled by
+mirroring the `api.z.ai` path layout on `open.bigmodel.cn` and marked
+`NOT VERIFIED LIVE` — the China platform is live-verified to serve the same
+OpenAPI surface for `/models` and `/chat/completions` (see `BigModelBaseURL`),
+but the monitor/biz/agents hosts on the China side have not been captured by a
+cassette yet. Pin them with `ZAI_RECORD=1` if you hold an entitled China key.
+
+## The live-verification convention
+
+Z.AI's own SDKs and docs sometimes disagree with each other, and sometimes
+with what the live API actually returns (an endpoint documented as optional
+that 400s without it; an error embedded in a 200 response body; a field typed
+differently across two official SDKs). Rather than trust a single source,
+new services here are checked against a real API call and the interaction is
+recorded as a [go-vcr](https://github.com/dnaeon/go-vcr) cassette
+(`pkg/client/testdata/cassettes/`), replayed in `ModeReplayOnly` so the test
+suite never touches the network.
+
+Two files in `pkg/client` carry the live-verification work, with distinct
+roles: **`live_replay_test.go`** holds the `Test*Live` tests that replay the
+committed cassettes as frozen findings (entitlement gates, the
+200-with-embedded-failure quirk, the single-key-across-hosts claim); it is the
+running log of what's been confirmed and why it mattered. **`live_verify_test.go`**
+holds the `TestVerify*` recording harness — each test SKIPS until you capture a
+new success-path cassette with `ZAI_RECORD=1`, then replays it; it's the
+to-do list of shapes still pending a real capture.
+
+If you're extending a service, see
+[Contributing § the live-verification convention](../../CONTRIBUTING.md) before
+you add a new cassette.
+
+## Extending a structured lookup table
+
+Several types in this codebase map a small, closed set of API-defined values
+to human-readable metadata via a config table plus a lookup function, rather
+than a chain of `if`/`switch` conditionals — `pkg/client/quota.go`'s
+`quotaWindowConfigs`/`findWindowConfig` is the clearest example:
+
+```go
+var quotaWindowConfigs = []QuotaWindowConfig{
+    {Type: QuotaTypeTokensLimit, UnitCode: UnitCodeHourly, Number: 5, Description: "5-hour rolling token window"},
+    {Type: QuotaTypeTokensLimit, UnitCode: UnitCodeWeekly, Number: 1, Description: "weekly token window"},
+    {Type: QuotaTypeTimeLimit, UnitCode: UnitCodeMonthly, Number: 1, Description: "monthly MCP tools quota"},
+}
+```
+
+When Z.AI adds a new window type, the change is additive (append a row) and
+localized, with a generic fallback description for anything not yet in the
+table rather than a hard failure. The same pattern shows up for model
+categorization (`pkg/client/models_catalog.go`'s `modelsCatalog` table —
+each row carries a `Capabilities []string` that `ModelDetails.HasCapability`
+reads, replacing the old divergent `visionModelMarkers` substring lists) and
+for account-type-to-endpoint resolution (`internal/coding/plans.go`).
+Prefer this shape over adding another conditional branch when you're adding a
+new recognized value to an existing concept.
+
+`modelsCatalog` is also the fix for a data-availability gap: Z.AI's `/models`
+endpoint returns only the OpenAI-bare `{id, object, created, owned_by}`
+shape, so without enrichment every `Context`/`Pricing`/`Capabilities` cell
+renders as `-`/`0`. `ModelsService.List` runs each decoded model through
+`enrichModel`, which overlays catalog fields but lets **live API values
+win** when both are present — so the day Z.AI starts sending `max_context`
+or `pricing` in `/models`, the real numbers take over with no code change.
+Pricing/context figures are transcribed from
+<https://docs.z.ai/guides/overview/pricing> and need periodic manual
+refresh (the API gives no signal when they change); the file header carries
+the "last verified" date. Uncataloged models still appear from `/models`
+with sparse data rather than being hidden or guessed at.
+
+## Credential file safety
+
+Both `internal/accounts` (the multi-account store) and `internal/coding` (the GLM
+Coding Plan credential store, plus every third-party tool config it writes —
+Claude Code, OpenCode, Crush, Factory Droid, Cursor) write via a temp-file
+atomic write followed by rename, never a direct in-place write. A crash or
+kill mid-write leaves the original file untouched instead of truncated —
+important here specifically because several of these are *other programs'*
+real config files being merged into, not files this project owns outright.
+Files containing a key are created `0600`; directories `0700`.
+
+## The TUI
+
+`internal/tui` is a [Bubble Tea](https://github.com/charmbracelet/bubbletea)
+program with one tab per subpackage (`chat`, `models`, `usage`, `accounts`,
+`coding`, `media`, `tools`). Each tab is an independent `tea.Model` with its
+own `Update`/`View`; `internal/tui/root.go` dispatches between them. Long-running
+work (an API call, a filesystem operation) is wrapped in a `tea.Cmd` closure,
+which Bubble Tea runs on its own goroutine — code called from a `tea.Cmd`
+must not rely on package-level mutable state being uncontended (this bit us
+once with `http.DefaultClient.Timeout`; see the fix in
+`internal/coding/validator.go`'s doc comment for the specifics).
+
+
+---
+
+<!-- source: cli-reference -->
+
+# CLI Reference
+
+Every command supports `--help` for its authoritative, always-up-to-date flag
+list (`go-z-ai <command> --help`, `go-z-ai <command> <subcommand> --help`).
+This page is the organized tour; treat `--help` as the source of truth if the
+two ever disagree.
+
+## Contents
+
+- [Global flags](#global-flags)
+- [Chat](#chat)
+- [Models](#models)
+- [Accounts, usage, and quota](#accounts-usage-and-quota)
+- [Coding tools (GLM Coding Plan)](#coding-tools-glm-coding-plan)
+- [Files & batch](#files--batch)
+- [Media generation](#media-generation)
+- [Document parsing & OCR](#document-parsing--ocr)
+- [Retrieval helpers](#retrieval-helpers)
+- [Content moderation](#content-moderation)
+- [Agents](#agents)
+- [Tools (web search, reader, tokenizer)](#tools-web-search-reader-tokenizer)
+- [Anthropic-compatible endpoint](#anthropic-compatible-endpoint)
+- [Terminal UI](#terminal-ui)
+
+## Global flags
+
+These apply to every command:
+
+| Flag | Description |
+|---|---|
+| `--api-key string` | Z.AI API key (or `ZAI_API_KEY` env var) |
+| `--base-url string` | API base URL (default: `https://api.z.ai/api/paas/v4`) |
+| `--account string` | Use a stored account by name for this command (see [Accounts & Quota](accounts-and-quota.md)) |
+| `--china-api-key string` | open.bigmodel.cn key for Embeddings/Moderations (or `ZAI_CHINA_API_KEY`; falls back to `--api-key`) |
+| `--region string` | Regional gateway for monitor/biz/agents/detection: `global` (api.z.ai, default) or `china` (open.bigmodel.cn). Aliases `cn`, `bigmodel`, `west`. Or `ZAI_REGION` env. Does not override `--base-url`. Unknown values fall back to global. |
+| `--config string` | Config file (default: `.env`) |
+| `--version` | Print version (tag, commit, build date) and exit. Populated by GoReleaser ldflags in release builds; `dev` otherwise. |
+
+Every result-producing command takes `--format text\|json` (a few default to
+`json` where the payload is machine-oriented — e.g. `embeddings`,
+`moderations`). In `json` mode, progress/status chatter goes to stderr so
+stdout stays valid JSON you can pipe into `jq`.
+
+Set `--region china` (or `ZAI_REGION=china`) when your key was issued on
+`open.bigmodel.cn`, so quota/usage, account-info, agents, and account-type
+detection land on the matching host. It does **not** change the chat base URL
+(use `--base-url` for that) or the Embeddings/Moderations host (always the
+China platform). See [Accounts & Quota § Regional gateways](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn).
+
+## Chat
+
+```bash
+go-z-ai chat create [message] [flags]
+go-z-ai chat simple [model] [message]
+go-z-ai chat async-result [task-id]
+```
+
+`chat create` is the main entry point:
+
+| Flag | Purpose |
+|---|---|
+| `--model string` | Default `glm-5.2` |
+| `--stream` | Token-by-token streaming |
+| `--async` | Submit without waiting; poll with `chat async-result <task-id>` |
+| `--temperature float`, `--top-p float`, `--max-tokens int` | Sampling controls |
+| `--system string` | System message |
+| `--thinking string`, `--effort string` | Deep-thinking mode and effort level (`max\|xhigh\|high\|medium\|low\|minimal\|none`; `xhigh`→`max` is GLM-5.2 only) |
+| `--show-reasoning` | Print `reasoning_content` to stderr |
+| `--json-schema string` | Structured output: `@file.json` or inline JSON |
+| `--tool string` | Function-calling tool declarations: `@tools.json` or inline JSON array |
+| `--image string` (repeatable) | Attach an image: a URL, or `@path` to a local file (base64-encoded). Requires a vision model (`glm-4.6v`/`glm-4.5v`) |
+| `--stop strings` | Stop sequences (repeatable, max 4) |
+| `--format text\|json` | Output format |
+
+```bash
+go-z-ai chat create "Summarize this in 3 bullets" --model glm-5.2 --stream
+go-z-ai chat create "Describe this" --image @photo.jpg --model glm-4.6v
+go-z-ai chat create "Extract fields" --json-schema @schema.json
+```
+
+Tool calls are printed, not executed, by the CLI — see
+[Library Guide § Function calling](library-guide.md#function-calling) for the
+Go `RunWithTools` auto-executing loop.
+
+> **Vision + tool-calling can return HTTP 401.** Community reports (e.g.
+> [claude-code-router#1491](https://github.com/musistudio/claude-code-router/issues/1491))
+> show that combining a vision model (`--image` on `glm-4.6v`/`glm-4.5v`) with
+> function-calling tools (`--tool`) in the same request is rejected with a 401
+> on some GLM configurations — an authenticated key still fails only for that
+> combination. If you hit this, split the work: use a vision model for the
+> image turn and a text model (`glm-5.2`) for the tool-calling turn, rather
+> than sending images and tools together. Not yet reproduced against a live
+> account here — see [Roadmap](roadmap.md).
+
+## Models
+
+```bash
+go-z-ai models list [--pricing]
+go-z-ai models get [model-id]
+go-z-ai models text | vision | free
+```
+
+## Accounts, usage, and quota
+
+Covered in depth in [Accounts & Quota](accounts-and-quota.md). Quick reference:
+
+```bash
+go-z-ai accounts add <name> --api-key <key> [--type coding_plan|pay_as_you_go]
+go-z-ai accounts list [--format json] [--reveal]   # keys masked by default; --reveal for export
+go-z-ai accounts use <name>
+go-z-ai accounts show [name] [--format json] [--reveal]
+go-z-ai accounts current                            # shorthand for 'accounts show' (active account)
+go-z-ai accounts quota [--only name...]
+go-z-ai accounts usage [--days N] [--today] [--metric model|tool|both]
+go-z-ai accounts remove <name> [--yes]
+
+go-z-ai usage quota | summary | account | billing | check [--watch] | detect
+go-z-ai account info | status
+go-z-ai validate
+```
+
+## Coding tools (GLM Coding Plan)
+
+Wires Claude Code, OpenCode, Crush, Factory Droid, or Cursor to use your GLM
+Coding Plan. Full walkthrough: [Coding Tools](coding-tools.md).
+
+```bash
+go-z-ai coding auth <plan> <key>      # validate + store a credential
+go-z-ai coding auth revoke
+go-z-ai coding auth reload <tool>     # re-push stored creds into a tool's config
+go-z-ai coding load <tool>            # write it into a tool's config
+go-z-ai coding unload <tool>
+go-z-ai coding status
+go-z-ai coding tools                  # list supported tools + install status
+go-z-ai coding doctor                 # health check
+
+go-z-ai coding mcp add <tool>         # register Z.AI's Vision MCP server
+go-z-ai coding mcp status
+go-z-ai coding mcp remove <tool>
+```
+
+## Files & batch
+
+```bash
+go-z-ai files upload <file> [--purpose batch|code-interpreter|agent|voice-clone-input]
+go-z-ai files list [--purpose ...]
+go-z-ai files delete <file-id>
+go-z-ai files download <file-id> <output-path>
+
+go-z-ai batch create <input-file-id> [--endpoint ...]
+go-z-ai batch status <batch-id>
+go-z-ai batch list [--after ...] [--limit N]
+go-z-ai batch cancel <batch-id>
+```
+
+Batch jobs process many chat-completion requests from a JSONL file
+asynchronously — upload it first, then create the batch with the resulting
+file ID.
+
+## Media generation
+
+```bash
+# Images — default model glm-image (cogview-4-250304 also supported)
+go-z-ai image generate <prompt> [--model glm-image|cogview-4-250304] [--size ...] [--quality hd|standard] [--async]
+go-z-ai image status <id>
+# --quality: hd is the default (~20s); standard is faster (~5-10s).
+
+# Video — always async (cogvideox-3 | viduq1-text | viduq1-image | vidu2-image | ...)
+go-z-ai video generate --prompt "..." [--model ...] [--duration N] [--aspect-ratio ...]
+go-z-ai video status <id>
+
+# Audio
+go-z-ai audio transcribe <file>                       # glm-asr, .wav/.mp3, <=25MB, <=30s
+go-z-ai audio speech <text> <output-path> [--voice ...] [--speed N] [--format wav|pcm]
+
+# Voice cloning (pairs with audio speech --voice)
+go-z-ai voice clone <voice-name> <sample-file-id> <preview-text>
+go-z-ai voice list [--name ...] [--type OFFICIAL|PRIVATE]
+go-z-ai voice delete <voice-id>
+```
+
+## Document parsing & OCR
+
+```bash
+# Layout OCR — image/PDF into Markdown
+go-z-ai ocr parse <file-or-url> [--start-page N] [--end-page N]
+go-z-ai ocr handwriting <file> [--probability]
+
+# Document parser (RAG/retrieval preprocessing) — a separate product from OCR
+go-z-ai parser parse <file> <file-type>              # synchronous
+go-z-ai parser create <file> <tool-type> <file-type> # async: lite|expert|prime
+go-z-ai parser result <task-id> <format>              # text|download_link
+```
+
+`parser` and `ocr` solve different problems: OCR extracts layout/text from
+images; the parser is built for turning documents into RAG-ready text and
+accepts more tool tiers.
+
+## Retrieval helpers
+
+```bash
+go-z-ai embeddings create <text> [--model embedding-3|embedding-2] [--dimensions N]
+go-z-ai rerank <query> <documents...> [--top-n N]
+```
+
+Embeddings route to `open.bigmodel.cn` — see
+[Accounts & Quota § Regional gateways](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn)
+for why, and what that means for authentication. Rerank uses the default
+`--base-url` (it is not pinned to the China host).
+
+## Content moderation
+
+```bash
+go-z-ai moderations check <text>
+```
+
+Routes to `open.bigmodel.cn` — same note as Embeddings above.
+
+## Agents
+
+```bash
+go-z-ai agents invoke <agent-id> <message> [--source-lang ...] [--target-lang ...]
+go-z-ai agents async-result <agent-id> <async-id>
+```
+
+Invokes Z.AI's specialized agents (translation, slide/poster generation, video
+effect templates). Note: the Agents API returns HTTP 200 even when an
+invocation fails at the business level (e.g. insufficient balance) — the CLI
+reports that failure from the response body, not as a command error.
+
+## Tools (web search, reader, tokenizer)
+
+```bash
+go-z-ai tools web-search <query> [--engine ...] [--count N]
+go-z-ai tools web-reader <url> [--no-images]
+go-z-ai tools tokenizer <text> [--model ...]
+```
+
+## Anthropic-compatible endpoint
+
+```bash
+go-z-ai anthropic messages <prompt> [--model glm-4.6] [--max-tokens 1024] \
+    [--system ...] [--temperature ...] [--thinking-budget N] [--stream]
+```
+
+Calls Z.AI's Anthropic-protocol surface (`/api/anthropic/v1/messages`) — the
+same endpoint the GLM Coding Plan points Claude Code at — instead of the
+OpenAI-style `chat create`. Prints the message text (or streams text deltas
+with `--stream`); `--thinking-budget N` enables extended thinking and prints
+the reasoning to stderr. See the
+[Library Guide](library-guide.md#anthropic-compatible-messages-api) for the
+Go API.
+
+## Terminal UI
+
+```bash
+go-z-ai tui
+```
+
+Launches a full-screen terminal UI with Chat, Models, Usage, Accounts, Coding,
+Media, and Tools tabs — the same functionality as the CLI commands above, in
+one interactive session.
+
+
+---
+
+<!-- source: coding-tools -->
+
+# Coding Tools (GLM Coding Plan)
+
+`go-z-ai coding` configures third-party coding assistants to use your GLM
+Coding Plan instead of their default provider. It's a Go port of Z.AI's
+official `@z_ai/coding-helper` ("chelper") CLI, sharing the same credential
+file so the two tools can be used interchangeably.
+
+## Supported tools
+
+| Tool | Config file it writes |
+|---|---|
+| Claude Code | `~/.claude/settings.json` (+ `~/.claude.json` onboarding flag) |
+| OpenCode | `~/.config/opencode/opencode.json` |
+| Crush | `~/.config/crush/crush.json` |
+| Factory Droid | `~/.factory/settings.json` |
+| Cursor | OS-specific — `~/Library/Application Support/Cursor/User/settings.json` on macOS, `~/.cursor/settings.json` (or `~/.config/Cursor/User/settings.json`) elsewhere |
+
+Run `go-z-ai coding tools` to see install status and exact resolved paths
+on your machine.
+
+## Plans
+
+| Plan identifier | Endpoint |
+|---|---|
+| `glm_coding_plan_global` | `https://api.z.ai` |
+| `glm_coding_plan_china` | `https://open.bigmodel.cn` |
+
+Pick whichever matches where your GLM Coding Plan subscription lives.
+
+## Quickstart
+
+```bash
+# 1. Store and validate your GLM Coding Plan key (one-time)
+go-z-ai coding auth glm_coding_plan_global YOUR_KEY
+
+# 2. Load it into a tool
+go-z-ai coding load claude-code
+# tool IDs: claude-code, opencode, crush, factory-droid, cursor
+# aliases also work: claude, droid, factory
+
+# 3. Check everything's wired up
+go-z-ai coding status
+go-z-ai coding doctor
+```
+
+Credentials live at `~/.chelper/config.yaml` (byte-compatible with the
+official Node helper) — `coding auth` writes there once, and `coding load`
+reads from it for every tool unless you pass `--key`/`--plan` overrides.
+
+To stop using Z.AI for a tool without losing your stored credential:
+
+```bash
+go-z-ai coding unload claude-code
+```
+
+This removes only the Z.AI-specific fields it added; it does not touch the
+rest of your existing config file.
+
+## Claude Code: model mapping
+
+The official helper only sets `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL`,
+`API_TIMEOUT_MS`, and `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`. This client
+goes further by default and also maps Claude Code's model tiers to specific
+GLM models via `ANTHROPIC_DEFAULT_*_MODEL`, matching
+[Z.AI's documented recommendation](https://docs.z.ai/scenario-example/develop-tools/claude):
+
+| Claude tier | Default GLM model |
+|---|---|
+| haiku | `glm-4.5-air` |
+| sonnet | `glm-4.7` |
+| opus | `glm-4.7` |
+
+Override any tier, or opt out entirely:
+
+```bash
+go-z-ai coding auth glm_coding_plan_global YOUR_KEY \
+  --sonnet glm-5.2 --opus glm-5.2
+
+go-z-ai coding auth glm_coding_plan_global YOUR_KEY --no-model-mapping
+```
+
+Also configurable, all optional (0/omitted = don't set the env var):
+
+| Flag | Env var it sets | Why you'd use it |
+|---|---|---|
+| `--auto-compact-window int` | `CLAUDE_CODE_AUTO_COMPACT_WINDOW` | Defaults to 1,000,000 (GLM-5.2's context size); lower it (e.g. 128000) if you're pinned to a 128K-context model |
+| `--max-thinking-tokens int` | `MAX_THINKING_TOKENS` | Extended-thinking budget |
+| `--max-output-tokens int` | `CLAUDE_CODE_MAX_OUTPUT_TOKENS` | Output cap |
+
+These flags are persistent on the `coding` command, so they apply the same
+way to `auth`, `load`, and `reload`.
+
+## Key management
+
+```bash
+go-z-ai coding auth revoke              # clear the stored key, keep the plan choice
+go-z-ai coding auth reload <tool>       # re-push stored creds into a tool
+go-z-ai coding load <tool> --key OTHER_KEY --plan glm_coding_plan_china  # one-off override
+```
+
+By default, `coding auth` validates a new key against the API before storing
+it (a real `/models` call). Skip that with `--no-validate` if you want to
+store a key offline (e.g. scripting a machine you haven't network-tested yet).
+
+## Vision MCP server
+
+The official `@z_ai/coding-helper` wizard has a "manage MCP services" step
+that this client didn't replicate until now: Z.AI ships its own
+[Vision MCP Server](https://docs.z.ai/devpack/mcp/vision-mcp-server)
+(`@z_ai/mcp-server`) — screenshot OCR, error-screenshot diagnosis,
+diagram/chart understanding, and general image/video analysis via GLM-4.6V,
+launched on demand via `npx`. `coding mcp` registers it in whichever tool
+you're using:
+
+```bash
+go-z-ai coding mcp add claude-code     # uses the stored API key
+go-z-ai coding mcp add crush --key OTHER_KEY
+go-z-ai coding mcp status              # which tools have it configured
+go-z-ai coding mcp remove claude-code
+```
+
+**Requires Node.js.** The server itself runs via `npx -y @z_ai/mcp-server` —
+Z.AI's own docs currently recommend Node.js 22+, though the npm package only
+declares an 18+ requirement. `coding mcp add`/`doctor` warn (don't block) if
+`npx` isn't found on `PATH`, since the config is valid the moment Node.js
+becomes available.
+
+**The MCP config file often isn't the same file as your GLM credential.**
+Two of the five tools keep MCP servers in a separate file from provider/API
+settings:
+
+| Tool | Credential config | MCP config |
+|---|---|---|
+| Claude Code | `~/.claude/settings.json` | `~/.claude.json` |
+| OpenCode | `opencode.json` | same file, `mcp` key |
+| Crush | `crush.json` | same file, `mcp` key |
+| Factory Droid | `~/.factory/settings.json` | `~/.factory/mcp.json` |
+| Cursor | OS-specific `settings.json` | sibling `mcp.json`, same directory |
+
+Cursor isn't explicitly listed as a supported Vision MCP client in Z.AI's own
+docs — this uses the generic MCP shape Cursor documents for any server, which
+should work but hasn't been Z.AI-confirmed for this specific server.
+
+## Doctor
+
+```bash
+go-z-ai coding doctor
+```
+
+Checks: is a credential stored, does it look well-formed, which supported
+tools are installed on `PATH`, and which of those already have a Z.AI
+configuration (including the Vision MCP server, if registered). Good first
+step when something isn't working.
+
+
+---
+
+<!-- source: error-handling -->
+
+# Error Handling
+
+Every service method returns a plain `error`. Transport-level failures (DNS,
+connection refused, timeout) come back wrapped in `fmt.Errorf`; anything the
+Z.AI API itself rejected comes back as `*client.APIError`, with structured
+fields you can branch on instead of parsing message strings.
+
+```go
+resp, err := c.Chat().Create(ctx, req)
+if err != nil {
+    var apiErr *client.APIError
+    if errors.As(err, &apiErr) {
+        fmt.Printf("[%d] %s\n", apiErr.Code, apiErr.UserMessage)
+
+        switch apiErr.Category {
+        case client.ErrorCategoryAuth:
+            // bad/expired key — don't retry, tell the user
+        case client.ErrorCategoryQuota:
+            // out of balance/quota — don't retry, surface to the user
+        case client.ErrorCategoryRateLimit:
+            if apiErr.IsRetriable {
+                // the client already retries this internally up to
+                // Config.MaxRetries — you'll only see it here if retries
+                // were exhausted or disabled (MaxRetries: -1)
+            }
+        }
+        return
+    }
+    // transport-level failure — network, DNS, timeout
+}
+```
+
+`APIError` fields:
+
+| Field | Meaning |
+|---|---|
+| `HTTPStatus` | HTTP status code |
+| `Code` | Z.AI's business error code (int) |
+| `Message` | Raw message from the API |
+| `Category` | One of the categories below |
+| `UserMessage` | A friendlier, pre-written description |
+| `IsRetriable` | Whether the client's own retry logic considers this transient |
+| `RequestID` | For support/debugging, when the API returned one |
+
+Helper predicates: `IsAuthError()`, `IsRateLimitError()`, `IsQuotaError()`,
+`IsParameterError()`, `IsServerError()` — equivalent to checking `.Category`
+directly, provided for readability at call sites.
+
+## Retry behavior you get for free
+
+`Client.doRequest` (used by every service) already retries 429/5xx/network
+errors with exponential backoff, jitter, and `Retry-After` support, up to
+`Config.MaxRetries` (default 3; set to `-1` to disable). You generally don't
+need your own retry loop — `APIError.IsRetriable` tells you whether an error
+that reached your code already exhausted those retries.
+
+## Error code reference
+
+| Code | Constant | Category | Retriable |
+|---|---|---|---|
+| 1000 | `ErrCodeAuthFailed` | Auth | No |
+| 1001 | `ErrCodeAuthNotFound` | Auth | No |
+| 1003 | `ErrCodeAuthTokenExpired` | Auth | No |
+| 1005 | `ErrCodeAuthNeed2FA` | Auth | No |
+| 1113 | `ErrCodeInsufficientBalance` | Quota | No |
+| 1302 | `ErrCodeRateLimitReached` | RateLimit | Yes |
+| 1305 | `ErrCodeServiceOverloaded` | Server | Yes |
+| 1308 | `ErrCodeUsageLimitReached` | Quota | No |
+| 1309 | `ErrCodeCodingPlanExpired` | Quota | No |
+| 1310 | `ErrCodeWeeklyMonthlyExhausted` | Quota | No |
+| 1311 | `ErrCodeModelNotIncluded` | Quota | No |
+| 1313 | `ErrCodeFairUsageViolation` | Quota | No |
+| 1314 | `ErrCodeEnterpriseExpired` | Quota | No |
+| 1315 | `ErrCodeEnterpriseKeyOnly` | Quota | No |
+| 1316–1321 | usage-limit variants | Quota | No |
+| 1210 | `ErrCodeInvalidParameter` | Parameter | No |
+| 1211 | `ErrCodeUnknownModel` | Parameter | No |
+| 1212 | `ErrCodeMethodNotSupported` | Parameter | No |
+| 1213 | `ErrCodeParameterMissing` | Parameter | No |
+| 1214 | `ErrCodeParameterInvalid` | Parameter | No |
+| 1215 | `ErrCodeParametersConflict` | Parameter | No |
+| 1221 | `ErrCodeAPITakenOffline` | Parameter | No |
+| 1222 | `ErrCodeAPINotExist` | Parameter | No |
+| 1261 | `ErrCodePromptTooLong` | Parameter | No |
+| 1301 | `ErrCodeUnsafeContent` | Content | No |
+| 1220 | `ErrCodeNoPermission` | Permission | No |
+| -1 | `ErrCodeInternalError` | Server | Yes |
+| 1200 | `ErrCodeAPICallError` | Server | Yes |
+| 1230 | `ErrCodeProcessError` | Server | Yes |
+| 1234 | `ErrCodeNetworkError` | Server | Yes |
+
+An error code this client hasn't seen before defaults to `ErrorCategoryServer`
+with `IsRetriable: true` — a reasonable default (treat unknowns as transient
+server issues) but the constants above are the ones with a specifically
+tailored `UserMessage` and retry decision.
+
+Source of truth: [`pkg/client/errors.go`](../../pkg/client/errors.go).
+
+## The 200-with-embedded-failure quirk
+
+A few endpoints (Agents' `Invoke`/`AsyncResult`) return HTTP 200 even when the
+call fails at the business level — the failure is embedded in the response
+body, not signaled via HTTP status. A non-nil `error` from these methods
+means the *transport* failed; check `resp.Failed()` (or `resp.Error`/
+`resp.Status` directly) for a business-level failure inside a successful
+response. Both response types document this on their `Failed()` method — it's
+easy to miss if you only check `err != nil`.
+
+
+---
+
+<!-- source: getting-started -->
+
+# Getting Started
+
+This gets you from zero to your first `go-z-ai` command in a couple of minutes.
+
+## 1. Install
+
+**Prerequisites:** Go 1.26.4+, a Z.AI API key ([create one here](https://z.ai/manage-apikey/apikey-list)).
+
+```bash
+go install github.com/SamyRai/go-z-ai@latest
+```
+
+The binary installs as `go-z-ai`. Optional short alias:
+
+```bash
+ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai"
+```
+
+Or build from source directly:
+
+```bash
+git clone https://github.com/SamyRai/go-z-ai.git
+cd go-z-ai
+go build -o go-z-ai .
+```
+
+Whichever path you took, confirm `go-z-ai` resolves and is on your `PATH`:
+
+```bash
+go-z-ai --version
+```
+
+The rest of this guide assumes the binary is called `go-z-ai`.
+
+## 2. Authenticate
+
+Pick whichever fits how you work. They resolve in this priority order (highest wins):
+
+| Method | When to use it |
+|---|---|
+| `--api-key` flag | One-off calls, scripts, CI |
+| `--account <name>` flag | You've registered multiple accounts (see [Accounts & Quota](accounts-and-quota.md)) |
+| `ZAI_API_KEY` env var (or `.env` file) | Everyday local shell use — the common case |
+| Accounts store's active account | You've run `accounts use <name>` and want it to apply by default |
+
+For a single key, the fastest path:
+
+```bash
+export ZAI_API_KEY=your_api_key_here
+go-z-ai validate
+```
+
+`validate` makes one real API call and confirms the key works before you go
+further.
+
+If your key was issued on Z.AI's China platform (`open.bigmodel.cn`), set
+`--region china` (or `ZAI_REGION=china`) so quota / usage, account-info,
+agents, and account-type detection route to the right host — without it those
+calls hit `api.z.ai` and a China-issued key can fail auth. See
+[Accounts & Quota § Regional gateways](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn)
+for the full picture; most chat / embeddings / moderations usage needs
+nothing extra (a regular `ZAI_API_KEY` authenticates on both platforms).
+
+## 3. Your first commands
+
+```bash
+# See what models you have access to
+go-z-ai models list
+
+# Send a chat completion
+go-z-ai chat create "Explain goroutines in one paragraph"
+
+# Stream the response token-by-token
+go-z-ai chat create "Write a haiku about Go" --stream
+
+# Check your quota (GLM Coding Plan accounts)
+go-z-ai usage quota
+```
+
+From here:
+
+- **Full command reference:** [CLI Reference](cli-reference.md)
+- **Multiple accounts / quota monitoring:** [Accounts & Quota](accounts-and-quota.md)
+- **Wire up Claude Code / OpenCode / Crush / Factory Droid / Cursor to your GLM Coding Plan:** [Coding Tools](coding-tools.md)
+- **Using this as a Go library instead of a CLI:** [Library Guide](library-guide.md)
+- **Full-screen terminal UI** (chat, models, usage, accounts, coding, media, tools tabs in one place): `go-z-ai tui`
+
+## Troubleshooting
+
+**"API key is required"** — none of the four methods above resolved a key.
+Double check `echo $ZAI_API_KEY`, or pass `--api-key` explicitly to confirm.
+
+**"invalid API key" / HTTP 401** — the key was found but Z.AI rejected it.
+Regenerate it at [z.ai/manage-apikey](https://z.ai/manage-apikey/apikey-list).
+
+**"Unknown Model" (error 1211) on `embeddings`/`moderations`/`rerank`/`voice`** —
+this is almost always an account-entitlement gate, not a bug: your account's
+plan doesn't include that model in its catalog. Run `go-z-ai models list`
+to see what's actually available to your key. See
+[Accounts & Quota](accounts-and-quota.md) for the full explanation.
+
+**Something else** — [open an issue](https://github.com/SamyRai/go-z-ai/issues)
+with the exact command and error output (redact your key).
+
+
+---
+
+<!-- source: library-guide -->
+
+# Library Guide
+
+`pkg/client` is a standalone Go library — everything the CLI does, it does by
+calling this package. You can depend on it directly without the CLI at all.
+
+## Contents
+
+- [Creating a client](#creating-a-client)
+- [Services](#services)
+- [Chat completions](#chat-completions)
+- [Anthropic-compatible Messages API](#anthropic-compatible-messages-api)
+- [Error handling](#error-handling)
+- [Multi-account credential management](#multi-account-credential-management)
+- [Testing your own code against this client](#testing-your-own-code-against-this-client)
+- [Architecture notes](#architecture-notes)
+
+```bash
+go get github.com/SamyRai/go-z-ai
+```
+
+```go
+import "github.com/SamyRai/go-z-ai/pkg/client"
+```
+
+## Creating a client
+
+```go
+c, err := client.NewClient(client.Config{
+    APIKey: os.Getenv("ZAI_API_KEY"),
+})
+```
+
+Or, if you just want the env-var default with no other config:
+
+```go
+c, err := client.NewClientFromEnv() // reads ZAI_API_KEY, ZAI_API_BASE_URL
+```
+
+`Config` fields:
+
+| Field | Default | Notes |
+|---|---|---|
+| `APIKey` | — | Required |
+| `BaseURL` | `https://api.z.ai/api/paas/v4` | Override for the coding-plan endpoint, etc. |
+| `HTTPClient` | an internally configured `*http.Client` | Bring your own transport if you need custom TLS/proxy behavior |
+| `Timeout` | 30s | Bounds dial/TLS/response-header wait — **not** the whole response body read, so it never truncates a live SSE stream |
+| `MaxRetries` | 3 | Retries on 429/5xx/network errors. `-1` disables retries entirely |
+| `RetryDelay` | 200ms | Base exponential-backoff delay |
+| `ChinaAPIKey` | falls back to `APIKey` | Only needed if you hold a separate bigmodel.cn-only credential — see [Accounts & Quota](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn) |
+| `Region` | `RegionGlobal` | Selects the host for monitor/biz/agents/detection: `RegionGlobal` (api.z.ai) or `RegionChina` (open.bigmodel.cn). Does not override `BaseURL` (chat surface) or the Embeddings/Moderations host. See [Accounts & Quota](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn). |
+
+Every service method takes `context.Context` as its first argument and
+propagates it all the way to the HTTP call — cancel it to abort a request or
+a pending retry backoff.
+
+## Services
+
+`Client` exposes one method per service, all following the same
+`c.<Service>().<Method>(ctx, ...)` shape:
+
+| Accessor | Covers |
+|---|---|
+| `c.Chat()` | Completions — `Create`, `CreateAsync`, `CreateStream`, `CreateSimple`, `RunWithTools` |
+| `c.Models()` | `List`, `Get`, `GetTextModels`, `GetVisionModels`, `GetFreeModels`, `RefreshCache` |
+| `c.Images()` | `Generate`, `GenerateAsync` |
+| `c.Videos()` | `Generate` (always async) |
+| `c.Audio()` | `Transcribe`, `Speech` |
+| `c.Voice()` | `Clone`, `Delete`, `List` — GLM-TTS voice cloning |
+| `c.Layout()` | `Parse`, `HandwritingOCR` |
+| `c.FileParser()` | `Create`, `Sync`, `Result` — document-to-text for RAG |
+| `c.Files()` | `Upload`, `List`, `Delete`, `Content` |
+| `c.Batch()` | `Create`, `Retrieve`, `List`, `Cancel` |
+| `c.Agents()` | `Invoke`, `AsyncResult` |
+| `c.Anthropic()` | `Create`, `CreateStream` — Anthropic-protocol `/v1/messages` surface |
+| `c.Embeddings()` | `Create` (routes to `open.bigmodel.cn`) |
+| `c.Moderations()` | `Create` (routes to `open.bigmodel.cn`) |
+| `c.Rerank()` | `Create` |
+| `c.Tools()` | `WebSearch`, `WebReader`, `Tokenize` |
+| `c.Usage()`, `c.Quota()`, `c.Detection()`, `c.Account()` | GLM Coding Plan usage/quota/account monitoring |
+| `c.GetAsyncResult(ctx, id)`, `c.WaitForResult(ctx, id, interval)` | Shared polling for async image/video/chat tasks |
+
+Every request-validation check (required fields, etc.) happens client-side
+before a request is sent — you get a local `error` immediately rather than a
+round trip for something like a missing `model`.
+
+## Chat completions
+
+```go
+resp, err := c.Chat().Create(ctx, client.ChatRequest{
+    Model: "glm-5.2",
+    Messages: []client.Message{
+        {Role: "system", Content: "You are a helpful assistant."},
+        {Role: "user", Content: "Explain goroutines in one paragraph"},
+    },
+    Temperature: 0.7,
+})
+fmt.Println(resp.Choices[0].Message.Content)
+```
+
+### Streaming
+
+```go
+err := c.Chat().CreateStream(ctx, req, func(chunk client.StreamChunk) error {
+    if len(chunk.Choices) > 0 {
+        fmt.Print(chunk.Choices[0].Delta.Content)
+    }
+    return nil // a non-nil return aborts the stream
+})
+```
+
+Set `req.StreamToolCall = true` (GLM-4.6+) to stream tool-call deltas
+incrementally in `chunk.Choices[0].Delta.ToolCalls` across multiple events,
+rather than receiving them as a single batch at the end of the turn. Useful
+for surfacing "the model is calling a tool…" progress to a UI. NOT VERIFIED
+LIVE — see [Roadmap](roadmap.md).
+
+### Async
+
+```go
+task, _ := c.Chat().CreateAsync(ctx, req)
+result, err := c.WaitForResult(ctx, task.ID, 3*time.Second)
+```
+
+### Vision (images in a message)
+
+```go
+req.Messages[len(req.Messages)-1].Images = []string{
+    "https://example.com/photo.jpg", // or a data: URI
+}
+req.Model = "glm-4.6v"
+```
+
+### Structured output
+
+```go
+req.ResponseFormat = client.NewJSONSchemaFormat("my_schema", rawJSONSchema, true /* strict */)
+```
+
+### Function calling
+
+For manual control, inspect `resp.Choices[0].Message.ToolCalls` yourself and
+append `role: "tool"` messages before calling `Create` again. For the common
+case, `RunWithTools` drives that loop for you:
+
+```go
+resp, err := c.Chat().RunWithTools(ctx, req, func(name, arguments string) (string, error) {
+    switch name {
+    case "get_weather":
+        return `{"temp_c": 18}`, nil
+    default:
+        return "", fmt.Errorf("unknown tool %q", name)
+    }
+})
+```
+
+It executes each tool call, appends the assistant + tool messages, and
+repeats until the model returns a non-tool finish reason or
+`ToolMaxRounds` (8) is exceeded — use `RunWithToolsLimit` to set a different
+cap. A tool executor error is reported back to the model as the tool's
+result (`"error: ..."`), not returned to your caller, so the model can
+recover instead of the whole exchange failing.
+
+#### Tool types
+
+A `Tool` carries one of three payloads, selected by its `Type`:
+
+| Constructor | `Type` | Payload |
+|---|---|---|
+| `NewFunctionTool(name, desc, params)` | `ToolTypeFunction` (`"function"`) | `FunctionDef` — a callable the model invokes by name |
+| `NewRetrievalTool(knowledgeID, prompt)` | `ToolTypeRetrieval` (`"retrieval"`) | `Retrieval` — a knowledge base to ground the answer |
+| `NewWebSearchTool(queries...)` | `ToolTypeWebSearch` (`"web_search"`) | `WebSearch` — a `search_query` list |
+
+`retrieval` and `web_search` are documented on docs.z.ai but **NOT VERIFIED
+LIVE** here — only `function` is confirmed against the live API. The
+`web_search` payload shape (`{"search_query":[...]}`) follows the official
+Python SDK example; see [Roadmap](roadmap.md).
+
+`validateChatRequest` enforces three documented rules client-side, so you get
+a clear local error instead of the server's opaque one:
+
+- **Tool-name pattern** — `tools[].function.name` must match
+  `^[A-Za-z0-9_-]{1,64}$`.
+- **Function cap** — at most `ToolMaxFunctions` (128) function tools per
+  request.
+- **Per-type payload** — a `function`/`retrieval`/`web_search` tool must
+  carry its matching payload; unknown types are rejected.
+
+#### Response fields worth checking
+
+Beyond `resp.Choices[0].Message.Content`:
+
+- `resp.Choices[0].FinishReason` — compare against the `FinishReason*`
+  constants (`FinishReasonStop`, `FinishReasonToolCalls`, `FinishReasonLength`,
+  `FinishReasonSensitive`, `FinishReasonModelContextWindowExceeded`,
+  `FinishReasonNetworkError`). The last three are documented live values that
+  signal non-content terminations.
+- `resp.WebSearch` — the top-level `web_search` array the response carries
+  when a `web_search` tool fired (each entry's `Link`/`Title`/`Content` are
+  the sources the answer grounded in). NOT VERIFIED LIVE.
+
+#### Tool-schema compatibility
+
+GLM's chat endpoint uses a strict JSON-Schema parser for tool `parameters`:
+a schema containing `anyOf`, `oneOf`, `allOf`, or a `$ref`/`$defs` reference
+makes it return **HTTP 500** rather than a usable error. Those constructs are
+exactly what typed languages emit — a nullable field becomes
+`anyOf: [{…}, {"type":"null"}]`, a reused struct becomes a `$ref`.
+
+By default the client rewrites tool schemas into the flat subset GLM accepts
+before every chat request (nullable unions collapse to the underlying type,
+`allOf` merges, `$ref` inlines), keeping as much type/description information
+as possible. It's a no-op for schemas already in the supported subset and
+never mutates your `req.Tools`.
+
+- To normalize a schema yourself (e.g. you build requests elsewhere):
+  `client.SanitizeToolSchemas(tools)`.
+- To send schemas through untouched (debugging, or a future endpoint that
+  supports the full draft): set `Config.DisableToolSchemaCompat = true`.
+
+### Anthropic-compatible Messages API
+
+Z.AI also exposes an Anthropic-protocol surface at `/api/anthropic` — the same
+endpoint the GLM Coding Plan points Claude Code at. `c.Anthropic()` is a typed
+client for its `POST /v1/messages`, parallel to `c.Chat()` for the OpenAI-style
+surface. It authenticates with your z.ai key as a Bearer token (not Anthropic's
+`x-api-key`) and sends an `anthropic-version` header automatically.
+
+```go
+resp, err := c.Anthropic().Create(ctx, client.AnthropicMessageRequest{
+    Model:     "glm-4.6",
+    MaxTokens: 1024, // required by the Messages API
+    System:    "You are concise.",
+    Messages: []client.AnthropicMessage{
+        client.AnthropicTextMessage("user", "Explain goroutines in one line"),
+    },
+})
+fmt.Println(resp.Text()) // concatenated text blocks
+```
+
+Streaming delivers Anthropic's raw SSE events (`message_start`,
+`content_block_delta`, …) with the event name and JSON payload, which you
+unmarshal per event type:
+
+```go
+err := c.Anthropic().CreateStream(ctx, req, func(ev client.AnthropicStreamEvent) error {
+    if ev.Type == "content_block_delta" {
+        // ev.Data is {"delta":{"type":"text_delta","text":"…"}, …}
+    }
+    return nil
+})
+```
+
+Tools declared via `AnthropicTool.InputSchema` get the same GLM schema
+normalization as chat tools (see above). `Config.DisableToolSchemaCompat`
+disables it.
+
+Extended thinking (GLM models are reasoning models) is enabled per request and
+read back with `resp.Thinking()`:
+
+```go
+req.Thinking = &client.AnthropicThinking{Type: "enabled", BudgetTokens: 2048}
+resp, _ := c.Anthropic().Create(ctx, req)
+fmt.Println(resp.Thinking()) // thinking blocks, or reasoning_content if the
+                             // endpoint surfaces reasoning that way instead
+fmt.Println(resp.Text())     // the answer, without the reasoning mixed in
+```
+
+The success-path response shape is modeled from Anthropic's documented Messages
+API and is not yet live-verified here — see [Roadmap](roadmap.md).
+
+## Error handling
+
+See [Error Handling](error-handling.md) for the full `APIError` reference,
+error codes, and the retry behavior you get by default.
+
+## Multi-account credential management
+
+The multi-account credential store and the GLM Coding Plan credential/config
+writers live in `internal/accounts` and `internal/coding`. They are internal
+to this module — not part of the importable public API — so they can evolve
+without semver constraints. `pkg/client` is the only supported public package;
+the `accounts` and `coding` CLI commands are the stable way to drive that
+functionality. (These packages lived under `pkg/` before and were importable;
+see the [CHANGELOG](../../CHANGELOG.md) for the move.)
+
+## Testing your own code against this client
+
+Every service method is a plain function on an interface-free concrete type,
+so the usual Go approach is to point `Config.BaseURL` at an `httptest.Server`
+you control. If you want to replay *real* recorded Z.AI traffic instead of a
+hand-written stub, see how this repo's own tests do it with
+[go-vcr](https://github.com/dnaeon/go-vcr) — `pkg/client/*_test.go` and
+`pkg/client/testdata/cassettes/` — and read
+[Contributing § the live-verification convention](../../CONTRIBUTING.md) for why.
+
+## Architecture notes
+
+For how the services are structured internally (the `doRequest` facade,
+retry/backoff design, why some services authenticate against a different base
+URL) see [Architecture](architecture.md).
+
+
+---
+
+<!-- source: roadmap -->
+
+# Roadmap & Known Limitations
+
+What's still open, why, and the exact action that closes it. Items leave this
+page when a committed cassette or a merged change resolves them — this is the
+verify-first convention's working list (see
+[Contributing § the live-verification convention](../../CONTRIBUTING.md) and
+[Architecture § the live-verification convention](architecture.md#the-live-verification-convention)
+for the why).
+
+> **Recording a cassette yourself:** every "Unverified live" item below has a
+> matching `TestVerify*` test that SKIPS until you capture a success-path
+> cassette with `ZAI_RECORD=1`. The harness redacts `Authorization` to
+> `Bearer REDACTED` before saving — confirm with
+> `grep "Bearer " pkg/client/testdata/cassettes/<name>.yaml` before committing.
+>
+> ```sh
+> ZAI_RECORD=1 ZAI_API_KEY=<real-key> go test -run TestVerify<Name> ./pkg/client
+> ```
+
+## Unverified live
+
+Two groups: **services** whose success-path response shape isn't captured
+yet, and **fields added in the 2026-07-18 sprint** that match the docs but
+aren't pinned by a cassette.
+
+### Services needing a success-path cassette
+
+The dev account used so far has no PAYG balance / entitlement for these, so
+only their request shape and error paths are confirmed. A cassette that
+captures a real success response closes each item.
+
+- **Anthropic Messages** (`TestVerifyAnthropicMessages`) — routing, the
+  `anthropic-version` header, and Bearer auth are confirmed (a bogus key
+  returns a clean 401, not a 404/timeout). Open question the cassette would
+  settle: does GLM surface reasoning as Anthropic `thinking` blocks or the
+  OpenAI-style `reasoning_content` field? ([claude-code-router#1133](https://github.com/musistudio/claude-code-router/issues/1133))
+- **Embeddings** (`TestVerifyEmbeddings`) — currently returns `400 Unknown
+  Model` (code 1211) on every account tested; that's an entitlement gate,
+  not a routing bug (see [Accounts & Quota](accounts-and-quota.md)).
+- **Moderations** (`TestVerifyModerations`) — same 1211 entitlement gate.
+- **Agents `Invoke` success shape** (`TestVerifyAgentsInvoke`) — only the
+  failure envelope (`ID`/`AgentID`/`Status`/`Error`) is live-confirmed today,
+  via `testdata/cassettes/agents_invoke.yaml` (a 200-with-embedded-failure).
+  The `Choices`/`Usage` success shape is modeled from docs only.
+- **Voice `Clone` / `Delete`** (`TestVerifyVoiceClone`, `TestVerifyVoiceDelete`)
+  — `Voice List` is confirmed live; clone/delete need an uploaded sample
+  audio and a real cloned voice ID to record. Clone needs
+  `ZAI_VOICE_SAMPLE_FILE_ID` + `ZAI_VOICE_NAME`; delete needs `ZAI_VOICE_ID`.
+- **Batch and Files endpoints generally** — no dedicated `TestVerify*`
+  scaffold yet; would need an entitled PAYG account to record.
+
+### Fields added in the 2026-07-18 sprint, pending a cassette
+
+These fields were added to `pkg/client/types.go` / `chat.go` to match the
+current docs.z.ai chat-completion spec. They're additive and unit-tested,
+but NOT VERIFIED LIVE until a cassette pins the exact wire shape. Each has a
+`TestVerify*` test ready to record.
+
+- **`ChatRequest.StreamToolCall`** (`TestVerifyChatStreamToolCall`) — GLM-4.6+
+  streamed tool-call deltas. Cassette should show tool-call deltas arriving
+  across multiple SSE chunks in `StreamDelta.ToolCalls`.
+- **`Tool` discrimination across `function` / `retrieval` / `web_search`**
+  (`NewFunctionTool` / `NewRetrievalTool` / `NewWebSearchTool`) — the spec
+  lists all three types; only `function` is confirmed. The `web_search`
+  payload shape (`{"search_query":[...]}`) follows the official Python SDK
+  example.
+- **`ChatResponse.WebSearch`** (`TestVerifyChatWebSearchResponse`) — the
+  top-level `web_search` array returned when a `web_search` tool fires.
+  Entry shape reuses `WebSearchResult` from `tools.go` (live-verified for the
+  standalone web-search tool); placement as a top-level array is modeled from
+  the docs.
+- **`ThinkingConfig.Effort = "xhigh"`** — added to the validated enum
+  (`xhigh`→`max`, GLM-5.2 only). No dedicated test; covered by any
+  thinking + xhigh cassette.
+- **`FinishReason*` constants** (`sensitive`, `model_context_window_exceeded`,
+  `network_error`) — added from the docs; no cassette reproduces these
+  termination paths yet.
+- **Client-side tool-name regex** (`^[A-Za-z0-9_-]{1,64}$`) and **128-function
+  cap** — documented server-side rules we enforce locally; not confirmed as
+  the server's exact rejection criteria.
+- **China regional gateway for monitor/biz/agents/detection** — `RegionChina`
+  routes quota/usage/account/agents/detection to `open.bigmodel.cn`.
+  `/models` and `/chat/completions` are live-verified on the China host; the
+  monitor/biz/agents paths are modeled by mirroring `api.z.ai`'s layout and
+  need a cassette against an entitled China key to confirm.
+
+### Older open questions (no dedicated test yet)
+
+- **Tool-schema compatibility rewriting** — the set of JSON-Schema constructs
+  GLM's parser rejects with HTTP 500 (`anyOf`/`oneOf`/`allOf`/`$ref`) is
+  drawn from community bug reports
+  ([claude-code-router#1474](https://github.com/musistudio/claude-code-router/issues/1474)),
+  not reproduced against a live account here. The rewrite itself is fully
+  unit-tested and inert on already-flat schemas; a cassette pinning exactly
+  which constructs 500 (and which the flattened output makes pass) would
+  upgrade this from "documented behavior" to "live-verified." See
+  `pkg/client/toolschema.go`.
+
+## Not implemented
+
+- **Request/response logging and metrics collection** — no built-in
+  instrumentation hooks yet.
+- **Performance benchmarks** — deferred until a real bottleneck is measured;
+  no known hot path currently justifies one (profile before optimizing).
+
+## Deliberately not implemented
+
+- **Assistant API** — confirmed deprecated. Z.AI's own live OpenAPI spec
+  (`docs.bigmodel.cn/openapi/openapi.json`) marks every Assistant path
+  `"deprecated": true`, and calling it from `api.z.ai` times out entirely
+  rather than erroring. Building a client for a sunset API isn't worth the
+  maintenance surface — if Z.AI ever un-deprecates it, the spec above has
+  the full request/response schemas ready to transcribe.
+
+
+---
+
+<!-- source: site-generation -->
+
+# Site generation
+
+The project ships an auto-generated static HTML site under `site/`, rendered
+from the markdown docs + live GitHub data by a tiny Go generator.
+
+## What it does
+
+`cmd/sitegen` (a separate binary in this repo, *not* part of the `go-z-ai`
+release) reads:
+
+- The 6 root `README*.md` files → one landing page per locale.
+- `docs/{en,ru,zh}/*.md` (27 files) → per-locale doc pages.
+- `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md` →
+  top-level meta pages.
+- Live GitHub data (latest release, star count, contributors, recent commits)
+  via the unauthenticated GitHub REST API.
+- Local `git log` for activity metrics.
+
+…and renders everything through embedded HTML templates into static files at
+`site/`:
+
+```text
+site/
+├── index.html              # English landing (also at /)
+├── en/, ru/, zh/           # full-docs locales (landing + 8 doc pages each)
+├── de/, tt/, tr/           # README-only locales (landing page only)
+├── CHANGELOG.html, CONTRIBUTING.html, …
+├── assets/                 # CSS, favicon, robots.txt
+└── sitemap.xml
+```
+
+## Run it
+
+```bash
+make site          # generate into ./site
+make site-offline  # same, but skip the live GitHub API calls
+make site-serve    # generate + serve on http://localhost:8000
+make site-clean    # remove ./site
+```
+
+`make site-serve` is the fastest feedback loop for previewing changes — open
+<http://localhost:8000/en/> and you'll see the landing page.
+
+## Design choices
+
+**Zero new runtime dependencies.** The generator uses only the Go stdlib plus
+[`github.com/yuin/goldmark`](https://github.com/yuin/goldmark), which was
+already transitively in `go.sum` via `charm.land/glamour`. Promoting it to a
+direct dependency added zero bytes to the release artifacts. There is no Hugo,
+no Jekyll, no Node toolchain, no JS framework, no web font.
+
+**Catppuccin Mocha / Latte theme.** The CSS palette is sourced from
+[Catppuccin](https://catppuccin.com/palette) (MIT licensed) — already in the
+Go dependency tree via `github.com/catppuccin/go`. Dark mode (Mocha) is the
+default; light mode (Latte) is auto-selected by `@media (prefers-color-scheme)`
+and can be toggled manually via the header button. No CSS framework — about
+300 lines of hand-written modern CSS using custom properties, `color-mix()`,
+and logical properties.
+
+**Localization.** Pages live at subdirectory permalinks (`/en/`, `/ru/`, …)
+matching `docs/<lang>/` one-to-one. Every page emits self-referencing
+`hreflang` + alternates + `x-default` → `/en/`. The language switcher is a
+plain `<details>` dropdown of `<a>` links — no JavaScript state, deep-linkable,
+SEO-correct. For locales that have only a root README (de/tt/tr), the switcher
+links those locales back to their landing page; doc-page links for those
+locales point to `/en/…` equivalents.
+
+**Graceful degradation.** If the GitHub API is unreachable at build time (rate
+limits, sandboxed CI without network), the landing page still renders — it
+just shows zeros for stars/releases. Pass `-offline` to skip the network calls
+deliberately.
+
+## Deployment
+
+The site is auto-deployed to GitHub Pages on every push to `main` by
+[`.github/workflows/pages.yml`](../../.github/workflows/pages.yml). One-time
+setup:
+
+1. Repo Settings → Pages → Source: **GitHub Actions** (not "Deploy from a
+   branch"). The workflow handles the rest.
+2. Confirm the deploy job's environment `github-pages` exists (Actions
+   creates it on first run).
+
+Each release also bundles an offline-rendered snapshot of the site via
+`release.extra_files` in `.goreleaser.yml`, so `docs-site-<version>.tar.gz`
+ships as a release artifact alongside the binaries.
+
+## Adding a new locale
+
+1. Add the new code to `localesAll` in `internal/sitegen/render.go`.
+2. Add the code → endonym mapping in `localeLabels`.
+3. If you're shipping a full docs tree (not just a README), also add the code
+   to `localesWithFullDocs` — the generator will then walk `docs/<lang>/*.md`.
+4. Add the language switcher entry to each root `README.<lang>.md` (see the
+   existing `**English** | [简体中文]…` line).
+
+## Files
+
+- `cmd/sitegen/main.go` — entrypoint; flags + invokes `sitegen.Run`.
+- `internal/sitegen/sitegen.go` — orchestrator.
+- `internal/sitegen/render.go` — goldmark setup, template loading, URL helpers.
+- `internal/sitegen/data.go` — GitHub API client.
+- `internal/sitegen/changelog.go` — CHANGELOG.md parser.
+- `internal/sitegen/git.go` — `git log` / `git shortlog` wrappers.
+- `internal/sitegen/embed.go` — `//go:embed` for templates + assets.
+- `internal/sitegen/templates/*.html` — layout, landing, doc.
+- `internal/sitegen/assets/*` — CSS, SVG favicon, robots.txt.

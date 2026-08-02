@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Site generation · go-z-ai</title>
+  <meta name="description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <link rel="canonical" href="/zh/site-generation.html">
+  <link rel="alternate" hreflang="en" href="/en/site-generation.html">
+  <link rel="alternate" hreflang="ru" href="/ru/site-generation.html">
+  <link rel="alternate" hreflang="zh" href="/zh/site-generation.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/site-generation.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Site generation · go-z-ai">
+  <meta property="og:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/zh/site-generation.html">
+  <meta property="og:locale" content="zh">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Site generation · go-z-ai">
+  <meta name="twitter:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/zh/site-generation.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Site generation","inLanguage":"zh","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Site generation","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/zh/site-generation.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/zh/site-generation.html","name":"Site generation","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">跳到正文</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/zh/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">Z</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/zh/" >首页</a>
+      <a href="/zh/getting-started.html" aria-current="page">文档</a>
+      <a href="/zh/cli-reference.html">CLI</a>
+      <a href="/zh/library-guide.html">库</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">更新日志</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>简体中文</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/site-generation.html" >English</a>
+    <a role="menuitem" href="/ru/site-generation.html" >Русский</a>
+    <a role="menuitem" href="/zh/site-generation.html" aria-current="true">简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="切换主题" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="heading">站点生成</h1>
+<p>本项目附带一个自动生成的静态 HTML 站点（位于 <code>site/</code>），由一个小型 Go
+生成器从 markdown 文档 + GitHub 实时数据渲染而成。</p>
+<p>完整的架构说明和如何添加新语言版本，请见
+<a href="/en/site-generation.html" rel="nofollow noreferrer">英文版文档</a>。</p>
+<h2 id="heading-1">运行</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">make site          <span class="c1"># 生成到 ./site</span>
+</span></span><span class="line"><span class="cl">make site-offline  <span class="c1"># 同上，但不调用 GitHub API</span>
+</span></span><span class="line"><span class="cl">make site-serve    <span class="c1"># 生成 + 在 http://localhost:8000 启动本地预览</span>
+</span></span></code></pre><h2 id="heading-2">技术栈</h2>
+<ul>
+<li><strong>goldmark</strong> 渲染 markdown 为 HTML（已通过 glamour 间接在 <code>go.sum</code> 中）。</li>
+<li>其它部分<strong>仅使用 Go 标准库</strong>。</li>
+<li><strong>Catppuccin Mocha/Latte 配色</strong>（MIT 许可），已通过 <code>catppuccin/go</code> 间接在
+<code>go.sum</code> 中。</li>
+<li>无 JS 框架、无 Web 字体、无外部 CSS 依赖。</li>
+</ul>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API<br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      <a href="https://github.com/SamyRai/go-z-ai/blob/main/LICENSE">Apache 2.0</a> ·
+      基于提交 2c4beb8 构建
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">更新日志</a> ·
+      <a href="/CONTRIBUTING.html">贡献指南</a> ·
+      <a href="/SECURITY.html">安全</a> ·
+      <a href="/sitemap.xml">站点地图</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "切换到浅色模式" : "切换到深色模式");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "切换到深色模式" : "切换到浅色模式");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

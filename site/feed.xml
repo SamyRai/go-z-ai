@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>go-z-ai — releases</title>
+  <subtitle>A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API</subtitle>
+  <id>https://SamyRai.github.io/go-z-ai/</id>
+  <updated>2026-07-19T05:01:55Z</updated>
+  <author>
+    <name>SamyRai</name>
+    <uri>https://github.com/SamyRai/go-z-ai</uri>
+  </author>
+  <link href="https://SamyRai.github.io/go-z-ai/feed.xml" rel="self" type="application/atom+xml"></link>
+  <link href="https://github.com/SamyRai/go-z-ai/releases" rel="alternate"></link>
+  <entry>
+    <title>v0.1.0</title>
+    <id>https://github.com/SamyRai/go-z-ai/releases/tag/v0.1.0</id>
+    <updated>2026-07-18T22:58:15Z</updated>
+    <link href="https://github.com/SamyRai/go-z-ai/releases/tag/v0.1.0"></link>
+    <summary>Release v0.1.0</summary>
+  </entry>
+</feed>

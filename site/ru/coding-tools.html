@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Coding tools · go-z-ai</title>
+  <meta name="description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <link rel="canonical" href="/ru/coding-tools.html">
+  <link rel="alternate" hreflang="en" href="/en/coding-tools.html">
+  <link rel="alternate" hreflang="ru" href="/ru/coding-tools.html">
+  <link rel="alternate" hreflang="zh" href="/zh/coding-tools.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/coding-tools.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Coding tools · go-z-ai">
+  <meta property="og:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/ru/coding-tools.html">
+  <meta property="og:locale" content="ru">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Coding tools · go-z-ai">
+  <meta name="twitter:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/ru/coding-tools.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Coding tools","inLanguage":"ru","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Coding tools","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/ru/coding-tools.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/ru/coding-tools.html","name":"Coding tools","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержимому</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/ru/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">Z</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/ru/" >Главная</a>
+      <a href="/ru/getting-started.html" aria-current="page">Документация</a>
+      <a href="/ru/cli-reference.html">CLI</a>
+      <a href="/ru/library-guide.html">Библиотека</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Журнал изменений</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Русский</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/coding-tools.html" >English</a>
+    <a role="menuitem" href="/ru/coding-tools.html" aria-current="true">Русский</a>
+    <a role="menuitem" href="/zh/coding-tools.html" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Переключить тему" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="---glm-coding-plan">Инструменты для кода (GLM Coding Plan)</h1>
+<p><code>go-z-ai coding</code> настраивает сторонние ассистенты для кода на использование
+вашего GLM Coding Plan вместо их стандартного провайдера. Это порт на Go
+официальной утилиты <code>@z_ai/coding-helper</code> (“chelper”) от Z.AI, использующий тот
+же файл учётных данных, поэтому оба инструмента можно применять
+взаимозаменяемо.</p>
+<h2 id="-">Поддерживаемые инструменты</h2>
+<table>
+<thead>
+<tr>
+<th>Инструмент</th>
+<th>Конфиг, в который он пишет</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Claude Code</td>
+<td><code>~/.claude/settings.json</code> (+ флаг онбординга в <code>~/.claude.json</code>)</td>
+</tr>
+<tr>
+<td>OpenCode</td>
+<td><code>~/.config/opencode/opencode.json</code></td>
+</tr>
+<tr>
+<td>Crush</td>
+<td><code>~/.config/crush/crush.json</code></td>
+</tr>
+<tr>
+<td>Factory Droid</td>
+<td><code>~/.factory/settings.json</code></td>
+</tr>
+<tr>
+<td>Cursor</td>
+<td>Зависит от ОС — <code>~/Library/Application Support/Cursor/User/settings.json</code> на macOS, <code>~/.cursor/settings.json</code> (или <code>~/.config/Cursor/User/settings.json</code>) в остальных системах</td>
+</tr>
+</tbody>
+</table>
+<p>Выполните <code>go-z-ai coding tools</code>, чтобы увидеть статус установки и точные
+резолвленные пути на вашей машине.</p>
+<h2 id="heading">Тарифы</h2>
+<table>
+<thead>
+<tr>
+<th>Идентификатор тарифа</th>
+<th>Эндпоинт</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>glm_coding_plan_global</code></td>
+<td><code>https://api.z.ai</code></td>
+</tr>
+<tr>
+<td><code>glm_coding_plan_china</code></td>
+<td><code>https://open.bigmodel.cn</code></td>
+</tr>
+</tbody>
+</table>
+<p>Выберите тот, где живёт ваша подписка GLM Coding Plan.</p>
+<h2 id="--1">Быстрый старт</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="c1"># 1. Сохранить и провалидировать ключ GLM Coding Plan (один раз)</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding auth glm_coding_plan_global YOUR_KEY
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 2. Загрузить его в инструмент</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding load claude-code
+</span></span><span class="line"><span class="cl"><span class="c1"># ID инструментов: claude-code, opencode, crush, factory-droid, cursor</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># также работают алиасы: claude, droid, factory</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 3. Проверить, что всё настроено</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding status
+</span></span><span class="line"><span class="cl">go-z-ai coding doctor
+</span></span></code></pre><p>Учётные данные хранятся в <code>~/.chelper/config.yaml</code> (побайтово совместим с
+официальным Node-хелпером) — <code>coding auth</code> записывает их один раз, а <code>coding load</code> читает оттуда для каждого инструмента, если не передавать
+<code>--key</code>/<code>--plan</code> для переопределения.</p>
+<p>Чтобы перестать использовать Z.AI для инструмента без потери сохранённых
+учётных данных:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding unload claude-code
+</span></span></code></pre><p>Это удаляет только добавленные Z.AI-специфичные поля; остальную часть
+существующего конфига он не трогает.</p>
+<h2 id="claude-code--">Claude Code: сопоставление моделей</h2>
+<p>Официальный хелпер задаёт только <code>ANTHROPIC_AUTH_TOKEN</code>, <code>ANTHROPIC_BASE_URL</code>,
+<code>API_TIMEOUT_MS</code> и <code>CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC</code>. Этот клиент по
+умолчанию идёт дальше и также сопоставляет уровни моделей Claude Code с
+конкретными моделями GLM через <code>ANTHROPIC_DEFAULT_*_MODEL</code>, в соответствии с
+<a href="https://docs.z.ai/scenario-example/develop-tools/claude" rel="nofollow noreferrer noopener" target="_blank">задокументированной рекомендацией Z.AI</a>:</p>
+<table>
+<thead>
+<tr>
+<th>Уровень Claude</th>
+<th>Модель GLM по умолчанию</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>haiku</td>
+<td><code>glm-4.5-air</code></td>
+</tr>
+<tr>
+<td>sonnet</td>
+<td><code>glm-4.7</code></td>
+</tr>
+<tr>
+<td>opus</td>
+<td><code>glm-4.7</code></td>
+</tr>
+</tbody>
+</table>
+<p>Переопределите любой уровень или полностью отключите сопоставление:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding auth glm_coding_plan_global YOUR_KEY <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --sonnet glm-5.2 --opus glm-5.2
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">go-z-ai coding auth glm_coding_plan_global YOUR_KEY --no-model-mapping
+</span></span></code></pre><p>Также настраивается, всё опционально (0/опущено = не задавать env-переменную):</p>
+<table>
+<thead>
+<tr>
+<th>Флаг</th>
+<th>env-переменная</th>
+<th>Зачем нужно</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--auto-compact-window int</code></td>
+<td><code>CLAUDE_CODE_AUTO_COMPACT_WINDOW</code></td>
+<td>По умолчанию 1 000 000 (размер контекста GLM-5.2); уменьшите (например, до 128000), если вы привязаны к модели с контекстом 128K</td>
+</tr>
+<tr>
+<td><code>--max-thinking-tokens int</code></td>
+<td><code>MAX_THINKING_TOKENS</code></td>
+<td>Бюджет расширенного мышления</td>
+</tr>
+<tr>
+<td><code>--max-output-tokens int</code></td>
+<td><code>CLAUDE_CODE_MAX_OUTPUT_TOKENS</code></td>
+<td>Лимит на вывод</td>
+</tr>
+</tbody>
+</table>
+<p>Эти флаги сохраняются на команде <code>coding</code>, поэтому одинаково применяются к
+<code>auth</code>, <code>load</code> и <code>reload</code>.</p>
+<h2 id="--2">Управление ключами</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding auth revoke              <span class="c1"># очистить сохранённый ключ, сохранив выбор тарифа</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding auth reload &lt;tool&gt;       <span class="c1"># повторно загрузить сохранённые учётные данные в инструмент</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding load &lt;tool&gt; --key OTHER_KEY --plan glm_coding_plan_china  <span class="c1"># разовое переопределение</span>
+</span></span></code></pre><p>По умолчанию <code>coding auth</code> валидирует новый ключ через API перед сохранением
+(реальный вызов <code>/models</code>). Пропустите это через <code>--no-validate</code>, если хотите
+сохранить ключ офлайн (например, при автоматизации настройки машины, которую вы
+ещё не проверяли на доступность сети).</p>
+<h2 id="vision-mcp-server">Vision MCP server</h2>
+<p>Мастер официального <code>@z_ai/coding-helper</code> имеет шаг “manage MCP services”,
+который этот клиент до сих пор не воспроизводил: Z.AI поставляет собственный
+<a href="https://docs.z.ai/devpack/mcp/vision-mcp-server" rel="nofollow noreferrer noopener" target="_blank">Vision MCP Server</a>
+(<code>@z_ai/mcp-server</code>) — OCR скриншотов, диагностика скриншотов с ошибками,
+понимание диаграмм/графиков, а также общий анализ изображений/видео через
+GLM-4.6V, запускаемый по требованию через <code>npx</code>. <code>coding mcp</code> регистрирует его
+в любом используемом вами инструменте:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding mcp add claude-code     <span class="c1"># использует сохранённый API-ключ</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp add crush --key OTHER_KEY
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp status              <span class="c1"># в каких инструментах он настроен</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp remove claude-code
+</span></span></code></pre><p><strong>Требуется Node.js.</strong> Сам сервер запускается через <code>npx -y @z_ai/mcp-server</code> —
+собственная документация Z.AI сейчас рекомендует Node.js 22+, хотя npm-пакет
+объявляет требование только 18+. <code>coding mcp add</code>/<code>doctor</code> выдают
+предупреждение (но не блокируют работу), если <code>npx</code> не найден в <code>PATH</code>,
+поскольку конфиг валиден с того момента, как появляется Node.js.</p>
+<p><strong>Файл конфига MCP часто не совпадает с файлом учётных данных GLM.</strong> В двух из
+пяти инструментов MCP-серверы хранятся в отдельном файле от настроек
+провайдера/API:</p>
+<table>
+<thead>
+<tr>
+<th>Инструмент</th>
+<th>Конфиг учётных данных</th>
+<th>Конфиг MCP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Claude Code</td>
+<td><code>~/.claude/settings.json</code></td>
+<td><code>~/.claude.json</code></td>
+</tr>
+<tr>
+<td>OpenCode</td>
+<td><code>opencode.json</code></td>
+<td>тот же файл, ключ <code>mcp</code></td>
+</tr>
+<tr>
+<td>Crush</td>
+<td><code>crush.json</code></td>
+<td>тот же файл, ключ <code>mcp</code></td>
+</tr>
+<tr>
+<td>Factory Droid</td>
+<td><code>~/.factory/settings.json</code></td>
+<td><code>~/.factory/mcp.json</code></td>
+</tr>
+<tr>
+<td>Cursor</td>
+<td>Зависящий от ОС <code>settings.json</code></td>
+<td>соседний <code>mcp.json</code> в той же директории</td>
+</tr>
+</tbody>
+</table>
+<p>Cursor не указан явно как поддерживаемый клиент Vision MCP в собственной
+документации Z.AI — здесь используется общая форма MCP, которую Cursor
+документирует для любого сервера; это должно работать, но не подтверждено
+Z.AI для конкретно этого сервера.</p>
+<h2 id="doctor">Doctor</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding doctor
+</span></span></code></pre><p>Проверяет: сохранены ли учётные данные, выглядят ли они корректно, какие из
+поддерживаемых инструментов установлены в <code>PATH</code> и какие из них уже имеют
+конфигурацию Z.AI (включая Vision MCP server, если он зарегистрирован). Хороший
+первый шаг, когда что-то не работает.</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API<br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      <a href="https://github.com/SamyRai/go-z-ai/blob/main/LICENSE">Apache 2.0</a> ·
+      Собрано из коммита 2c4beb8
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Журнал изменений</a> ·
+      <a href="/CONTRIBUTING.html">Участие в проекте</a> ·
+      <a href="/SECURITY.html">Безопасность</a> ·
+      <a href="/sitemap.xml">Карта сайта</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Перейти в светлую тему" : "Перейти в тёмную тему");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Перейти в тёмную тему" : "Перейти в светлую тему");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

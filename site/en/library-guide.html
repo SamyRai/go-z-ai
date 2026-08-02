@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Library guide · go-z-ai</title>
+  <meta name="description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <link rel="canonical" href="/en/library-guide.html">
+  <link rel="alternate" hreflang="en" href="/en/library-guide.html">
+  <link rel="alternate" hreflang="ru" href="/ru/library-guide.html">
+  <link rel="alternate" hreflang="zh" href="/zh/library-guide.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/library-guide.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Library guide · go-z-ai">
+  <meta property="og:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/en/library-guide.html">
+  <meta property="og:locale" content="en">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Library guide · go-z-ai">
+  <meta name="twitter:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/en/library-guide.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Library guide","inLanguage":"en","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Library guide","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/en/library-guide.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/en/library-guide.html","name":"Library guide","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/en/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">Z</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/en/" >Home</a>
+      <a href="/en/getting-started.html" aria-current="page">Docs</a>
+      <a href="/en/cli-reference.html">CLI</a>
+      <a href="/en/library-guide.html">Library</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Changelog</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>English</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/library-guide.html" aria-current="true">English</a>
+    <a role="menuitem" href="/ru/library-guide.html" >Русский</a>
+    <a role="menuitem" href="/zh/library-guide.html" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="library-guide">Library Guide</h1>
+<p><code>pkg/client</code> is a standalone Go library — everything the CLI does, it does by
+calling this package. You can depend on it directly without the CLI at all.</p>
+<h2 id="contents">Contents</h2>
+<ul>
+<li><a href="#creating-a-client" rel="nofollow noreferrer">Creating a client</a></li>
+<li><a href="#services" rel="nofollow noreferrer">Services</a></li>
+<li><a href="#chat-completions" rel="nofollow noreferrer">Chat completions</a></li>
+<li><a href="#anthropic-compatible-messages-api" rel="nofollow noreferrer">Anthropic-compatible Messages API</a></li>
+<li><a href="#error-handling" rel="nofollow noreferrer">Error handling</a></li>
+<li><a href="#multi-account-credential-management" rel="nofollow noreferrer">Multi-account credential management</a></li>
+<li><a href="#testing-your-own-code-against-this-client" rel="nofollow noreferrer">Testing your own code against this client</a></li>
+<li><a href="#architecture-notes" rel="nofollow noreferrer">Architecture notes</a></li>
+</ul>
+<pre class="chroma"><code><span class="line"><span class="cl">go get github.com/SamyRai/go-z-ai
+</span></span></code></pre><pre class="chroma"><code><span class="line"><span class="cl"><span class="kn">import</span> <span class="s">&#34;github.com/SamyRai/go-z-ai/pkg/client&#34;</span>
+</span></span></code></pre><h2 id="creating-a-client">Creating a client</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">c</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">NewClient</span><span class="p">(</span><span class="nx">client</span><span class="p">.</span><span class="nx">Config</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">APIKey</span><span class="p">:</span> <span class="nx">os</span><span class="p">.</span><span class="nf">Getenv</span><span class="p">(</span><span class="s">&#34;ZAI_API_KEY&#34;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl"><span class="p">})</span>
+</span></span></code></pre><p>Or, if you just want the env-var default with no other config:</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">c</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">NewClientFromEnv</span><span class="p">()</span> <span class="c1">// reads ZAI_API_KEY, ZAI_API_BASE_URL
+</span></span></span></code></pre><p><code>Config</code> fields:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>APIKey</code></td>
+<td>—</td>
+<td>Required</td>
+</tr>
+<tr>
+<td><code>BaseURL</code></td>
+<td><code>https://api.z.ai/api/paas/v4</code></td>
+<td>Override for the coding-plan endpoint, etc.</td>
+</tr>
+<tr>
+<td><code>HTTPClient</code></td>
+<td>an internally configured <code>*http.Client</code></td>
+<td>Bring your own transport if you need custom TLS/proxy behavior</td>
+</tr>
+<tr>
+<td><code>Timeout</code></td>
+<td>30s</td>
+<td>Bounds dial/TLS/response-header wait — <strong>not</strong> the whole response body read, so it never truncates a live SSE stream</td>
+</tr>
+<tr>
+<td><code>MaxRetries</code></td>
+<td>3</td>
+<td>Retries on 429/5xx/network errors. <code>-1</code> disables retries entirely</td>
+</tr>
+<tr>
+<td><code>RetryDelay</code></td>
+<td>200ms</td>
+<td>Base exponential-backoff delay</td>
+</tr>
+<tr>
+<td><code>ChinaAPIKey</code></td>
+<td>falls back to <code>APIKey</code></td>
+<td>Only needed if you hold a separate bigmodel.cn-only credential — see <a href="accounts-and-quota.html#regional-gateways-apiza--openbigmodelcn" rel="nofollow noreferrer">Accounts &amp; Quota</a></td>
+</tr>
+<tr>
+<td><code>Region</code></td>
+<td><code>RegionGlobal</code></td>
+<td>Selects the host for monitor/biz/agents/detection: <code>RegionGlobal</code> (api.z.ai) or <code>RegionChina</code> (open.bigmodel.cn). Does not override <code>BaseURL</code> (chat surface) or the Embeddings/Moderations host. See <a href="accounts-and-quota.html#regional-gateways-apiza--openbigmodelcn" rel="nofollow noreferrer">Accounts &amp; Quota</a>.</td>
+</tr>
+</tbody>
+</table>
+<p>Every service method takes <code>context.Context</code> as its first argument and
+propagates it all the way to the HTTP call — cancel it to abort a request or
+a pending retry backoff.</p>
+<h2 id="services">Services</h2>
+<p><code>Client</code> exposes one method per service, all following the same
+<code>c.&lt;Service&gt;().&lt;Method&gt;(ctx, ...)</code> shape:</p>
+<table>
+<thead>
+<tr>
+<th>Accessor</th>
+<th>Covers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>c.Chat()</code></td>
+<td>Completions — <code>Create</code>, <code>CreateAsync</code>, <code>CreateStream</code>, <code>CreateSimple</code>, <code>RunWithTools</code></td>
+</tr>
+<tr>
+<td><code>c.Models()</code></td>
+<td><code>List</code>, <code>Get</code>, <code>GetTextModels</code>, <code>GetVisionModels</code>, <code>GetFreeModels</code>, <code>RefreshCache</code></td>
+</tr>
+<tr>
+<td><code>c.Images()</code></td>
+<td><code>Generate</code>, <code>GenerateAsync</code></td>
+</tr>
+<tr>
+<td><code>c.Videos()</code></td>
+<td><code>Generate</code> (always async)</td>
+</tr>
+<tr>
+<td><code>c.Audio()</code></td>
+<td><code>Transcribe</code>, <code>Speech</code></td>
+</tr>
+<tr>
+<td><code>c.Voice()</code></td>
+<td><code>Clone</code>, <code>Delete</code>, <code>List</code> — GLM-TTS voice cloning</td>
+</tr>
+<tr>
+<td><code>c.Layout()</code></td>
+<td><code>Parse</code>, <code>HandwritingOCR</code></td>
+</tr>
+<tr>
+<td><code>c.FileParser()</code></td>
+<td><code>Create</code>, <code>Sync</code>, <code>Result</code> — document-to-text for RAG</td>
+</tr>
+<tr>
+<td><code>c.Files()</code></td>
+<td><code>Upload</code>, <code>List</code>, <code>Delete</code>, <code>Content</code></td>
+</tr>
+<tr>
+<td><code>c.Batch()</code></td>
+<td><code>Create</code>, <code>Retrieve</code>, <code>List</code>, <code>Cancel</code></td>
+</tr>
+<tr>
+<td><code>c.Agents()</code></td>
+<td><code>Invoke</code>, <code>AsyncResult</code></td>
+</tr>
+<tr>
+<td><code>c.Anthropic()</code></td>
+<td><code>Create</code>, <code>CreateStream</code> — Anthropic-protocol <code>/v1/messages</code> surface</td>
+</tr>
+<tr>
+<td><code>c.Embeddings()</code></td>
+<td><code>Create</code> (routes to <code>open.bigmodel.cn</code>)</td>
+</tr>
+<tr>
+<td><code>c.Moderations()</code></td>
+<td><code>Create</code> (routes to <code>open.bigmodel.cn</code>)</td>
+</tr>
+<tr>
+<td><code>c.Rerank()</code></td>
+<td><code>Create</code></td>
+</tr>
+<tr>
+<td><code>c.Tools()</code></td>
+<td><code>WebSearch</code>, <code>WebReader</code>, <code>Tokenize</code></td>
+</tr>
+<tr>
+<td><code>c.Usage()</code>, <code>c.Quota()</code>, <code>c.Detection()</code>, <code>c.Account()</code></td>
+<td>GLM Coding Plan usage/quota/account monitoring</td>
+</tr>
+<tr>
+<td><code>c.GetAsyncResult(ctx, id)</code>, <code>c.WaitForResult(ctx, id, interval)</code></td>
+<td>Shared polling for async image/video/chat tasks</td>
+</tr>
+</tbody>
+</table>
+<p>Every request-validation check (required fields, etc.) happens client-side
+before a request is sent — you get a local <code>error</code> immediately rather than a
+round trip for something like a missing <code>model</code>.</p>
+<h2 id="chat-completions">Chat completions</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Chat</span><span class="p">().</span><span class="nf">Create</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">client</span><span class="p">.</span><span class="nx">ChatRequest</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Model</span><span class="p">:</span> <span class="s">&#34;glm-5.2&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Messages</span><span class="p">:</span> <span class="p">[]</span><span class="nx">client</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="nx">Role</span><span class="p">:</span> <span class="s">&#34;system&#34;</span><span class="p">,</span> <span class="nx">Content</span><span class="p">:</span> <span class="s">&#34;You are a helpful assistant.&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="nx">Role</span><span class="p">:</span> <span class="s">&#34;user&#34;</span><span class="p">,</span> <span class="nx">Content</span><span class="p">:</span> <span class="s">&#34;Explain goroutines in one paragraph&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Temperature</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="p">})</span>
+</span></span><span class="line"><span class="cl"><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nx">Choices</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Message</span><span class="p">.</span><span class="nx">Content</span><span class="p">)</span>
+</span></span></code></pre><h3 id="streaming">Streaming</h3>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Chat</span><span class="p">().</span><span class="nf">CreateStream</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">req</span><span class="p">,</span> <span class="kd">func</span><span class="p">(</span><span class="nx">chunk</span> <span class="nx">client</span><span class="p">.</span><span class="nx">StreamChunk</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">chunk</span><span class="p">.</span><span class="nx">Choices</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Print</span><span class="p">(</span><span class="nx">chunk</span><span class="p">.</span><span class="nx">Choices</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Delta</span><span class="p">.</span><span class="nx">Content</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="kc">nil</span> <span class="c1">// a non-nil return aborts the stream
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">})</span>
+</span></span></code></pre><p>Set <code>req.StreamToolCall = true</code> (GLM-4.6+) to stream tool-call deltas
+incrementally in <code>chunk.Choices[0].Delta.ToolCalls</code> across multiple events,
+rather than receiving them as a single batch at the end of the turn. Useful
+for surfacing “the model is calling a tool…” progress to a UI. NOT VERIFIED
+LIVE — see <a href="roadmap.html" rel="nofollow noreferrer">Roadmap</a>.</p>
+<h3 id="async">Async</h3>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">task</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Chat</span><span class="p">().</span><span class="nf">CreateAsync</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">req</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">WaitForResult</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">task</span><span class="p">.</span><span class="nx">ID</span><span class="p">,</span> <span class="mi">3</span><span class="o">*</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span>
+</span></span></code></pre><h3 id="vision-images-in-a-message">Vision (images in a message)</h3>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">req</span><span class="p">.</span><span class="nx">Messages</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">Messages</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="nx">Images</span> <span class="p">=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;https://example.com/photo.jpg&#34;</span><span class="p">,</span> <span class="c1">// or a data: URI
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="nx">req</span><span class="p">.</span><span class="nx">Model</span> <span class="p">=</span> <span class="s">&#34;glm-4.6v&#34;</span>
+</span></span></code></pre><h3 id="structured-output">Structured output</h3>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">req</span><span class="p">.</span><span class="nx">ResponseFormat</span> <span class="p">=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">NewJSONSchemaFormat</span><span class="p">(</span><span class="s">&#34;my_schema&#34;</span><span class="p">,</span> <span class="nx">rawJSONSchema</span><span class="p">,</span> <span class="kc">true</span> <span class="cm">/* strict */</span><span class="p">)</span>
+</span></span></code></pre><h3 id="function-calling">Function calling</h3>
+<p>For manual control, inspect <code>resp.Choices[0].Message.ToolCalls</code> yourself and
+append <code>role: &#34;tool&#34;</code> messages before calling <code>Create</code> again. For the common
+case, <code>RunWithTools</code> drives that loop for you:</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Chat</span><span class="p">().</span><span class="nf">RunWithTools</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">req</span><span class="p">,</span> <span class="kd">func</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">arguments</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="kt">string</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">switch</span> <span class="nx">name</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="s">&#34;get_weather&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="s">`{&#34;temp_c&#34;: 18}`</span><span class="p">,</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">    <span class="k">default</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;unknown tool %q&#34;</span><span class="p">,</span> <span class="nx">name</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">})</span>
+</span></span></code></pre><p>It executes each tool call, appends the assistant + tool messages, and
+repeats until the model returns a non-tool finish reason or
+<code>ToolMaxRounds</code> (8) is exceeded — use <code>RunWithToolsLimit</code> to set a different
+cap. A tool executor error is reported back to the model as the tool’s
+result (<code>&#34;error: ...&#34;</code>), not returned to your caller, so the model can
+recover instead of the whole exchange failing.</p>
+<h4 id="tool-types">Tool types</h4>
+<p>A <code>Tool</code> carries one of three payloads, selected by its <code>Type</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Constructor</th>
+<th><code>Type</code></th>
+<th>Payload</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NewFunctionTool(name, desc, params)</code></td>
+<td><code>ToolTypeFunction</code> (<code>&#34;function&#34;</code>)</td>
+<td><code>FunctionDef</code> — a callable the model invokes by name</td>
+</tr>
+<tr>
+<td><code>NewRetrievalTool(knowledgeID, prompt)</code></td>
+<td><code>ToolTypeRetrieval</code> (<code>&#34;retrieval&#34;</code>)</td>
+<td><code>Retrieval</code> — a knowledge base to ground the answer</td>
+</tr>
+<tr>
+<td><code>NewWebSearchTool(queries...)</code></td>
+<td><code>ToolTypeWebSearch</code> (<code>&#34;web_search&#34;</code>)</td>
+<td><code>WebSearch</code> — a <code>search_query</code> list</td>
+</tr>
+</tbody>
+</table>
+<p><code>retrieval</code> and <code>web_search</code> are documented on docs.z.ai but <strong>NOT VERIFIED
+LIVE</strong> here — only <code>function</code> is confirmed against the live API. The
+<code>web_search</code> payload shape (<code>{&#34;search_query&#34;:[...]}</code>) follows the official
+Python SDK example; see <a href="roadmap.html" rel="nofollow noreferrer">Roadmap</a>.</p>
+<p><code>validateChatRequest</code> enforces three documented rules client-side, so you get
+a clear local error instead of the server’s opaque one:</p>
+<ul>
+<li><strong>Tool-name pattern</strong> — <code>tools[].function.name</code> must match
+<code>^[A-Za-z0-9_-]{1,64}$</code>.</li>
+<li><strong>Function cap</strong> — at most <code>ToolMaxFunctions</code> (128) function tools per
+request.</li>
+<li><strong>Per-type payload</strong> — a <code>function</code>/<code>retrieval</code>/<code>web_search</code> tool must
+carry its matching payload; unknown types are rejected.</li>
+</ul>
+<h4 id="response-fields-worth-checking">Response fields worth checking</h4>
+<p>Beyond <code>resp.Choices[0].Message.Content</code>:</p>
+<ul>
+<li><code>resp.Choices[0].FinishReason</code> — compare against the <code>FinishReason*</code>
+constants (<code>FinishReasonStop</code>, <code>FinishReasonToolCalls</code>, <code>FinishReasonLength</code>,
+<code>FinishReasonSensitive</code>, <code>FinishReasonModelContextWindowExceeded</code>,
+<code>FinishReasonNetworkError</code>). The last three are documented live values that
+signal non-content terminations.</li>
+<li><code>resp.WebSearch</code> — the top-level <code>web_search</code> array the response carries
+when a <code>web_search</code> tool fired (each entry’s <code>Link</code>/<code>Title</code>/<code>Content</code> are
+the sources the answer grounded in). NOT VERIFIED LIVE.</li>
+</ul>
+<h4 id="tool-schema-compatibility">Tool-schema compatibility</h4>
+<p>GLM’s chat endpoint uses a strict JSON-Schema parser for tool <code>parameters</code>:
+a schema containing <code>anyOf</code>, <code>oneOf</code>, <code>allOf</code>, or a <code>$ref</code>/<code>$defs</code> reference
+makes it return <strong>HTTP 500</strong> rather than a usable error. Those constructs are
+exactly what typed languages emit — a nullable field becomes
+<code>anyOf: [{…}, {&#34;type&#34;:&#34;null&#34;}]</code>, a reused struct becomes a <code>$ref</code>.</p>
+<p>By default the client rewrites tool schemas into the flat subset GLM accepts
+before every chat request (nullable unions collapse to the underlying type,
+<code>allOf</code> merges, <code>$ref</code> inlines), keeping as much type/description information
+as possible. It’s a no-op for schemas already in the supported subset and
+never mutates your <code>req.Tools</code>.</p>
+<ul>
+<li>To normalize a schema yourself (e.g. you build requests elsewhere):
+<code>client.SanitizeToolSchemas(tools)</code>.</li>
+<li>To send schemas through untouched (debugging, or a future endpoint that
+supports the full draft): set <code>Config.DisableToolSchemaCompat = true</code>.</li>
+</ul>
+<h3 id="anthropic-compatible-messages-api">Anthropic-compatible Messages API</h3>
+<p>Z.AI also exposes an Anthropic-protocol surface at <code>/api/anthropic</code> — the same
+endpoint the GLM Coding Plan points Claude Code at. <code>c.Anthropic()</code> is a typed
+client for its <code>POST /v1/messages</code>, parallel to <code>c.Chat()</code> for the OpenAI-style
+surface. It authenticates with your z.ai key as a Bearer token (not Anthropic’s
+<code>x-api-key</code>) and sends an <code>anthropic-version</code> header automatically.</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Anthropic</span><span class="p">().</span><span class="nf">Create</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">client</span><span class="p">.</span><span class="nx">AnthropicMessageRequest</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Model</span><span class="p">:</span>     <span class="s">&#34;glm-4.6&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">MaxTokens</span><span class="p">:</span> <span class="mi">1024</span><span class="p">,</span> <span class="c1">// required by the Messages API
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">System</span><span class="p">:</span>    <span class="s">&#34;You are concise.&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Messages</span><span class="p">:</span> <span class="p">[]</span><span class="nx">client</span><span class="p">.</span><span class="nx">AnthropicMessage</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">client</span><span class="p">.</span><span class="nf">AnthropicTextMessage</span><span class="p">(</span><span class="s">&#34;user&#34;</span><span class="p">,</span> <span class="s">&#34;Explain goroutines in one line&#34;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl"><span class="p">})</span>
+</span></span><span class="line"><span class="cl"><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nf">Text</span><span class="p">())</span> <span class="c1">// concatenated text blocks
+</span></span></span></code></pre><p>Streaming delivers Anthropic’s raw SSE events (<code>message_start</code>,
+<code>content_block_delta</code>, …) with the event name and JSON payload, which you
+unmarshal per event type:</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Anthropic</span><span class="p">().</span><span class="nf">CreateStream</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">req</span><span class="p">,</span> <span class="kd">func</span><span class="p">(</span><span class="nx">ev</span> <span class="nx">client</span><span class="p">.</span><span class="nx">AnthropicStreamEvent</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">ev</span><span class="p">.</span><span class="nx">Type</span> <span class="o">==</span> <span class="s">&#34;content_block_delta&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// ev.Data is {&#34;delta&#34;:{&#34;type&#34;:&#34;text_delta&#34;,&#34;text&#34;:&#34;…&#34;}, …}
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">})</span>
+</span></span></code></pre><p>Tools declared via <code>AnthropicTool.InputSchema</code> get the same GLM schema
+normalization as chat tools (see above). <code>Config.DisableToolSchemaCompat</code>
+disables it.</p>
+<p>Extended thinking (GLM models are reasoning models) is enabled per request and
+read back with <code>resp.Thinking()</code>:</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">req</span><span class="p">.</span><span class="nx">Thinking</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">client</span><span class="p">.</span><span class="nx">AnthropicThinking</span><span class="p">{</span><span class="nx">Type</span><span class="p">:</span> <span class="s">&#34;enabled&#34;</span><span class="p">,</span> <span class="nx">BudgetTokens</span><span class="p">:</span> <span class="mi">2048</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="nx">resp</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Anthropic</span><span class="p">().</span><span class="nf">Create</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">req</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nf">Thinking</span><span class="p">())</span> <span class="c1">// thinking blocks, or reasoning_content if the
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>                             <span class="c1">// endpoint surfaces reasoning that way instead
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nf">Text</span><span class="p">())</span>     <span class="c1">// the answer, without the reasoning mixed in
+</span></span></span></code></pre><p>The success-path response shape is modeled from Anthropic’s documented Messages
+API and is not yet live-verified here — see <a href="roadmap.html" rel="nofollow noreferrer">Roadmap</a>.</p>
+<h2 id="error-handling">Error handling</h2>
+<p>See <a href="error-handling.html" rel="nofollow noreferrer">Error Handling</a> for the full <code>APIError</code> reference,
+error codes, and the retry behavior you get by default.</p>
+<h2 id="multi-account-credential-management">Multi-account credential management</h2>
+<p>The multi-account credential store and the GLM Coding Plan credential/config
+writers live in <code>internal/accounts</code> and <code>internal/coding</code>. They are internal
+to this module — not part of the importable public API — so they can evolve
+without semver constraints. <code>pkg/client</code> is the only supported public package;
+the <code>accounts</code> and <code>coding</code> CLI commands are the stable way to drive that
+functionality. (These packages lived under <code>pkg/</code> before and were importable;
+see the <a href="/CHANGELOG.html" rel="nofollow noreferrer">CHANGELOG</a> for the move.)</p>
+<h2 id="testing-your-own-code-against-this-client">Testing your own code against this client</h2>
+<p>Every service method is a plain function on an interface-free concrete type,
+so the usual Go approach is to point <code>Config.BaseURL</code> at an <code>httptest.Server</code>
+you control. If you want to replay <em>real</em> recorded Z.AI traffic instead of a
+hand-written stub, see how this repo’s own tests do it with
+<a href="https://github.com/dnaeon/go-vcr" rel="nofollow noreferrer noopener" target="_blank">go-vcr</a> — <code>pkg/client/*_test.go</code> and
+<code>pkg/client/testdata/cassettes/</code> — and read
+<a href="/CONTRIBUTING.html" rel="nofollow noreferrer">Contributing § the live-verification convention</a> for why.</p>
+<h2 id="architecture-notes">Architecture notes</h2>
+<p>For how the services are structured internally (the <code>doRequest</code> facade,
+retry/backoff design, why some services authenticate against a different base
+URL) see <a href="architecture.html" rel="nofollow noreferrer">Architecture</a>.</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API<br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      <a href="https://github.com/SamyRai/go-z-ai/blob/main/LICENSE">Apache 2.0</a> ·
+      Built from commit 2c4beb8
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Changelog</a> ·
+      <a href="/CONTRIBUTING.html">Contributing</a> ·
+      <a href="/SECURITY.html">Security</a> ·
+      <a href="/sitemap.xml">Sitemap</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Switch to light mode" : "Switch to dark mode");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Switch to dark mode" : "Switch to light mode");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

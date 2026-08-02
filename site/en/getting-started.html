@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Getting started · go-z-ai</title>
+  <meta name="description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <link rel="canonical" href="/en/getting-started.html">
+  <link rel="alternate" hreflang="en" href="/en/getting-started.html">
+  <link rel="alternate" hreflang="ru" href="/ru/getting-started.html">
+  <link rel="alternate" hreflang="zh" href="/zh/getting-started.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/getting-started.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Getting started · go-z-ai">
+  <meta property="og:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/en/getting-started.html">
+  <meta property="og:locale" content="en">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Getting started · go-z-ai">
+  <meta name="twitter:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/en/getting-started.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Getting started","inLanguage":"en","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Getting started","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/en/getting-started.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/en/getting-started.html","name":"Getting started","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/en/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">Z</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/en/" >Home</a>
+      <a href="/en/getting-started.html" aria-current="page">Docs</a>
+      <a href="/en/cli-reference.html">CLI</a>
+      <a href="/en/library-guide.html">Library</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Changelog</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>English</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/getting-started.html" aria-current="true">English</a>
+    <a role="menuitem" href="/ru/getting-started.html" >Русский</a>
+    <a role="menuitem" href="/zh/getting-started.html" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="getting-started">Getting Started</h1>
+<p>This gets you from zero to your first <code>go-z-ai</code> command in a couple of minutes.</p>
+<h2 id="1-install">1. Install</h2>
+<p><strong>Prerequisites:</strong> Go 1.26.4+, a Z.AI API key (<a href="https://z.ai/manage-apikey/apikey-list" rel="nofollow noreferrer noopener" target="_blank">create one here</a>).</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go install github.com/SamyRai/go-z-ai@latest
+</span></span></code></pre><p>The binary installs as <code>go-z-ai</code>. Optional short alias:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">ln -s <span class="s2">&#34;</span><span class="k">$(</span>go env GOPATH<span class="k">)</span><span class="s2">/bin/go-z-ai&#34;</span> <span class="s2">&#34;</span><span class="k">$(</span>go env GOPATH<span class="k">)</span><span class="s2">/bin/zai&#34;</span>
+</span></span></code></pre><p>Or build from source directly:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">git clone https://github.com/SamyRai/go-z-ai.git
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> go-z-ai
+</span></span><span class="line"><span class="cl">go build -o go-z-ai .
+</span></span></code></pre><p>Whichever path you took, confirm <code>go-z-ai</code> resolves and is on your <code>PATH</code>:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai --version
+</span></span></code></pre><p>The rest of this guide assumes the binary is called <code>go-z-ai</code>.</p>
+<h2 id="2-authenticate">2. Authenticate</h2>
+<p>Pick whichever fits how you work. They resolve in this priority order (highest wins):</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>When to use it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--api-key</code> flag</td>
+<td>One-off calls, scripts, CI</td>
+</tr>
+<tr>
+<td><code>--account &lt;name&gt;</code> flag</td>
+<td>You’ve registered multiple accounts (see <a href="accounts-and-quota.html" rel="nofollow noreferrer">Accounts &amp; Quota</a>)</td>
+</tr>
+<tr>
+<td><code>ZAI_API_KEY</code> env var (or <code>.env</code> file)</td>
+<td>Everyday local shell use — the common case</td>
+</tr>
+<tr>
+<td>Accounts store’s active account</td>
+<td>You’ve run <code>accounts use &lt;name&gt;</code> and want it to apply by default</td>
+</tr>
+</tbody>
+</table>
+<p>For a single key, the fastest path:</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">ZAI_API_KEY</span><span class="o">=</span>your_api_key_here
+</span></span><span class="line"><span class="cl">go-z-ai validate
+</span></span></code></pre><p><code>validate</code> makes one real API call and confirms the key works before you go
+further.</p>
+<p>If your key was issued on Z.AI’s China platform (<code>open.bigmodel.cn</code>), set
+<code>--region china</code> (or <code>ZAI_REGION=china</code>) so quota / usage, account-info,
+agents, and account-type detection route to the right host — without it those
+calls hit <code>api.z.ai</code> and a China-issued key can fail auth. See
+<a href="accounts-and-quota.html#regional-gateways-apiza--openbigmodelcn" rel="nofollow noreferrer">Accounts &amp; Quota § Regional gateways</a>
+for the full picture; most chat / embeddings / moderations usage needs
+nothing extra (a regular <code>ZAI_API_KEY</code> authenticates on both platforms).</p>
+<h2 id="3-your-first-commands">3. Your first commands</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="c1"># See what models you have access to</span>
+</span></span><span class="line"><span class="cl">go-z-ai models list
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Send a chat completion</span>
+</span></span><span class="line"><span class="cl">go-z-ai chat create <span class="s2">&#34;Explain goroutines in one paragraph&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Stream the response token-by-token</span>
+</span></span><span class="line"><span class="cl">go-z-ai chat create <span class="s2">&#34;Write a haiku about Go&#34;</span> --stream
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Check your quota (GLM Coding Plan accounts)</span>
+</span></span><span class="line"><span class="cl">go-z-ai usage quota
+</span></span></code></pre><p>From here:</p>
+<ul>
+<li><strong>Full command reference:</strong> <a href="cli-reference.html" rel="nofollow noreferrer">CLI Reference</a></li>
+<li><strong>Multiple accounts / quota monitoring:</strong> <a href="accounts-and-quota.html" rel="nofollow noreferrer">Accounts &amp; Quota</a></li>
+<li><strong>Wire up Claude Code / OpenCode / Crush / Factory Droid / Cursor to your GLM Coding Plan:</strong> <a href="coding-tools.html" rel="nofollow noreferrer">Coding Tools</a></li>
+<li><strong>Using this as a Go library instead of a CLI:</strong> <a href="library-guide.html" rel="nofollow noreferrer">Library Guide</a></li>
+<li><strong>Full-screen terminal UI</strong> (chat, models, usage, accounts, coding, media, tools tabs in one place): <code>go-z-ai tui</code></li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p><strong>“API key is required”</strong> — none of the four methods above resolved a key.
+Double check <code>echo $ZAI_API_KEY</code>, or pass <code>--api-key</code> explicitly to confirm.</p>
+<p><strong>“invalid API key” / HTTP 401</strong> — the key was found but Z.AI rejected it.
+Regenerate it at <a href="https://z.ai/manage-apikey/apikey-list" rel="nofollow noreferrer noopener" target="_blank">z.ai/manage-apikey</a>.</p>
+<p><strong>“Unknown Model” (error 1211) on <code>embeddings</code>/<code>moderations</code>/<code>rerank</code>/<code>voice</code></strong> —
+this is almost always an account-entitlement gate, not a bug: your account’s
+plan doesn’t include that model in its catalog. Run <code>go-z-ai models list</code>
+to see what’s actually available to your key. See
+<a href="accounts-and-quota.html" rel="nofollow noreferrer">Accounts &amp; Quota</a> for the full explanation.</p>
+<p><strong>Something else</strong> — <a href="https://github.com/SamyRai/go-z-ai/issues" rel="nofollow noreferrer noopener" target="_blank">open an issue</a>
+with the exact command and error output (redact your key).</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API<br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      <a href="https://github.com/SamyRai/go-z-ai/blob/main/LICENSE">Apache 2.0</a> ·
+      Built from commit 2c4beb8
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Changelog</a> ·
+      <a href="/CONTRIBUTING.html">Contributing</a> ·
+      <a href="/SECURITY.html">Security</a> ·
+      <a href="/sitemap.xml">Sitemap</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Switch to light mode" : "Switch to dark mode");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Switch to dark mode" : "Switch to light mode");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

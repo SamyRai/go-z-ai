@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>go-z-ai</title>
+  <meta name="description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <link rel="canonical" href="/tr/">
+  <link rel="alternate" hreflang="en" href="/en/">
+  <link rel="alternate" hreflang="ru" href="/ru/">
+  <link rel="alternate" hreflang="zh" href="/zh/">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="go-z-ai">
+  <meta property="og:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/tr/">
+  <meta property="og:locale" content="tr">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="go-z-ai">
+  <meta name="twitter:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/#website","@type":"WebSite","description":"A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API","inLanguage":"tr","name":"go-z-ai","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/"},{"@id":"https://SamyRai.github.io/go-z-ai/#software","@type":["SoftwareApplication","SoftwareSourceCode"],"applicationCategory":"DeveloperApplication","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"codeRepository":"https://github.com/SamyRai/go-z-ai","description":"A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API","license":"https://www.apache.org/licenses/LICENSE-2.0","name":"go-z-ai","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"operatingSystem":"Linux, macOS, Windows","programmingLanguage":"Go","url":"https://SamyRai.github.io/go-z-ai/"},{"@id":"https://SamyRai.github.io/go-z-ai/#org","@type":"Organization","name":"SamyRai","url":"https://github.com/SamyRai/go-z-ai"}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">İçeriğe atla</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/en/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">Z</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/en/" aria-current="page">Ana sayfa</a>
+      <a href="/en/getting-started.html" >Belgeler</a>
+      <a href="/en/cli-reference.html">CLI</a>
+      <a href="/en/library-guide.html">Kitaplık</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Değişiklik Günlüğü</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Türkçe</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/" >English</a>
+    <a role="menuitem" href="/ru/" >Русский</a>
+    <a role="menuitem" href="/zh/" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" aria-current="true">Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Temayı değiştir" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<section class="hero">
+  <h1>go-z-ai</h1>
+  <p class="lead">A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API</p>
+  <div class="ctas">
+    <a class="btn btn-primary" href="/en/getting-started.html">Başlarken <span aria-hidden="true">→</span></a>
+    <a class="btn btn-secondary" href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub&#39;da kaynak</a>
+    <a class="btn btn-secondary" href="/en/cli-reference.html">CLI Referansı</a>
+  </div>
+</section>
+<div class="statbar" role="group" aria-label="Bir bakışta">
+  <div class="statbar-inner">
+    <div class="statbar-item is-status s-ok">
+      <span class="statbar-num"><i class="statbar-dot" aria-hidden="true"></i>passing</span><span class="statbar-lbl">CI</span>
+    </div>
+    <div class="statbar-item is-status s-warn">
+      <span class="statbar-num"><i class="statbar-dot" aria-hidden="true"></i>5<em>/10</em></span><span class="statbar-lbl">Scorecard</span>
+    </div>
+    <div class="statbar-item is-status s-info">
+      <span class="statbar-num"><i class="statbar-dot" aria-hidden="true"></i>Apache-2.0</span><span class="statbar-lbl">License</span>
+    </div>
+    <div class="statbar-item"><span class="statbar-num">v0.1.0</span><span class="statbar-lbl">Son sürüm</span></div>
+    <div class="statbar-item"><span class="statbar-num">1</span><span class="statbar-lbl">GitHub yıldızları</span></div>
+    <div class="statbar-item"><span class="statbar-num">2</span><span class="statbar-lbl">Katkıda bulunanlar</span></div>
+    <div class="statbar-item"><span class="statbar-num">72</span><span class="statbar-lbl">Commit / 30 gün</span></div>
+    <div class="statbar-item"><span class="statbar-num">0</span><span class="statbar-lbl">Açık issue&#39;lar</span></div>
+  </div>
+</div>
+
+<section class="block">
+  <h2>Kurulum</h2>
+  <pre class="chroma"><code><span class="c1"># Install</span>
+go install github.com/SamyRai/go-z-ai@latest
+
+<span class="c1"># Optional short alias: ln -s &#34;$(go env GOPATH)/bin/go-z-ai&#34; &#34;$(go env GOPATH)/bin/zai&#34;</span>
+
+<span class="c1"># Configure</span>
+<span class="nb">export</span> <span class="nv">ZAI_API_KEY</span><span class="o">=</span>your_api_key_here
+
+<span class="c1"># Use it</span>
+go-z-ai chat create <span class="s2">&#34;Explain goroutines&#34;</span> --stream
+</code></pre>
+  <p>Veya bir Go kitaplığı olarak kullanın — bkz. <a href="/en/library-guide.html">Kitaplık Kılavuzu</a>.</p>
+</section>
+
+<section class="block">
+  <h2>Hızlı örnek</h2>
+  <pre class="chroma"><code><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&#34;context&#34;</span>
+    <span class="s">&#34;fmt&#34;</span>
+    <span class="s">&#34;github.com/SamyRai/go-z-ai/pkg/client&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">c</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">NewClientFromEnv</span><span class="p">()</span>
+    <span class="nx">resp</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Chat</span><span class="p">().</span><span class="nf">Create</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">(),</span> <span class="nx">client</span><span class="p">.</span><span class="nx">ChatRequest</span><span class="p">{</span>
+        <span class="nx">Model</span><span class="p">:</span>    <span class="s">&#34;glm-5.2&#34;</span><span class="p">,</span>
+        <span class="nx">Messages</span><span class="p">:</span> <span class="p">[]</span><span class="nx">client</span><span class="p">.</span><span class="nx">Message</span><span class="p">{{</span><span class="nx">Role</span><span class="p">:</span> <span class="s">&#34;user&#34;</span><span class="p">,</span> <span class="nx">Content</span><span class="p">:</span> <span class="s">&#34;Hello&#34;</span><span class="p">}},</span>
+    <span class="p">})</span>
+    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nx">Choices</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Message</span><span class="p">.</span><span class="nx">Content</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+</section>
+
+<section class="block">
+  <h2>Neler kapsıyor</h2>
+  <p>Bu tek ikili (binary), Z.AI&#39;nin her model yüzeyine CLI, kitaplık ve TUI erişimi sağlar:</p>
+  <ul>
+    <li><strong>Chat</strong> — streaming, structured output (JSON Schema), deep thinking, function/tool calling, vision</li>
+    <li><strong>Anthropic-compatible endpoint</strong> — the same surface Claude Code/Cursor hit on a GLM Coding Plan</li>
+    <li><strong>Media</strong> — image, video, audio transcription, TTS, voice cloning</li>
+    <li><strong>Document understanding</strong> — layout OCR, handwriting OCR, document parser for RAG</li>
+    <li><strong>Retrieval</strong> — embeddings, rerank, web search/reader/tokenizer tools</li>
+    <li><strong>Agents, moderations, batch, files</strong></li>
+    <li><strong>GLM Coding Plan</strong> — quota/usage, multi-account, wiring Claude Code/Cursor/…</li>
+    <li><strong>Full-screen TUI</strong> — <code>go-z-ai tui</code></li>
+  </ul>
+  <p class="moreline">Tam yüzey: <a href="/en/cli-reference.html">CLI cli referansı</a> · <a href="/en/library-guide.html">Kitaplık Kılavuzu</a></p>
+</section>
+<section class="block">
+  <h2>Son sürümler</h2>
+  <ul class="timeline">
+    <li>
+      <h3><a href="https://github.com/SamyRai/go-z-ai/releases/tag/v0.1.0" rel="external">v0.1.0</a></h3>
+      <p class="timeline-meta">2026-07-18 · 27 assets</p>
+    </li>
+  </ul>
+  <p class="section-more"><a href="https://github.com/SamyRai/go-z-ai/releases" rel="external">Tüm sürümler <span aria-hidden="true">→</span></a></p>
+</section>
+<section class="block">
+  <h2>Son etkinlik</h2>
+  <ul class="feed">
+    <li class="feed-item">
+      <a class="feed-hash" href="https://github.com/SamyRai/go-z-ai/commit/2c4beb8" rel="external" title="feat(sitegen): merge status badges into the full-width stats banner">2c4beb8</a>
+      <div class="feed-body">
+        <span class="feed-type type-feat">feat</span><span class="feed-scope">sitegen</span>
+        <span class="feed-subj" title="feat(sitegen): merge status badges into the full-width stats banner">merge status badges into the full-width stats banner</span>
+      </div>
+      <div class="feed-meta">
+        <span class="feed-author">Damir Mukimov</span><time class="feed-date" datetime="2026-07-19T07:01:55Z">just now</time>
+      </div>
+    </li>
+    <li class="feed-item">
+      <a class="feed-hash" href="https://github.com/SamyRai/go-z-ai/commit/cf1ab82" rel="external" title="fix(sitegen): uniform vertical spacing across hero and landing sections">cf1ab82</a>
+      <div class="feed-body">
+        <span class="feed-type type-fix">fix</span><span class="feed-scope">sitegen</span>
+        <span class="feed-subj" title="fix(sitegen): uniform vertical spacing across hero and landing sections">uniform vertical spacing across hero and landing sections</span>
+      </div>
+      <div class="feed-meta">
+        <span class="feed-author">Damir Mukimov</span><time class="feed-date" datetime="2026-07-19T06:45:38Z">16m ago</time>
+      </div>
+    </li>
+    <li class="feed-item">
+      <a class="feed-hash" href="https://github.com/SamyRai/go-z-ai/commit/f5a8dfa" rel="external" title="fix(sitegen): make &#34;explore&#34; links consistent and styled">f5a8dfa</a>
+      <div class="feed-body">
+        <span class="feed-type type-fix">fix</span><span class="feed-scope">sitegen</span>
+        <span class="feed-subj" title="fix(sitegen): make &#34;explore&#34; links consistent and styled">make &#34;explore&#34; links consistent and styled</span>
+      </div>
+      <div class="feed-meta">
+        <span class="feed-author">Damir Mukimov</span><time class="feed-date" datetime="2026-07-19T06:36:45Z">25m ago</time>
+      </div>
+    </li>
+    <li class="feed-item">
+      <a class="feed-hash" href="https://github.com/SamyRai/go-z-ai/commit/376a302" rel="external" title="feat(sitegen): redesign landing page — DS consistency, hero stats bar, SEO/GEO">376a302</a>
+      <div class="feed-body">
+        <span class="feed-type type-feat">feat</span><span class="feed-scope">sitegen</span>
+        <span class="feed-subj" title="feat(sitegen): redesign landing page — DS consistency, hero stats bar, SEO/GEO">redesign landing page — DS consistency, hero stats bar, SEO/GEO</span>
+      </div>
+      <div class="feed-meta">
+        <span class="feed-author">Damir Mukimov</span><time class="feed-date" datetime="2026-07-19T06:29:17Z">32m ago</time>
+      </div>
+    </li>
+    <li class="feed-item">
+      <a class="feed-hash" href="https://github.com/SamyRai/go-z-ai/commit/e3c00c4" rel="external" title="fix(ci): auto-enable GitHub Pages in configure-pages step">e3c00c4</a>
+      <div class="feed-body">
+        <span class="feed-type type-fix">fix</span><span class="feed-scope">ci</span>
+        <span class="feed-subj" title="fix(ci): auto-enable GitHub Pages in configure-pages step">auto-enable GitHub Pages in configure-pages step</span>
+      </div>
+      <div class="feed-meta">
+        <span class="feed-author">Damir Mukimov</span><time class="feed-date" datetime="2026-07-19T05:20:32Z">1h ago</time>
+      </div>
+    </li>
+    <li class="feed-item">
+      <a class="feed-hash" href="https://github.com/SamyRai/go-z-ai/commit/c67d8fd" rel="external" title="fix(ci): exclude localhost from lychee link check">c67d8fd</a>
+      <div class="feed-body">
+        <span class="feed-type type-fix">fix</span><span class="feed-scope">ci</span>
+        <span class="feed-subj" title="fix(ci): exclude localhost from lychee link check">exclude localhost from lychee link check</span>
+      </div>
+      <div class="feed-meta">
+        <span class="feed-author">Damir Mukimov</span><time class="feed-date" datetime="2026-07-19T05:15:51Z">1h ago</time>
+      </div>
+    </li>
+    <li class="feed-item">
+      <a class="feed-hash" href="https://github.com/SamyRai/go-z-ai/commit/26b4d36" rel="external" title="fix(ci): correct truncated actions/checkout SHA pin and MD040 lint">26b4d36</a>
+      <div class="feed-body">
+        <span class="feed-type type-fix">fix</span><span class="feed-scope">ci</span>
+        <span class="feed-subj" title="fix(ci): correct truncated actions/checkout SHA pin and MD040 lint">correct truncated actions/checkout SHA pin and MD040 lint</span>
+      </div>
+      <div class="feed-meta">
+        <span class="feed-author">Damir Mukimov</span><time class="feed-date" datetime="2026-07-19T05:12:47Z">1h ago</time>
+      </div>
+    </li>
+    <li class="feed-item">
+      <a class="feed-hash" href="https://github.com/SamyRai/go-z-ai/commit/f3a2956" rel="external" title="test(sitegen): regression coverage for XSS, contributor count, determinism">f3a2956</a>
+      <div class="feed-body">
+        <span class="feed-type type-test">test</span><span class="feed-scope">sitegen</span>
+        <span class="feed-subj" title="test(sitegen): regression coverage for XSS, contributor count, determinism">regression coverage for XSS, contributor count, determinism</span>
+      </div>
+      <div class="feed-meta">
+        <span class="feed-author">Damir Mukimov</span><time class="feed-date" datetime="2026-07-19T04:36:48Z">2h ago</time>
+      </div>
+    </li>
+    <li class="feed-item">
+      <a class="feed-hash" href="https://github.com/SamyRai/go-z-ai/commit/a0d5837" rel="external" title="chore: post-rename consistency (SBOM id, gitignore, gofmt, comments)">a0d5837</a>
+      <div class="feed-body">
+        <span class="feed-type type-chore">chore</span>
+        <span class="feed-subj" title="chore: post-rename consistency (SBOM id, gitignore, gofmt, comments)">post-rename consistency (SBOM id, gitignore, gofmt, comments)</span>
+      </div>
+      <div class="feed-meta">
+        <span class="feed-author">Damir Mukimov</span><time class="feed-date" datetime="2026-07-19T04:36:48Z">2h ago</time>
+      </div>
+    </li>
+    <li class="feed-item">
+      <a class="feed-hash" href="https://github.com/SamyRai/go-z-ai/commit/16be60a" rel="external" title="fix(sitegen): harden markdown XSS surface, fix contributor count, deterministic builds">16be60a</a>
+      <div class="feed-body">
+        <span class="feed-type type-fix">fix</span><span class="feed-scope">sitegen</span>
+        <span class="feed-subj" title="fix(sitegen): harden markdown XSS surface, fix contributor count, deterministic builds">harden markdown XSS surface, fix contributor count, deterministic builds</span>
+      </div>
+      <div class="feed-meta">
+        <span class="feed-author">Damir Mukimov</span><time class="feed-date" datetime="2026-07-19T04:36:25Z">2h ago</time>
+      </div>
+    </li>
+  </ul>
+  <p class="section-more"><a href="https://github.com/SamyRai/go-z-ai/commits/main" rel="external">Tüm commit&#39;ler <span aria-hidden="true">→</span></a></p>
+</section>
+
+<section class="block">
+  <h2>Resmî SDK&#39;lar ile ilişkisi</h2>
+  <p>Z.AI; Python, Node ve Java için resmî SDK&#39;lar yayımlar. Resmî bir Go SDK&#39;sı yoktur — go-z-ai bu boşluğu doldurur ve aynı API yüzeyi üzerine bir CLI, bir TUI, bölgesel ağ geçidi değiştirme ve GLM Coding Plan çoklu hesap yönetimi ekler.</p>
+</section>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API<br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      <a href="https://github.com/SamyRai/go-z-ai/blob/main/LICENSE">Apache 2.0</a> ·
+      2c4beb8 commit&#39;inden oluşturuldu
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Değişiklik Günlüğü</a> ·
+      <a href="/CONTRIBUTING.html">Katkıda Bulunma</a> ·
+      <a href="/SECURITY.html">Güvenlik</a> ·
+      <a href="/sitemap.xml">Site haritası</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Açık moda geç" : "Koyu moda geç");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Koyu moda geç" : "Açık moda geç");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

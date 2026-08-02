@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Library guide · go-z-ai</title>
+  <meta name="description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <link rel="canonical" href="/ru/library-guide.html">
+  <link rel="alternate" hreflang="en" href="/en/library-guide.html">
+  <link rel="alternate" hreflang="ru" href="/ru/library-guide.html">
+  <link rel="alternate" hreflang="zh" href="/zh/library-guide.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/library-guide.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Library guide · go-z-ai">
+  <meta property="og:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/ru/library-guide.html">
+  <meta property="og:locale" content="ru">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Library guide · go-z-ai">
+  <meta name="twitter:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/ru/library-guide.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Library guide","inLanguage":"ru","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Library guide","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/ru/library-guide.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/ru/library-guide.html","name":"Library guide","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержимому</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/ru/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">Z</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/ru/" >Главная</a>
+      <a href="/ru/getting-started.html" aria-current="page">Документация</a>
+      <a href="/ru/cli-reference.html">CLI</a>
+      <a href="/ru/library-guide.html">Библиотека</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Журнал изменений</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Русский</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/library-guide.html" >English</a>
+    <a role="menuitem" href="/ru/library-guide.html" aria-current="true">Русский</a>
+    <a role="menuitem" href="/zh/library-guide.html" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Переключить тему" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="--">Руководство по библиотеке</h1>
+<p><code>pkg/client</code> — это самостоятельная библиотека на Go: всё, что делает CLI,
+достигается за счёт вызовов к этому пакету. Вы можете зависеть от него
+напрямую, вообще без CLI.</p>
+<h2 id="heading">Содержание</h2>
+<ul>
+<li><a href="#%D1%81%D0%BE%D0%B7%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-%D0%BA%D0%BB%D0%B8%D0%B5%D0%BD%D1%82%D0%B0" rel="nofollow noreferrer">Создание клиента</a></li>
+<li><a href="#%D1%81%D0%B5%D1%80%D0%B2%D0%B8%D1%81%D1%8B" rel="nofollow noreferrer">Сервисы</a></li>
+<li><a href="#%D0%B7%D0%B0%D0%B2%D0%B5%D1%80%D1%88%D0%B5%D0%BD%D0%B8%D0%B5-%D1%87%D0%B0%D1%82%D0%B0" rel="nofollow noreferrer">Завершение чата</a></li>
+<li><a href="#anthropic-%D1%81%D0%BE%D0%B2%D0%BC%D0%B5%D1%81%D1%82%D0%B8%D0%BC%D1%8B%D0%B9-messages-api" rel="nofollow noreferrer">Anthropic-совместимый Messages API</a></li>
+<li><a href="#%D0%BE%D0%B1%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%BA%D0%B0-%D0%BE%D1%88%D0%B8%D0%B1%D0%BE%D0%BA" rel="nofollow noreferrer">Обработка ошибок</a></li>
+<li><a href="#%D1%83%D0%BF%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5-%D0%BC%D1%83%D0%BB%D1%8C%D1%82%D0%B8%D0%B0%D0%BA%D0%BA%D0%B0%D1%83%D0%BD%D1%82%D0%BD%D1%8B%D0%BC%D0%B8-%D0%BA%D1%80%D0%B5%D0%B4%D0%B0%D0%BC%D0%B8" rel="nofollow noreferrer">Управление мультиаккаунтными кредами</a></li>
+<li><a href="#%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5-%D0%B2%D0%B0%D1%88%D0%B5%D0%B3%D0%BE-%D0%BA%D0%BE%D0%B4%D0%B0-%D0%BF%D1%80%D0%BE%D1%82%D0%B8%D0%B2-%D1%8D%D1%82%D0%BE%D0%B3%D0%BE-%D0%BA%D0%BB%D0%B8%D0%B5%D0%BD%D1%82%D0%B0" rel="nofollow noreferrer">Тестирование вашего кода против этого клиента</a></li>
+<li><a href="#%D0%B0%D1%80%D1%85%D0%B8%D1%82%D0%B5%D0%BA%D1%82%D1%83%D1%80%D0%BD%D1%8B%D0%B5-%D0%B7%D0%B0%D0%BC%D0%B5%D1%82%D0%BA%D0%B8" rel="nofollow noreferrer">Архитектурные заметки</a></li>
+</ul>
+<pre class="chroma"><code><span class="line"><span class="cl">go get github.com/SamyRai/go-z-ai
+</span></span></code></pre><pre class="chroma"><code><span class="line"><span class="cl"><span class="kn">import</span> <span class="s">&#34;github.com/SamyRai/go-z-ai/pkg/client&#34;</span>
+</span></span></code></pre><h2 id="-">Создание клиента</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">c</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">NewClient</span><span class="p">(</span><span class="nx">client</span><span class="p">.</span><span class="nx">Config</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">APIKey</span><span class="p">:</span> <span class="nx">os</span><span class="p">.</span><span class="nf">Getenv</span><span class="p">(</span><span class="s">&#34;ZAI_API_KEY&#34;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl"><span class="p">})</span>
+</span></span></code></pre><p>Или, если нужен только вариант с переменными окружения по умолчанию и без
+другой конфигурации:</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">c</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">NewClientFromEnv</span><span class="p">()</span> <span class="c1">// reads ZAI_API_KEY, ZAI_API_BASE_URL
+</span></span></span></code></pre><p>Поля <code>Config</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>По умолчанию</th>
+<th>Примечания</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>APIKey</code></td>
+<td>—</td>
+<td>Обязательно</td>
+</tr>
+<tr>
+<td><code>BaseURL</code></td>
+<td><code>https://api.z.ai/api/paas/v4</code></td>
+<td>Переопределите для эндпоинта coding-plan и т. п.</td>
+</tr>
+<tr>
+<td><code>HTTPClient</code></td>
+<td>внутренне настроенный <code>*http.Client</code></td>
+<td>Подключите собственный транспорт, если нужно кастомное поведение TLS/прокси</td>
+</tr>
+<tr>
+<td><code>Timeout</code></td>
+<td>30с</td>
+<td>Ограничивает ожидание dial/TLS/заголовков ответа — <strong>не</strong> чтение всего тела ответа, поэтому никогда не обрезает активный SSE-поток</td>
+</tr>
+<tr>
+<td><code>MaxRetries</code></td>
+<td>3</td>
+<td>Повторные попытки при ошибках 429/5xx/сети. <code>-1</code> полностью отключает повторные попытки</td>
+</tr>
+<tr>
+<td><code>RetryDelay</code></td>
+<td>200мс</td>
+<td>Базовая задержка экспоненциального backoff</td>
+</tr>
+<tr>
+<td><code>ChinaAPIKey</code></td>
+<td>берётся из <code>APIKey</code>, если не задан</td>
+<td>Нужен только при наличии отдельного креда только для bigmodel.cn — см. <a href="accounts-and-quota.html#regional-gateways-apiza--openbigmodelcn" rel="nofollow noreferrer">Аккаунты и квоты</a></td>
+</tr>
+<tr>
+<td><code>Region</code></td>
+<td><code>RegionGlobal</code></td>
+<td>Выбирает хост для monitor/biz/agents/detection: <code>RegionGlobal</code> (api.z.ai) или <code>RegionChina</code> (open.bigmodel.cn). Не переопределяет <code>BaseURL</code> (чатовая поверхность) и хост Embeddings/Moderations. См. <a href="accounts-and-quota.html#regional-gateways-apiza--openbigmodelcn" rel="nofollow noreferrer">Аккаунты и квоты</a>.</td>
+</tr>
+</tbody>
+</table>
+<p>Каждый метод сервиса принимает <code>context.Context</code> первым аргументом и
+прокидывает его вплоть до HTTP-вызова — отмените его, чтобы прервать запрос
+или ожидающий backoff перед повторной попыткой.</p>
+<h2 id="heading-1">Сервисы</h2>
+<p><code>Client</code> предоставляет по одному методу на сервис, все в едином формате
+<code>c.&lt;Service&gt;().&lt;Method&gt;(ctx, ...)</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Аксессор</th>
+<th>Что покрывает</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>c.Chat()</code></td>
+<td>Completions — <code>Create</code>, <code>CreateAsync</code>, <code>CreateStream</code>, <code>CreateSimple</code>, <code>RunWithTools</code></td>
+</tr>
+<tr>
+<td><code>c.Models()</code></td>
+<td><code>List</code>, <code>Get</code>, <code>GetTextModels</code>, <code>GetVisionModels</code>, <code>GetFreeModels</code>, <code>RefreshCache</code></td>
+</tr>
+<tr>
+<td><code>c.Images()</code></td>
+<td><code>Generate</code>, <code>GenerateAsync</code></td>
+</tr>
+<tr>
+<td><code>c.Videos()</code></td>
+<td><code>Generate</code> (всегда асинхронно)</td>
+</tr>
+<tr>
+<td><code>c.Audio()</code></td>
+<td><code>Transcribe</code>, <code>Speech</code></td>
+</tr>
+<tr>
+<td><code>c.Voice()</code></td>
+<td><code>Clone</code>, <code>Delete</code>, <code>List</code> — клонирование голоса GLM-TTS</td>
+</tr>
+<tr>
+<td><code>c.Layout()</code></td>
+<td><code>Parse</code>, <code>HandwritingOCR</code></td>
+</tr>
+<tr>
+<td><code>c.FileParser()</code></td>
+<td><code>Create</code>, <code>Sync</code>, <code>Result</code> — документ в текст для RAG</td>
+</tr>
+<tr>
+<td><code>c.Files()</code></td>
+<td><code>Upload</code>, <code>List</code>, <code>Delete</code>, <code>Content</code></td>
+</tr>
+<tr>
+<td><code>c.Batch()</code></td>
+<td><code>Create</code>, <code>Retrieve</code>, <code>List</code>, <code>Cancel</code></td>
+</tr>
+<tr>
+<td><code>c.Agents()</code></td>
+<td><code>Invoke</code>, <code>AsyncResult</code></td>
+</tr>
+<tr>
+<td><code>c.Anthropic()</code></td>
+<td><code>Create</code>, <code>CreateStream</code> — Anthropic-протокол поверхности <code>/v1/messages</code></td>
+</tr>
+<tr>
+<td><code>c.Embeddings()</code></td>
+<td><code>Create</code> (маршрутизируется на <code>open.bigmodel.cn</code>)</td>
+</tr>
+<tr>
+<td><code>c.Moderations()</code></td>
+<td><code>Create</code> (маршрутизируется на <code>open.bigmodel.cn</code>)</td>
+</tr>
+<tr>
+<td><code>c.Rerank()</code></td>
+<td><code>Create</code></td>
+</tr>
+<tr>
+<td><code>c.Tools()</code></td>
+<td><code>WebSearch</code>, <code>WebReader</code>, <code>Tokenize</code></td>
+</tr>
+<tr>
+<td><code>c.Usage()</code>, <code>c.Quota()</code>, <code>c.Detection()</code>, <code>c.Account()</code></td>
+<td>Мониторинг использования/квоты/аккаунта GLM Coding Plan</td>
+</tr>
+<tr>
+<td><code>c.GetAsyncResult(ctx, id)</code>, <code>c.WaitForResult(ctx, id, interval)</code></td>
+<td>Общий опрос для асинхронных задач image/video/chat</td>
+</tr>
+</tbody>
+</table>
+<p>Все проверки валидации запроса (обязательные поля и т. п.) выполняются на
+стороне клиента перед отправкой запроса — вы сразу получаете локальный
+<code>error</code>, а не делаете лишний рейс за чем-то вроде отсутствующего <code>model</code>.</p>
+<h2 id="--1">Завершение чата</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Chat</span><span class="p">().</span><span class="nf">Create</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">client</span><span class="p">.</span><span class="nx">ChatRequest</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Model</span><span class="p">:</span> <span class="s">&#34;glm-5.2&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Messages</span><span class="p">:</span> <span class="p">[]</span><span class="nx">client</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="nx">Role</span><span class="p">:</span> <span class="s">&#34;system&#34;</span><span class="p">,</span> <span class="nx">Content</span><span class="p">:</span> <span class="s">&#34;You are a helpful assistant.&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="nx">Role</span><span class="p">:</span> <span class="s">&#34;user&#34;</span><span class="p">,</span> <span class="nx">Content</span><span class="p">:</span> <span class="s">&#34;Explain goroutines in one paragraph&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Temperature</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="p">})</span>
+</span></span><span class="line"><span class="cl"><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nx">Choices</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Message</span><span class="p">.</span><span class="nx">Content</span><span class="p">)</span>
+</span></span></code></pre><h3 id="--2">Потоковая передача</h3>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Chat</span><span class="p">().</span><span class="nf">CreateStream</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">req</span><span class="p">,</span> <span class="kd">func</span><span class="p">(</span><span class="nx">chunk</span> <span class="nx">client</span><span class="p">.</span><span class="nx">StreamChunk</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">chunk</span><span class="p">.</span><span class="nx">Choices</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Print</span><span class="p">(</span><span class="nx">chunk</span><span class="p">.</span><span class="nx">Choices</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Delta</span><span class="p">.</span><span class="nx">Content</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="kc">nil</span> <span class="c1">// a non-nil return aborts the stream
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">})</span>
+</span></span></code></pre><p>Установите <code>req.StreamToolCall = true</code> (GLM-4.6+), чтобы передавать инкременты
+tool-call дельт в <code>chunk.Choices[0].Delta.ToolCalls</code> порциями в нескольких
+событиях, а не получать их одним пакетом в конце хода. Полезно, чтобы
+показывать в UI прогресс «модель вызывает инструмент…». НЕ ВЕРИФИЦИРОВАНО В
+LIVE — см. <a href="roadmap.html" rel="nofollow noreferrer">Дорожная карта</a>.</p>
+<h3 id="--3">Асинхронный режим</h3>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">task</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Chat</span><span class="p">().</span><span class="nf">CreateAsync</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">req</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">WaitForResult</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">task</span><span class="p">.</span><span class="nx">ID</span><span class="p">,</span> <span class="mi">3</span><span class="o">*</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span>
+</span></span></code></pre><h3 id="---">Визуальный (изображения в сообщении)</h3>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">req</span><span class="p">.</span><span class="nx">Messages</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">Messages</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="nx">Images</span> <span class="p">=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;https://example.com/photo.jpg&#34;</span><span class="p">,</span> <span class="c1">// or a data: URI
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="nx">req</span><span class="p">.</span><span class="nx">Model</span> <span class="p">=</span> <span class="s">&#34;glm-4.6v&#34;</span>
+</span></span></code></pre><h3 id="--4">Структурированный вывод</h3>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">req</span><span class="p">.</span><span class="nx">ResponseFormat</span> <span class="p">=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">NewJSONSchemaFormat</span><span class="p">(</span><span class="s">&#34;my_schema&#34;</span><span class="p">,</span> <span class="nx">rawJSONSchema</span><span class="p">,</span> <span class="kc">true</span> <span class="cm">/* strict */</span><span class="p">)</span>
+</span></span></code></pre><h3 id="--5">Вызов функций</h3>
+<p>Для ручного управления — сами инспектируйте <code>resp.Choices[0].Message.ToolCalls</code>
+и добавляете сообщения с <code>role: &#34;tool&#34;</code> перед повторным вызовом <code>Create</code>. Для
+типового сценария <code>RunWithTools</code> ведёт этот цикл за вас:</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Chat</span><span class="p">().</span><span class="nf">RunWithTools</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">req</span><span class="p">,</span> <span class="kd">func</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">arguments</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="kt">string</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">switch</span> <span class="nx">name</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="s">&#34;get_weather&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="s">`{&#34;temp_c&#34;: 18}`</span><span class="p">,</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">    <span class="k">default</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;unknown tool %q&#34;</span><span class="p">,</span> <span class="nx">name</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">})</span>
+</span></span></code></pre><p>Он выполняет каждый вызов инструмента, добавляет сообщения assistant + tool и
+повторяет, пока модель не вернёт причину завершения без вызова инструмента
+или пока не будет превышено <code>ToolMaxRounds</code> (8) — используйте
+<code>RunWithToolsLimit</code>, чтобы задать другой лимит. Ошибка исполнителя
+инструмента сообщается модели как результат этого инструмента
+(<code>&#34;error: ...&#34;</code>), а не возвращается вызывающему коду, поэтому модель может
+восстановиться вместо того, чтобы провалить весь обмен.</p>
+<h4 id="--6">Типы инструментов</h4>
+<p><code>Tool</code> несёт одну из трёх полезных нагрузок, выбираемую полем <code>Type</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Конструктор</th>
+<th><code>Type</code></th>
+<th>Полезная нагрузка</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NewFunctionTool(name, desc, params)</code></td>
+<td><code>ToolTypeFunction</code> (<code>&#34;function&#34;</code>)</td>
+<td><code>FunctionDef</code> — вызываемая сущность, которую модель вызывает по имени</td>
+</tr>
+<tr>
+<td><code>NewRetrievalTool(knowledgeID, prompt)</code></td>
+<td><code>ToolTypeRetrieval</code> (<code>&#34;retrieval&#34;</code>)</td>
+<td><code>Retrieval</code> — база знаний для обоснования ответа</td>
+</tr>
+<tr>
+<td><code>NewWebSearchTool(queries...)</code></td>
+<td><code>ToolTypeWebSearch</code> (<code>&#34;web_search&#34;</code>)</td>
+<td><code>WebSearch</code> — список <code>search_query</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>retrieval</code> и <code>web_search</code> описаны на docs.z.ai, но <strong>НЕ ВЕРИФИЦИРОВАНЫ В
+LIVE</strong> здесь — только <code>function</code> подтверждён против live-API. Форма полезной
+нагрузки <code>web_search</code> (<code>{&#34;search_query&#34;:[...]}</code>) следует официальному примеру
+из Python SDK; см. <a href="roadmap.html" rel="nofollow noreferrer">Дорожная карта</a>.</p>
+<p><code>validateChatRequest</code> принудительно применяет три документированных правила на
+стороне клиента, так что вы получаете понятную локальную ошибку вместо
+непрозрачной ошибки сервера:</p>
+<ul>
+<li><strong>Паттерн имени инструмента</strong> — <code>tools[].function.name</code> должен
+соответствовать <code>^[A-Za-z0-9_-]{1,64}$</code>.</li>
+<li><strong>Лимит функций</strong> — не более <code>ToolMaxFunctions</code> (128) инструментов-функций
+на запрос.</li>
+<li><strong>Полезная нагрузка по типу</strong> — инструмент <code>function</code>/<code>retrieval</code>/<code>web_search</code>
+должен нести соответствующую полезную нагрузку; неизвестные типы
+отклоняются.</li>
+</ul>
+<h4 id="----">Поля ответа, которые стоит проверять</h4>
+<p>Помимо <code>resp.Choices[0].Message.Content</code>:</p>
+<ul>
+<li><code>resp.Choices[0].FinishReason</code> — сравнивайте с константами
+<code>FinishReason*</code> (<code>FinishReasonStop</code>, <code>FinishReasonToolCalls</code>,
+<code>FinishReasonLength</code>, <code>FinishReasonSensitive</code>,
+<code>FinishReasonModelContextWindowExceeded</code>, <code>FinishReasonNetworkError</code>).
+Последние три — задокументированные live-значения, сигнализирующие о
+завершении не по контенту.</li>
+<li><code>resp.WebSearch</code> — массив верхнего уровня <code>web_search</code>, который ответ несёт,
+когда сработал инструмент <code>web_search</code> (<code>Link</code>/<code>Title</code>/<code>Content</code> каждой
+записи — это источники, на которых основан ответ). НЕ ВЕРИФИЦИРОВАНО В LIVE.</li>
+</ul>
+<h4 id="-schema-">Совместимость schema инструментов</h4>
+<p>Чатовый эндпоинт GLM использует строгий парсер JSON-Schema для <code>parameters</code>
+инструментов: schema, содержащая <code>anyOf</code>, <code>oneOf</code>, <code>allOf</code> или ссылку
+<code>$ref</code>/<code>$defs</code>, заставляет его вернуть <strong>HTTP 500</strong> вместо пригодной ошибки.
+Именно эти конструкции и порождают языки со статической типизацией — поле,
+допускающее null, превращается в
+<code>anyOf: [{…}, {&#34;type&#34;:&#34;null&#34;}]</code>, повторно используемая структура — в <code>$ref</code>.</p>
+<p>По умолчанию клиент переписывает schema инструментов в плоское подмножество,
+которое принимает GLM, перед каждым чатовым запросом (объединения с null
+схлопываются в лежащий в основе тип, <code>allOf</code> сливается, <code>$ref</code>
+инлайнится), сохраняя максимум информации о типах/описаниях. Это no-op для
+schema уже в поддерживаемом подмножестве и никогда не мутирует ваши
+<code>req.Tools</code>.</p>
+<ul>
+<li>Чтобы нормализовать schema самостоятельно (например, вы строите запросы в
+другом месте): <code>client.SanitizeToolSchemas(tools)</code>.</li>
+<li>Чтобы пропустить schema без изменений (для отладки или будущего эндпоинта,
+поддерживающего полную версию черновика): установите
+<code>Config.DisableToolSchemaCompat = true</code>.</li>
+</ul>
+<h3 id="anthropic--messages-api">Anthropic-совместимый Messages API</h3>
+<p>Z.AI также предоставляет Anthropic-протокольную поверхность на
+<code>/api/anthropic</code> — тот же эндпоинт, на который GLM Coding Plan направляет
+Claude Code. <code>c.Anthropic()</code> — типизированный клиент для его
+<code>POST /v1/messages</code>, параллельный <code>c.Chat()</code> для OpenAI-стиля поверхности.
+Аутентификация выполняется вашим ключом z.ai как Bearer-токеном (не
+Anthropic-овским <code>x-api-key</code>), а заголовок <code>anthropic-version</code> добавляется
+автоматически.</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Anthropic</span><span class="p">().</span><span class="nf">Create</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">client</span><span class="p">.</span><span class="nx">AnthropicMessageRequest</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Model</span><span class="p">:</span>     <span class="s">&#34;glm-4.6&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">MaxTokens</span><span class="p">:</span> <span class="mi">1024</span><span class="p">,</span> <span class="c1">// required by the Messages API
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">System</span><span class="p">:</span>    <span class="s">&#34;You are concise.&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Messages</span><span class="p">:</span> <span class="p">[]</span><span class="nx">client</span><span class="p">.</span><span class="nx">AnthropicMessage</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">client</span><span class="p">.</span><span class="nf">AnthropicTextMessage</span><span class="p">(</span><span class="s">&#34;user&#34;</span><span class="p">,</span> <span class="s">&#34;Explain goroutines in one line&#34;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl"><span class="p">})</span>
+</span></span><span class="line"><span class="cl"><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nf">Text</span><span class="p">())</span> <span class="c1">// concatenated text blocks
+</span></span></span></code></pre><p>Потоковая передача отдаёт сырые SSE-события Anthropic (<code>message_start</code>,
+<code>content_block_delta</code>, …) с именем события и JSON-полезной нагрузкой,
+которую вы десериализуете по типу события:</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Anthropic</span><span class="p">().</span><span class="nf">CreateStream</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">req</span><span class="p">,</span> <span class="kd">func</span><span class="p">(</span><span class="nx">ev</span> <span class="nx">client</span><span class="p">.</span><span class="nx">AnthropicStreamEvent</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">ev</span><span class="p">.</span><span class="nx">Type</span> <span class="o">==</span> <span class="s">&#34;content_block_delta&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// ev.Data is {&#34;delta&#34;:{&#34;type&#34;:&#34;text_delta&#34;,&#34;text&#34;:&#34;…&#34;}, …}
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">})</span>
+</span></span></code></pre><p>Инструменты, объявленные через <code>AnthropicTool.InputSchema</code>, проходят ту же
+нормализацию GLM schema, что и чатовые инструменты (см. выше).
+<code>Config.DisableToolSchemaCompat</code> её отключает.</p>
+<p>Расширенное мышление (модели GLM — рассуждающие) включается на уровне запроса
+и считывается через <code>resp.Thinking()</code>:</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">req</span><span class="p">.</span><span class="nx">Thinking</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">client</span><span class="p">.</span><span class="nx">AnthropicThinking</span><span class="p">{</span><span class="nx">Type</span><span class="p">:</span> <span class="s">&#34;enabled&#34;</span><span class="p">,</span> <span class="nx">BudgetTokens</span><span class="p">:</span> <span class="mi">2048</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="nx">resp</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Anthropic</span><span class="p">().</span><span class="nf">Create</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">req</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nf">Thinking</span><span class="p">())</span> <span class="c1">// thinking blocks, or reasoning_content if the
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>                             <span class="c1">// endpoint surfaces reasoning that way instead
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nf">Text</span><span class="p">())</span>     <span class="c1">// the answer, without the reasoning mixed in
+</span></span></span></code></pre><p>Форма ответа успешного пути смоделирована по документированному Messages API
+Anthropic и здесь пока не прошла живую верификацию — см. <a href="roadmap.html" rel="nofollow noreferrer">Дорожная
+карта</a>.</p>
+<h2 id="--7">Обработка ошибок</h2>
+<p>Полный справочник по <code>APIError</code>, кодам ошибок и поведению повторных попыток по
+умолчанию — см. <a href="error-handling.html" rel="nofollow noreferrer">Обработка ошибок</a>.</p>
+<h2 id="---1">Управление мультиаккаунтными кредами</h2>
+<p>Хранилище мультиаккаунтных кредов и писатели кредов/конфигурации GLM Coding
+Plan живут в <code>internal/accounts</code> и <code>internal/coding</code>. Они внутренние для этого
+модуля — не часть импортируемого публичного API — и потому могут эволюционировать
+без semver-ограничений. <code>pkg/client</code> — единственный поддерживаемый публичный
+пакет; команды CLI <code>accounts</code> и <code>coding</code> — стабильный способ управлять этой
+функциональностью. (Раньше эти пакеты лежали в <code>pkg/</code> и были импортируемыми;
+о переносе см. <a href="/CHANGELOG.html" rel="nofollow noreferrer">CHANGELOG</a>.)</p>
+<h2 id="-----">Тестирование вашего кода против этого клиента</h2>
+<p>Каждый метод сервиса — это обычная функция на конкретном типе без интерфейсов,
+поэтому стандартный подход в Go — направить <code>Config.BaseURL</code> на
+<code>httptest.Server</code>, которым вы управляете. Если хотите воспроизвести <em>реальный</em>
+записанный трафик Z.AI вместо рукописного стаба, посмотрите, как это делают
+тесты самого репозитория с
+<a href="https://github.com/dnaeon/go-vcr" rel="nofollow noreferrer noopener" target="_blank">go-vcr</a> — <code>pkg/client/*_test.go</code> и
+<code>pkg/client/testdata/cassettes/</code> — и прочтите
+<a href="/CONTRIBUTING.html" rel="nofollow noreferrer">Contributing § соглашение о живой верификации</a>,
+чтобы понять, почему.</p>
+<h2 id="--8">Архитектурные заметки</h2>
+<p>О том, как сервисы устроены внутри (фасад <code>doRequest</code>, дизайн повторных
+попыток/backoff, почему часть сервисов аутентифицируется против другого
+base-URL), см. <a href="architecture.html" rel="nofollow noreferrer">Архитектура</a>.</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API<br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      <a href="https://github.com/SamyRai/go-z-ai/blob/main/LICENSE">Apache 2.0</a> ·
+      Собрано из коммита 2c4beb8
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Журнал изменений</a> ·
+      <a href="/CONTRIBUTING.html">Участие в проекте</a> ·
+      <a href="/SECURITY.html">Безопасность</a> ·
+      <a href="/sitemap.xml">Карта сайта</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Перейти в светлую тему" : "Перейти в тёмную тему");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Перейти в тёмную тему" : "Перейти в светлую тему");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

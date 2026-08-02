@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>CLI reference · go-z-ai</title>
+  <meta name="description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <link rel="canonical" href="/ru/cli-reference.html">
+  <link rel="alternate" hreflang="en" href="/en/cli-reference.html">
+  <link rel="alternate" hreflang="ru" href="/ru/cli-reference.html">
+  <link rel="alternate" hreflang="zh" href="/zh/cli-reference.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/cli-reference.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="CLI reference · go-z-ai">
+  <meta property="og:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/ru/cli-reference.html">
+  <meta property="og:locale" content="ru">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="CLI reference · go-z-ai">
+  <meta name="twitter:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/ru/cli-reference.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"CLI reference","inLanguage":"ru","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"CLI reference","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/ru/cli-reference.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/ru/cli-reference.html","name":"CLI reference","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержимому</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/ru/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">Z</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/ru/" >Главная</a>
+      <a href="/ru/getting-started.html" aria-current="page">Документация</a>
+      <a href="/ru/cli-reference.html">CLI</a>
+      <a href="/ru/library-guide.html">Библиотека</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Журнал изменений</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Русский</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/cli-reference.html" >English</a>
+    <a role="menuitem" href="/ru/cli-reference.html" aria-current="true">Русский</a>
+    <a role="menuitem" href="/zh/cli-reference.html" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Переключить тему" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="--cli">Справочник по CLI</h1>
+<p>Каждая команда поддерживает <code>--help</code> для получения актуального и достоверного
+списка флагов (<code>go-z-ai &lt;command&gt; --help</code>,
+<code>go-z-ai &lt;command&gt; &lt;subcommand&gt; --help</code>). Эта страница — структурированный
+обзор; считайте <code>--help</code> источником истины, если когда-либо возникнут
+расхождения.</p>
+<h2 id="heading">Содержание</h2>
+<ul>
+<li><a href="#%D0%B3%D0%BB%D0%BE%D0%B1%D0%B0%D0%BB%D1%8C%D0%BD%D1%8B%D0%B5-%D1%84%D0%BB%D0%B0%D0%B3%D0%B8" rel="nofollow noreferrer">Глобальные флаги</a></li>
+<li><a href="#%D1%87%D0%B0%D1%82" rel="nofollow noreferrer">Чат</a></li>
+<li><a href="#%D0%BC%D0%BE%D0%B4%D0%B5%D0%BB%D0%B8" rel="nofollow noreferrer">Модели</a></li>
+<li><a href="#%D0%B0%D0%BA%D0%BA%D0%B0%D1%83%D0%BD%D1%82%D1%8B-%D0%B8%D1%81%D0%BF%D0%BE%D0%BB%D1%8C%D0%B7%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5-%D0%B8-%D0%BA%D0%B2%D0%BE%D1%82%D0%B0" rel="nofollow noreferrer">Аккаунты, использование и квота</a></li>
+<li><a href="#%D0%B8%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B-%D0%B4%D0%BB%D1%8F-%D0%BA%D0%BE%D0%B4%D0%B0-glm-coding-plan" rel="nofollow noreferrer">Инструменты для кода (GLM Coding Plan)</a></li>
+<li><a href="#%D1%84%D0%B0%D0%B9%D0%BB%D1%8B-%D0%B8-%D0%BF%D0%B0%D0%BA%D0%B5%D1%82%D0%BD%D0%B0%D1%8F-%D0%BE%D0%B1%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%BA%D0%B0" rel="nofollow noreferrer">Файлы и пакетная обработка</a></li>
+<li><a href="#%D0%B3%D0%B5%D0%BD%D0%B5%D1%80%D0%B0%D1%86%D0%B8%D1%8F-%D0%BC%D0%B5%D0%B4%D0%B8%D0%B0" rel="nofollow noreferrer">Генерация медиа</a></li>
+<li><a href="#%D1%80%D0%B0%D0%B7%D0%B1%D0%BE%D1%80-%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2-%D0%B8-ocr" rel="nofollow noreferrer">Разбор документов и OCR</a></li>
+<li><a href="#%D0%B2%D1%81%D0%BF%D0%BE%D0%BC%D0%BE%D0%B3%D0%B0%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D1%8B%D0%B5-%D0%B8%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B-%D0%BF%D0%BE%D0%B8%D1%81%D0%BA%D0%B0" rel="nofollow noreferrer">Вспомогательные инструменты поиска</a></li>
+<li><a href="#%D0%BC%D0%BE%D0%B4%D0%B5%D1%80%D0%B0%D1%86%D0%B8%D1%8F-%D0%BA%D0%BE%D0%BD%D1%82%D0%B5%D0%BD%D1%82%D0%B0" rel="nofollow noreferrer">Модерация контента</a></li>
+<li><a href="#%D0%B0%D0%B3%D0%B5%D0%BD%D1%82%D1%8B" rel="nofollow noreferrer">Агенты</a></li>
+<li><a href="#%D0%B8%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B-%D0%B2%D0%B5%D0%B1-%D0%BF%D0%BE%D0%B8%D1%81%D0%BA-reader-%D1%82%D0%BE%D0%BA%D0%B5%D0%BD%D0%B8%D0%B7%D0%B0%D1%82%D0%BE%D1%80" rel="nofollow noreferrer">Инструменты (веб-поиск, reader, токенизатор)</a></li>
+<li><a href="#%D1%8D%D0%BD%D0%B4%D0%BF%D0%BE%D0%B8%D0%BD%D1%82-%D1%81%D0%BE%D0%B2%D0%BC%D0%B5%D1%81%D1%82%D0%B8%D0%BC%D1%8B%D0%B9-%D1%81-anthropic" rel="nofollow noreferrer">Эндпоинт, совместимый с Anthropic</a></li>
+<li><a href="#%D1%82%D0%B5%D1%80%D0%BC%D0%B8%D0%BD%D0%B0%D0%BB%D1%8C%D0%BD%D1%8B%D0%B9-ui" rel="nofollow noreferrer">Терминальный UI</a></li>
+</ul>
+<h2 id="-">Глобальные флаги</h2>
+<p>Эти флаги применяются ко всем командам:</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--api-key string</code></td>
+<td>API-ключ Z.AI (или переменная окружения <code>ZAI_API_KEY</code>)</td>
+</tr>
+<tr>
+<td><code>--base-url string</code></td>
+<td>Базовый URL API (по умолчанию: <code>https://api.z.ai/api/paas/v4</code>)</td>
+</tr>
+<tr>
+<td><code>--account string</code></td>
+<td>Использовать сохранённый аккаунт по имени для этой команды (см. <a href="accounts-and-quota.html" rel="nofollow noreferrer">Аккаунты и квоты</a>)</td>
+</tr>
+<tr>
+<td><code>--china-api-key string</code></td>
+<td>Ключ open.bigmodel.cn для embeddings/модераций (или <code>ZAI_CHINA_API_KEY</code>; при отсутствии берётся <code>--api-key</code>)</td>
+</tr>
+<tr>
+<td><code>--region string</code></td>
+<td>Региональный шлюз для monitor/biz/agents/detection: <code>global</code> (api.z.ai, по умолчанию) или <code>china</code> (open.bigmodel.cn). Псевдонимы: <code>cn</code>, <code>bigmodel</code>, <code>west</code>. Либо переменная окружения <code>ZAI_REGION</code>. Не переопределяет <code>--base-url</code>. Неизвестные значения приводят к global.</td>
+</tr>
+<tr>
+<td><code>--config string</code></td>
+<td>Файл конфигурации (по умолчанию: <code>.env</code>)</td>
+</tr>
+<tr>
+<td><code>--version</code></td>
+<td>Печатает версию (тег, коммит, дату сборки) и выходит. Заполняется ldflags GoReleaser в релизных сборках; иначе <code>dev</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Каждая команда, возвращающая результат, принимает <code>--format text\|json</code>
+(некоторые по умолчанию используют <code>json</code>, если полезная нагрузка ориентирована
+на машину — например, <code>embeddings</code>, <code>moderations</code>). В режиме <code>json</code> сообщения о
+прогрессе/статусе направляются в stderr, поэтому stdout остаётся корректным
+JSON, который можно передать в <code>jq</code>.</p>
+<p>Установите <code>--region china</code> (или <code>ZAI_REGION=china</code>), если ваш ключ был выдан
+на <code>open.bigmodel.cn</code>, чтобы квота/использование, account-info, agents и
+определение типа аккаунта попадали на соответствующий хост. Это <strong>не</strong> меняет
+базовый URL чата (используйте для этого <code>--base-url</code>) и не меняет хост
+embedings/модераций (всегда китайская платформа). См.
+<a href="accounts-and-quota.html#regional-gateways-apiza--openbigmodelcn" rel="nofollow noreferrer">Аккаунты и квоты § Региональные шлюзы</a>.</p>
+<h2 id="heading-1">Чат</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai chat create <span class="o">[</span>message<span class="o">]</span> <span class="o">[</span>flags<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai chat simple <span class="o">[</span>model<span class="o">]</span> <span class="o">[</span>message<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai chat async-result <span class="o">[</span>task-id<span class="o">]</span>
+</span></span></code></pre><p><code>chat create</code> — основная точка входа:</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Назначение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--model string</code></td>
+<td>По умолчанию <code>glm-5.2</code></td>
+</tr>
+<tr>
+<td><code>--stream</code></td>
+<td>Потоковая передача token за token</td>
+</tr>
+<tr>
+<td><code>--async</code></td>
+<td>Отправить без ожидания; опрашивать через <code>chat async-result &lt;task-id&gt;</code></td>
+</tr>
+<tr>
+<td><code>--temperature float</code>, <code>--top-p float</code>, <code>--max-tokens int</code></td>
+<td>Управление сэмплингом</td>
+</tr>
+<tr>
+<td><code>--system string</code></td>
+<td>Системное сообщение</td>
+</tr>
+<tr>
+<td><code>--thinking string</code>, <code>--effort string</code></td>
+<td>Режим глубокого мышления и уровень усилий (<code>max|xhigh|high|medium|low|minimal|none</code>; <code>xhigh</code>→<code>max</code> только для GLM-5.2)</td>
+</tr>
+<tr>
+<td><code>--show-reasoning</code></td>
+<td>Печатать <code>reasoning_content</code> в stderr</td>
+</tr>
+<tr>
+<td><code>--json-schema string</code></td>
+<td>Структурированный вывод: <code>@file.json</code> или inline JSON</td>
+</tr>
+<tr>
+<td><code>--tool string</code></td>
+<td>Объявления инструментов для вызова функций: <code>@tools.json</code> или inline JSON-массив</td>
+</tr>
+<tr>
+<td><code>--image string</code> (повторяемый)</td>
+<td>Прикрепить изображение: URL или <code>@path</code> к локальному файлу (base64). Требуется визуальная модель (<code>glm-4.6v</code>/<code>glm-4.5v</code>)</td>
+</tr>
+<tr>
+<td><code>--stop strings</code></td>
+<td>Стоп-последовательности (повторяемый, максимум 4)</td>
+</tr>
+<tr>
+<td><code>--format text|json</code></td>
+<td>Формат вывода</td>
+</tr>
+</tbody>
+</table>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai chat create <span class="s2">&#34;Summarize this in 3 bullets&#34;</span> --model glm-5.2 --stream
+</span></span><span class="line"><span class="cl">go-z-ai chat create <span class="s2">&#34;Describe this&#34;</span> --image @photo.jpg --model glm-4.6v
+</span></span><span class="line"><span class="cl">go-z-ai chat create <span class="s2">&#34;Extract fields&#34;</span> --json-schema @schema.json
+</span></span></code></pre><p>Вызовы инструментов печатаются, а не выполняются CLI — см.
+<a href="library-guide.html#function-calling" rel="nofollow noreferrer">Руководство по библиотеке § Вызов функций</a>
+о Go-цикле <code>RunWithTools</code> с автоматическим выполнением.</p>
+<blockquote>
+<p><strong>Визуальная модель + вызов инструментов могут вернуть HTTP 401.</strong> Из
+сообщений сообщества (например,
+<a href="https://github.com/musistudio/claude-code-router/issues/1491" rel="nofollow noreferrer noopener" target="_blank">claude-code-router#1491</a>)
+следует, что сочетание визуальной модели (<code>--image</code> на <code>glm-4.6v</code>/<code>glm-4.5v</code>)
+с инструментами вызова функций (<code>--tool</code>) в одном запросе на некоторых
+конфигурациях GLM отклоняется с 401 — аутентифицированный ключ всё равно
+падает только для этой комбинации. Если столкнулись с этим, разделите
+работу: используйте визуальную модель для шага с изображением и текстовую
+модель (<code>glm-5.2</code>) для шага с вызовом инструментов, вместо того чтобы
+отправлять изображения и инструменты вместе. Здесь это пока не воспроизведено
+на живом аккаунте — см. <a href="roadmap.html" rel="nofollow noreferrer">Дорожная карта</a>.</p>
+</blockquote>
+<h2 id="heading-2">Модели</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai models list <span class="o">[</span>--pricing<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai models get <span class="o">[</span>model-id<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai models text <span class="p">|</span> vision <span class="p">|</span> free
+</span></span></code></pre><h2 id="---">Аккаунты, использование и квота</h2>
+<p>Подробно описано в <a href="accounts-and-quota.html" rel="nofollow noreferrer">Аккаунты и квоты</a>. Краткая справка:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai accounts add &lt;name&gt; --api-key &lt;key&gt; <span class="o">[</span>--type coding_plan<span class="p">|</span>pay_as_you_go<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts list <span class="o">[</span>--format json<span class="o">]</span> <span class="o">[</span>--reveal<span class="o">]</span>   <span class="c1"># ключи по умолчанию скрыты; --reveal для экспорта</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts use &lt;name&gt;
+</span></span><span class="line"><span class="cl">go-z-ai accounts show <span class="o">[</span>name<span class="o">]</span> <span class="o">[</span>--format json<span class="o">]</span> <span class="o">[</span>--reveal<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts current                            <span class="c1"># сокращение для &#39;accounts show&#39; (активный аккаунт)</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts quota <span class="o">[</span>--only name...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts usage <span class="o">[</span>--days N<span class="o">]</span> <span class="o">[</span>--today<span class="o">]</span> <span class="o">[</span>--metric model<span class="p">|</span>tool<span class="p">|</span>both<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts remove &lt;name&gt; <span class="o">[</span>--yes<span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">go-z-ai usage quota <span class="p">|</span> summary <span class="p">|</span> account <span class="p">|</span> billing <span class="p">|</span> check <span class="o">[</span>--watch<span class="o">]</span> <span class="p">|</span> detect
+</span></span><span class="line"><span class="cl">go-z-ai account info <span class="p">|</span> status
+</span></span><span class="line"><span class="cl">go-z-ai validate
+</span></span></code></pre><h2 id="---glm-coding-plan">Инструменты для кода (GLM Coding Plan)</h2>
+<p>Настраивает Claude Code, OpenCode, Crush, Factory Droid или Cursor на
+использование вашего GLM Coding Plan. Полное руководство: <a href="coding-tools.html" rel="nofollow noreferrer">Инструменты для
+кода</a>.</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding auth &lt;plan&gt; &lt;key&gt;      <span class="c1"># проверить и сохранить учётные данные</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding auth revoke
+</span></span><span class="line"><span class="cl">go-z-ai coding auth reload &lt;tool&gt;     <span class="c1"># повторно записать сохранённые учётные данные в конфиг инструмента</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding load &lt;tool&gt;            <span class="c1"># записать в конфиг инструмента</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding unload &lt;tool&gt;
+</span></span><span class="line"><span class="cl">go-z-ai coding status
+</span></span><span class="line"><span class="cl">go-z-ai coding tools                  <span class="c1"># список поддерживаемых инструментов + статус установки</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding doctor                 <span class="c1"># проверка работоспособности</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp add &lt;tool&gt;         <span class="c1"># зарегистрировать MCP-сервер Vision от Z.AI</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp status
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp remove &lt;tool&gt;
+</span></span></code></pre><h2 id="----1">Файлы и пакетная обработка</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai files upload &lt;file&gt; <span class="o">[</span>--purpose batch<span class="p">|</span>code-interpreter<span class="p">|</span>agent<span class="p">|</span>voice-clone-input<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai files list <span class="o">[</span>--purpose ...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai files delete &lt;file-id&gt;
+</span></span><span class="line"><span class="cl">go-z-ai files download &lt;file-id&gt; &lt;output-path&gt;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">go-z-ai batch create &lt;input-file-id&gt; <span class="o">[</span>--endpoint ...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai batch status &lt;batch-id&gt;
+</span></span><span class="line"><span class="cl">go-z-ai batch list <span class="o">[</span>--after ...<span class="o">]</span> <span class="o">[</span>--limit N<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai batch cancel &lt;batch-id&gt;
+</span></span></code></pre><p>Пакетные задачи обрабатывают множество запросов завершения чата из JSONL-файла
+асинхронно — сначала загрузите его, затем создайте пакетную задачу с
+полученным file ID.</p>
+<h2 id="--1">Генерация медиа</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="c1"># Изображения — модель по умолчанию glm-image (также поддерживается cogview-4-250304)</span>
+</span></span><span class="line"><span class="cl">go-z-ai image generate &lt;prompt&gt; <span class="o">[</span>--model ...<span class="o">]</span> <span class="o">[</span>--size ...<span class="o">]</span> <span class="o">[</span>--quality hd<span class="p">|</span>standard<span class="o">]</span> <span class="o">[</span>--async<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai image status &lt;id&gt;
+</span></span><span class="line"><span class="cl"><span class="c1"># --quality: hd по умолчанию (~20 с); standard быстрее (~5-10 с).</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Видео — всегда асинхронно (cogvideox-3 | viduq1-text | viduq1-image | vidu2-image | ...)</span>
+</span></span><span class="line"><span class="cl">go-z-ai video generate --prompt <span class="s2">&#34;...&#34;</span> <span class="o">[</span>--model ...<span class="o">]</span> <span class="o">[</span>--duration N<span class="o">]</span> <span class="o">[</span>--aspect-ratio ...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai video status &lt;id&gt;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Аудио</span>
+</span></span><span class="line"><span class="cl">go-z-ai audio transcribe &lt;file&gt;                       <span class="c1"># glm-asr, .wav/.mp3, &lt;=25MB, &lt;=30s</span>
+</span></span><span class="line"><span class="cl">go-z-ai audio speech &lt;text&gt; &lt;output-path&gt; <span class="o">[</span>--voice ...<span class="o">]</span> <span class="o">[</span>--speed N<span class="o">]</span> <span class="o">[</span>--format wav<span class="p">|</span>pcm<span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Клонирование голоса (работает в паре с audio speech --voice)</span>
+</span></span><span class="line"><span class="cl">go-z-ai voice clone &lt;voice-name&gt; &lt;sample-file-id&gt; &lt;preview-text&gt;
+</span></span><span class="line"><span class="cl">go-z-ai voice list <span class="o">[</span>--name ...<span class="o">]</span> <span class="o">[</span>--type OFFICIAL<span class="p">|</span>PRIVATE<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai voice delete &lt;voice-id&gt;
+</span></span></code></pre><h2 id="---ocr">Разбор документов и OCR</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="c1"># Layout OCR — изображение/PDF в Markdown</span>
+</span></span><span class="line"><span class="cl">go-z-ai ocr parse &lt;file-or-url&gt; <span class="o">[</span>--start-page N<span class="o">]</span> <span class="o">[</span>--end-page N<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai ocr handwriting &lt;file&gt; <span class="o">[</span>--probability<span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Разбор документов (препроцессинг для RAG/извлечения) — отдельный продукт, не OCR</span>
+</span></span><span class="line"><span class="cl">go-z-ai parser parse &lt;file&gt; &lt;file-type&gt;              <span class="c1"># синхронно</span>
+</span></span><span class="line"><span class="cl">go-z-ai parser create &lt;file&gt; &lt;tool-type&gt; &lt;file-type&gt; <span class="c1"># асинхронно: lite|expert|prime</span>
+</span></span><span class="line"><span class="cl">go-z-ai parser result &lt;task-id&gt; &lt;format&gt;              <span class="c1"># text|download_link</span>
+</span></span></code></pre><p><code>parser</code> и <code>ocr</code> решают разные задачи: OCR извлекает layout/текст из
+изображений; parser же предназначен для превращения документов в текст,
+готовый для RAG, и поддерживает больше тарифов инструментов.</p>
+<h2 id="--">Вспомогательные инструменты поиска</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai embeddings create &lt;text&gt; <span class="o">[</span>--model embedding-3<span class="p">|</span>embedding-2<span class="o">]</span> <span class="o">[</span>--dimensions N<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai rerank &lt;query&gt; &lt;documents...&gt; <span class="o">[</span>--top-n N<span class="o">]</span>
+</span></span></code></pre><p>Embeddings направляются на <code>open.bigmodel.cn</code> — см.
+<a href="accounts-and-quota.html#regional-gateways-apiza--openbigmodelcn" rel="nofollow noreferrer">Аккаунты и квоты § Региональные шлюзы</a>,
+почему так и что это значит для аутентификации. Rerank использует <code>--base-url</code>
+по умолчанию (не привязан к китайскому хосту).</p>
+<h2 id="--2">Модерация контента</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai moderations check &lt;text&gt;
+</span></span></code></pre><p>Также направляется на <code>open.bigmodel.cn</code> — та же заметка, что и для embeddings
+выше.</p>
+<h2 id="heading-3">Агенты</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai agents invoke &lt;agent-id&gt; &lt;message&gt; <span class="o">[</span>--source-lang ...<span class="o">]</span> <span class="o">[</span>--target-lang ...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai agents async-result &lt;agent-id&gt; &lt;async-id&gt;
+</span></span></code></pre><p>Вызывает специализированных агентов Z.AI (перевод, генерация слайдов/постеров,
+шаблоны видеоэффектов). Примечание: Agents API возвращает HTTP 200, даже когда
+вызов падает на бизнес-уровне (например, недостаточный баланс) — CLI
+сообщает о такой неудаче из тела ответа, а не как об ошибке команды.</p>
+<h2 id="---reader-">Инструменты (веб-поиск, reader, токенизатор)</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai tools web-search &lt;query&gt; <span class="o">[</span>--engine ...<span class="o">]</span> <span class="o">[</span>--count N<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai tools web-reader &lt;url&gt; <span class="o">[</span>--no-images<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai tools tokenizer &lt;text&gt; <span class="o">[</span>--model ...<span class="o">]</span>
+</span></span></code></pre><h2 id="---anthropic">Эндпоинт, совместимый с Anthropic</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai anthropic messages &lt;prompt&gt; <span class="o">[</span>--model glm-4.6<span class="o">]</span> <span class="o">[</span>--max-tokens 1024<span class="o">]</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    <span class="o">[</span>--system ...<span class="o">]</span> <span class="o">[</span>--temperature ...<span class="o">]</span> <span class="o">[</span>--thinking-budget N<span class="o">]</span> <span class="o">[</span>--stream<span class="o">]</span>
+</span></span></code></pre><p>Вызывает Anthropic-совместимый эндпоинт Z.AI (<code>/api/anthropic/v1/messages</code>) —
+тот же эндпоинт, на который GLM Coding Plan направляет Claude Code, — вместо
+OpenAI-стиля <code>chat create</code>. Печатает текст сообщения (или стримит текстовые
+дельты с <code>--stream</code>); <code>--thinking-budget N</code> включает расширенное мышление и
+выводит рассуждения в stderr. См.
+<a href="library-guide.html#anthropic-compatible-messages-api" rel="nofollow noreferrer">Руководство по библиотеке</a>
+для Go API.</p>
+<h2 id="-ui">Терминальный UI</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai tui
+</span></span></code></pre><p>Запускает полноэкранный терминальный UI с вкладками Chat, Models, Usage,
+Accounts, Coding, Media и Tools — та же функциональность, что и у CLI-команд
+выше, в одном интерактивном сеансе.</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API<br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      <a href="https://github.com/SamyRai/go-z-ai/blob/main/LICENSE">Apache 2.0</a> ·
+      Собрано из коммита 2c4beb8
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Журнал изменений</a> ·
+      <a href="/CONTRIBUTING.html">Участие в проекте</a> ·
+      <a href="/SECURITY.html">Безопасность</a> ·
+      <a href="/sitemap.xml">Карта сайта</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Перейти в светлую тему" : "Перейти в тёмную тему");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Перейти в тёмную тему" : "Перейти в светлую тему");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

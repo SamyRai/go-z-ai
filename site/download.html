@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Download · go-z-ai</title>
+  <meta name="description" content="Download and install go-z-ai — prebuilt, signed binaries for macOS and Linux, or a one-line go install.">
+  <link rel="canonical" href="/download.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Download · go-z-ai">
+  <meta property="og:description" content="Download and install go-z-ai — prebuilt, signed binaries for macOS and Linux, or a one-line go install.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/download.html">
+  <meta property="og:locale" content="en">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Download · go-z-ai">
+  <meta name="twitter:description" content="Download and install go-z-ai — prebuilt, signed binaries for macOS and Linux, or a one-line go install.">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/#software","@type":["SoftwareApplication","SoftwareSourceCode"],"applicationCategory":"DeveloperApplication","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"codeRepository":"https://github.com/SamyRai/go-z-ai","description":"A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API","downloadUrl":"https://github.com/SamyRai/go-z-ai/releases/tag/v0.1.0","license":"https://www.apache.org/licenses/LICENSE-2.0","name":"go-z-ai","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"operatingSystem":"Linux, macOS, Windows","programmingLanguage":"Go","releaseNotes":"https://github.com/SamyRai/go-z-ai/releases/tag/v0.1.0","softwareVersion":"0.1.0","url":"https://SamyRai.github.io/go-z-ai/download.html"}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/en/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">Z</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/en/" >Home</a>
+      <a href="/en/getting-started.html" >Docs</a>
+      <a href="/en/cli-reference.html">CLI</a>
+      <a href="/en/library-guide.html">Library</a>
+      <a href="/download.html" aria-current="page">Download</a>
+      <a href="/CHANGELOG.html">Changelog</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>English</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<section class="hero">
+  <h1>Download go-z-ai</h1>
+  <p class="lead">A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API</p>
+</section>
+
+<section class="block">
+  <h2>Install with Go</h2>
+  <p>The recommended path — always the latest, needs Go 1.24+.</p>
+  <pre class="chroma"><code>go install github.com/SamyRai/go-z-ai@latest</code></pre>
+  <p class="moreline">Optional alias: <code>ln -s "$(go env GOPATH)/bin/go-z-ai" "$(go env GOPATH)/bin/zai"</code></p>
+</section>
+<section class="block">
+  <h2>Prebuilt binaries</h2>
+  <div class="dl-grid" role="list">
+    <a class="dl-card" role="listitem" href="https://github.com/SamyRai/go-z-ai/releases/download/v0.1.0/zai-client_0.1.0_Darwin_arm64.tar.gz" data-os="darwin" data-arch="arm64" rel="external" download>
+      <span class="dl-badge" hidden>Detected</span>
+      <span class="dl-os"><span class="dl-glyph" aria-hidden="true">🍎</span>macOS</span>
+      <span class="dl-arch">Apple Silicon · arm64</span>
+      <span class="dl-meta">tar.gz · 6.2 MB · sha256 4fb6b172c9…</span>
+      <span class="dl-action">Download</span>
+    </a>
+    <a class="dl-card" role="listitem" href="https://github.com/SamyRai/go-z-ai/releases/download/v0.1.0/zai-client_0.1.0_Darwin_amd64.tar.gz" data-os="darwin" data-arch="amd64" rel="external" download>
+      <span class="dl-badge" hidden>Detected</span>
+      <span class="dl-os"><span class="dl-glyph" aria-hidden="true">🍎</span>macOS</span>
+      <span class="dl-arch">Intel · amd64</span>
+      <span class="dl-meta">tar.gz · 6.7 MB · sha256 c6fa25eaca…</span>
+      <span class="dl-action">Download</span>
+    </a>
+    <a class="dl-card" role="listitem" href="https://github.com/SamyRai/go-z-ai/releases/download/v0.1.0/zai-client_0.1.0_Linux_amd64.tar.gz" data-os="linux" data-arch="amd64" rel="external" download>
+      <span class="dl-badge" hidden>Detected</span>
+      <span class="dl-os"><span class="dl-glyph" aria-hidden="true">🐧</span>Linux</span>
+      <span class="dl-arch">x86-64 · amd64</span>
+      <span class="dl-meta">tar.gz · 6.6 MB · sha256 39685efb04…</span>
+      <span class="dl-action">Download</span>
+    </a>
+    <a class="dl-card" role="listitem" href="https://github.com/SamyRai/go-z-ai/releases/download/v0.1.0/zai-client_0.1.0_Linux_arm64.tar.gz" data-os="linux" data-arch="arm64" rel="external" download>
+      <span class="dl-badge" hidden>Detected</span>
+      <span class="dl-os"><span class="dl-glyph" aria-hidden="true">🐧</span>Linux</span>
+      <span class="dl-arch">ARM64 · arm64</span>
+      <span class="dl-meta">tar.gz · 6.0 MB · sha256 7a17a76a1b…</span>
+      <span class="dl-action">Download</span>
+    </a>
+  </div>
+  <p class="moreline"><a href="https://github.com/SamyRai/go-z-ai/releases/tag/v0.1.0" rel="external">All assets &amp; checksums <span aria-hidden="true">→</span></a> · <a href="https://api.github.com/repos/SamyRai/go-z-ai/tarball/v0.1.0" rel="external">Source (tar.gz)</a></p>
+</section>
+<section class="block">
+  <div class="provenance" role="note">
+    <span class="prov-title"><span class="prov-dot" aria-hidden="true"></span>Verified supply chain</span><span class="prov-item">Cosign keyless signature</span><span class="prov-item">SBOM per artifact</span><span class="prov-item">SHA-256 checksums</span><span class="prov-item">OpenSSF 5/10</span>
+  </div>
+</section>
+
+<section class="block">
+  <h2>Manual install &amp; verification</h2>
+  <h3>From a prebuilt binary</h3>
+  <pre class="chroma"><code>tar xzf zai-client_0.1.0_Darwin_amd64.tar.gz
+sudo mv go-z-ai /usr/local/bin/
+go-z-ai version</code></pre>
+  <p>On macOS, if Gatekeeper blocks the binary: <code>xattr -d com.apple.quarantine go-z-ai</code></p>
+  <h3>Verify what you downloaded</h3>
+  <pre class="chroma"><code><span class="c1"># 1) checksum</span>
+sha256sum -c checksums.txt
+
+<span class="c1"># 2) or the cosign keyless signature</span>
+cosign verify-blob <span class="se">\
+</span><span class="se"></span>  --certificate &lt;archive&gt;.tar.gz.pem <span class="se">\
+</span><span class="se"></span>  --signature  &lt;archive&gt;.tar.gz.sig <span class="se">\
+</span><span class="se"></span>  &lt;archive&gt;.tar.gz</code></pre>
+</section>
+<section class="block">
+  <h2>Release notes · v0.1.0</h2>
+  <p class="dl-relmeta"><span>2026-07-18</span> · by <a href="https://github.com/apps/github-actions" rel="external">github-actions[bot]</a>
+  </p>
+  <div class="prose dl-notes"><h2 id="changelog">Changelog</h2>
+<ul>
+<li>a3d7de8a12158ed42b47be76c3211808cd227745 Merge: internal/ layout, CLI dedupe, –format, and TUI/accounts fixes</li>
+<li>3fa7bf8e95cced70b7146600fe5e9dfc3e5dcf4c ci: add golangci-lint gate; fix short-read bugs it surfaced</li>
+<li>55e203fa59dbe9e562ba77000276ac12f79fe894 docs(changelog): record the hardening sprint</li>
+<li>6f640557cfd556b089fc890cb23c97d9cc14d4fb docs(changelog): record the region + chat-API sync sprint</li>
+<li>2c022a31410b41b8ae66df038baed605d5cbd62a feat(cli): consistent –format json across all commands</li>
+<li>81e6b9974e17c2525f4dffb4ebfd5fdb4f5fb600 feat(cli): embeddings, moderations, rerank, voice, and parser commands</li>
+<li>897eca159c01015827cddb50bf74e4bffaa634f5 feat(client): Agents, Embeddings, Moderations, Rerank, Voice, and FileParser services</li>
+<li>0d8b9057a933db312036edd479cd0af2958b0492 feat(client): add Region type for api.z.ai / open.bigmodel.cn parity</li>
+<li>09095b5704a11d30928651b0e85403027bbacb99 feat(client): flatten tool schemas GLM’s parser rejects with HTTP 500</li>
+<li>f43b987c29c35532ab538919bc6ac40e9f8d9105 feat(client): sync chat-completion types to the live API</li>
+<li>155c14e2512c32e8dec7804c3dcee91c5ba47d43 feat(client): typed Anthropic-compatible Messages client</li>
+<li>a01e315da25d1dc3e64fdc4eb07c91eb79fb0017 feat(coding): register Z.AI’s Vision MCP server in supported coding tools</li>
+<li>12983609aef2363a7a216ef139772433c7f04089 feat(usage): quota burn-rate (‘Pace’) indicator on token windows</li>
+<li>388e6c54aa1f6c398edc7858dbaadf705d7ddd74 feat: Agents API, handwriting OCR, and live-verification test suite</li>
+<li>be9fef2507c747cd2f938fd5c27a41b6025836c8 feat: initial Z.AI API client and CLI</li>
+<li>e6b31a15e837e1caa4df43303b0041e96e928db7 feat: streaming, tool calling, media generation, and terminal UI</li>
+<li>cf189f3f824aed150568a64a33a1d31bcdb4c6d0 fix(accounts): mask API keys in –format json, add –reveal opt-in</li>
+<li>fd9b49af7624b89efddc4adc5ecc9db91b467fcd fix(ci): install syft + relax ruleset (admin bypass, matrix-matched status checks)</li>
+<li>fe36843e3a348f732c6b858c0ccfd224f14b7ff5 fix(ci): install syft for GoReleaser SBOM generation</li>
+<li>f7788329b84ecef57182f58c91b1810f25154961 fix(client): classify account status from structured APIError</li>
+<li>8ce739741eafa8ce4640ae050e96a71e40f813e7 fix(coding): atomic config writes and context-aware key validation</li>
+<li>55c2669ad38710a7d015b7e5d23c100cc978b3af fix(tui): route tools/models/usage async results to their own tab</li>
+<li>b7386e225bc62a8388850b3ce416220713bb77c2 fix(tui): stop stranding media async results on tab switch</li>
+<li>ddfb761771e0ec1aecfe045ec36a4b7ea658f214 fix: dead code and a recurring test short-read bug found by golangci-lint</li>
+<li>2197bdd50e69899a5c8a22ba8403e73717dce541 refactor!: rename module to github.com/SamyRai/go-z-ai; wire new services into the CLI/TUI</li>
+<li>4b59f9059195cbfc145e19c0357afdcdb5519404 refactor(cli): inject client via runWithClient wrapper</li>
+<li>c8da34c41c49bddf9af4d46b8ae9e3b555e6d817 refactor(client): rename live_verification_test → live_replay_test for clarity</li>
+<li>66224d332d0c1349d71b0bc5588ef6dfb531c222 refactor: interface{} -&gt; any across the module</li>
+<li>33b6e34682fb1cd525508f8376eeb7e8fe9c2fa2 refactor: move CLI to internal/cli and app packages to internal/</li>
+<li>0abc722bff861d29319b75f583c4aa2bec2e7aba refactor: split buildChatRequest, extract shared fileinput helper</li>
+<li>d2213f29a601409af298c7667d9a9a33fd1a1c9c test(accounts): cover the credential store and type detection</li>
+<li>637bb9f7d4b46abf2d4dec992c3a399a9c10541e test(cli): lock credential precedence and command behavior</li>
+<li>73bbf9e232976fef3e5b74918ee9878202a06e73 test(client): add live success-path verification harness</li>
+<li>c01cb93143df0913550444489b2f78b50d7ea653 test(client): add live-verify scaffolding for voice, stream-tool-call, web-search</li>
+<li>94c27fcd81c2dc54785ddd275ed4086e0124af69 test(client): coverage for the new services and go-vcr live-verification</li>
+<li>81fc422173bc706b6cd648c3990e1e94c584131a test(tui): cover every tab’s Update logic</li>
+</ul>
+</div>
+  <p class="moreline"><a href="https://github.com/SamyRai/go-z-ai/releases" rel="external">All releases <span aria-hidden="true">→</span></a> · <a href="/feed.xml">Release feed (Atom)</a></p>
+</section><script>
+  (function() {
+    
+    function detect() {
+      var ua = navigator.userAgent || "";
+      var os = /Mac/i.test(ua) ? "darwin" : /Linux|Android/i.test(ua) ? "linux" : /Win/i.test(ua) ? "windows" : "";
+      var arch = /arm64|aarch64/i.test(ua) ? "arm64" : "amd64";
+      var p = navigator.userAgentData && navigator.userAgentData.platform;
+      if (p) { if (/mac/i.test(p)) os = "darwin"; else if (/linux/i.test(p)) os = "linux"; else if (/win/i.test(p)) os = "windows"; }
+      
+      if (os === "darwin" && navigator.maxTouchPoints > 1) arch = "arm64";
+      return { os: os, arch: arch };
+    }
+    try {
+      var d = detect();
+      var grid = document.querySelector(".dl-grid");
+      if (grid && d.os) {
+        var card = grid.querySelector('.dl-card[data-os="' + d.os + '"][data-arch="' + d.arch + '"]')
+                || grid.querySelector('.dl-card[data-os="' + d.os + '"]');
+        if (card) {
+          card.classList.add("dl-card--rec");
+          var b = card.querySelector(".dl-badge"); if (b) b.hidden = false;
+          grid.insertBefore(card, grid.firstChild);
+        }
+      }
+    } catch (e) {}
+
+    
+    
+    document.querySelectorAll("main pre.chroma").forEach(function(pre) {
+      var wrap = document.createElement("div");
+      wrap.className = "codewrap";
+      pre.parentNode.insertBefore(wrap, pre);
+      wrap.appendChild(pre);
+      var btn = document.createElement("button");
+      btn.type = "button"; btn.className = "code-copy"; btn.textContent = "Copy";
+      btn.setAttribute("aria-label", "Copy to clipboard");
+      btn.addEventListener("click", function() {
+        var text = (pre.querySelector("code") || pre).innerText;
+        navigator.clipboard && navigator.clipboard.writeText(text).then(function() {
+          btn.textContent = "Copied"; setTimeout(function() { btn.textContent = "Copy"; }, 1500);
+        });
+      });
+      wrap.appendChild(btn);
+    });
+  })();
+</script>
+
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API<br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      <a href="https://github.com/SamyRai/go-z-ai/blob/main/LICENSE">Apache 2.0</a> ·
+      Built from commit 2c4beb8
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Changelog</a> ·
+      <a href="/CONTRIBUTING.html">Contributing</a> ·
+      <a href="/SECURITY.html">Security</a> ·
+      <a href="/sitemap.xml">Sitemap</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Switch to light mode" : "Switch to dark mode");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Switch to dark mode" : "Switch to light mode");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+
+

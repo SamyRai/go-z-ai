@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Coding tools · go-z-ai</title>
+  <meta name="description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <link rel="canonical" href="/en/coding-tools.html">
+  <link rel="alternate" hreflang="en" href="/en/coding-tools.html">
+  <link rel="alternate" hreflang="ru" href="/ru/coding-tools.html">
+  <link rel="alternate" hreflang="zh" href="/zh/coding-tools.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/coding-tools.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Coding tools · go-z-ai">
+  <meta property="og:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/en/coding-tools.html">
+  <meta property="og:locale" content="en">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Coding tools · go-z-ai">
+  <meta name="twitter:description" content="A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/en/coding-tools.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Coding tools","inLanguage":"en","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Coding tools","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/en/coding-tools.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/en/coding-tools.html","name":"Coding tools","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/en/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">Z</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/en/" >Home</a>
+      <a href="/en/getting-started.html" aria-current="page">Docs</a>
+      <a href="/en/cli-reference.html">CLI</a>
+      <a href="/en/library-guide.html">Library</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Changelog</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>English</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/coding-tools.html" aria-current="true">English</a>
+    <a role="menuitem" href="/ru/coding-tools.html" >Русский</a>
+    <a role="menuitem" href="/zh/coding-tools.html" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="coding-tools-glm-coding-plan">Coding Tools (GLM Coding Plan)</h1>
+<p><code>go-z-ai coding</code> configures third-party coding assistants to use your GLM
+Coding Plan instead of their default provider. It’s a Go port of Z.AI’s
+official <code>@z_ai/coding-helper</code> (“chelper”) CLI, sharing the same credential
+file so the two tools can be used interchangeably.</p>
+<h2 id="supported-tools">Supported tools</h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Config file it writes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Claude Code</td>
+<td><code>~/.claude/settings.json</code> (+ <code>~/.claude.json</code> onboarding flag)</td>
+</tr>
+<tr>
+<td>OpenCode</td>
+<td><code>~/.config/opencode/opencode.json</code></td>
+</tr>
+<tr>
+<td>Crush</td>
+<td><code>~/.config/crush/crush.json</code></td>
+</tr>
+<tr>
+<td>Factory Droid</td>
+<td><code>~/.factory/settings.json</code></td>
+</tr>
+<tr>
+<td>Cursor</td>
+<td>OS-specific — <code>~/Library/Application Support/Cursor/User/settings.json</code> on macOS, <code>~/.cursor/settings.json</code> (or <code>~/.config/Cursor/User/settings.json</code>) elsewhere</td>
+</tr>
+</tbody>
+</table>
+<p>Run <code>go-z-ai coding tools</code> to see install status and exact resolved paths
+on your machine.</p>
+<h2 id="plans">Plans</h2>
+<table>
+<thead>
+<tr>
+<th>Plan identifier</th>
+<th>Endpoint</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>glm_coding_plan_global</code></td>
+<td><code>https://api.z.ai</code></td>
+</tr>
+<tr>
+<td><code>glm_coding_plan_china</code></td>
+<td><code>https://open.bigmodel.cn</code></td>
+</tr>
+</tbody>
+</table>
+<p>Pick whichever matches where your GLM Coding Plan subscription lives.</p>
+<h2 id="quickstart">Quickstart</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="c1"># 1. Store and validate your GLM Coding Plan key (one-time)</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding auth glm_coding_plan_global YOUR_KEY
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 2. Load it into a tool</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding load claude-code
+</span></span><span class="line"><span class="cl"><span class="c1"># tool IDs: claude-code, opencode, crush, factory-droid, cursor</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># aliases also work: claude, droid, factory</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 3. Check everything&#39;s wired up</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding status
+</span></span><span class="line"><span class="cl">go-z-ai coding doctor
+</span></span></code></pre><p>Credentials live at <code>~/.chelper/config.yaml</code> (byte-compatible with the
+official Node helper) — <code>coding auth</code> writes there once, and <code>coding load</code>
+reads from it for every tool unless you pass <code>--key</code>/<code>--plan</code> overrides.</p>
+<p>To stop using Z.AI for a tool without losing your stored credential:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding unload claude-code
+</span></span></code></pre><p>This removes only the Z.AI-specific fields it added; it does not touch the
+rest of your existing config file.</p>
+<h2 id="claude-code-model-mapping">Claude Code: model mapping</h2>
+<p>The official helper only sets <code>ANTHROPIC_AUTH_TOKEN</code>, <code>ANTHROPIC_BASE_URL</code>,
+<code>API_TIMEOUT_MS</code>, and <code>CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC</code>. This client
+goes further by default and also maps Claude Code’s model tiers to specific
+GLM models via <code>ANTHROPIC_DEFAULT_*_MODEL</code>, matching
+<a href="https://docs.z.ai/scenario-example/develop-tools/claude" rel="nofollow noreferrer noopener" target="_blank">Z.AI’s documented recommendation</a>:</p>
+<table>
+<thead>
+<tr>
+<th>Claude tier</th>
+<th>Default GLM model</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>haiku</td>
+<td><code>glm-4.5-air</code></td>
+</tr>
+<tr>
+<td>sonnet</td>
+<td><code>glm-4.7</code></td>
+</tr>
+<tr>
+<td>opus</td>
+<td><code>glm-4.7</code></td>
+</tr>
+</tbody>
+</table>
+<p>Override any tier, or opt out entirely:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding auth glm_coding_plan_global YOUR_KEY <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --sonnet glm-5.2 --opus glm-5.2
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">go-z-ai coding auth glm_coding_plan_global YOUR_KEY --no-model-mapping
+</span></span></code></pre><p>Also configurable, all optional (0/omitted = don’t set the env var):</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Env var it sets</th>
+<th>Why you’d use it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--auto-compact-window int</code></td>
+<td><code>CLAUDE_CODE_AUTO_COMPACT_WINDOW</code></td>
+<td>Defaults to 1,000,000 (GLM-5.2’s context size); lower it (e.g. 128000) if you’re pinned to a 128K-context model</td>
+</tr>
+<tr>
+<td><code>--max-thinking-tokens int</code></td>
+<td><code>MAX_THINKING_TOKENS</code></td>
+<td>Extended-thinking budget</td>
+</tr>
+<tr>
+<td><code>--max-output-tokens int</code></td>
+<td><code>CLAUDE_CODE_MAX_OUTPUT_TOKENS</code></td>
+<td>Output cap</td>
+</tr>
+</tbody>
+</table>
+<p>These flags are persistent on the <code>coding</code> command, so they apply the same
+way to <code>auth</code>, <code>load</code>, and <code>reload</code>.</p>
+<h2 id="key-management">Key management</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding auth revoke              <span class="c1"># clear the stored key, keep the plan choice</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding auth reload &lt;tool&gt;       <span class="c1"># re-push stored creds into a tool</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding load &lt;tool&gt; --key OTHER_KEY --plan glm_coding_plan_china  <span class="c1"># one-off override</span>
+</span></span></code></pre><p>By default, <code>coding auth</code> validates a new key against the API before storing
+it (a real <code>/models</code> call). Skip that with <code>--no-validate</code> if you want to
+store a key offline (e.g. scripting a machine you haven’t network-tested yet).</p>
+<h2 id="vision-mcp-server">Vision MCP server</h2>
+<p>The official <code>@z_ai/coding-helper</code> wizard has a “manage MCP services” step
+that this client didn’t replicate until now: Z.AI ships its own
+<a href="https://docs.z.ai/devpack/mcp/vision-mcp-server" rel="nofollow noreferrer noopener" target="_blank">Vision MCP Server</a>
+(<code>@z_ai/mcp-server</code>) — screenshot OCR, error-screenshot diagnosis,
+diagram/chart understanding, and general image/video analysis via GLM-4.6V,
+launched on demand via <code>npx</code>. <code>coding mcp</code> registers it in whichever tool
+you’re using:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding mcp add claude-code     <span class="c1"># uses the stored API key</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp add crush --key OTHER_KEY
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp status              <span class="c1"># which tools have it configured</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp remove claude-code
+</span></span></code></pre><p><strong>Requires Node.js.</strong> The server itself runs via <code>npx -y @z_ai/mcp-server</code> —
+Z.AI’s own docs currently recommend Node.js 22+, though the npm package only
+declares an 18+ requirement. <code>coding mcp add</code>/<code>doctor</code> warn (don’t block) if
+<code>npx</code> isn’t found on <code>PATH</code>, since the config is valid the moment Node.js
+becomes available.</p>
+<p><strong>The MCP config file often isn’t the same file as your GLM credential.</strong>
+Two of the five tools keep MCP servers in a separate file from provider/API
+settings:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Credential config</th>
+<th>MCP config</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Claude Code</td>
+<td><code>~/.claude/settings.json</code></td>
+<td><code>~/.claude.json</code></td>
+</tr>
+<tr>
+<td>OpenCode</td>
+<td><code>opencode.json</code></td>
+<td>same file, <code>mcp</code> key</td>
+</tr>
+<tr>
+<td>Crush</td>
+<td><code>crush.json</code></td>
+<td>same file, <code>mcp</code> key</td>
+</tr>
+<tr>
+<td>Factory Droid</td>
+<td><code>~/.factory/settings.json</code></td>
+<td><code>~/.factory/mcp.json</code></td>
+</tr>
+<tr>
+<td>Cursor</td>
+<td>OS-specific <code>settings.json</code></td>
+<td>sibling <code>mcp.json</code>, same directory</td>
+</tr>
+</tbody>
+</table>
+<p>Cursor isn’t explicitly listed as a supported Vision MCP client in Z.AI’s own
+docs — this uses the generic MCP shape Cursor documents for any server, which
+should work but hasn’t been Z.AI-confirmed for this specific server.</p>
+<h2 id="doctor">Doctor</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding doctor
+</span></span></code></pre><p>Checks: is a credential stored, does it look well-formed, which supported
+tools are installed on <code>PATH</code>, and which of those already have a Z.AI
+configuration (including the Vision MCP server, if registered). Good first
+step when something isn’t working.</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API<br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      <a href="https://github.com/SamyRai/go-z-ai/blob/main/LICENSE">Apache 2.0</a> ·
+      Built from commit 2c4beb8
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Changelog</a> ·
+      <a href="/CONTRIBUTING.html">Contributing</a> ·
+      <a href="/SECURITY.html">Security</a> ·
+      <a href="/sitemap.xml">Sitemap</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Switch to light mode" : "Switch to dark mode");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Switch to dark mode" : "Switch to light mode");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

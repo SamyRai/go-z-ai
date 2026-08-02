@@ -1,0 +1,28 @@
+# go-z-ai
+
+> A Go CLI, library, and TUI for the Z.AI (Zhipu AI) API
+
+The full documentation as one file for agents: https://SamyRai.github.io/go-z-ai/llms-full.txt
+
+## Documentation
+
+- [Getting started](https://SamyRai.github.io/go-z-ai/en/getting-started.html): install the CLI, set ZAI_API_KEY, and make a first chat request
+- [CLI reference](https://SamyRai.github.io/go-z-ai/en/cli-reference.html): every go-z-ai subcommand, flag, and output format
+- [Library guide](https://SamyRai.github.io/go-z-ai/en/library-guide.html): use go-z-ai as a Go package: client construction, chat, streaming, tools
+- [Accounts & quota](https://SamyRai.github.io/go-z-ai/en/accounts-and-quota.html): GLM Coding Plan, multi-account switching, quota and burn-rate tracking
+- [Coding tools](https://SamyRai.github.io/go-z-ai/en/coding-tools.html): wire go-z-ai's Anthropic-compatible endpoint into Claude Code, Cursor, and similar
+- [Error handling](https://SamyRai.github.io/go-z-ai/en/error-handling.html): error types, retry semantics, and how failures surface in the CLI and library
+- [Architecture](https://SamyRai.github.io/go-z-ai/en/architecture.html): internal package layout and design of the client, TUI, and CLI
+- [Roadmap](https://SamyRai.github.io/go-z-ai/en/roadmap.html): planned and in-progress work
+
+## Project
+
+- [Download & install](https://SamyRai.github.io/go-z-ai/download.html): prebuilt signed binaries (macOS/Linux) or `go install`
+- [Source code (go-z-ai)](https://github.com/SamyRai/go-z-ai): the Go source, issues, and releases
+- [Changelog](https://SamyRai.github.io/go-z-ai/CHANGELOG.html): released changes by version
+- [Contributing](https://SamyRai.github.io/go-z-ai/CONTRIBUTING.html): how to build, test, and submit changes
+
+## Other languages
+
+- [Русский (Russian)](https://SamyRai.github.io/go-z-ai/ru/)
+- [简体中文 (Chinese)](https://SamyRai.github.io/go-z-ai/zh/)
