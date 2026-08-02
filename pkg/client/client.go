@@ -86,8 +86,12 @@ type Config struct {
 	// open for minutes) partway through a generation. Defaults to 30s.
 	Timeout time.Duration
 	// MaxRetries is the number of retry attempts on transient failures
-	// (429, 5xx, network errors). Defaults to DefaultMaxRetries (3).
-	// Set to -1 to disable retries entirely.
+	// (429, 5xx, network errors). The zero value does NOT mean "no retries" —
+	// it means "unset", and resolves to DefaultMaxRetries (3) in NewClient,
+	// so a bare Config{MaxRetries: 0} still retries 3×. To disable retries
+	// entirely, set MaxRetries to -1 (NewClient maps that to 0 attempts).
+	// This trichotomy (0→default, -1→disabled, >0→explicit) is easy to get
+	// wrong; if you want zero retries, always use -1.
 	MaxRetries int
 	// RetryDelay is the base delay for exponential backoff. Defaults to 200ms.
 	RetryDelay time.Duration
@@ -655,6 +659,12 @@ func (c *Client) retryDelay(retryAfter string, attempt int) time.Duration {
 		d = maxRetryDelay
 	}
 	jitter := time.Duration(rand.Int63n(int64(d)/4 + 1))
+	// Cap the final result (base + jitter) so a single backoff never exceeds
+	// maxRetryDelay — jitter added on top of a capped base would otherwise
+	// push the sleep past the documented ceiling.
+	if result := d + jitter; result > maxRetryDelay {
+		return maxRetryDelay
+	}
 	return d + jitter
 }
 

@@ -205,6 +205,88 @@ func TestStreamContextCancel(t *testing.T) {
 	}
 }
 
+// TestStreamEarlyBreakNoCancel is the regression test for a deadlock in
+// pullStream: a caller that `break`s out of the range WITHOUT cancelling the
+// context must not hang. Before the fix, the consumer waited on producerDone
+// while the producer blocked on its channel send (the only unblock was
+// ctx.Done(), which never fired) — a deterministic hang + goroutine/body
+// leak. Now pullStream owns an internal context it cancels on consumer exit,
+// unblocking the producer. The load-bearing assertion is that the range loop
+// returns promptly after break (a hang is the failure mode); the goroutine
+// delta is a secondary check (relaxed, since httptest's server keeps a
+// transient background-read goroutine that muddies an exact count).
+func TestStreamEarlyBreakNoCancel(t *testing.T) {
+	// handlerDone lets the handler exit promptly when the test tears down, so
+	// srv.Close() never blocks on a handler stuck in <-r.Context().Done().
+	// handlerStop lets the test unblock the handler so srv.Close() returns
+	// promptly; without it the handler (stuck in <-r.Context().Done()) would
+	// make defer srv.Close() hang.
+	handlerStop := make(chan struct{})
+	handlerExited := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer close(handlerExited)
+		w.Header().Set("Content-Type", "text/event-stream")
+		flusher, _ := w.(http.Flusher)
+		fmt.Fprintf(w, "data: {\"id\":\"1\",\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"x\"}}]}\n\n")
+		if flusher != nil {
+			flusher.Flush()
+		}
+		select {
+		case <-r.Context().Done(): // client disconnected
+		case <-handlerStop: // test tearing down
+		}
+	}))
+	defer func() {
+		close(handlerStop) // unblock the handler
+		<-handlerExited    // wait for it to return
+		srv.Close()
+	}()
+
+	c := newTestClient(t, srv.URL, Config{MaxRetries: 0})
+	req := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95}
+
+	startGoroutines := runtime.NumGoroutine()
+	chunks := 0
+	returned := make(chan struct{})
+	go func() {
+		// Deliberately DO NOT cancel ctx — this is the bug's trigger.
+		for chunk, err := range c.Chat().Stream(context.Background(), req) {
+			if err != nil {
+				t.Errorf("unexpected err on first chunk: %v", err)
+				return
+			}
+			chunks++
+			_ = chunk
+			break // early exit, no cancel — the scenario that used to deadlock
+		}
+		close(returned)
+	}()
+
+	// The core regression assertion: the loop must return, not hang.
+	select {
+	case <-returned:
+	case <-time.After(3 * time.Second):
+		t.Fatal("range loop hung after early break — B1 deadlock present")
+	}
+
+	// Secondary: the client's producer goroutine should have exited. Allow a
+	// brief grace; tolerate the httptest server's transient background-read
+	// goroutine by checking the delta settles to at most +1 (server noise).
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if runtime.NumGoroutine() <= startGoroutines+1 {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if got := runtime.NumGoroutine(); got > startGoroutines+1 {
+		t.Errorf("client goroutine leak after early break: started %d, now %d (tolerance +1)", startGoroutines, got)
+	}
+	if chunks != 1 {
+		t.Errorf("expected 1 chunk before break, got %d", chunks)
+	}
+}
+
 // TestStreamCallbackDelegation confirms the deprecated CreateStream still
 // works by delegating to Stream. This is the equivalence guarantee for
 // existing callers until v1.0 removal.

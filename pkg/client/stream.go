@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"io"
 	"iter"
 	"net/http"
 )
@@ -37,17 +38,50 @@ type streamItem[T any] struct {
 // Why a goroutine + channel (not a callback-driven pull function): the
 // natural Go 1.23+ idiom for adapting a push-style source to iter.Seq2 is a
 // producer goroutine feeding a buffered channel, with the range-loop's
-// yield function as the backpressure signal. Context cancellation is
-// observed in two places — the producer checks ctx.Err() in connect/deliver
-// (existing behavior), and the consumer's range loop stops calling next when
-// its own ctx is cancelled (runtime drains the channel on cancellation via
-// the stop function iter.Seq2 receives).
+// yield function as the backpressure signal. Early consumer exit (a `break`
+// out of the range) is signalled to the producer by an internal
+// context.WithCancel that pullStream owns and cancels on every exit path —
+// iter.Seq2's range-over-func provides no stop callback, so without this the
+// producer would deadlock on its next channel send when the consumer walks
+// away. The parent ctx is also honored: cancelling it propagates to the
+// internal context and tears down both sides.
 func pullStream[T any](
 	ctx context.Context,
 	connect func() (*http.Response, error),
 	deliver func(resp *http.Response, yield func(T) error) error,
 ) iter.Seq2[T, error] {
 	return func(yield func(T, error) bool) {
+		// pullStream owns an internal cancellable context derived from the
+		// caller's ctx, plus a handle to the response body. The consumer
+		// cancels the context AND closes the body on EVERY exit path (early
+		// break, error, clean end). This is essential because iter.Seq2's
+		// range-over-func gives the producer no other signal when a caller
+		// `break`s out of the range: the runtime simply stops calling yield.
+		// Without this teardown, the producer would block forever — either on
+		// its channel send (yieldToChan) or, more commonly, on a blocked body
+		// read inside deliver/readSSE. Cancel alone isn't enough: a bufio
+		// Scanner mid-Read on the response body is not reliably interrupted by
+		// request-context cancellation, so we close the body directly, which
+		// causes the Read to return immediately and deliver to return.
+		streamCtx, cancel := context.WithCancel(ctx)
+		defer cancel() // belt-and-suspenders: cancel on every return path.
+
+		// bodyCh carries the connected response so the consumer can close
+		// resp.Body itself on early exit (interrupting a blocked producer
+		// read). Buffered (1) so the producer never blocks publishing it. The
+		// producer still owns Close on its normal exit path; double-close is
+		// safe (http.Response.Body.Close is idempotent).
+		bodyCh := make(chan io.ReadCloser, 1)
+		closeBody := func() {
+			select {
+			case b, ok := <-bodyCh:
+				if ok && b != nil {
+					b.Close()
+				}
+			default:
+			}
+		}
+
 		// Buffered channel: capacity 1 gives the producer one chunk of slack
 		// so a slow consumer's range loop doesn't block the SSE read on every
 		// token (which would inflate tail latency). Larger buffers trade
@@ -66,6 +100,9 @@ func pullStream[T any](
 				items <- streamItem[T]{err: err}
 				return
 			}
+			// Publish the body so the consumer can close it on early exit.
+			// The producer's own defer handles Close on its normal exit.
+			bodyCh <- resp.Body
 			defer resp.Body.Close()
 
 			// yield adapters: the deliver function takes a func(T) error
@@ -76,49 +113,50 @@ func pullStream[T any](
 				select {
 				case items <- streamItem[T]{chunk: chunk}:
 					return nil
-				// If the consumer stopped ranging (returned false from their
-				// yield, or ctx cancelled and runtime is draining), unblock
-				// the producer so deliver returns and the goroutine exits.
-				case <-ctx.Done():
-					return ctx.Err()
+				// The consumer stopped ranging (returned false from its yield,
+				// or the stream was cancelled). The consumer cancels streamCtx
+				// and closes the body on exit, so this branch fires promptly
+				// and the producer unblocks — deliver returns, the goroutine
+				// exits.
+				case <-streamCtx.Done():
+					return streamCtx.Err()
 				}
 			}
 			if derr := deliver(resp, yieldToChan); derr != nil {
-				// Drain any pending sends won't be attempted — we just push
-				// the error and exit. If the channel is full and the consumer
-				// has walked away, the ctx.Done() select branch above will
-				// have already fired during the last chunk send.
+				// Push the terminal error if there's still a consumer; if the
+				// consumer walked away, streamCtx is already cancelled and the
+				// ctx.Done branch fires, letting us exit without blocking.
 				select {
 				case items <- streamItem[T]{err: derr}:
-				case <-ctx.Done():
+				case <-streamCtx.Done():
 				}
 			}
 		}()
 
 		// Consumer loop: range over items until channel closes or yield
-		// signals stop. We watch ctx.Done() so a cancelled context unblocks
-		// the range even if the producer is slow to close (it will, because
-		// connect/deliver check ctx too, but this avoids a hang window).
+		// signals stop. We watch streamCtx.Done() so a cancelled parent ctx
+		// unblocks the range even if the producer is slow to close.
 		for {
 			select {
-			case <-ctx.Done():
-				// Wait for the producer to finish so we don't leak a goroutine
-				// holding an open response body. The producer observes ctx in
-				// yieldToChan and connect, so it will exit promptly.
+			case <-streamCtx.Done():
+				// Parent ctx cancelled. Tear down: cancel + close the body so
+				// a producer blocked in a body read unblocks, then wait for it.
+				cancel()
+				closeBody()
 				<-producerDone
-				yield(zero[T](), ctx.Err())
+				yield(zero[T](), streamCtx.Err())
 				return
 			case item, ok := <-items:
 				if !ok {
 					return // clean stream end
 				}
 				if !yield(item.chunk, item.err) {
-					// Consumer returned false from their yield — stop early.
-					// The producer's next yieldToChan send will hit ctx.Done()
-					// only if the runtime cancelled; otherwise we rely on the
-					// producer naturally finishing or the response being read
-					// to completion. To avoid a stuck producer, the consumer's
-					// stop also implies ctx cancellation semantics.
+					// Consumer returned false from yield (early break/return).
+					// Cancel + close the body to unblock a producer that may be
+					// blocked either on its next channel send OR on a body read
+					// inside deliver, then wait for it to exit cleanly.
+					cancel()
+					closeBody()
 					<-producerDone
 					return
 				}

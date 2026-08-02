@@ -33,7 +33,6 @@ package observe
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/SamyRai/go-z-ai/pkg/client"
 
@@ -149,10 +148,26 @@ func NewOTelHookWithProvider(serviceName string, tp trace.TracerProvider, mp met
 		trace.WithInstrumentationVersion(client.Version()))
 	meter := mp.Meter("github.com/SamyRai/go-z-ai/pkg/observe",
 		metric.WithInstrumentationVersion(client.Version()))
+	// Create the metric instruments eagerly, once, in the single-threaded
+	// constructor — not lazily on first OnResponse. The hook is shared across
+	// a *Client's concurrent requests, and lazy creation would race on the
+	// cached fields (two first-of-kind responses writing h.metricDur at once).
+	// A missing/nil MeterProvider yields a no-op meter whose Lookups return
+	// no-op instruments, so this never panics; the lookups just don't record.
+	dur, _ := meter.Float64Histogram("gen_ai.client.operation.duration",
+		metric.WithUnit("s"),
+		metric.WithDescription("Duration of Z.AI API operations"))
+	req, _ := meter.Int64Counter("gen_ai.client.operation.count",
+		metric.WithDescription("Number of Z.AI API operations (success or error)"))
+	tok, _ := meter.Int64Counter("gen_ai.client.token.usage",
+		metric.WithDescription("Token usage from Z.AI API responses, by type (input/output)"))
 	return &OTelHook{
-		tracer:      tracer,
-		meter:       meter,
-		serviceName: serviceName,
+		tracer:         tracer,
+		meter:          meter,
+		serviceName:    serviceName,
+		metricDur:      dur,
+		metricRequests: req,
+		metricTokens:   tok,
 	}
 }
 
@@ -342,26 +357,21 @@ func asAPIError(err error, target **client.APIError) bool {
 
 // --- metrics ---------------------------------------------------------------
 
-// recordDuration increments the request-duration histogram. Lazily creates
-// the histogram on first call (so a missing MeterProvider only fails when
-// telemetry actually flows).
+// recordDuration increments the request-duration histogram. Instruments are
+// created eagerly in the constructor (concurrency-safe); a nil MeterProvider
+// yields no-op instruments, so this is always safe to call.
 func (h *OTelHook) recordDuration(ctx context.Context, meta client.ResponseMeta) {
-	if meta.Duration <= 0 {
+	if meta.Duration <= 0 || h.metricDur == nil {
 		return
-	}
-	dur, err := h.durationHistogram()
-	if err != nil {
-		return // no meter configured; silently skip (best-effort observability)
 	}
 	attrs := h.baseAttrs(meta.RequestMeta)
 	attrs = append(attrs, attribute.Int(attrHTTPResponseStatusCode, meta.StatusCode))
-	dur.Record(ctx, meta.Duration.Seconds(), metric.WithAttributes(attrs...))
+	h.metricDur.Record(ctx, meta.Duration.Seconds(), metric.WithAttributes(attrs...))
 }
 
 // recordRequest increments the request counter (success or error).
 func (h *OTelHook) recordRequest(ctx context.Context, meta client.RequestMeta, success bool) {
-	req, err := h.requestCounter()
-	if err != nil {
+	if h.metricRequests == nil {
 		return
 	}
 	attrs := h.baseAttrs(meta)
@@ -370,72 +380,24 @@ func (h *OTelHook) recordRequest(ctx context.Context, meta client.RequestMeta, s
 		status = "error"
 	}
 	attrs = append(attrs, attribute.String("status", status))
-	req.Add(ctx, 1, metric.WithAttributes(attrs...))
+	h.metricRequests.Add(ctx, 1, metric.WithAttributes(attrs...))
 }
 
 // recordTokens increments the token-usage counter, broken down by
 // input/output and model.
 func (h *OTelHook) recordTokens(ctx context.Context, meta client.RequestMeta, u *client.Usage) {
-	if u == nil {
-		return
-	}
-	tok, err := h.tokenCounter()
-	if err != nil {
+	if u == nil || h.metricTokens == nil {
 		return
 	}
 	baseAttrs := h.baseAttrs(meta)
 	if u.PromptTokens > 0 {
-		tok.Add(ctx, int64(u.PromptTokens),
+		h.metricTokens.Add(ctx, int64(u.PromptTokens),
 			metric.WithAttributes(append(baseAttrs, attribute.String("gen_ai.token.type", "input"))...))
 	}
 	if u.CompletionTokens > 0 {
-		tok.Add(ctx, int64(u.CompletionTokens),
+		h.metricTokens.Add(ctx, int64(u.CompletionTokens),
 			metric.WithAttributes(append(baseAttrs, attribute.String("gen_ai.token.type", "output"))...))
 	}
-}
-
-// durationHistogram lazily creates the histogram. Failure (e.g. no meter
-// configured) is sticky — once it fails, subsequent calls short-circuit on
-// h.metricDur == nil after the first attempt. We re-attempt each call until
-// success, which is cheap (h.meter.Histogram is idempotent).
-func (h *OTelHook) durationHistogram() (metric.Float64Histogram, error) {
-	if h.metricDur != nil {
-		return h.metricDur, nil
-	}
-	d, err := h.meter.Float64Histogram("gen_ai.client.operation.duration",
-		metric.WithUnit("s"),
-		metric.WithDescription("Duration of Z.AI API operations"))
-	if err != nil {
-		return nil, fmt.Errorf("create duration histogram: %w", err)
-	}
-	h.metricDur = d
-	return d, nil
-}
-
-func (h *OTelHook) requestCounter() (metric.Int64Counter, error) {
-	if h.metricRequests != nil {
-		return h.metricRequests, nil
-	}
-	c, err := h.meter.Int64Counter("gen_ai.client.operation.count",
-		metric.WithDescription("Number of Z.AI API operations (success or error)"))
-	if err != nil {
-		return nil, fmt.Errorf("create request counter: %w", err)
-	}
-	h.metricRequests = c
-	return c, nil
-}
-
-func (h *OTelHook) tokenCounter() (metric.Int64Counter, error) {
-	if h.metricTokens != nil {
-		return h.metricTokens, nil
-	}
-	c, err := h.meter.Int64Counter("gen_ai.client.token.usage",
-		metric.WithDescription("Token usage from Z.AI API responses, by type (input/output)"))
-	if err != nil {
-		return nil, fmt.Errorf("create token counter: %w", err)
-	}
-	h.metricTokens = c
-	return c, nil
 }
 
 // Compile-time check that OTelHook satisfies client.Hook.
