@@ -7,6 +7,7 @@ package usageview
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -197,4 +198,101 @@ func FormatCount(n int64) string {
 	default:
 		return fmt.Sprintf("%d", n)
 	}
+}
+
+// monitorLabelFormat is the layout of the x_time bucket labels the monitor
+// API returns — a zoneless wall-clock the server emits in its own timezone
+// (CST / UTC+8). It matches monitorUsageTimeFormat in pkg/client/quota.go.
+const monitorLabelFormat = "2006-01-02 15:04"
+
+// ParseMonitorTime parses a zoneless monitor x_time bucket label ("2006-01-02
+// 15:04" or the finer "2006-01-02 15:04:05") as an absolute instant by
+// interpreting it in serverTZ — the timezone the monitor API operates in. The
+// label carries no offset, so without serverTZ it is ambiguous; this is the
+// inverse of pkg/client's monitorUsagePath, which formats query params in the
+// same zone. An empty label yields the zero time with no error.
+func ParseMonitorTime(label string, serverTZ *time.Location) (time.Time, error) {
+	label = strings.TrimSpace(label)
+	if label == "" {
+		return time.Time{}, nil
+	}
+	for _, layout := range []string{monitorLabelFormat, "2006-01-02 15:04:05"} {
+		if t, err := time.ParseInLocation(layout, label, serverTZ); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("unparseable monitor time label %q", label)
+}
+
+// LocalizeXTime converts the server-local x_time bucket labels (a span's
+// first/last or the full slice) into the viewer's local display strings. A
+// label that fails to parse is passed through unchanged (best-effort) so a
+// single malformed value never blanks the whole header. Returns the same
+// number of strings as the input, formatted as "2006-01-02 15:04".
+func LocalizeXTime(labels []string, serverTZ *time.Location) []string {
+	if serverTZ == nil {
+		// No server zone known — leave labels as-is rather than guessing.
+		out := make([]string, len(labels))
+		copy(out, labels)
+		return out
+	}
+	out := make([]string, len(labels))
+	for i, l := range labels {
+		l = strings.TrimSpace(l)
+		t, err := ParseMonitorTime(l, serverTZ)
+		if err != nil || t.IsZero() {
+			out[i] = l
+			continue
+		}
+		out[i] = t.Local().Format(monitorLabelFormat)
+	}
+	return out
+}
+
+// ZoneNote returns a one-line note explaining that times are shown in the
+// viewer's local time and naming the server's zone, but ONLY when the server
+// zone differs from the viewer's local zone. When they match (e.g. the viewer
+// is in CST), it returns "" so the output stays quiet in the common case for
+// that viewer. serverTZ nil → "".
+func ZoneNote(serverTZ *time.Location) string {
+	if serverTZ == nil {
+		return ""
+	}
+	if sameOffset(time.Local, serverTZ) {
+		return ""
+	}
+	return fmt.Sprintf("Times shown in your local time (%s); server operates in %s (%s).",
+		zoneAbbr(time.Local), zoneAbbr(serverTZ), offsetString(serverTZ))
+}
+
+// sameOffset reports whether two locations currently share the same UTC offset
+// (DST-aware, at this instant). Zones with the same offset compare equal even
+// when their abbreviations differ (e.g. CET vs a fixed UTC+1) — the viewer
+// only cares that the wall-clock matches.
+func sameOffset(a, b *time.Location) bool {
+	return offsetString(a) == offsetString(b)
+}
+
+// offsetString renders a location's current UTC offset as "+08:00"/"-05:00",
+// using the zone's offset at this instant (DST-aware).
+func offsetString(loc *time.Location) string {
+	_, offset := time.Now().In(loc).Zone()
+	sign := "+"
+	if offset < 0 {
+		sign = "-"
+		offset = -offset
+	}
+	h := offset / 3600
+	m := (offset % 3600) / 60
+	return fmt.Sprintf("%s%02d:%02d", sign, h, m)
+}
+
+// zoneAbbr returns the abbreviation for a zone at this instant (e.g. "CEST",
+// "CST"). Falls back to the offset string when the abbreviation is empty.
+func zoneAbbr(loc *time.Location) string {
+	name, _ := time.Now().In(loc).Zone()
+	if name != "" {
+		return name
+	}
+	return offsetString(loc)
 }

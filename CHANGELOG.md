@@ -4,6 +4,32 @@ Notable changes to this project, loosely following
 [Keep a Changelog](https://keepachangelog.com/). Entries before `v0.1.0` are
 grouped by date; from `v0.1.0` on, sections are tagged.
 
+## 2026-08-02 (post-v0.1.0)
+
+### Fixed
+- **Monitor usage window was timezone-shifted.** The `usage model-usage`/
+  `tool-usage` endpoints exchange zoneless time strings that the server
+  interprets as its own wall-clock (verified live to be **CST / UTC+8**), but
+  the client formatted `startTime`/`endTime` in the viewer's local zone. So
+  `accounts usage --today`/`--days` requested a range shifted ~6h and returned
+  the wrong slice. The client now formats the query window in the server's
+  timezone, so the requested absolute range is correct regardless of the
+  viewer's zone.
+
+### Changed
+- **Usage/quota times render in the viewer's local timezone**, with the
+  server's zone shown additionally when it differs. Reset times gain a
+  `Server:` line (the boundary that actually clears a limit) only when the
+  server zone differs from local; the `accounts usage` heat-map header
+  converts its span to local time and prints a one-line note naming the
+  server zone. The returned `x_time` bucket labels (server-local, zoneless)
+  are converted to local for display.
+- **`Config.MonitorTimezone` / `--monitor-timezone` / `ZAI_MONITOR_TIMEZONE`**
+  override the server-timezone assumption (default CST/UTC+8). Accepts IANA
+  names (`Asia/Shanghai`), `UTC`, `local`, or offsets (`+8`, `UTC-05:00`).
+  `Client.MonitorTimezone()` exposes the resolved zone so render layers can
+  relabel. `pkg/client.ParseTimezone` is the shared parser.
+
 ## 2026-07-19 (post-v0.1.0)
 
 ### Added

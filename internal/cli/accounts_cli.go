@@ -342,6 +342,10 @@ type accountQuotaResult struct {
 	Type    client.AccountType         `json:"type"`
 	Skipped string                     `json:"skipped,omitempty"`
 	Quota   *client.QuotaLimitResponse `json:"quota,omitempty"`
+	// ServerTZ is the monitor API's operating timezone, captured off the
+	// per-account client so the text renderer can annotate reset times with
+	// the server's zone when it differs from the viewer's. Not serialized.
+	ServerTZ *time.Location `json:"-"`
 	// notApplicable mirrors accountUsageResult's field of the same name —
 	// see its doc comment.
 	notApplicable bool
@@ -366,6 +370,7 @@ func fetchAccountQuota(ctx context.Context, acct accounts.Account) (accountQuota
 	if err != nil {
 		return accountQuotaResult{}, fmt.Errorf("account %q: %w", acct.Name, err)
 	}
+	result.ServerTZ = apiClient.MonitorTimezone()
 
 	quota, err := apiClient.Quota().GetQuotaLimit(ctx)
 	if err != nil {
@@ -387,7 +392,7 @@ func printAccountQuotaResult(result accountQuotaResult) error {
 		fmt.Printf("❌ Failed to fetch quota: %s\n\n", result.Skipped)
 		return nil
 	}
-	return outputQuotaLimit(result.Quota)
+	return outputQuotaLimit(result.Quota, result.ServerTZ)
 }
 
 func runAccountsQuota(cmd *cobra.Command, args []string) error {
@@ -435,6 +440,10 @@ type accountUsageResult struct {
 	Skipped string                     `json:"skipped,omitempty"`
 	Models  *client.ModelUsageResponse `json:"models,omitempty"`
 	Tools   *client.ToolUsageResponse  `json:"tools,omitempty"`
+	// ServerTZ is the monitor API's operating timezone, captured off the
+	// per-account client so the text renderer can relabel x_time buckets into
+	// the viewer's local time. Not serialized — JSON consumers get raw labels.
+	ServerTZ *time.Location `json:"-"`
 	// notApplicable distinguishes "this account type doesn't support usage
 	// endpoints at all" from "the fetch failed" for printAccountUsageResult's
 	// benefit — both set Skipped, but read differently in text mode (⏭️ vs
@@ -464,6 +473,7 @@ func fetchAccountUsage(ctx context.Context, acct accounts.Account, metric string
 	if err != nil {
 		return accountUsageResult{}, fmt.Errorf("account %q: %w", acct.Name, err)
 	}
+	result.ServerTZ = apiClient.MonitorTimezone()
 
 	if metric == "model" || metric == "both" {
 		models, err := apiClient.Quota().GetModelUsage(ctx, start, end)
@@ -495,11 +505,14 @@ func printAccountUsageResult(result accountUsageResult) {
 		fmt.Printf("❌ %s\n\n", result.Skipped)
 		return
 	}
+	if note := usageview.ZoneNote(result.ServerTZ); note != "" {
+		fmt.Printf("🕑 %s\n", note)
+	}
 	if result.Models != nil {
-		printModelHeatmap(result.Models)
+		printModelHeatmap(result.Models, result.ServerTZ)
 	}
 	if result.Tools != nil {
-		printToolHeatmap(result.Tools)
+		printToolHeatmap(result.Tools, result.ServerTZ)
 	}
 }
 
@@ -555,21 +568,24 @@ func runAccountsUsage(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// rangeLabel summarizes a bucket list's span for display.
-func rangeLabel(xTime []string) string {
-	switch len(xTime) {
+// rangeLabel summarizes a bucket list's span for display, converting the
+// server-local x_time labels into the viewer's local time first (when a
+// server zone is known) so the span reads in the viewer's clock.
+func rangeLabel(xTime []string, serverTZ *time.Location) string {
+	local := usageview.LocalizeXTime(xTime, serverTZ)
+	switch len(local) {
 	case 0:
 		return "no data"
 	case 1:
-		return xTime[0]
+		return local[0]
 	default:
-		return fmt.Sprintf("%s → %s", xTime[0], xTime[len(xTime)-1])
+		return fmt.Sprintf("%s → %s", local[0], local[len(local)-1])
 	}
 }
 
-func printModelHeatmap(u *client.ModelUsageResponse) {
+func printModelHeatmap(u *client.ModelUsageResponse, serverTZ *time.Location) {
 	d := u.Data
-	fmt.Printf("📈 Model usage (%s, %s)\n", rangeLabel(d.XTime), d.Granularity)
+	fmt.Printf("📈 Model usage (%s, %s)\n", rangeLabel(d.XTime, serverTZ), d.Granularity)
 
 	if len(d.ModelDataList) == 0 {
 		fmt.Println("  No model usage in this window.")
@@ -593,9 +609,9 @@ func printModelHeatmap(u *client.ModelUsageResponse) {
 	fmt.Printf("  Total: %s calls, %s tokens\n\n", usageview.FormatCount(d.TotalUsage.TotalModelCallCount), usageview.FormatCount(d.TotalUsage.TotalTokensUsage))
 }
 
-func printToolHeatmap(u *client.ToolUsageResponse) {
+func printToolHeatmap(u *client.ToolUsageResponse, serverTZ *time.Location) {
 	d := u.Data
-	fmt.Printf("🔧 Tool usage (%s, %s)\n", rangeLabel(d.XTime), d.Granularity)
+	fmt.Printf("🔧 Tool usage (%s, %s)\n", rangeLabel(d.XTime, serverTZ), d.Granularity)
 
 	if len(d.ToolDataList) == 0 {
 		fmt.Println("  No tool usage in this window.")

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -113,6 +114,13 @@ type Config struct {
 	// RegionChina when the key was issued on open.bigmodel.cn so those calls
 	// land on the matching host. See region.go.
 	Region Region
+	// MonitorTimezone overrides the timezone assumed for the monitor (quota/
+	// usage) API, which exchanges zoneless time strings the server interprets
+	// as its own wall-clock (UTC+8 / CST by default — see MonitorServerTZ).
+	// Set this only if a live capture shows a different server zone for your
+	// account; nil means "use Region.monitorTimezone()". When non-nil it wins
+	// over Region. The CLI mirrors it as ZAI_MONITOR_TIMEZONE.
+	MonitorTimezone *time.Location
 	// UserAgent overrides the default User-Agent header ("go-z-ai/<version>")
 	// sent on every request. The default identifies go-z-ai to Z.AI's API —
 	// important under the coding endpoint's usage policy, which treats
@@ -259,6 +267,88 @@ func (c *Client) chinaAPIKey() string {
 	return c.config.APIKey
 }
 
+// monitorTimezone returns the timezone the monitor (quota/usage) API operates
+// in: Config.MonitorTimezone when set (an explicit override), otherwise the
+// region's default (CST / UTC+8). Used to format query params in the server's
+// zone and by MonitorTimezone() to let the render layer re-label buckets.
+func (c *Client) monitorTimezone() *time.Location {
+	if c.config.MonitorTimezone != nil {
+		return c.config.MonitorTimezone
+	}
+	return c.config.Region.monitorTimezone()
+}
+
+// ParseTimezone parses a timezone string as accepted by ZAI_MONITOR_TIMEZONE:
+// an IANA name ("Asia/Shanghai"), a "UTC" literal, a UTC offset ("UTC+8",
+// "+08:00", "-5"), or "local". It returns nil (no error) for an empty string
+// so callers can pass an unset env var through as "no override". This avoids a
+// tzdata dependency in the common case — the package default (MonitorServerTZ)
+// is a time.FixedZone — while still allowing IANA names when the caller knows
+// tzdata is present.
+func ParseTimezone(s string) (*time.Location, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil, nil
+	}
+	lower := strings.ToLower(s)
+	if lower == "local" {
+		return time.Local, nil
+	}
+	if lower == "utc" {
+		return time.UTC, nil
+	}
+	// Offset forms: "UTC+8", "UTC-05:00", "+8", "-05:00". Strip a "UTC" prefix.
+	off := strings.TrimPrefix(s, "UTC")
+	off = strings.TrimPrefix(off, "utc")
+	off = strings.TrimSpace(off)
+	if off != "" && (off[0] == '+' || off[0] == '-') {
+		loc, err := parseUTCOffset(off)
+		if err != nil {
+			return nil, fmt.Errorf("ZAI_MONITOR_TIMEZONE %q: %w", s, err)
+		}
+		return loc, nil
+	}
+	// IANA name. Requires tzdata — on platforms without it (some Windows CI),
+	// LoadLocation returns an error; surface it so the caller can drop the
+	// override rather than silently ignoring it.
+	loc, err := time.LoadLocation(s)
+	if err != nil {
+		return nil, fmt.Errorf("ZAI_MONITOR_TIMEZONE %q: %w", s, err)
+	}
+	return loc, nil
+}
+
+// parseUTCOffset converts an offset like "+8", "-05:00", or "+0830" into a
+// named fixed zone ("UTC+08:00"). It is the tzdata-free path of ParseTimezone.
+func parseUTCOffset(s string) (*time.Location, error) {
+	sign := s[0]
+	body := s[1:]
+	body = strings.ReplaceAll(body, ":", "")
+	switch len(body) {
+	case 1, 2: // hours only
+		body = fmt.Sprintf("%02s", body) + "00"
+	case 3, 4: // hhm[m]
+		if len(body) == 3 {
+			body = "0" + body
+		}
+	default:
+		return nil, fmt.Errorf("invalid UTC offset %q", s)
+	}
+	h, err := strconv.Atoi(body[:2])
+	if err != nil || h > 23 {
+		return nil, fmt.Errorf("invalid UTC offset hours %q", s)
+	}
+	m, err := strconv.Atoi(body[2:])
+	if err != nil || m > 59 {
+		return nil, fmt.Errorf("invalid UTC offset minutes %q", s)
+	}
+	secs := h*3600 + m*60
+	if sign == '-' {
+		secs = -secs
+	}
+	return time.FixedZone(fmt.Sprintf("UTC%c%02d:%02d", sign, h, m), secs), nil
+}
+
 // NewClientFromEnv creates a new client from environment variables
 func NewClientFromEnv() (*Client, error) {
 	apiKey := os.Getenv("ZAI_API_KEY")
@@ -271,9 +361,15 @@ func NewClientFromEnv() (*Client, error) {
 		baseURL = DefaultBaseURL
 	}
 
+	monitorTZ, err := ParseTimezone(os.Getenv("ZAI_MONITOR_TIMEZONE"))
+	if err != nil {
+		return nil, err
+	}
+
 	return NewClient(Config{
-		APIKey:  apiKey,
-		BaseURL: baseURL,
+		APIKey:          apiKey,
+		BaseURL:         baseURL,
+		MonitorTimezone: monitorTZ,
 	})
 }
 
@@ -301,6 +397,14 @@ func (c *Client) Detection() *DetectionService {
 func (c *Client) Quota() *QuotaService {
 	return c.quota
 
+}
+
+// MonitorTimezone returns the timezone the monitor (quota/usage) API operates
+// in (Config.MonitorTimezone override, else the region default — CST/UTC+8).
+// Render layers use it to convert the server-local x_time bucket labels into
+// the viewer's local time and to annotate reset times. See MonitorServerTZ.
+func (c *Client) MonitorTimezone() *time.Location {
+	return c.monitorTimezone()
 }
 
 // Account returns the account service

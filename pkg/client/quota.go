@@ -308,17 +308,22 @@ const monitorUsageTimeFormat = "2006-01-02 15:04:05"
 // which must go through url.Values (not raw fmt.Sprintf string
 // concatenation) — an unescaped space in the query string trips an HTTP/2
 // stream error against this API.
-func monitorUsagePath(endpoint string, startTime, endTime time.Time) string {
+//
+// The times are formatted in serverTZ (the timezone the monitor API operates
+// in) because the server reads these zoneless strings as its own wall-clock.
+// Formatting in the viewer's local zone would request a shifted window
+// (UTC+offset hours off the intended range). See Config.MonitorTimezone.
+func monitorUsagePath(endpoint string, startTime, endTime time.Time, serverTZ *time.Location) string {
 	q := url.Values{}
-	q.Set("startTime", startTime.Format(monitorUsageTimeFormat))
-	q.Set("endTime", endTime.Format(monitorUsageTimeFormat))
+	q.Set("startTime", startTime.In(serverTZ).Format(monitorUsageTimeFormat))
+	q.Set("endTime", endTime.In(serverTZ).Format(monitorUsageTimeFormat))
 	return endpoint + "?" + q.Encode()
 }
 
 // GetModelUsage retrieves model usage statistics for a time window
 func (s *QuotaService) GetModelUsage(ctx context.Context, startTime, endTime time.Time) (*ModelUsageResponse, error) {
 	var result ModelUsageResponse
-	path := monitorUsagePath(ModelUsageEndpoint, startTime, endTime)
+	path := monitorUsagePath(ModelUsageEndpoint, startTime, endTime, s.client.monitorTimezone())
 	if err := s.client.doRequestBase(ctx, s.client.config.Region.monitorBaseURL(), "GET", path, nil, &result); err != nil {
 		return nil, fmt.Errorf("failed to get model usage: %w", err)
 	}
@@ -328,7 +333,7 @@ func (s *QuotaService) GetModelUsage(ctx context.Context, startTime, endTime tim
 // GetToolUsage retrieves MCP tool usage statistics for a time window
 func (s *QuotaService) GetToolUsage(ctx context.Context, startTime, endTime time.Time) (*ToolUsageResponse, error) {
 	var result ToolUsageResponse
-	path := monitorUsagePath(ToolUsageEndpoint, startTime, endTime)
+	path := monitorUsagePath(ToolUsageEndpoint, startTime, endTime, s.client.monitorTimezone())
 	if err := s.client.doRequestBase(ctx, s.client.config.Region.monitorBaseURL(), "GET", path, nil, &result); err != nil {
 		return nil, fmt.Errorf("failed to get tool usage: %w", err)
 	}

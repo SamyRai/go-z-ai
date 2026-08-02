@@ -123,18 +123,59 @@ func assertChinaHost(t *testing.T, host string) {
 	}
 }
 
+// GetModelUsage/GetToolUsage must format their startTime/endTime query params
+// in the server's timezone (CST/UTC+8), not the input time's own zone — the
+// monitor API reads zoneless strings as its own wall-clock. A UTC instant at
+// 01:00 must therefore arrive at the server as 09:00.
+func TestMonitorUsageQueryServerZoned(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(stubBody))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL, Config{})
+
+	// Absolute instant 2026-08-02 01:00:00 UTC → should format as 09:00 CST.
+	start := time.Date(2026, 8, 2, 1, 0, 0, 0, time.UTC)
+	end := start.Add(time.Hour) // 02:00 UTC → 10:00 CST
+
+	var query string
+	c.httpClient.Transport = &rewrapTransport{base: srv.URL, query: &query}
+
+	if _, err := c.Quota().GetModelUsage(context.Background(), start, end); err != nil {
+		t.Fatalf("GetModelUsage: %v", err)
+	}
+	wantParams := "endTime=2026-08-02+10%3A00%3A00&startTime=2026-08-02+09%3A00%3A00"
+	if query != wantParams {
+		t.Errorf("GetModelUsage query = %q, want %q (server-zoned)", query, wantParams)
+	}
+
+	// Same contract for GetToolUsage.
+	query = ""
+	if _, err := c.Quota().GetToolUsage(context.Background(), start, end); err != nil {
+		t.Fatalf("GetToolUsage: %v", err)
+	}
+	if query != wantParams {
+		t.Errorf("GetToolUsage query = %q, want %q (server-zoned)", query, wantParams)
+	}
+}
+
 // rewrapTransport redirects every request to a test server (so no real network
 // call is made) while preserving the originally-targeted Host in *seen. This
 // lets a test assert which regional gateway the client's service selected.
 type rewrapTransport struct {
 	base string
 	seen *string
+	// query, when non-nil, records the request's RawQuery (for tests that need
+	// to assert on query-param framing, e.g. the server-timezone window fix).
+	query *string
 }
 
 func (t *rewrapTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Record the original host before rewriting, off the un-cloned request.
 	if t.seen != nil {
 		*t.seen = req.URL.Hostname()
+	}
+	if t.query != nil {
+		*t.query = req.URL.RawQuery
 	}
 	// Clone before mutating: a RoundTripper must not modify the caller's
 	// request (the stdlib Transport reads req.URL.Host after RoundTrip for

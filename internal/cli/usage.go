@@ -95,19 +95,25 @@ func runUsageQuota(cmd *cobra.Command, args []string, apiClient *client.Client) 
 		return outputJSON(quota)
 	}
 
-	return outputQuotaLimit(quota)
+	return outputQuotaLimit(quota, apiClient.MonitorTimezone())
 }
 
 // outputQuotaLimit displays quota limit information in a human-readable format.
 // For each quota window, it shows the current usage, remaining quota, reset time,
 // and tool-specific breakdown when available.
 //
+// serverTZ is the monitor API's operating timezone. Reset times always render
+// in the viewer's local time; when serverTZ differs from local, a second line
+// shows the same instant in the server's zone (the server's reset boundary is
+// what governs when limits actually clear). No second line when they match.
+//
 // The output format:
 //   - [Window Description]
 //     Usage: [current/total (percentage)] — [remaining] remaining
-//     Resets: [reset time] (in [countdown])
+//     Resets: [reset time, local] (in [countdown])
+//     Server: [reset time, server zone]            (only when zones differ)
 //     By tool: [breakdown for MCP tools quotas]
-func outputQuotaLimit(quota *client.QuotaLimitResponse) error {
+func outputQuotaLimit(quota *client.QuotaLimitResponse, serverTZ *time.Location) error {
 	fmt.Printf("📊 GLM Coding Plan Usage (%s tier)\n\n", strings.ToUpper(quota.Data.Level))
 
 	now := time.Now()
@@ -128,6 +134,11 @@ func outputQuotaLimit(quota *client.QuotaLimitResponse) error {
 		} else {
 			reset := time.UnixMilli(limit.NextResetTime)
 			fmt.Printf("  Resets: %s (in %s)\n", reset.Format("2006-01-02 15:04:05 MST"), formatDuration(reset.Sub(now)))
+			// The server's reset boundary is what actually clears the limit; show
+			// it in the server's wall-clock too when it differs from the viewer's.
+			if serverTZ != nil && reset.In(serverTZ).Format("Z07:00") != reset.In(time.Local).Format("Z07:00") {
+				fmt.Printf("  Server: %s\n", reset.In(serverTZ).Format("2006-01-02 15:04:05 MST"))
+			}
 		}
 
 		// Burn-rate pace for token windows: is usage outrunning the clock?

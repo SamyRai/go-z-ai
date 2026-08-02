@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/SamyRai/go-z-ai/pkg/client"
 )
@@ -56,7 +57,7 @@ func TestOutputQuotaLimitTable(t *testing.T) {
 	}
 
 	out := captureStdout(t, func() {
-		if err := outputQuotaLimit(quota); err != nil {
+		if err := outputQuotaLimit(quota, nil); err != nil {
 			t.Fatalf("outputQuotaLimit: %v", err)
 		}
 	})
@@ -65,5 +66,69 @@ func TestOutputQuotaLimitTable(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Errorf("expected quota output to contain %q, got:\n%s", want, out)
 		}
+	}
+}
+
+// When a server timezone differing from the viewer's is supplied, the reset
+// block gains a "Server:" line showing the same instant in the server's zone.
+// When the zones match (or nil is passed), no Server line appears.
+func TestOutputQuotaLimitServerLine(t *testing.T) {
+	// Pin time.Local so the same-offset/match logic is deterministic.
+	orig := time.Local
+	time.Local = time.FixedZone("TEST+0", 0) // viewer at UTC+0
+	defer func() { time.Local = orig }()
+
+	reset := time.Date(2026, 8, 5, 9, 0, 0, 0, time.UTC)
+	quota := &client.QuotaLimitResponse{
+		Success: true,
+		Data: client.QuotaData{
+			Level: "pro",
+			Limits: []client.QuotaLimit{{
+				Type:          string(client.QuotaTypeTimeLimit),
+				Unit:          6,
+				Number:        1,
+				Usage:         1000,
+				CurrentValue:  100,
+				Remaining:     900,
+				Percentage:    10,
+				NextResetTime: reset.UnixMilli(),
+			}},
+		},
+	}
+
+	cst := time.FixedZone("CST", 8*3600)
+	out := captureStdout(t, func() {
+		if err := outputQuotaLimit(quota, cst); err != nil {
+			t.Fatalf("outputQuotaLimit: %v", err)
+		}
+	})
+	if !strings.Contains(out, "Server:") {
+		t.Errorf("differing serverTZ: expected a 'Server:' line, got:\n%s", out)
+	}
+	// The server line should show 17:00 CST (09:00 UTC + 8h).
+	if !strings.Contains(out, "17:00:00 CST") {
+		t.Errorf("differing serverTZ: expected server line at 17:00 CST, got:\n%s", out)
+	}
+
+	// Matching zones (viewer also at UTC+8) → no Server line.
+	time.Local = time.FixedZone("VIEWER+8", 8*3600)
+	out = captureStdout(t, func() {
+		if err := outputQuotaLimit(quota, cst); err != nil {
+			t.Fatalf("outputQuotaLimit: %v", err)
+		}
+	})
+	if strings.Contains(out, "Server:") {
+		t.Errorf("matching serverTZ: did not expect a 'Server:' line, got:\n%s", out)
+	}
+
+	// nil serverTZ → no Server line.
+	time.Local = time.FixedZone("TEST+0", 0)
+	out = captureStdout(t, func() {
+		if err := outputQuotaLimit(quota, nil); err != nil {
+			t.Fatalf("outputQuotaLimit: %v", err)
+		}
+	})
+	if strings.Contains(out, "Server:") {
+		t.Errorf("nil serverTZ: did not expect a 'Server:' line, got:\n%s", out)
 	}
 }
