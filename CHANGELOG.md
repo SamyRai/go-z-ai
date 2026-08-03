@@ -4,6 +4,174 @@ Notable changes to this project, loosely following
 [Keep a Changelog](https://keepachangelog.com/). Entries before `v0.1.0` are
 grouped by date; from `v0.1.0` on, sections are tagged.
 
+## 2026-08-03 (post-v0.1.0)
+
+### Fixed
+- **Streaming span lifecycle for observability hooks.** The OTel/`Hook` seam
+  created a per-attempt span inside `connectChatStream`/`connectAnthropicStream`
+  but never propagated it into the stream context, so `OnStreamChunk` recorded
+  nothing and the span was never ended on clean stream completion (unfinished
+  spans leaked to the exporter). The attempt context now flows through to chunk
+  hooks, clean completion fires `OnResponse` (ending the span), mid-stream
+  errors attribute to the captured span, and `Attempt` is correctly populated
+  on chunk/error hooks instead of being stamped `0`. Regression-tested
+  (`pkg/client/stream_test.go`).
+- **`extractUsage` missed embeddings and async results.** `usageBearer` was
+  implemented only by `*ChatResponse`, so `OnResponse` hooks received
+  `Usage: nil` for embeddings and async (image/video) responses — token usage
+  was invisible to tracing/metrics for those endpoints. `EmbeddingsResponse`
+  and `AsyncResultResponse` now implement `GetUsage()`.
+- **`NewOTelHookWithProvider` panicked on a nil provider.** The comment
+  claimed a nil `MeterProvider`/`TracerProvider` yielded a no-op and "never
+  panics," but passing a literal `nil` dereferenced a nil interface. Both
+  args now fall back to the global no-op provider when nil.
+- **`pkg/observe`: `errors.As` simplification.** The manual `**APIError`
+  unwrap chain was replaced with a plain `errors.As(err, &ae)` (the prior
+  comment's claim that `errors.As` doesn't type-match `**T` was wrong).
+- **Accounts-store path was wrong in the docs.** The docs said
+  `~/.config/go-z-ai/accounts.json`; the code (intentionally, for upgrade
+  compat) uses `~/.config/zai-client/accounts.json`. Docs now match the code.
+- **Dead link in CONTRIBUTING.** A 404 `sitegen` URL was replaced with a
+  neutral note that the markdown under `docs/` is the source of truth.
+- **Langfuse overclaim removed.** Docs and code comments referenced Langfuse
+  as a `pkg/observe` implementation; only OpenTelemetry ships. Corrected in
+  `docs/en/library-guide.md`, `pkg/client/hook.go`, `pkg/client/client.go`.
+- **Examples corrected.** `quickstart-vision` no longer falsely claims the
+  client auto-base64-encodes local files (it passes URLs verbatim);
+  `audio-tts` requests `wav` explicitly (the API default is raw PCM) and
+  names its output accordingly; `observability` no longer overclaims metrics
+  (metrics are emitted only when a `MeterProvider` is registered);
+  `quickstart-structured` handles its marshal error; `chat-tools` comment
+  reworded.
+- **Compliance/usage-policy warning** ported to all translated READMEs
+  (de/ru/zh/tr/tt); previously it existed only in the English README.
+- **Locale README switchers** now consistently link back to the English README
+  and bold the current language.
+- **`.github/ISSUE_TEMPLATE/bug_report.yml`** label updated from the legacy
+  `zai-client` name to `go-z-ai`.
+
+### Changed
+- **`examples/README.md`** now documents all twelve example programs instead
+  of four, and no longer tells readers that tools/vision/structured-output
+  examples live "in the Library Guide" when they exist in `examples/`.
+- **`.github/SETUP.md`** corrected to reference the `Announcements` Discussion
+  category (matching `.goreleaser.yml`'s `discussion_category_name`), not
+  `Releases`.
+- **`.github/workflows/ci.yml`** coverage-floor comment corrected: it
+  referenced nonexistent `pkg/agent`/`pkg/mcp` packages; now mentions only
+  `pkg/observe`.
+- **`Makefile` `clean`** target also removes the local `sitegen` binary.
+
+### Removed
+- **Committed `sitegen` binary (12.7 MB) and generated `site/` tree** removed
+  from version control. They were introduced by the "extract sitegen to a
+  standalone repo" commit, which deleted the generator *source* but
+  accidentally left the build artifacts tracked. The `/sitegen` and `site/`
+  `.gitignore` rules are restored; the files remain on disk for local use.
+
+### Security
+- **`go.opentelemetry.io/otel` bumped v1.40.0 → v1.41.0** to fix
+  [GO-2026-5506](https://pkg.go.dev/vuln/GO-2026-5506) (multi-value baggage
+  header extraction causes excessive allocations — a DoS vector in code paths
+  that propagate incoming baggage headers). All six otel module paths bumped
+  in lockstep.
+
+## 2026-08-02 (post-v0.1.0)
+
+### Fixed
+- **Monitor usage window was timezone-shifted.** The `usage model-usage`/
+  `tool-usage` endpoints exchange zoneless time strings that the server
+  interprets as its own wall-clock (verified live to be **CST / UTC+8**), but
+  the client formatted `startTime`/`endTime` in the viewer's local zone. So
+  `accounts usage --today`/`--days` requested a range shifted ~6h and returned
+  the wrong slice. The client now formats the query window in the server's
+  timezone, so the requested absolute range is correct regardless of the
+  viewer's zone.
+
+### Changed
+- **Usage/quota times render in the viewer's local timezone**, with the
+  server's zone shown additionally when it differs. Reset times gain a
+  `Server:` line (the boundary that actually clears a limit) only when the
+  server zone differs from local; the `accounts usage` heat-map header
+  converts its span to local time and prints a one-line note naming the
+  server zone. The returned `x_time` bucket labels (server-local, zoneless)
+  are converted to local for display.
+- **`Config.MonitorTimezone` / `--monitor-timezone` / `ZAI_MONITOR_TIMEZONE`**
+  override the server-timezone assumption (default CST/UTC+8). Accepts IANA
+  names (`Asia/Shanghai`), `UTC`, `local`, or offsets (`+8`, `UTC-05:00`).
+  `Client.MonitorTimezone()` exposes the resolved zone so render layers can
+  relabel. `pkg/client.ParseTimezone` is the shared parser.
+
+## 2026-07-19 (post-v0.1.0)
+
+### Added
+- **Observability hooks** (`pkg/client/hook.go`): a stdlib-only `Hook`
+  interface (`OnRequest`/`OnResponse`/`OnError`/`OnStreamChunk`) attached via
+  `Config.Hooks`. Fires on every request/response/error/stream-chunk through
+  the centralized `doRequest` facade and the new streaming iterators. Empty
+  by default — the no-hook path is zero-allocation. `RequestMeta` carries
+  `Service`/`Method`/`Endpoint`/`Model`/`Attempt`; `ResponseMeta` adds
+  `StatusCode`/`Duration`/`Usage`. Services stamp `Service`/`Model` into the
+  context via the public `WithService`/`WithModel` helpers; the facade reads
+  them back when building metadata.
+- **`pkg/observe` package** — concrete OpenTelemetry hook (`OTelHook`)
+  emitting GenAI semantic-convention spans and metrics: one span per request
+  attempt (retries produce N child spans), gen_ai.system=z.ai, request/response
+  model, HTTP status, token-usage counters (input/output, by model),
+  request-duration histogram, request-count by status. First public package
+  with third-party deps (go.opentelemetry.io/otel v1.40.0); pkg/client stays
+  stdlib-only. Construct via `observe.NewOTelHook(serviceName)` (uses global
+  providers) or `NewOTelHookWithProvider(...)` for isolated/test setups.
+- **`examples/observability`** — end-to-end demo wiring OTelHook onto a
+  client and streaming a chat completion with stdout span export.
+- **Iterator-based streaming** (`pkg/client/stream.go`):
+  `ChatService.Stream(ctx, req) iter.Seq2[StreamChunk, error]` and
+  `AnthropicService.Stream(ctx, req) iter.Seq2[AnthropicStreamEvent, error]`,
+  compatible with Go 1.23+'s range-over-func. The recommended streaming API
+  going forward. Producer goroutine + buffered channel adapts the existing
+  SSE parsers (`readSSE`, `readAnthropicSSE`) to `iter.Seq2`; context
+  cancellation tears down the in-flight stream without leaking the producer.
+  Connect-phase retry/backoff is preserved verbatim (extracted into
+  `connectChatStream`/`connectAnthropicStream`, shared by both APIs).
+- **Curated model catalog** (`pkg/client/models_catalog.go`) — the single
+  source of truth for the model metadata `/models` does not return (context
+  window, max output, pricing, capabilities, family/tier, release date,
+  description). 15 models spanning GLM-5.x/4.x/OCR. `ModelDetails` gains
+  enrichment-only fields (`MaxOutput`, `Family`, `Tier`, `Capabilities`,
+  `CatalogName`, `CatalogDescription`). `GetTextModels`/`GetVisionModels`/
+  `GetFreeModels` switch from substring heuristics to `HasCapability`/
+  `IsFree`. CLI gains FAMILY/CONTEXT/MAXOUT/CAPS columns; TUI gains a
+  detail view (Enter on any model). Pricing/context transcribed from
+  `docs.z.ai/guides/overview/pricing` (verified 2026-07-19, noted in source).
+  Live API values always win when present, so the day Z.AI starts sending
+  `max_context` or pricing in `/models` the real numbers take over.
+- **Identifying `User-Agent` header** on every request (`go-z-ai/<version>`),
+  overridable via `Config.UserAgent`. Compliance hygiene under Z.AI's coding-
+  endpoint usage policy (which prohibits unidentified SDK access).
+- **`pkg/client.Version()`** and **`pkg/client.UserAgent()`** exports —
+  library-visible version populated by GoReleaser ldflags
+  (`-X github.com/SamyRai/go-z-ai/pkg/client.version=x.y.z`). Defaults to
+  `"dev"` for from-source builds. Enables downstream feature detection and
+  identifier reuse.
+
+### Deprecated
+- `ChatService.CreateStream` and `AnthropicService.CreateStream` (the
+  callback-based streaming APIs) — replaced by `Stream` (iter.Seq2). The
+  deprecated variants delegate to `Stream` so existing callers keep working
+  unchanged; both will be removed in v1.0. All internal callers (CLI `chat`
+  and `anthropic` subcommands, TUI chat stream) migrated to `Stream`.
+
+### Fixed
+- **TUI overlay `placeOverlay` was built but never applied.** The variable
+  was constructed and trimmed but never passed to `lipgloss.Place`; now wired.
+- `Makefile`: `LYCHEE_FLAGS` now includes `--exclude 'localhost'` so local
+  `make docs-lint` matches CI (the parity the comment claimed but didn't
+  deliver).
+- `docs/en/architecture.md`: collapsed two MD012 double-blank-line runs and
+  stripped trailing whitespace at EOF.
+- `internal/tui/models/detail.go`: `fmt.Fprintf` over
+  `WriteString(fmt.Sprintf(...))` per staticcheck QF1012.
+
 ## 2026-07-19
 
 Open-source readiness pass: community files, examples, CI hardening, and the
@@ -23,7 +191,7 @@ gitignored — no keys were exposed or rotated.
   Each has a per-example description and is linked from the top-level README.
 - **`Makefile`** wrapping the contributor commands (`build`, `vet`, `test`,
   `test-cover`, `fmt`, `fmt-check`, `lint`, `vuln`, `tidy`, `ci-local`).
-- **`--version`** on `zai-client`, populated by GoReleaser ldflags at release
+- **`--version`** on `zai-client` (now `go-z-ai`), populated by GoReleaser ldflags at release
   time (`version`, `commit`, `date` vars in `main.go`).
 - **`.github/workflows/release.yml`** + **`.goreleaser.yml`** — tag-triggered
   (`v*`) GoReleaser build for `linux/amd64, linux/arm64, darwin/amd64,
@@ -234,6 +402,15 @@ gitignored — no keys were exposed or rotated.
   [Library Guide](docs/en/library-guide.md#tool-schema-compatibility). The exact
   set of server-rejected constructs is drawn from community reports, not yet
   reproduced live here (see [Roadmap](docs/en/roadmap.md)).
+- `coding mcp add/remove/status`: registers Z.AI's official Vision MCP Server
+  (`@z_ai/mcp-server` — screenshot OCR, error-screenshot diagnosis,
+  diagram/chart understanding, image/video analysis via GLM-4.6V) into any of
+  the five supported coding tools, matching the "manage MCP services" step of
+  the official `@z_ai/coding-helper` wizard that this client otherwise ports
+  in full. Each tool gets its correct file and JSON shape — notably, Claude
+  Code and Factory Droid keep MCP config in a different file than their
+  provider/credential config. Available from the CLI and the TUI's Coding tab
+  (`m` key).
 
 ### Changed
 - golangci-lint is now part of the gate: a checked-in `.golangci.yml` (default
@@ -250,17 +427,6 @@ gitignored — no keys were exposed or rotated.
   rerank, tools, voice, and layout tests, now all on `io.ReadAll`.
 - `staticcheck` SA9003 empty `if` branch in `main.go`'s config load, collapsed
   to the same `_ = ...` idiom already used for the `.env` load above it.
-
-### Added
-- `coding mcp add/remove/status`: registers Z.AI's official Vision MCP Server
-  (`@z_ai/mcp-server` — screenshot OCR, error-screenshot diagnosis,
-  diagram/chart understanding, image/video analysis via GLM-4.6V) into any of
-  the five supported coding tools, matching the "manage MCP services" step of
-  the official `@z_ai/coding-helper` wizard that this client otherwise ports
-  in full. Each tool gets its correct file and JSON shape — notably, Claude
-  Code and Factory Droid keep MCP config in a different file than their
-  provider/credential config. Available from the CLI and the TUI's Coding tab
-  (`m` key).
 
 ## 2026-07-11
 
@@ -316,7 +482,7 @@ gitignored — no keys were exposed or rotated.
   (CogVideoX-3/Vidu, always async), audio transcription/TTS, and OCR
   (layout parsing) services and CLI commands.
 - Files and Batch API services for bulk/async request processing.
-- A full-screen terminal UI (`zai-client tui`) with seven tabs: chat, models,
+- A full-screen terminal UI (`zai-client tui`, now `go-z-ai tui`) with seven tabs: chat, models,
   usage, accounts, coding, media, tools.
 - `pkg/usageview`, a presentation-only package shared by the CLI and TUI so
   usage/quota rendering (time windows, heat maps, relative timestamps)

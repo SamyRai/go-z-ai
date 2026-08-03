@@ -47,3 +47,40 @@ func TestQuotaLimitWindowStart(t *testing.T) {
 		t.Errorf("WindowStart() with unknown unit = %s, want zero", got)
 	}
 }
+
+// monitorUsagePath must format the query window in the server's timezone, not
+// the time value's own zone — the monitor API reads these zoneless strings as
+// its own wall-clock. A UTC instant must therefore appear as its UTC+8
+// equivalent in the query string, regardless of the input time's Location.
+func TestMonitorUsagePathServerTimezone(t *testing.T) {
+	// A single absolute instant: 2026-08-02 01:00:00 UTC.
+	utcInstant := time.Date(2026, 8, 2, 1, 0, 0, 0, time.UTC)
+	// The same instant expressed in two different zones — the wire format
+	// must be identical because both resolve to the same server-zone string.
+	cestInstant := utcInstant.In(time.FixedZone("CEST", 2*3600))
+
+	cst := MonitorServerTZ // UTC+8
+	want := "/usage/model-usage?endTime=2026-08-02+09%3A00%3A00&startTime=2026-08-02+09%3A00%3A00"
+
+	for name, in := range map[string]time.Time{"utc": utcInstant, "cest": cestInstant} {
+		got := monitorUsagePath(ModelUsageEndpoint, in, in, cst)
+		if got != want {
+			t.Errorf("%s: monitorUsagePath = %q, want %q", name, got, want)
+		}
+	}
+}
+
+// When a Config.MonitorTimezone override is set, it must win over the region
+// default for query formatting and for the Client.MonitorTimezone() accessor.
+func TestMonitorTimezoneOverride(t *testing.T) {
+	override := time.FixedZone("OVERRIDE", -5*3600)
+	c := newTestClient(t, "http://example.test", Config{MonitorTimezone: override})
+	if got := c.MonitorTimezone(); got != override {
+		t.Errorf("MonitorTimezone() = %v, want override %v", got, override)
+	}
+	// Without override, it falls back to the region default (CST/UTC+8).
+	c2 := newTestClient(t, "http://example.test", Config{})
+	if got := c2.MonitorTimezone(); got.String() != MonitorServerTZ.String() {
+		t.Errorf("default MonitorTimezone() = %v, want %v", got, MonitorServerTZ)
+	}
+}

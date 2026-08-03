@@ -79,9 +79,12 @@ func runAnthropicMessages(cmd *cobra.Command, args []string, apiClient *client.C
 // runAnthropicStream prints text deltas from a streaming Messages response to
 // stdout as they arrive.
 func runAnthropicStream(ctx context.Context, apiClient *client.Client, req client.AnthropicMessageRequest) error {
-	err := apiClient.Anthropic().CreateStream(ctx, req, func(ev client.AnthropicStreamEvent) error {
+	for ev, err := range apiClient.Anthropic().Stream(ctx, req) {
+		if err != nil {
+			return err // the APIError / stream error is already self-describing
+		}
 		if ev.Type != "content_block_delta" {
-			return nil
+			continue
 		}
 		var d struct {
 			Delta struct {
@@ -91,7 +94,7 @@ func runAnthropicStream(ctx context.Context, apiClient *client.Client, req clien
 			} `json:"delta"`
 		}
 		if err := json.Unmarshal(ev.Data, &d); err != nil {
-			return nil // non-text delta (e.g. tool input JSON); ignore for plain output
+			continue // non-text delta (e.g. tool input JSON); ignore for plain output
 		}
 		switch d.Delta.Type {
 		case "thinking_delta":
@@ -99,10 +102,6 @@ func runAnthropicStream(ctx context.Context, apiClient *client.Client, req clien
 		case "text_delta":
 			fmt.Print(d.Delta.Text)
 		}
-		return nil
-	})
-	if err != nil {
-		return err // the APIError / stream error is already self-describing
 	}
 	fmt.Fprintln(os.Stdout)
 	return nil

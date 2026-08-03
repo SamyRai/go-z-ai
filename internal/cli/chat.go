@@ -258,12 +258,18 @@ func loadJSONArg(arg string) ([]byte, error) {
 func runChatStream(apiClient *client.Client, ctx context.Context, req *client.ChatRequest) error {
 	jsonEnc := json.NewEncoder(os.Stdout)
 
-	err := apiClient.Chat().CreateStream(ctx, *req, func(ch client.StreamChunk) error {
+	for ch, err := range apiClient.Chat().Stream(ctx, *req) {
+		if err != nil {
+			return fmt.Errorf("failed to stream chat completion: %w", err)
+		}
 		if chatFormat == "json" {
-			return jsonEnc.Encode(ch)
+			if err := jsonEnc.Encode(ch); err != nil {
+				return fmt.Errorf("failed to encode stream chunk: %w", err)
+			}
+			continue
 		}
 		if len(ch.Choices) == 0 {
-			return nil
+			continue
 		}
 		d := ch.Choices[0].Delta
 		if d.Content != "" {
@@ -272,10 +278,6 @@ func runChatStream(apiClient *client.Client, ctx context.Context, req *client.Ch
 		if chatShowReason && d.ReasoningContent != "" {
 			fmt.Fprint(os.Stderr, d.ReasoningContent)
 		}
-		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("failed to stream chat completion: %w", err)
 	}
 	if chatFormat != "json" {
 		fmt.Println()

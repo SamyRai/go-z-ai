@@ -185,6 +185,12 @@ Coding Plan 多账户管理。
 > ℹ️ 仓库根目录下的 `zai-claude-config.json` 是一个**模板**，其中是占位值
 >（`"your-zai-api-key-here"`），供 `go-z-ai coding load claude-code` 使用。
 > 它不是真实配置，也不携带任何凭据。
+>
+> ⚠️ **使用政策。** Z.AI 的 coding 端点仅限「官方支持的工具」，禁止基于 SDK 的
+> 访问；详见 [Coding Tools — Compliance](docs/en/coding-tools.md#compliance--usage-policy-)。
+> `go-z-ai` 在每个请求中发送标识性的 `User-Agent` 头，其 `coding` 子命令用于接入
+> 官方支持的工具。在获得明确列入之前，从自定义集成直接通过 `pkg/client` 访问
+> coding 端点，风险自负。
 
 ## 贡献指南
 

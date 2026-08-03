@@ -57,6 +57,26 @@ func New(c *client.Client) Model {
 // route ctrl+c to cancel-in-place instead of quitting the whole program.
 func (m Model) Streaming() bool { return m.streaming }
 
+// Model returns the id of the model the chat tab will send to. Implements the
+// root's chatModelGetter interface so the model-picker overlay can highlight
+// the currently-selected entry.
+func (m Model) ModelID() string { return m.model }
+
+// SetModel changes the model id used for the next send. Called by the root
+// when the model-picker overlay returns a choice. Implements the root's
+// chatModelSetter interface (a narrow seam so the root needn't know the chat
+// model's full type).
+func (m Model) SetModel(id string) (tea.Model, tea.Cmd) {
+	if id == "" {
+		return m, nil
+	}
+	m.model = id
+	// Re-render the transcript so the welcome state (and any future model
+	// indicator) reflects the new id immediately.
+	m.view.SetContent(m.transcript())
+	return m, nil
+}
+
 func (m Model) Init() tea.Cmd { return nil }
 
 // ensureRenderer (re)builds the glamour renderer only when the width or the
@@ -146,6 +166,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m.send()
 			}
 			return m, nil
+		case "ctrl+m":
+			// Ask the root to open the model-picker overlay. The root owns
+			// the client and the overlay slot; on pick it calls SetModel on
+			// this screen.
+			return m, func() tea.Msg { return uimsg.OpenModelPicker{} }
 		}
 	}
 
@@ -187,6 +212,11 @@ func (m Model) transcript() string {
 	if m.pending != "" {
 		out += "assistant:\n" + m.renderMarkdown(m.pending)
 	}
+	if out == "" {
+		// Welcome state: instead of a blank viewport, surface the active
+		// model and the send binding so the user knows what to type where.
+		out = fmt.Sprintf("model: %s\n\nType a message, ctrl+s to send.", m.model)
+	}
 	return out
 }
 
@@ -204,6 +234,7 @@ func (m Model) View() tea.View {
 func (m Model) ShortHelp() []key.Binding {
 	return []key.Binding{
 		key.NewBinding(key.WithKeys("ctrl+s"), key.WithHelp("ctrl+s", "send")),
+		key.NewBinding(key.WithKeys("ctrl+m"), key.WithHelp("ctrl+m", "model")),
 		key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("ctrl+c", "cancel stream")),
 	}
 }

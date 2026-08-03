@@ -16,6 +16,7 @@ import (
 
 	"github.com/SamyRai/go-z-ai/internal/coding"
 	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
+	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
 )
 
 type item struct {
@@ -71,6 +72,9 @@ type Model struct {
 func New(store *coding.Store) Model {
 	l := list.New(nil, list.NewDefaultDelegate(), 0, 0)
 	l.SetShowTitle(false)
+	// Enable the list's built-in fuzzy filter (sahilm/fuzzy, already an
+	// indirect dep): press '/' to start typing a query, 'esc' to clear.
+	l.SetFilteringEnabled(true)
 
 	return Model{store: store, list: l}
 }
@@ -95,6 +99,13 @@ func refresh() tea.Cmd {
 }
 
 func (m Model) Init() tea.Cmd { return refresh() }
+
+// Refresh re-scans installed coding-agent tools. Implements the root model's
+// refresher interface so the command palette's "Refresh current tab" action
+// can trigger the same path as the 'r' key.
+func (m Model) Refresh() (tea.Model, tea.Cmd) {
+	return m, refresh()
+}
 
 func (m *Model) newAuthForm() *huh.Form {
 	m.formPlan, m.formKey = "", ""
@@ -264,6 +275,15 @@ func (m Model) View() tea.View {
 	if m.mode == modeAuth {
 		return tea.NewView(m.form.View())
 	}
+	// Friendly empty state: the coding tools list comes from a local scan,
+	// and an empty result usually means the scan hasn't run or found nothing
+	// installed — a CTA to refresh (or, after refresh, that nothing's
+	// installed) reads far better than the list's bare "No items."
+	if len(m.list.Items()) == 0 {
+		body := uistyle.EmptyTitle.Render("No coding tools detected") + "\n\n" +
+			uistyle.EmptyHint.Render("press 'r' to rescan installed agents")
+		return tea.NewView(body)
+	}
 	return tea.NewView(m.list.View())
 }
 
@@ -275,5 +295,6 @@ func (m Model) ShortHelp() []key.Binding {
 		key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "unload")),
 		key.NewBinding(key.WithKeys("m"), key.WithHelp("m", "vision mcp")),
 		key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "refresh")),
+		key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "filter")),
 	}
 }

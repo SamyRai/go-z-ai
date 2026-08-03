@@ -27,6 +27,10 @@ const (
 	// twoColumnMinWidth is the terminal width below which the quota panel
 	// and the heatmap panel stack vertically instead of side by side.
 	twoColumnMinWidth = 100
+	// compactWidth is the width below which the heatmap panel collapses its
+	// per-series ramp rows into a one-line-per-section summary, since the
+	// ramps need ~45 cols each and wrap badly below this.
+	compactWidth = 70
 )
 
 type tickMsg time.Time
@@ -133,6 +137,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// Refresh forces an immediate re-fetch of quota/usage data. Implements the
+// root model's refresher interface so the command palette's "Refresh current
+// tab" action can trigger the same path as the 'r' key.
+func (m Model) Refresh() (tea.Model, tea.Cmd) {
+	m.loading = true
+	return m, m.route(m.fetch())
+}
+
 // syncBars keeps one progress.Model per quota limit, reused across refreshes
 // so the gradient fill doesn't get rebuilt every 30s.
 func (m *Model) syncBars() {
@@ -148,7 +160,14 @@ func (m *Model) syncBars() {
 
 func (m Model) View() tea.View {
 	if m.quota == nil {
-		return tea.NewView("loading quota…")
+		// Skeleton: a title + a few dimmed bar rows so the layout reads as
+		// "filling in" instead of a bare text label before first data.
+		body := uistyle.SectionTitle.Render("Quota") + "\n"
+		for range 3 {
+			body += uistyle.SkeletonRow(28) + "\n" +
+				uistyle.SkeletonRow(28) + "\n\n"
+		}
+		return tea.NewView(body)
 	}
 
 	left := m.renderQuotaPanel()
@@ -193,21 +212,56 @@ func (m Model) renderQuotaPanel() string {
 
 func (m Model) renderHeatmapPanel() string {
 	var body string
-	if m.models != nil && len(m.models.Data.ModelDataList) > 0 {
+	hasModels := m.models != nil && len(m.models.Data.ModelDataList) > 0
+	hasTools := m.tools != nil && len(m.tools.Data.ToolDataList) > 0
+
+	// Compact mode on narrow terminals: drop the per-series ramp rows (which
+	// need ~45 cols each and wrap badly below ~70) and show one summary line
+	// per section with totals only. The full ramp view returns above the
+	// threshold.
+	compact := m.width > 0 && m.width < compactWidth
+
+	if hasModels {
 		body += uistyle.SectionTitle.Render("Model token usage (last 14d)") + "\n"
-		for _, series := range m.models.Data.ModelDataList {
-			body += fmt.Sprintf("  %-20s %s  %s tokens\n", series.ModelName, renderHeatmapRow(series.TokensUsage), usageview.FormatCount(series.TotalTokens))
+		if compact {
+			body += fmt.Sprintf("  %s models · %s calls · %s tokens\n",
+				usageview.FormatCount(int64(len(m.models.Data.ModelDataList))),
+				usageview.FormatCount(m.models.Data.TotalUsage.TotalModelCallCount),
+				usageview.FormatCount(m.models.Data.TotalUsage.TotalTokensUsage))
+		} else {
+			for _, series := range m.models.Data.ModelDataList {
+				body += fmt.Sprintf("  %-20s %s  %s tokens\n", series.ModelName, renderHeatmapRow(series.TokensUsage), usageview.FormatCount(series.TotalTokens))
+			}
+			body += fmt.Sprintf("  Total: %s calls, %s tokens\n\n",
+				usageview.FormatCount(m.models.Data.TotalUsage.TotalModelCallCount),
+				usageview.FormatCount(m.models.Data.TotalUsage.TotalTokensUsage))
 		}
-		body += fmt.Sprintf("  Total: %s calls, %s tokens\n\n",
-			usageview.FormatCount(m.models.Data.TotalUsage.TotalModelCallCount),
-			usageview.FormatCount(m.models.Data.TotalUsage.TotalTokensUsage))
 	}
 
-	if m.tools != nil && len(m.tools.Data.ToolDataList) > 0 {
+	if hasTools {
 		body += uistyle.SectionTitle.Render("Tool usage (last 14d)") + "\n"
-		for _, series := range m.tools.Data.ToolDataList {
-			body += fmt.Sprintf("  %-20s %s  %s calls\n", series.ToolName, renderHeatmapRow(series.UsageCount), usageview.FormatCount(series.TotalUsageCount))
+		if compact {
+			// Sum the per-series counts (the tool total struct has no single
+			// aggregate field, only per-tool-type counts).
+			var total int64
+			for _, series := range m.tools.Data.ToolDataList {
+				total += series.TotalUsageCount
+			}
+			body += fmt.Sprintf("  %s tools · %s total calls\n",
+				usageview.FormatCount(int64(len(m.tools.Data.ToolDataList))),
+				usageview.FormatCount(total))
+		} else {
+			for _, series := range m.tools.Data.ToolDataList {
+				body += fmt.Sprintf("  %-20s %s  %s calls\n", series.ToolName, renderHeatmapRow(series.UsageCount), usageview.FormatCount(series.TotalUsageCount))
+			}
 		}
+	}
+
+	// If both sections came back empty (loaded successfully but no usage in the
+	// window), say so instead of silently rendering nothing — a blank panel
+	// reads as "broken", not "no data".
+	if !hasModels && !hasTools {
+		body += uistyle.Subtle.Render("no model or tool usage in the last 14 days") + "\n"
 	}
 	return body
 }

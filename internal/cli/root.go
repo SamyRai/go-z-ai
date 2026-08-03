@@ -56,12 +56,14 @@ func init() {
 	rootCmd.PersistentFlags().String("account", "", "Use a stored account by name for this command (see 'accounts list')")
 	rootCmd.PersistentFlags().String("china-api-key", "", "open.bigmodel.cn API key for embeddings/moderations (can also set ZAI_CHINA_API_KEY environment variable; falls back to --api-key)")
 	rootCmd.PersistentFlags().String("region", "", "Regional gateway for monitor/biz/agents/detection: 'global' (api.z.ai, default) or 'china' (open.bigmodel.cn). Aliases: cn, bigmodel, west. Does not override --base-url.")
+	rootCmd.PersistentFlags().String("monitor-timezone", "", "Timezone the monitor (quota/usage) API operates in, used to format queries and relabel buckets (can also set ZAI_MONITOR_TIMEZONE; default: CST/UTC+8). Accepts IANA names, 'UTC', or UTC offsets like '+8'.")
 
 	viper.BindPFlag("api-key", rootCmd.PersistentFlags().Lookup("api-key"))
 	viper.BindPFlag("base-url", rootCmd.PersistentFlags().Lookup("base-url"))
 	viper.BindPFlag("account", rootCmd.PersistentFlags().Lookup("account"))
 	viper.BindPFlag("china-api-key", rootCmd.PersistentFlags().Lookup("china-api-key"))
 	viper.BindPFlag("region", rootCmd.PersistentFlags().Lookup("region"))
+	viper.BindPFlag("monitor-timezone", rootCmd.PersistentFlags().Lookup("monitor-timezone"))
 }
 
 func initConfig() {

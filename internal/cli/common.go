@@ -113,11 +113,25 @@ func resolveConfig() (client.Config, error) {
 		region = client.RegionGlobal
 	}
 
+	// --monitor-timezone / ZAI_MONITOR_TIMEZONE override the server zone assumed
+	// for the monitor (quota/usage) API. Empty means "use the region default"
+	// (CST / UTC+8). Same precedence pattern as ZAI_REGION: flag/env wins, the
+	// region default is the fallback. An invalid value errors loudly.
+	monitorTZStr := viper.GetString("monitor-timezone")
+	if monitorTZStr == "" {
+		monitorTZStr = os.Getenv("ZAI_MONITOR_TIMEZONE")
+	}
+	monitorTZ, err := client.ParseTimezone(monitorTZStr)
+	if err != nil {
+		return client.Config{}, err
+	}
+
 	return client.Config{
-		APIKey:      apiKey,
-		BaseURL:     baseURL,
-		ChinaAPIKey: chinaAPIKey,
-		Region:      region,
+		APIKey:          apiKey,
+		BaseURL:         baseURL,
+		ChinaAPIKey:     chinaAPIKey,
+		Region:          region,
+		MonitorTimezone: monitorTZ,
 	}, nil
 }
 

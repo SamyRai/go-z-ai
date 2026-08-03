@@ -62,6 +62,14 @@ type EmbeddingsResponse struct {
 	Usage  Usage             `json:"usage"`
 }
 
+// GetUsage returns the response's token usage as a pointer, implementing the
+// unexported usageBearer interface used by the observability Hook seam so
+// extractUsage can surface embedding token counts to OnResponse hooks. The
+// value form (Usage) on the wire becomes a pointer for hook consumers;
+// &Usage is safe because EmbeddingsResponse is heap-allocated in practice
+// (EmbeddingsService.Create returns *EmbeddingsResponse).
+func (r *EmbeddingsResponse) GetUsage() *Usage { return &r.Usage }
+
 // Create generates embeddings for req.Input (a string or []string) using
 // req.Model (EmbeddingModel2 or EmbeddingModel3). Authenticates with
 // Config.ChinaAPIKey (falling back to Config.APIKey) against

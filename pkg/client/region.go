@@ -1,5 +1,17 @@
 package client
 
+import "time"
+
+// MonitorServerTZ is the timezone the Z.AI monitor API operates in. The
+// monitor endpoints exchange zoneless time strings ("2006-01-02 15:04:05")
+// for startTime/endTime query params and x_time bucket labels; the server
+// reads and emits them in its own wall-clock, which (verified live against
+// the global host, 2026-08-02) is China Standard Time (UTC+8). A
+// time.FixedZone is used instead of time.LoadLocation("Asia/Shanghai") so the
+// value is correct without a tzdata dependency (Windows CI builds may ship
+// without it). Override per-config via Config.MonitorTimezone (see below).
+var MonitorServerTZ = time.FixedZone("CST", 8*3600)
+
 // Region identifies which of Z.AI's two regional gateways a request targets.
 // The same GLM model family is served from both; pick the one that matches
 // where the API key was issued (Global keys -> api.z.ai, China keys ->
@@ -50,4 +62,16 @@ func (r Region) agentsBaseURL() string {
 		return ChinaAgentsBaseURL
 	}
 	return AgentsBaseURL
+}
+
+// monitorTimezone returns the timezone the monitor (quota/usage) API
+// operates in for a region. The monitor endpoints exchange zoneless time
+// strings that the server interprets as its own wall-clock; this is CST
+// (UTC+8) for both gateways (verified live for the global host; the China
+// host is the same provider and assumed identical — override via
+// Config.MonitorTimezone if a capture disagrees). Callers use this to format
+// query params in the server's zone and to re-label returned buckets into
+// the viewer's local time.
+func (r Region) monitorTimezone() *time.Location {
+	return MonitorServerTZ
 }

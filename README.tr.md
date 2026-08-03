@@ -5,7 +5,7 @@ Z.AI (Zhipu AI / BigModel) platformu için bir Go **CLI**'sı, **kitaplığı** 
 OpenCode, Crush, Factory Droid ve Cursor'ı GLM Coding Plan'ınıza bağlayan
 `@z_ai/coding-helper`'ın bir Go port'u.
 
-**English** | [简体中文](README.zh.md) | [Русский](README.ru.md) | [Deutsch](README.de.md) | [Татарча](README.tt.md) | [Türkçe](README.tr.md)
+[English](README.md) | [简体中文](README.zh.md) | [Русский](README.ru.md) | [Deutsch](README.de.md) | [Татарча](README.tt.md) | **Türkçe**
 
 [![CI](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/SamyRai/go-z-ai.svg)](https://pkg.go.dev/github.com/SamyRai/go-z-ai)
@@ -200,6 +200,14 @@ hesap yönetimi ekler.
 > claude-code` tarafından kullanılan, yer tutucu değerler içeren
 > (`"your-zai-api-key-here"`) bir **şablondur**. Gerçek bir yapılandırma
 > değildir ve hiçbir kimlik bilgisi içermez.
+>
+> ⚠️ **Kullanım politikası.** Z.AI'nin coding uç noktası "resmi olarak
+> desteklenen araçlar"la sınırlıdır ve SDK tabanlı erişimi yasaklar; bkz.
+> [Coding Tools — Compliance](docs/en/coding-tools.md#compliance--usage-policy-).
+> `go-z-ai` her istekte tanımlayıcı bir `User-Agent` başlığı gönderir ve
+> `coding` alt komutu resmi olarak desteklenen araçları bağlar. Resmi listeye
+> alınana kadar, `pkg/client`'ı coding uç noktasına doğrudan kendi
+> entegrasyonunuzdan kullanmak kendi sorumluluğunuzdadır.
 
 ## Katkıda Bulunma
 

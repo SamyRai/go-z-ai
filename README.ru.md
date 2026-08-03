@@ -5,7 +5,7 @@ BigModel) — все возможности моделей GLM в одном и�
 `@z_ai/coding-helper` на Go, который подключает Claude Code, OpenCode, Crush,
 Factory Droid и Cursor к вашему GLM Coding Plan.
 
-**English** | [简体中文](README.zh.md) | **Русский** | [Deutsch](README.de.md) | [Татарча](README.tt.md) | [Türkçe](README.tr.md)
+[English](README.md) | [简体中文](README.zh.md) | **Русский** | [Deutsch](README.de.md) | [Татарча](README.tt.md) | [Türkçe](README.tr.md)
 
 [![CI](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/SamyRai/go-z-ai.svg)](https://pkg.go.dev/github.com/SamyRai/go-z-ai)
@@ -202,6 +202,15 @@ Coding Plan.
 > плейсхолдерами (`"your-zai-api-key-here"`), который используется командой
 > `go-z-ai coding load claude-code`. Это не настоящий конфиг, и в нём нет
 > реальных учётных данных.
+>
+> ⚠️ **Политика использования.** Coding-эндпоинт Z.AI ограничен
+> «официально поддерживаемыми инструментами» и запрещает доступ через SDK;
+> см. [Coding Tools — Compliance](docs/en/coding-tools.md#compliance--usage-policy-).
+> `go-z-ai` отправляет идентифицирующий заголовок `User-Agent` в каждом
+> запросе, а его подкоманда `coding` подключает официально поддерживаемые
+> инструменты. Прямое обращение к `pkg/client` против coding-эндпоинта из
+> сторонней интеграции выполняется на ваш риск до официального включения в
+> список.
 
 ## Участие в проекте
 

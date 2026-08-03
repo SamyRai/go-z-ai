@@ -1,0 +1,24 @@
+# CODEOWNERS for go-z-ai.
+# https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Today this is a single-maintainer project, so every path routes to @SamyRai.
+# The file exists so that (a) GitHub surfaces the right reviewer automatically
+# once collaborators join, and (b) the main-branch ruleset can later flip on
+# `require_code_owner_review` for PRs touching the public API surface without
+# further config changes.
+#
+# When regular outside contributors arrive: add them under the paths they own
+# (e.g. `/# TUI  @contributor-a` above the catch-all). The catch-all stays.
+
+# Public API surface — the semver contract. Any change here deserves a
+# maintainer review even once domain-specific paths are delegated.
+/pkg/          @SamyRai
+
+# Release-critical config — gating, signing, attestation.
+/.github/      @SamyRai
+/.goreleaser.yml @SamyRai
+/Makefile      @SamyRai
+/go.mod        @SamyRai
+
+# Catch-all: everything else (CLI, TUI, docs, examples).
+*              @SamyRai

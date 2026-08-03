@@ -5,7 +5,7 @@ Eine Go-**CLI**, **Bibliothek** und ein **TUI** für die Z.AI-Plattform
 Werkzeug, plus ein Go-Port von `@z_ai/coding-helper`, der Claude Code,
 OpenCode, Crush, Factory Droid und Cursor an Ihren GLM Coding Plan anbindet.
 
-**English** | [简体中文](README.zh.md) | [Русский](README.ru.md) | **Deutsch** | [Татарча](README.tt.md) | [Türkçe](README.tr.md)
+[English](README.md) | [简体中文](README.zh.md) | [Русский](README.ru.md) | **Deutsch** | [Татарча](README.tt.md) | [Türkçe](README.tr.md)
 
 [![CI](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/SamyRai/go-z-ai.svg)](https://pkg.go.dev/github.com/SamyRai/go-z-ai)
@@ -203,6 +203,16 @@ GLM Coding Plan über derselben API-Oberfläche auf.
 > Platzhaltern (`"your-zai-api-key-here"`), die von
 > `go-z-ai coding load claude-code` verwendet wird. Es handelt sich nicht um
 > eine echte Konfiguration, und es werden keine Anmeldedaten mitgeliefert.
+>
+> ⚠️ **Nutzungsrichtlinie.** Der Coding-Endpunkt von Z.AI ist auf
+> „offiziell unterstützte Tools" beschränkt und untersagt SDK-basierten
+> Zugriff; siehe
+> [Coding Tools — Compliance](docs/en/coding-tools.md#compliance--usage-policy-).
+> `go-z-ai` sendet bei jeder Anfrage einen identifizierenden
+> `User-Agent`-Header, und sein `coding`-Unterbefehl verbindet offiziell
+> unterstützte Tools. Die direkte Nutzung von `pkg/client` gegen den
+> Coding-Endpunkt aus einer eigenen Integration erfolgt auf eigenes Risiko,
+> bis eine ausdrückliche Aufnahme erfolgt.
 
 ## Mitwirken
 

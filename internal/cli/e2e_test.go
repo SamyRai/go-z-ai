@@ -104,7 +104,7 @@ func TestE2EModelsListTable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("models list: %v", err)
 	}
-	if !strings.Contains(out, "glm-4.6") || !strings.Contains(out, "MODEL ID") {
+	if !strings.Contains(out, "glm-4.6") || !strings.Contains(out, "MODEL") {
 		t.Errorf("expected a model table with glm-4.6, got:\n%s", out)
 	}
 }

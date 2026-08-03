@@ -11,7 +11,7 @@ MD_GLOBS := README*.md docs/**/*.md CONTRIBUTING.md examples/README.md .github/*
 # LYCHEE_FLAGS mirrors the args used in .github/workflows/ci.yml so a local
 # `make docs-lint` and CI agree. Exclude pkg.go.dev / docs.z.ai — both are
 # sometimes flaky under link-checker user agents.
-LYCHEE_FLAGS := --no-progress --max-cache-age 30d --max-concurrency 10 --exclude 'pkg\.go\.dev' --exclude 'docs\.z\.ai'
+LYCHEE_FLAGS := --no-progress --max-cache-age 30d --max-concurrency 10 --exclude 'pkg\.go\.dev' --exclude 'docs\.z\.ai' --exclude 'localhost'
 
 .PHONY: help
 help: ## Show this help.
@@ -74,31 +74,5 @@ docs-fix: ## Auto-fix markdownlint-cli2 issues.
 ci-local: fmt-check vet lint test vuln docs-lint ## Run the full CI-equivalent check locally.
 
 .PHONY: clean
-clean: ## Remove built binary, coverage artifacts, and generated site.
+clean: ## Remove built binary and coverage artifacts.
 	rm -f go-z-ai sitegen cover.out coverage.txt coverage.html
-	rm -rf site
-
-# ─── Static site generation ────────────────────────────────────────────
-# The site generator renders the project's markdown docs + dynamic GitHub
-# data into static HTML at ./site. See docs/en/site-generation.md.
-
-SITEGEN ?= go run ./cmd/sitegen
-SITE_OUT ?= site
-
-.PHONY: site
-site: ## Generate the static HTML site into ./site.
-	$(SITEGEN) -out $(SITE_OUT)
-
-.PHONY: site-offline
-site-offline: ## Generate the site without GitHub API calls (sandbox / no network).
-	$(SITEGEN) -out $(SITE_OUT) -offline
-
-.PHONY: site-serve
-site-serve: ## Generate site and serve on http://localhost:8000.
-	$(SITEGEN) -out $(SITE_OUT)
-	@echo "Serving $(SITE_OUT) at http://localhost:8000 — Ctrl-C to stop"
-	@cd $(SITE_OUT) && python3 -m http.server 8000
-
-.PHONY: site-clean
-site-clean: ## Remove the generated site.
-	rm -rf $(SITE_OUT)

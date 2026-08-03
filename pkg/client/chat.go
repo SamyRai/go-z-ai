@@ -93,57 +93,20 @@ const sseDone = "[DONE]"
 // The request is sent with stream=true. Connect-level transient failures (429,
 // 5xx, network errors) are retried up to Config.MaxRetries exactly like Create;
 // once the stream has begun, mid-stream failures are surfaced, not retried.
+//
+// Deprecated: use Stream, which returns an iter.Seq2[StreamChunk, error]
+// compatible with Go 1.23+'s range-over-func. CreateStream delegates to Stream
+// and will be removed in v1.0.
 func (s *ChatService) CreateStream(ctx context.Context, req ChatRequest, onChunk func(StreamChunk) error) error {
-	if err := validateChatRequest(&req); err != nil {
-		return fmt.Errorf("invalid chat request: %w", err)
-	}
-	req.Stream = true
-	req.Tools = s.compatTools(req.Tools)
-
-	maxRetries := s.client.config.MaxRetries
-	if maxRetries < 0 {
-		maxRetries = 0
-	}
-
-	var lastErr error
-	for attempt := 0; attempt <= maxRetries; attempt++ {
-		if err := ctx.Err(); err != nil {
+	for chunk, err := range s.Stream(ctx, req) {
+		if err != nil {
 			return err
 		}
-
-		resp, err := s.client.send(ctx, s.client.config.BaseURL, s.client.config.APIKey, "POST", "/chat/completions", req)
-		if err != nil {
-			lastErr = fmt.Errorf("failed to execute request: %w", err)
-			if attempt < maxRetries {
-				s.client.backoff(ctx, "", attempt)
-				continue
-			}
-			return lastErr
+		if err := onChunk(chunk); err != nil {
+			return err
 		}
-
-		if resp.StatusCode != http.StatusOK {
-			retryAfter := resp.Header.Get("Retry-After")
-			apiErr := parseAPIError(resp)
-			resp.Body.Close()
-
-			retriable := false
-			if ae, ok := apiErr.(*APIError); ok {
-				retriable = ae.IsRetriable
-			}
-			lastErr = apiErr
-			if attempt < maxRetries && retriable {
-				s.client.backoff(ctx, retryAfter, attempt)
-				continue
-			}
-			return apiErr
-		}
-
-		// Stream began — parse SSE and deliver chunks. No retry past this point.
-		err = s.readSSE(ctx, resp, onChunk)
-		resp.Body.Close()
-		return err
 	}
-	return lastErr
+	return nil
 }
 
 // readSSE parses a Server-Sent-Events stream, invoking onChunk for each

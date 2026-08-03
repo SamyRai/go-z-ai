@@ -15,6 +15,7 @@ import (
 
 	"github.com/SamyRai/go-z-ai/internal/accounts"
 	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
+	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
 	"github.com/SamyRai/go-z-ai/internal/usageview"
 )
 
@@ -52,6 +53,9 @@ type Model struct {
 func New(store *accounts.Store) Model {
 	l := list.New(nil, list.NewDefaultDelegate(), 0, 0)
 	l.SetShowTitle(false)
+	// Enable the list's built-in fuzzy filter (sahilm/fuzzy, already an
+	// indirect dep): press '/' to start typing a query, 'esc' to clear.
+	l.SetFilteringEnabled(true)
 
 	m := Model{store: store, list: l}
 	m.reload()
@@ -212,6 +216,14 @@ func (m Model) View() tea.View {
 	case modeConfirmDelete:
 		return tea.NewView(fmt.Sprintf("Remove account %q? (y/enter to confirm, any other key to cancel)", m.confirmName))
 	default:
+		// Friendly empty state with a CTA — the bare list empty rendering
+		// gives no hint that 'a' adds an account, and the list component
+		// itself only shows a muted "No items." line.
+		if len(m.list.Items()) == 0 {
+			body := uistyle.EmptyTitle.Render("No accounts yet") + "\n\n" +
+				uistyle.EmptyHint.Render("press 'a' to add your first Z.AI key")
+			return tea.NewView(body)
+		}
 		return tea.NewView(m.list.View())
 	}
 }
@@ -222,5 +234,6 @@ func (m Model) ShortHelp() []key.Binding {
 		key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "add")),
 		key.NewBinding(key.WithKeys("enter", "u"), key.WithHelp("enter/u", "set active")),
 		key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "remove")),
+		key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "filter")),
 	}
 }

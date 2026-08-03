@@ -81,10 +81,7 @@ new flag in a table). Larger translations are tracked as follow-up work.
 
 ## Static site
 
-The repo also generates a static HTML site (deployed to GitHub Pages) from the
-markdown docs. The generator lives at `cmd/sitegen` with templates under
-`internal/sitegen/`. Run `make site-serve` to preview locally. See
-[docs/en/site-generation.md](docs/en/site-generation.md) for the full
-architecture and how to add locales. Doc edits propagate to the site
-automatically on the next push to `main` — no separate step needed unless
-you're also touching templates or the generator itself.
+The markdown under `docs/` is the source of truth; the previously bundled
+static-site generator has been extracted into a standalone project and is no
+longer built or deployed from this repo. Render the markdown with whatever
+static-site generator you prefer.

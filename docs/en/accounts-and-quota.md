@@ -15,9 +15,11 @@ go-z-ai accounts show                # shows the active account
 go-z-ai accounts remove work --yes
 ```
 
-Accounts are stored at `$XDG_CONFIG_HOME/go-z-ai/accounts.json` (or
-`~/.config/go-z-ai/accounts.json`), written atomically with `0600`
-permissions.
+Accounts are stored at `$XDG_CONFIG_HOME/zai-client/accounts.json` (or
+`~/.config/zai-client/accounts.json`), written atomically with `0600`
+permissions. (The directory is intentionally `zai-client`, not `go-z-ai`, so
+existing installs keep their `accounts.json` on upgrade from the pre-rename
+name.)
 
 **Type auto-detection:** `accounts add` probes the coding-plan-only
 monitor/quota endpoint with a single free (no token cost) call. A successful,
@@ -60,16 +62,19 @@ Example `accounts quota` output:
 • 5-hour rolling token window
   Usage: 62%
   Resets: 2026-07-11 09:30:00 CEST (in 2h 14m)
+  Server: 2026-07-11 15:30:00 CST
   Pace: 62% used at 55% of window elapsed — on pace to run out ~24m before reset
 
 • weekly token window
   Usage: 41%
   Resets: 2026-07-17 09:17:18 CEST (in 5d 22h)
+  Server: 2026-07-17 15:17:18 CST
   Pace: 41% used at 15% of window elapsed — on pace to run out ~4d before reset
 
 • monthly MCP tools quota
   Usage: 574/1000 (57%) — 426 remaining
   Resets: 2026-07-26 09:17:18 CEST (in 18d 6h)
+  Server: 2026-07-26 15:17:18 CST
   By tool:
     - search-prime: 470
     - web-reader: 97
@@ -81,6 +86,26 @@ extrapolates the window's *own* reported usage against how much of the window
 has elapsed, so you find out you're on track to run out early *before* you
 actually hit the wall. It's straight-line math on the numbers the API returns
 (no assumption about peak/off-peak pricing).
+
+#### Timezones
+
+All times render in **your local timezone**. The monitor API operates in
+**CST (UTC+8)** — the server reads and emits the zoneless time strings it
+exchanges as its own wall-clock — so when your local zone differs from CST,
+two things happen so the numbers stay trustworthy:
+
+- **Reset times** show a second `Server:` line with the same instant in the
+  server's zone (that's the boundary that actually clears a limit). When your
+  zone already matches CST, the line is omitted.
+- **Usage heat-map** (`accounts usage`) windows and bucket spans are converted
+  to your local time, with a one-line note naming the server zone when it
+  differs. The requested range is also framed in the server's zone before
+  sending, so `--today` fetches *your* today, not a slice shifted by the zone
+  difference.
+
+If a live capture ever shows a different server zone for your account, override
+the assumption with `--monitor-timezone` or `ZAI_MONITOR_TIMEZONE` (accepts IANA
+names like `Asia/Shanghai`, `UTC`, or offsets like `+8`).
 
 Not every account shows every window — plan tier and account type both affect
 which windows apply (`accounts show <name>` reports the account's type;

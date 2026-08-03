@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -85,8 +86,12 @@ type Config struct {
 	// open for minutes) partway through a generation. Defaults to 30s.
 	Timeout time.Duration
 	// MaxRetries is the number of retry attempts on transient failures
-	// (429, 5xx, network errors). Defaults to DefaultMaxRetries (3).
-	// Set to -1 to disable retries entirely.
+	// (429, 5xx, network errors). The zero value does NOT mean "no retries" —
+	// it means "unset", and resolves to DefaultMaxRetries (3) in NewClient,
+	// so a bare Config{MaxRetries: 0} still retries 3×. To disable retries
+	// entirely, set MaxRetries to -1 (NewClient maps that to 0 attempts).
+	// This trichotomy (0→default, -1→disabled, >0→explicit) is easy to get
+	// wrong; if you want zero retries, always use -1.
 	MaxRetries int
 	// RetryDelay is the base delay for exponential backoff. Defaults to 200ms.
 	RetryDelay time.Duration
@@ -113,12 +118,40 @@ type Config struct {
 	// RegionChina when the key was issued on open.bigmodel.cn so those calls
 	// land on the matching host. See region.go.
 	Region Region
+	// MonitorTimezone overrides the timezone assumed for the monitor (quota/
+	// usage) API, which exchanges zoneless time strings the server interprets
+	// as its own wall-clock (UTC+8 / CST by default — see MonitorServerTZ).
+	// Set this only if a live capture shows a different server zone for your
+	// account; nil means "use Region.monitorTimezone()". When non-nil it wins
+	// over Region. The CLI mirrors it as ZAI_MONITOR_TIMEZONE.
+	MonitorTimezone *time.Location
+	// UserAgent overrides the default User-Agent header ("go-z-ai/<version>")
+	// sent on every request. The default identifies go-z-ai to Z.AI's API —
+	// important under the coding endpoint's usage policy, which treats
+	// unidentified clients as policy violations (see docs/en/coding-tools.md).
+	// Override only when you need a distinct identifier (a downstream app, a
+	// proxy, an MCP server); the override string is sent verbatim.
+	UserAgent string
+	// Hooks attaches observability hooks (tracing, metrics, logging) that
+	// fire on every request/response/error/stream-chunk without wrapping the
+	// http.RoundTripper. Empty by default — the no-hook path is zero-cost.
+	// Concrete implementations live in pkg/observe (e.g. OpenTelemetry);
+	// users can also provide their own (slog-based, custom metrics). See Hook.
+	Hooks []Hook
 }
 
 // Client represents the Z.AI API client
 type Client struct {
-	config      Config
-	httpClient  *http.Client
+	config     Config
+	httpClient *http.Client
+	// userAgent is the resolved User-Agent header value (Config.UserAgent if
+	// set, otherwise the package default "go-z-ai/<version>"). Resolved once
+	// in NewClient and reused on every request.
+	userAgent string
+	// hooks is the resolved observability hook list (Config.Hooks). Empty
+	// when no hooks are configured — the no-hook path is zero-allocation
+	// (every callHooks* method early-returns on len==0).
+	hooks       []Hook
 	chat        *ChatService
 	models      *ModelsService
 	usage       *UsageService
@@ -189,9 +222,18 @@ func NewClient(config Config) (*Client, error) {
 		config.RetryDelay = DefaultRetryDelay
 	}
 
+	// Resolve the User-Agent: Config.UserAgent overrides the package default.
+	// Computed once here so the send* paths don't re-check on every request.
+	effectiveUA := userAgent
+	if config.UserAgent != "" {
+		effectiveUA = config.UserAgent
+	}
+
 	client := &Client{
 		config:     config,
 		httpClient: config.HTTPClient,
+		userAgent:  effectiveUA,
+		hooks:      config.Hooks,
 	}
 
 	// Initialize services
@@ -229,6 +271,88 @@ func (c *Client) chinaAPIKey() string {
 	return c.config.APIKey
 }
 
+// monitorTimezone returns the timezone the monitor (quota/usage) API operates
+// in: Config.MonitorTimezone when set (an explicit override), otherwise the
+// region's default (CST / UTC+8). Used to format query params in the server's
+// zone and by MonitorTimezone() to let the render layer re-label buckets.
+func (c *Client) monitorTimezone() *time.Location {
+	if c.config.MonitorTimezone != nil {
+		return c.config.MonitorTimezone
+	}
+	return c.config.Region.monitorTimezone()
+}
+
+// ParseTimezone parses a timezone string as accepted by ZAI_MONITOR_TIMEZONE:
+// an IANA name ("Asia/Shanghai"), a "UTC" literal, a UTC offset ("UTC+8",
+// "+08:00", "-5"), or "local". It returns nil (no error) for an empty string
+// so callers can pass an unset env var through as "no override". This avoids a
+// tzdata dependency in the common case — the package default (MonitorServerTZ)
+// is a time.FixedZone — while still allowing IANA names when the caller knows
+// tzdata is present.
+func ParseTimezone(s string) (*time.Location, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil, nil
+	}
+	lower := strings.ToLower(s)
+	if lower == "local" {
+		return time.Local, nil
+	}
+	if lower == "utc" {
+		return time.UTC, nil
+	}
+	// Offset forms: "UTC+8", "UTC-05:00", "+8", "-05:00". Strip a "UTC" prefix.
+	off := strings.TrimPrefix(s, "UTC")
+	off = strings.TrimPrefix(off, "utc")
+	off = strings.TrimSpace(off)
+	if off != "" && (off[0] == '+' || off[0] == '-') {
+		loc, err := parseUTCOffset(off)
+		if err != nil {
+			return nil, fmt.Errorf("ZAI_MONITOR_TIMEZONE %q: %w", s, err)
+		}
+		return loc, nil
+	}
+	// IANA name. Requires tzdata — on platforms without it (some Windows CI),
+	// LoadLocation returns an error; surface it so the caller can drop the
+	// override rather than silently ignoring it.
+	loc, err := time.LoadLocation(s)
+	if err != nil {
+		return nil, fmt.Errorf("ZAI_MONITOR_TIMEZONE %q: %w", s, err)
+	}
+	return loc, nil
+}
+
+// parseUTCOffset converts an offset like "+8", "-05:00", or "+0830" into a
+// named fixed zone ("UTC+08:00"). It is the tzdata-free path of ParseTimezone.
+func parseUTCOffset(s string) (*time.Location, error) {
+	sign := s[0]
+	body := s[1:]
+	body = strings.ReplaceAll(body, ":", "")
+	switch len(body) {
+	case 1, 2: // hours only
+		body = fmt.Sprintf("%02s", body) + "00"
+	case 3, 4: // hhm[m]
+		if len(body) == 3 {
+			body = "0" + body
+		}
+	default:
+		return nil, fmt.Errorf("invalid UTC offset %q", s)
+	}
+	h, err := strconv.Atoi(body[:2])
+	if err != nil || h > 23 {
+		return nil, fmt.Errorf("invalid UTC offset hours %q", s)
+	}
+	m, err := strconv.Atoi(body[2:])
+	if err != nil || m > 59 {
+		return nil, fmt.Errorf("invalid UTC offset minutes %q", s)
+	}
+	secs := h*3600 + m*60
+	if sign == '-' {
+		secs = -secs
+	}
+	return time.FixedZone(fmt.Sprintf("UTC%c%02d:%02d", sign, h, m), secs), nil
+}
+
 // NewClientFromEnv creates a new client from environment variables
 func NewClientFromEnv() (*Client, error) {
 	apiKey := os.Getenv("ZAI_API_KEY")
@@ -241,9 +365,15 @@ func NewClientFromEnv() (*Client, error) {
 		baseURL = DefaultBaseURL
 	}
 
+	monitorTZ, err := ParseTimezone(os.Getenv("ZAI_MONITOR_TIMEZONE"))
+	if err != nil {
+		return nil, err
+	}
+
 	return NewClient(Config{
-		APIKey:  apiKey,
-		BaseURL: baseURL,
+		APIKey:          apiKey,
+		BaseURL:         baseURL,
+		MonitorTimezone: monitorTZ,
 	})
 }
 
@@ -271,6 +401,14 @@ func (c *Client) Detection() *DetectionService {
 func (c *Client) Quota() *QuotaService {
 	return c.quota
 
+}
+
+// MonitorTimezone returns the timezone the monitor (quota/usage) API operates
+// in (Config.MonitorTimezone override, else the region default — CST/UTC+8).
+// Render layers use it to convert the server-local x_time bucket labels into
+// the viewer's local time and to annotate reset times. See MonitorServerTZ.
+func (c *Client) MonitorTimezone() *time.Location {
+	return c.monitorTimezone()
 }
 
 // Account returns the account service
@@ -317,28 +455,52 @@ func (c *Client) doRequestBaseKeyHeaders(ctx context.Context, baseURL, apiKey, m
 		maxRetries = 0
 	}
 
+	// hookBase is rebuilt per attempt (Attempt differs) but the Service/Model
+	// fields are constant across retries — they come from the context.
 	var lastErr error
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		if err := ctx.Err(); err != nil {
+			// Cancellation between attempts: surface as an error to hooks.
+			c.callHooksError(ctx, c.buildRequestMeta(ctx, method, endpoint, attempt), err)
 			return err
 		}
 
-		resp, err := c.sendHeaders(ctx, baseURL, apiKey, method, endpoint, body, headers)
+		// OnRequest fires per attempt (a retried request is a new request from
+		// the hook's perspective — spans, counters, etc. want one event per
+		// actual HTTP send). The hook may return a derived context (e.g. with
+		// a child span).
+		reqMeta := c.buildRequestMeta(ctx, method, endpoint, attempt)
+		hookCtx := c.callHooksRequest(ctx, reqMeta)
+
+		start := time.Now()
+		resp, err := c.sendHeaders(hookCtx, baseURL, apiKey, method, endpoint, body, headers)
 		if err != nil {
 			// Transport-level failure: no server response was produced, so the
 			// request is safe to retry (the server never answered).
 			lastErr = fmt.Errorf("failed to execute request: %w", err)
 			if attempt < maxRetries {
-				c.backoff(ctx, "", attempt)
+				c.backoff(hookCtx, "", attempt)
 				continue
 			}
+			c.callHooksError(hookCtx, reqMeta, lastErr)
 			return lastErr
 		}
 
 		if resp.StatusCode == http.StatusOK {
 			err = c.decodeBody(resp, result)
 			resp.Body.Close()
-			return err
+			if err != nil {
+				// Body parse failure after a 200 — treat as terminal error.
+				c.callHooksError(hookCtx, reqMeta, err)
+				return err
+			}
+			c.callHooksResponse(hookCtx, ResponseMeta{
+				RequestMeta: reqMeta,
+				StatusCode:  resp.StatusCode,
+				Duration:    time.Since(start),
+				Usage:       extractUsage(result),
+			})
+			return nil
 		}
 
 		// Non-200: classify via the structured API error mapping.
@@ -353,12 +515,39 @@ func (c *Client) doRequestBaseKeyHeaders(ctx context.Context, baseURL, apiKey, m
 
 		lastErr = apiErr
 		if attempt < maxRetries && retriable {
-			c.backoff(ctx, retryAfter, attempt)
+			c.backoff(hookCtx, retryAfter, attempt)
 			continue
 		}
+		c.callHooksError(hookCtx, reqMeta, apiErr)
 		return apiErr
 	}
+	// Loop exhausted; lastErr is the final retriable error.
+	if lastErr != nil {
+		c.callHooksError(ctx, c.buildRequestMeta(ctx, method, endpoint, maxRetries), lastErr)
+	}
 	return lastErr
+}
+
+// usageBearer is implemented by response types that carry a Usage field
+// (ChatResponse, EmbeddingsResponse, AsyncResultResponse). Used by
+// extractUsage to surface token counts to OnResponse hooks without
+// reflection or a type switch.
+type usageBearer interface {
+	GetUsage() *Usage
+}
+
+// extractUsage returns the Usage pointer from a parsed response, or nil when
+// the response type doesn't carry one (models list, file ops, etc.). The hook
+// gets nil Usage for those — it can distinguish "no usage reported" from
+// "zero tokens" by the nil check.
+func extractUsage(result any) *Usage {
+	if result == nil {
+		return nil
+	}
+	if u, ok := result.(usageBearer); ok {
+		return u.GetUsage()
+	}
+	return nil
 }
 
 // send builds and issues a single HTTP request against baseURL+endpoint,
@@ -390,6 +579,7 @@ func (c *Client) sendHeaders(ctx context.Context, baseURL, apiKey, method, endpo
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept-Language", "en-US,en")
+	req.Header.Set("User-Agent", c.userAgent)
 	if body != nil {
 		req.Header.Set("Accept", "application/json")
 	}
@@ -413,6 +603,7 @@ func (c *Client) sendMultipart(ctx context.Context, endpoint, contentType string
 	req.Header.Set("Authorization", "Bearer "+c.config.APIKey)
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", c.userAgent)
 
 	return c.httpClient.Do(req)
 }
@@ -469,6 +660,12 @@ func (c *Client) retryDelay(retryAfter string, attempt int) time.Duration {
 		d = maxRetryDelay
 	}
 	jitter := time.Duration(rand.Int63n(int64(d)/4 + 1))
+	// Cap the final result (base + jitter) so a single backoff never exceeds
+	// maxRetryDelay — jitter added on top of a capped base would otherwise
+	// push the sleep past the documented ceiling.
+	if result := d + jitter; result > maxRetryDelay {
+		return maxRetryDelay
+	}
 	return d + jitter
 }
 

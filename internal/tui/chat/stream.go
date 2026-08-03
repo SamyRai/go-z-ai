@@ -15,9 +15,9 @@ type chunkMsg client.StreamChunk
 // context.Canceled when the user aborted mid-stream via ctrl+c).
 type streamDoneMsg struct{ err error }
 
-// streamHandle bridges ChatService.CreateStream's blocking onChunk callback
-// (run on a goroutine) into Bubble Tea's message loop via channels — the
-// standard Bubble Tea idiom for wrapping an external streaming source.
+// streamHandle bridges ChatService.Stream's iterator (run on a goroutine)
+// into Bubble Tea's message loop via channels — the standard Bubble Tea
+// idiom for wrapping an external streaming source.
 type streamHandle struct {
 	ch     chan client.StreamChunk
 	done   chan error
@@ -33,15 +33,21 @@ func startStream(c *client.Client, req client.ChatRequest) (tea.Cmd, streamHandl
 	h := streamHandle{ch: ch, done: done, cancel: cancel}
 
 	go func() {
-		err := c.Chat().CreateStream(ctx, req, func(chunk client.StreamChunk) error {
+		var streamErr error
+		for chunk, err := range c.Chat().Stream(ctx, req) {
+			if err != nil {
+				streamErr = err
+				break
+			}
 			select {
 			case ch <- chunk:
-				return nil
 			case <-ctx.Done():
-				return ctx.Err()
+				streamErr = ctx.Err()
+				goto drain
 			}
-		})
-		done <- err
+		}
+	drain:
+		done <- streamErr
 		close(ch)
 	}()
 

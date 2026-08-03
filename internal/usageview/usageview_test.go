@@ -127,3 +127,95 @@ func TestCompactDuration(t *testing.T) {
 		}
 	}
 }
+
+// ParseMonitorTime interprets a zoneless monitor label in the given server
+// zone, yielding the correct absolute instant. "09:00 CST" is 01:00 UTC.
+func TestParseMonitorTime(t *testing.T) {
+	cst := time.FixedZone("CST", 8*3600)
+	got, err := ParseMonitorTime("2026-08-02 09:00", cst)
+	if err != nil {
+		t.Fatalf("ParseMonitorTime: %v", err)
+	}
+	want := time.Date(2026, 8, 2, 1, 0, 0, 0, time.UTC)
+	if !got.Equal(want) {
+		t.Errorf("ParseMonitorTime = %s (UTC %s), want %s", got, got.UTC(), want)
+	}
+
+	// Empty → zero, no error.
+	if t2, err := ParseMonitorTime("", cst); err != nil || !t2.IsZero() {
+		t.Errorf("ParseMonitorTime(\"\") = %v, %v, want zero/nil", t2, err)
+	}
+	// Unparseable → error.
+	if _, err := ParseMonitorTime("garbage", cst); err == nil {
+		t.Error("ParseMonitorTime(garbage): want error")
+	}
+	// Also accepts the finer :05 layout (the query-param format).
+	if _, err := ParseMonitorTime("2026-08-02 09:00:05", cst); err != nil {
+		t.Errorf("ParseMonitorTime(:05 layout): %v", err)
+	}
+}
+
+// LocalizeXTime converts each server-local label into the viewer's local
+// display string; a nil server zone leaves labels untouched.
+func TestLocalizeXTime(t *testing.T) {
+	cst := time.FixedZone("CST", 8*3600)
+	// Pin time.Local for the duration of this test so the expected output is
+	// deterministic regardless of where the test runs.
+	orig := time.Local
+	time.Local = time.FixedZone("TEST+0", 0)
+	defer func() { time.Local = orig }()
+
+	labels := []string{"2026-08-02 09:00", "2026-08-02 10:00"}
+	got := LocalizeXTime(labels, cst)
+	want := []string{"2026-08-02 01:00", "2026-08-02 02:00"} // 09:00 CST = 01:00 UTC
+	for i := range got {
+		if got[i] != want[i] {
+			t.Errorf("LocalizeXTime[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+
+	// nil server zone → labels pass through unchanged.
+	pass := LocalizeXTime(labels, nil)
+	for i := range pass {
+		if pass[i] != labels[i] {
+			t.Errorf("LocalizeXTime(nil)[%d] = %q, want passthrough %q", i, pass[i], labels[i])
+		}
+	}
+
+	// A malformed label passes through rather than blanking the row.
+	mixed := LocalizeXTime([]string{"2026-08-02 09:00", "garbage"}, cst)
+	if mixed[1] != "garbage" {
+		t.Errorf("LocalizeXTime malformed passthrough = %q, want %q", mixed[1], "garbage")
+	}
+}
+
+// ZoneNote is empty when the server zone matches the viewer's local offset, and
+// names both zones when they differ.
+func TestZoneNoteDiffer(t *testing.T) {
+	orig := time.Local
+	time.Local = time.FixedZone("TEST+0", 0) // viewer at UTC+0
+	defer func() { time.Local = orig }()
+
+	cst := time.FixedZone("CST", 8*3600)
+	note := ZoneNote(cst)
+	if note == "" {
+		t.Fatal("ZoneNote should be non-empty when zones differ")
+	}
+	if !strings.Contains(note, "local") || !strings.Contains(note, "CST") || !strings.Contains(note, "+08:00") {
+		t.Errorf("ZoneNote = %q, want it to mention local, CST, and +08:00", note)
+	}
+}
+
+// When the viewer is already in the server's offset, ZoneNote is empty.
+func TestZoneNoteSame(t *testing.T) {
+	orig := time.Local
+	time.Local = time.FixedZone("CST", 8*3600) // viewer at UTC+8, same as server
+	defer func() { time.Local = orig }()
+
+	if note := ZoneNote(time.FixedZone("CST", 8*3600)); note != "" {
+		t.Errorf("ZoneNote matching zones = %q, want \"\"", note)
+	}
+	if note := ZoneNote(nil); note != "" {
+		t.Errorf("ZoneNote(nil) = %q, want \"\"", note)
+	}
+}

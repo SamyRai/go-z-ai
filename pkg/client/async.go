@@ -47,6 +47,14 @@ type AsyncResultResponse struct {
 	Usage   *Usage   `json:"usage,omitempty"`
 }
 
+// GetUsage returns the response's token usage, implementing the unexported
+// usageBearer interface used by the observability Hook seam. Usage is already
+// a *Usage here (it's optional on the async-result wire shape — present only
+// for chat-completion tasks, absent for image/video tasks), so it's returned
+// directly; OnResponse hooks see nil Usage for task types that don't carry
+// one.
+func (r *AsyncResultResponse) GetUsage() *Usage { return r.Usage }
+
 // GetAsyncResult polls the shared async-result endpoint used by both image
 // and video generation. Callers should re-poll (e.g. on a timer) while
 // TaskStatus == TaskStatusProcessing.

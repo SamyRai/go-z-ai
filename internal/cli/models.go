@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/SamyRai/go-z-ai/pkg/client"
@@ -141,49 +142,129 @@ func outputModel(model *client.ModelDetails, format string) error {
 	}
 }
 
+// outputModelsTable renders the default human-readable model list. Columns
+// come from the enriched catalog (pkg/client/models_catalog.go), since
+// Z.AI's /models endpoint returns only {id, created, owned_by} and leaves
+// every other column empty. Pricing is shown by default and labeled honestly
+// as "per 1M tokens" — the previous header said "$/1K" but formatted the
+// per-1M value, which was just wrong.
+//
+// The --pricing flag is kept for back-compat but is now a no-op (pricing is
+// always shown); it prints a one-line note when set so existing scripts that
+// pass it aren't surprised by silent behavior change.
 func outputModelsTable(models []client.ModelDetails, showPrice bool) error {
+	_ = showPrice // always shown now; flag kept for back-compat
+
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	fmt.Fprintln(w, "MODEL ID\tNAME\tCONTEXT")
+	fmt.Fprintln(w, "MODEL\tFAMILY\tCONTEXT\tMAXOUT\tIN/1M\tOUT/1M\tCACHED\tCAPS")
 
-	for _, model := range models {
-		fmt.Fprintf(w, "%s\t%s\t%d\n", model.ID, model.Name, model.ContextSize)
-	}
-
-	if showPrice {
-		fmt.Fprintln(w, "\nPRICING (per 1M tokens)")
-		fmt.Fprintln(w, "MODEL\tINPUT\tOUTPUT\tCACHED")
-		for _, model := range models {
-			if model.Pricing != nil {
-				fmt.Fprintf(w, "%s\t$%.2f\t$%.2f\t$%.2f\n",
-					model.ID,
-					model.Pricing.Input,
-					model.Pricing.Output,
-					model.Pricing.Cached)
+	for _, m := range models {
+		in, out, cached := "—", "—", "—"
+		if m.Pricing != nil {
+			in = formatCLIPrice(m.Pricing.Input)
+			out = formatCLIPrice(m.Pricing.Output)
+			if m.Pricing.Cached > 0 {
+				cached = formatCLIPrice(m.Pricing.Cached)
 			}
 		}
+		ctx := formatCLIContext(m.ContextSize)
+		maxOut := formatCLIContext(m.MaxOutput)
+		family := m.Family
+		caps := formatCLICaps(m.Capabilities)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			m.ID, family, ctx, maxOut, in, out, cached, caps)
 	}
-
+	fmt.Fprintln(w, "\n(prices are USD per 1M tokens; — = unknown)")
 	return w.Flush()
 }
 
 func outputModelTable(model *client.ModelDetails) error {
-	fmt.Printf("Model ID: %s\n", model.ID)
-	fmt.Printf("Name: %s\n", model.Name)
-	fmt.Printf("Description: %s\n", model.Description)
-	fmt.Printf("Context Size: %d tokens\n", model.ContextSize)
-	fmt.Printf("Owned By: %s\n", model.OwnedBy)
+	fmt.Printf("Model ID:     %s\n", model.ID)
+	if model.Name != "" {
+		fmt.Printf("Name:         %s\n", model.Name)
+	}
+	if model.Family != "" {
+		fmt.Printf("Family:       %s\n", model.Family)
+	}
+	if model.Tier != "" {
+		fmt.Printf("Tier:         %s\n", model.Tier)
+	}
+	if model.Description != "" {
+		fmt.Printf("Description:  %s\n", model.Description)
+	}
+	fmt.Printf("Context:      %s tokens\n", formatCLIContext(model.ContextSize))
+	if model.MaxOutput > 0 {
+		fmt.Printf("Max output:   %s tokens\n", formatCLIContext(model.MaxOutput))
+	}
+	fmt.Printf("Owned by:     %s\n", model.OwnedBy)
+	if model.Created > 0 {
+		fmt.Printf("Released:     %s\n", model.CreatedTime().UTC().Format("2006-01-02"))
+	}
+	if len(model.Capabilities) > 0 {
+		fmt.Printf("Capabilities: %s\n", formatCLICaps(model.Capabilities))
+	}
 
 	if model.Pricing != nil {
-		fmt.Printf("\nPricing (per 1M tokens):\n")
-		fmt.Printf("  Input: $%.2f\n", model.Pricing.Input)
-		fmt.Printf("  Output: $%.2f\n", model.Pricing.Output)
+		fmt.Printf("\nPricing (per 1M tokens, USD):\n")
+		fmt.Printf("  Input:   %s\n", formatCLIPrice(model.Pricing.Input))
+		fmt.Printf("  Output:  %s\n", formatCLIPrice(model.Pricing.Output))
 		if model.Pricing.Cached > 0 {
-			fmt.Printf("  Cached: $%.2f\n", model.Pricing.Cached)
+			fmt.Printf("  Cached:  %s\n", formatCLIPrice(model.Pricing.Cached))
 		}
 		if model.Pricing.CacheStore > 0 {
-			fmt.Printf("  Cache Storage: $%.2f\n", model.Pricing.CacheStore)
+			fmt.Printf("  Cache storage: %s\n", formatCLIPrice(model.Pricing.CacheStore))
+		}
+		if model.IsFree() {
+			fmt.Printf("  (free model)\n")
 		}
 	}
 
 	return nil
+}
+
+// formatCLIContext renders a token count compactly (200K, 128K, — for zero).
+func formatCLIContext(n int) string {
+	if n <= 0 {
+		return "—"
+	}
+	if n >= 1000 {
+		k := float64(n) / 1000
+		if k >= 100 {
+			return fmt.Sprintf("%dK", int(k))
+		}
+		return fmt.Sprintf("%.0fK", k)
+	}
+	return fmt.Sprintf("%d", n)
+}
+
+// formatCLIPrice renders a per-1M USD rate with two decimals, or — for zero.
+func formatCLIPrice(v float64) string {
+	if v <= 0 {
+		return "—"
+	}
+	return fmt.Sprintf("$%.2f", v)
+}
+
+// formatCLICaps joins capability codes with the canonical names.
+func formatCLICaps(caps []string) string {
+	if len(caps) == 0 {
+		return "—"
+	}
+	labels := map[string]string{
+		client.CapText:     "text",
+		client.CapVision:   "vision",
+		client.CapThinking: "thinking",
+		client.CapTools:    "tools",
+		client.CapCode:     "code",
+		client.CapOCR:      "ocr",
+	}
+	out := make([]string, 0, len(caps))
+	for _, c := range caps {
+		if l, ok := labels[c]; ok {
+			out = append(out, l)
+		} else {
+			out = append(out, c)
+		}
+	}
+	return strings.Join(out, ",")
 }

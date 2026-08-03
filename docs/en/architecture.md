@@ -18,8 +18,11 @@
 main.go               A five-line entrypoint: package main → internal/cli.Execute()
 internal/cli/         CLI commands (package cli), one file per command group:
                       chat.go, accounts_cli.go, coding_cli.go, ...
-pkg/client/           The Go library — one file per API service, no CLI/TUI dependency
-internal/accounts/    Multi-account credential store (~/.config/go-z-ai/accounts.json)
+pkg/client/           The Go library — one file per API service, no CLI/TUI dependency,
+                      stdlib-only (no third-party imports)
+pkg/observe/          OpenTelemetry Hook implementations (depends on go.opentelemetry.io/otel);
+                      separate package so pkg/client stays stdlib-only
+internal/accounts/    Multi-account credential store (~/.config/zai-client/accounts.json — dir kept as zai-client for upgrade compat)
 internal/coding/      GLM Coding Plan credential store + per-tool config writers
 internal/usageview/   Pure presentation helpers (time windows, heat maps, formatting) —
                       shared by both the CLI and the TUI so their output can never drift
@@ -28,11 +31,16 @@ internal/fileinput/   FileOrURL: a URL passes through, a local path is base64-en
                       shared by `ocr parse` and the TUI media tab
 ```
 
-`pkg/client` has zero dependencies on anything CLI- or TUI-specific — it's
-designed to be imported standalone (see the [Library Guide](library-guide.md)),
-and is the **only** public package. Everything under `internal/` is
-implementation the compiler forbids outside code from importing, so the CLI/TUI
-layers can be refactored freely. The CLI and TUI are both thin callers of
+`pkg/client` is the core public package and is deliberately **stdlib-only** —
+zero third-party imports — so anyone can depend on the client without dragging
+the OTel SDK, MCP SDK, or other heavy observability/integration deps. The
+observability seam is a stdlib-only `Hook` interface (see
+[Library Guide — Observability hooks](library-guide.md#observability-hooks));
+concrete implementations live in `pkg/observe` (OpenTelemetry) and future
+packages (`pkg/mcp`, etc.), each with its own dependency set so users only pay
+for what they import. Everything under `internal/` is implementation the
+compiler forbids outside code from importing, so the CLI/TUI layers can be
+refactored freely. The CLI and TUI are both thin callers of
 `pkg/client`. `go install github.com/SamyRai/go-z-ai@latest` still builds the
 root `main.go` into the `go-z-ai` binary.
 
@@ -163,11 +171,25 @@ var quotaWindowConfigs = []QuotaWindowConfig{
 When Z.AI adds a new window type, the change is additive (append a row) and
 localized, with a generic fallback description for anything not yet in the
 table rather than a hard failure. The same pattern shows up for model
-categorization (`pkg/client/models.go`'s `visionModelMarkers` — a single
-source of truth so `isTextModel`/`isVisionModel` can never contradict each
-other) and for account-type-to-endpoint resolution (`internal/coding/plans.go`).
+categorization (`pkg/client/models_catalog.go`'s `modelsCatalog` table —
+each row carries a `Capabilities []string` that `ModelDetails.HasCapability`
+reads, replacing the old divergent `visionModelMarkers` substring lists) and
+for account-type-to-endpoint resolution (`internal/coding/plans.go`).
 Prefer this shape over adding another conditional branch when you're adding a
 new recognized value to an existing concept.
+
+`modelsCatalog` is also the fix for a data-availability gap: Z.AI's `/models`
+endpoint returns only the OpenAI-bare `{id, object, created, owned_by}`
+shape, so without enrichment every `Context`/`Pricing`/`Capabilities` cell
+renders as `-`/`0`. `ModelsService.List` runs each decoded model through
+`enrichModel`, which overlays catalog fields but lets **live API values
+win** when both are present — so the day Z.AI starts sending `max_context`
+or `pricing` in `/models`, the real numbers take over with no code change.
+Pricing/context figures are transcribed from
+<https://docs.z.ai/guides/overview/pricing> and need periodic manual
+refresh (the API gives no signal when they change); the file header carries
+the "last verified" date. Uncataloged models still appear from `/models`
+with sparse data rather than being hidden or guessed at.
 
 ## Credential file safety
 
@@ -191,3 +213,86 @@ which Bubble Tea runs on its own goroutine — code called from a `tea.Cmd`
 must not rely on package-level mutable state being uncontended (this bit us
 once with `http.DefaultClient.Timeout`; see the fix in
 `internal/coding/validator.go`'s doc comment for the specifics).
+
+### Shared infrastructure
+
+The chrome (header, tab bar, panel, status line, help bar) is owned by the
+root model in `internal/tui/root.go`; each screen renders only its body. A
+few cross-cutting pieces live outside the screens so they can be shared
+without an import cycle:
+
+#### Top header
+
+The header is a single line: the `go-z-ai` app badge on the left, a
+right-aligned cluster of context badges, and a spacer between them that
+pushes the badges to the right edge. The badges give every tab at-a-glance
+state:
+
+- **account** — the active account's name (or a warn-styled `none` when no
+  account is set, so the missing-credentials state is unmissable).
+- **type** — `pay-as-you-go` / `coding-plan`, since that determines which
+  endpoint family and which features (e.g. the Usage tab's monitor
+  endpoints) are available.
+- **plan** — `Global` / `China` from the coding store, surfaced because it
+  silently changes the endpoint the Coding tab and coding-agent
+  integrations talk to. Only shown when a plan is configured.
+- **model** — the Chat tab's currently-selected model. Useful on every tab
+  because users often check Usage or Models while composing a chat.
+
+On narrow terminals the header drops badges progressively (plan, then type,
+keeping account + model) so the app name and the essentials stay visible.
+Badges are built via `uistyle.RenderBadge(label, value, valueStyle)` — a
+muted label paired with a role-colored value.
+
+A spacer line sits above and below the tab strip so the chrome has breathing
+room; `chromeRows` accounts for both spacers when sizing the inner panel.
+
+- **`internal/tui/uistyle`** — the lipgloss style vocabulary and a dual
+  light/dark palette. The root model resolves the palette against the
+  terminal's actual background (`tea.BackgroundColorMsg`) and rebuilds every
+  shared style via `uistyle.SetDark`, so the whole app follows the terminal
+  theme. Styles are package `var`s reassigned on theme change; screens read
+  them fresh at render time.
+- **`internal/tui/uimsg`** — shared message types (`Err`, `Status`, `Routed`,
+  `CloseOverlay`, `OpenModelPicker`) so screens can talk to the root without
+  importing it. `Routed` wraps an async result with its originating tab so a
+  result started in one tab still lands there after the user switches.
+- **Overlays** — a single `overlay tea.Model` slot on the root, composited
+  above the active screen via `lipgloss.Place` (`internal/tui/overlay.go`).
+  While open it owns keypresses; resize/background-color/routed msgs still
+  flow to the screens beneath so they stay correctly laid out when the
+  overlay closes. The help overlay (`?`), command palette (`ctrl+p`), and
+  chat model picker (`ctrl+m`, from the chat tab) are all root-owned
+  overlays.
+
+### Key bindings
+
+Global (handled by the root before any screen sees the key):
+
+| Key            | Action                                           |
+|----------------|--------------------------------------------------|
+| `tab` / `shift+tab` | next / previous tab                          |
+| `?`            | toggle the help overlay (all bindings)           |
+| `ctrl+p`       | command palette (fuzzy-search app-wide actions)  |
+| `ctrl+c`       | quit (or cancel an in-flight chat stream)        |
+| mouse click on tab bar | switch tab                               |
+| mouse wheel    | scroll the active viewport / list                |
+
+Per-screen bindings are surfaced in the help bar at the bottom and in the
+`?` overlay.
+
+### Responsive layout
+
+The app has three width tiers:
+
+- **≥ 100 cols** — two-column layouts where they exist (Models: table + live
+  preview; Usage: quota + heatmap side by side).
+- **70–99 cols** — single column, full table/heatmap rows.
+- **< 70 cols** — compact: the Models table drops the CAPS column and
+  shortens price headers; the Usage heatmap collapses to one-line-per-section
+  summaries; the tab bar switches to a numbered compact form.
+
+Below **60×22** the root renders only a centered "terminal too small — resize
+to at least 60×22" message instead of overlapping chrome. Screens still
+receive `WindowSizeMsg` and floor their own dimensions, so growing back past
+the threshold resumes a correctly-laid-out app with no extra work.

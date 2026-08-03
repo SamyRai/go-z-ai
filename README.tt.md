@@ -5,7 +5,7 @@ Z.AI (Zhipu AI / BigModel) платформасы өчен Go **CLI**, **кит�
 Go-порты: Claude Code, OpenCode, Crush, Factory Droid һәм Cursor’ны сезнең
 GLM Coding Plan’га тоташтыра.
 
-**English** | [简体中文](README.zh.md) | [Русский](README.ru.md) | [Deutsch](README.de.md) | [Татарча](README.tt.md) | [Türkçe](README.tr.md)
+[English](README.md) | [简体中文](README.zh.md) | [Русский](README.ru.md) | [Deutsch](README.de.md) | **Татарча** | [Türkçe](README.tr.md)
 
 [![CI](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/SamyRai/go-z-ai/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/SamyRai/go-z-ai.svg)](https://pkg.go.dev/github.com/SamyRai/go-z-ai)
@@ -202,6 +202,14 @@ Z.AI / Zhipu **Python**
 > булган **шаблон** (`"your-zai-api-key-here"`), аны `go-z-ai coding load
 > claude-code` куллана. Ул чын конфиг түгел һәм аңа бернинди дә
 > аутентификация мәгълүматы кертелмәгән.
+>
+> ⚠️ **Куллану сәясәте.** Z.AI кодлау очрак ноктасы «рәсми яктан хупланган
+> кораллар» белән чикләнгән һәм SDK нигезендә керүне тыя; карагыз
+> [Coding Tools — Compliance](docs/en/coding-tools.md#compliance--usage-policy-).
+> `go-z-ai` һәр сораштыруда идентификацияләүче `User-Agent` башлыгын җибәрә,
+> ә аның `coding` субкомандасы рәсми яктан хупланган коралларны тоташтыра.
+> Рәсми рәвештә исемлеккә керткәнче кадәр, `pkg/client`ны кодлау очрак
+> ноктасына үз интеграцияңездан турыдан-туры куллану — үз куркынычыгыз астында.
 
 ## Өлеш кертү
 
