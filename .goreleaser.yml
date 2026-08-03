@@ -53,12 +53,13 @@ sboms:
 signs:
   - id: cosign-keyless
     cmd: cosign
-    certificate: '${artifact}.pem'
-    signature: '${artifact}.sig'
+    # cosign 3.x keyless sign-blob embeds signature + certificate in a single
+    # --bundle file; the separate .pem/.sig outputs used by cosign 2.x are no
+    # longer produced. signature: names the bundle as the uploaded artifact.
+    signature: '${artifact}.bundle'
     args:
       - sign-blob
-      - '--output-certificate=${certificate}'
-      - '--output-signature=${signature}'
+      - '--bundle=${signature}'
       - '--yes'
       - '${artifact}'
     artifacts: all
