@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Changelog · go-z-ai</title>
+  <meta name="description" content="">
+  <link rel="canonical" href="/CHANGELOG.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Changelog · go-z-ai">
+  <meta property="og:description" content="">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/CHANGELOG.html">
+  <meta property="og:locale" content="en">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Changelog · go-z-ai">
+  <meta name="twitter:description" content="">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/CHANGELOG.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Changelog","inLanguage":"en","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Changelog","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/CHANGELOG.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/CHANGELOG.html","name":"Changelog","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/en/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">G</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/en/" >Home</a>
+      <a href="/en/getting-started.html" >Docs</a>
+      <a href="/en/cli-reference.html">CLI</a>
+      <a href="/en/library-guide.html">Library</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Changelog</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>English</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="changelog">Changelog</h1>
+<p>Notable changes to this project, loosely following
+<a href="https://keepachangelog.com/" rel="nofollow noreferrer noopener" target="_blank">Keep a Changelog</a>. Entries before <code>v0.1.0</code> are
+grouped by date; from <code>v0.1.0</code> on, sections are tagged.</p>
+<h2 id="2026-08-03-post-v010">2026-08-03 (post-v0.1.0)</h2>
+<h3 id="fixed">Fixed</h3>
+<ul>
+<li><strong>Streaming span lifecycle for observability hooks.</strong> The OTel/<code>Hook</code> seam
+created a per-attempt span inside <code>connectChatStream</code>/<code>connectAnthropicStream</code>
+but never propagated it into the stream context, so <code>OnStreamChunk</code> recorded
+nothing and the span was never ended on clean stream completion (unfinished
+spans leaked to the exporter). The attempt context now flows through to chunk
+hooks, clean completion fires <code>OnResponse</code> (ending the span), mid-stream
+errors attribute to the captured span, and <code>Attempt</code> is correctly populated
+on chunk/error hooks instead of being stamped <code>0</code>. Regression-tested
+(<code>pkg/client/stream_test.go</code>).</li>
+<li><strong><code>extractUsage</code> missed embeddings and async results.</strong> <code>usageBearer</code> was
+implemented only by <code>*ChatResponse</code>, so <code>OnResponse</code> hooks received
+<code>Usage: nil</code> for embeddings and async (image/video) responses — token usage
+was invisible to tracing/metrics for those endpoints. <code>EmbeddingsResponse</code>
+and <code>AsyncResultResponse</code> now implement <code>GetUsage()</code>.</li>
+<li><strong><code>NewOTelHookWithProvider</code> panicked on a nil provider.</strong> The comment
+claimed a nil <code>MeterProvider</code>/<code>TracerProvider</code> yielded a no-op and &#34;never
+panics,&#34; but passing a literal <code>nil</code> dereferenced a nil interface. Both
+args now fall back to the global no-op provider when nil.</li>
+<li><strong><code>pkg/observe</code>: <code>errors.As</code> simplification.</strong> The manual <code>**APIError</code>
+unwrap chain was replaced with a plain <code>errors.As(err, &amp;ae)</code> (the prior
+comment&#39;s claim that <code>errors.As</code> doesn&#39;t type-match <code>**T</code> was wrong).</li>
+<li><strong>Accounts-store path was wrong in the docs.</strong> The docs said
+<code>~/.config/go-z-ai/accounts.json</code>; the code (intentionally, for upgrade
+compat) uses <code>~/.config/zai-client/accounts.json</code>. Docs now match the code.</li>
+<li><strong>Dead link in CONTRIBUTING.</strong> A 404 <code>sitegen</code> URL was replaced with a
+neutral note that the markdown under <code>docs/</code> is the source of truth.</li>
+<li><strong>Langfuse overclaim removed.</strong> Docs and code comments referenced Langfuse
+as a <code>pkg/observe</code> implementation; only OpenTelemetry ships. Corrected in
+<code>docs/en/library-guide.md</code>, <code>pkg/client/hook.go</code>, <code>pkg/client/client.go</code>.</li>
+<li><strong>Examples corrected.</strong> <code>quickstart-vision</code> no longer falsely claims the
+client auto-base64-encodes local files (it passes URLs verbatim);
+<code>audio-tts</code> requests <code>wav</code> explicitly (the API default is raw PCM) and
+names its output accordingly; <code>observability</code> no longer overclaims metrics
+(metrics are emitted only when a <code>MeterProvider</code> is registered);
+<code>quickstart-structured</code> handles its marshal error; <code>chat-tools</code> comment
+reworded.</li>
+<li><strong>Compliance/usage-policy warning</strong> ported to all translated READMEs
+(de/ru/zh/tr/tt); previously it existed only in the English README.</li>
+<li><strong>Locale README switchers</strong> now consistently link back to the English README
+and bold the current language.</li>
+<li><strong><code>.github/ISSUE_TEMPLATE/bug_report.yml</code></strong> label updated from the legacy
+<code>zai-client</code> name to <code>go-z-ai</code>.</li>
+</ul>
+<h3 id="changed">Changed</h3>
+<ul>
+<li><strong><code>examples/README.md</code></strong> now documents all twelve example programs instead
+of four, and no longer tells readers that tools/vision/structured-output
+examples live &#34;in the Library Guide&#34; when they exist in <code>examples/</code>.</li>
+<li><strong><code>.github/SETUP.md</code></strong> corrected to reference the <code>Announcements</code> Discussion
+category (matching <code>.goreleaser.yml</code>&#39;s <code>discussion_category_name</code>), not
+<code>Releases</code>.</li>
+<li><strong><code>.github/workflows/ci.yml</code></strong> coverage-floor comment corrected: it
+referenced nonexistent <code>pkg/agent</code>/<code>pkg/mcp</code> packages; now mentions only
+<code>pkg/observe</code>.</li>
+<li><strong><code>Makefile</code> <code>clean</code></strong> target also removes the local <code>sitegen</code> binary.</li>
+</ul>
+<h3 id="removed">Removed</h3>
+<ul>
+<li><strong>Committed <code>sitegen</code> binary (12.7 MB) and generated <code>site/</code> tree</strong> removed
+from version control. They were introduced by the &#34;extract sitegen to a
+standalone repo&#34; commit, which deleted the generator <em>source</em> but
+accidentally left the build artifacts tracked. The <code>/sitegen</code> and <code>site/</code>
+<code>.gitignore</code> rules are restored; the files remain on disk for local use.</li>
+</ul>
+<h3 id="security">Security</h3>
+<ul>
+<li><strong><code>go.opentelemetry.io/otel</code> bumped v1.40.0 → v1.41.0</strong> to fix
+<a href="https://pkg.go.dev/vuln/GO-2026-5506" rel="nofollow noreferrer noopener" target="_blank">GO-2026-5506</a> (multi-value baggage
+header extraction causes excessive allocations — a DoS vector in code paths
+that propagate incoming baggage headers). All six otel module paths bumped
+in lockstep.</li>
+</ul>
+<h2 id="2026-08-02-post-v010">2026-08-02 (post-v0.1.0)</h2>
+<h3 id="fixed-1">Fixed</h3>
+<ul>
+<li><strong>Monitor usage window was timezone-shifted.</strong> The <code>usage model-usage</code>/
+<code>tool-usage</code> endpoints exchange zoneless time strings that the server
+interprets as its own wall-clock (verified live to be <strong>CST / UTC+8</strong>), but
+the client formatted <code>startTime</code>/<code>endTime</code> in the viewer&#39;s local zone. So
+<code>accounts usage --today</code>/<code>--days</code> requested a range shifted ~6h and returned
+the wrong slice. The client now formats the query window in the server&#39;s
+timezone, so the requested absolute range is correct regardless of the
+viewer&#39;s zone.</li>
+</ul>
+<h3 id="changed-1">Changed</h3>
+<ul>
+<li><strong>Usage/quota times render in the viewer&#39;s local timezone</strong>, with the
+server&#39;s zone shown additionally when it differs. Reset times gain a
+<code>Server:</code> line (the boundary that actually clears a limit) only when the
+server zone differs from local; the <code>accounts usage</code> heat-map header
+converts its span to local time and prints a one-line note naming the
+server zone. The returned <code>x_time</code> bucket labels (server-local, zoneless)
+are converted to local for display.</li>
+<li><strong><code>Config.MonitorTimezone</code> / <code>--monitor-timezone</code> / <code>ZAI_MONITOR_TIMEZONE</code></strong>
+override the server-timezone assumption (default CST/UTC+8). Accepts IANA
+names (<code>Asia/Shanghai</code>), <code>UTC</code>, <code>local</code>, or offsets (<code>+8</code>, <code>UTC-05:00</code>).
+<code>Client.MonitorTimezone()</code> exposes the resolved zone so render layers can
+relabel. <code>pkg/client.ParseTimezone</code> is the shared parser.</li>
+</ul>
+<h2 id="2026-07-19-post-v010">2026-07-19 (post-v0.1.0)</h2>
+<h3 id="added">Added</h3>
+<ul>
+<li><strong>Observability hooks</strong> (<code>pkg/client/hook.go</code>): a stdlib-only <code>Hook</code>
+interface (<code>OnRequest</code>/<code>OnResponse</code>/<code>OnError</code>/<code>OnStreamChunk</code>) attached via
+<code>Config.Hooks</code>. Fires on every request/response/error/stream-chunk through
+the centralized <code>doRequest</code> facade and the new streaming iterators. Empty
+by default — the no-hook path is zero-allocation. <code>RequestMeta</code> carries
+<code>Service</code>/<code>Method</code>/<code>Endpoint</code>/<code>Model</code>/<code>Attempt</code>; <code>ResponseMeta</code> adds
+<code>StatusCode</code>/<code>Duration</code>/<code>Usage</code>. Services stamp <code>Service</code>/<code>Model</code> into the
+context via the public <code>WithService</code>/<code>WithModel</code> helpers; the facade reads
+them back when building metadata.</li>
+<li><strong><code>pkg/observe</code> package</strong> — concrete OpenTelemetry hook (<code>OTelHook</code>)
+emitting GenAI semantic-convention spans and metrics: one span per request
+attempt (retries produce N child spans), gen_ai.system=z.ai, request/response
+model, HTTP status, token-usage counters (input/output, by model),
+request-duration histogram, request-count by status. First public package
+with third-party deps (go.opentelemetry.io/otel v1.40.0); pkg/client stays
+stdlib-only. Construct via <code>observe.NewOTelHook(serviceName)</code> (uses global
+providers) or <code>NewOTelHookWithProvider(...)</code> for isolated/test setups.</li>
+<li><strong><code>examples/observability</code></strong> — end-to-end demo wiring OTelHook onto a
+client and streaming a chat completion with stdout span export.</li>
+<li><strong>Iterator-based streaming</strong> (<code>pkg/client/stream.go</code>):
+<code>ChatService.Stream(ctx, req) iter.Seq2[StreamChunk, error]</code> and
+<code>AnthropicService.Stream(ctx, req) iter.Seq2[AnthropicStreamEvent, error]</code>,
+compatible with Go 1.23+&#39;s range-over-func. The recommended streaming API
+going forward. Producer goroutine + buffered channel adapts the existing
+SSE parsers (<code>readSSE</code>, <code>readAnthropicSSE</code>) to <code>iter.Seq2</code>; context
+cancellation tears down the in-flight stream without leaking the producer.
+Connect-phase retry/backoff is preserved verbatim (extracted into
+<code>connectChatStream</code>/<code>connectAnthropicStream</code>, shared by both APIs).</li>
+<li><strong>Curated model catalog</strong> (<code>pkg/client/models_catalog.go</code>) — the single
+source of truth for the model metadata <code>/models</code> does not return (context
+window, max output, pricing, capabilities, family/tier, release date,
+description). 15 models spanning GLM-5.x/4.x/OCR. <code>ModelDetails</code> gains
+enrichment-only fields (<code>MaxOutput</code>, <code>Family</code>, <code>Tier</code>, <code>Capabilities</code>,
+<code>CatalogName</code>, <code>CatalogDescription</code>). <code>GetTextModels</code>/<code>GetVisionModels</code>/
+<code>GetFreeModels</code> switch from substring heuristics to <code>HasCapability</code>/
+<code>IsFree</code>. CLI gains FAMILY/CONTEXT/MAXOUT/CAPS columns; TUI gains a
+detail view (Enter on any model). Pricing/context transcribed from
+<code>docs.z.ai/guides/overview/pricing</code> (verified 2026-07-19, noted in source).
+Live API values always win when present, so the day Z.AI starts sending
+<code>max_context</code> or pricing in <code>/models</code> the real numbers take over.</li>
+<li><strong>Identifying <code>User-Agent</code> header</strong> on every request (<code>go-z-ai/&lt;version&gt;</code>),
+overridable via <code>Config.UserAgent</code>. Compliance hygiene under Z.AI&#39;s coding-
+endpoint usage policy (which prohibits unidentified SDK access).</li>
+<li><strong><code>pkg/client.Version()</code></strong> and <strong><code>pkg/client.UserAgent()</code></strong> exports —
+library-visible version populated by GoReleaser ldflags
+(<code>-X github.com/SamyRai/go-z-ai/pkg/client.version=x.y.z</code>). Defaults to
+<code>&#34;dev&#34;</code> for from-source builds. Enables downstream feature detection and
+identifier reuse.</li>
+</ul>
+<h3 id="deprecated">Deprecated</h3>
+<ul>
+<li><code>ChatService.CreateStream</code> and <code>AnthropicService.CreateStream</code> (the
+callback-based streaming APIs) — replaced by <code>Stream</code> (iter.Seq2). The
+deprecated variants delegate to <code>Stream</code> so existing callers keep working
+unchanged; both will be removed in v1.0. All internal callers (CLI <code>chat</code>
+and <code>anthropic</code> subcommands, TUI chat stream) migrated to <code>Stream</code>.</li>
+</ul>
+<h3 id="fixed-2">Fixed</h3>
+<ul>
+<li><strong>TUI overlay <code>placeOverlay</code> was built but never applied.</strong> The variable
+was constructed and trimmed but never passed to <code>lipgloss.Place</code>; now wired.</li>
+<li><code>Makefile</code>: <code>LYCHEE_FLAGS</code> now includes <code>--exclude &#39;localhost&#39;</code> so local
+<code>make docs-lint</code> matches CI (the parity the comment claimed but didn&#39;t
+deliver).</li>
+<li><code>docs/en/architecture.md</code>: collapsed two MD012 double-blank-line runs and
+stripped trailing whitespace at EOF.</li>
+<li><code>internal/tui/models/detail.go</code>: <code>fmt.Fprintf</code> over
+<code>WriteString(fmt.Sprintf(...))</code> per staticcheck QF1012.</li>
+</ul>
+<h2 id="2026-07-19">2026-07-19</h2>
+<p>Open-source readiness pass: community files, examples, CI hardening, and the
+first tagged release path. The local <code>.env</code> (never in git history) remains
+gitignored — no keys were exposed or rotated.</p>
+<h3 id="added-1">Added</h3>
+<ul>
+<li><strong><code>CODE_OF_CONDUCT.md</code></strong> (Contributor Covenant 2.1) with a contact address
+matching <code>SECURITY.md</code>.</li>
+<li><strong><code>README.zh.md</code></strong> — Simplified-Chinese README mirroring the English
+structure, with cross-language links at the top of both READMEs.</li>
+<li><strong><code>examples/</code></strong> — three runnable <code>package main</code> programs (compiled by CI&#39;s
+<code>go build ./...</code>) covering the three core API shapes:
+<ul>
+<li><code>examples/chat-streaming</code> — <code>Chat().CreateStream</code> callback streaming.</li>
+<li><code>examples/async-poll</code> — <code>Images().GenerateAsync</code> + <code>WaitForResult</code>.</li>
+<li><code>examples/anthropic-messages</code> — the Anthropic-compatible <code>/v1/messages</code>.
+Each has a per-example description and is linked from the top-level README.</li>
+</ul>
+</li>
+<li><strong><code>Makefile</code></strong> wrapping the contributor commands (<code>build</code>, <code>vet</code>, <code>test</code>,
+<code>test-cover</code>, <code>fmt</code>, <code>fmt-check</code>, <code>lint</code>, <code>vuln</code>, <code>tidy</code>, <code>ci-local</code>).</li>
+<li><strong><code>--version</code></strong> on <code>zai-client</code> (now <code>go-z-ai</code>), populated by GoReleaser ldflags at release
+time (<code>version</code>, <code>commit</code>, <code>date</code> vars in <code>main.go</code>).</li>
+<li><strong><code>.github/workflows/release.yml</code></strong> + <strong><code>.goreleaser.yml</code></strong> — tag-triggered
+(<code>v*</code>) GoReleaser build for <code>linux/amd64, linux/arm64, darwin/amd64, darwin/arm64</code>, with SBOM (<code>spdx-json</code>) and keyless cosign/sigstore signing
+via OIDC. Creates a GitHub Release with an auto-generated changelog and
+publishes to the <code>Releases</code> Discussion category.</li>
+<li>README: &#34;How it relates to the official SDKs&#34; section noting there is <strong>no
+official Go SDK</strong> (Python/Node/Java only), and a callout that
+<code>zai-claude-config.json</code> is a template, not a real config.</li>
+</ul>
+<h3 id="changed-2">Changed</h3>
+<ul>
+<li><strong>CI hardening</strong> (<code>.github/workflows/ci.yml</code>):
+<ul>
+<li>Added <code>concurrency</code> block — cancels superseded PR runs.</li>
+<li><code>test</code> and <code>lint</code> jobs now run on an OS matrix
+(<code>ubuntu-latest</code>, <code>macos-latest</code>) since the project ships a darwin binary
+and a TUI.</li>
+<li>Tests now produce a coverage profile (<code>go test -race -coverprofile</code>) and
+upload <code>cover.out</code> as an artifact; a coverage summary is printed.</li>
+<li>Pinned <code>govulncheck</code> to <code>v1.1.4</code> instead of <code>@latest</code> for reproducibility.</li>
+</ul>
+</li>
+<li><strong><code>.gitignore</code></strong> now covers <code>.zcode/</code> and <code>.claude/</code> at the repo level
+(previously <code>.zcode/</code> was covered by nothing and <code>.claude/</code> only by a
+per-developer global ignore — both are local agent/CLI working state that
+must never ship).</li>
+</ul>
+<h3 id="documentation">Documentation</h3>
+<ul>
+<li>README docs table now links to <code>CODE_OF_CONDUCT.md</code>.</li>
+<li>Note on the global-vs-China endpoint feature matrix in
+<code>docs/accounts-and-quota.md</code> confirmed already accurate for mid-2026
+(embeddings/moderations/rerank/batch/voice on <code>open.bigmodel.cn</code> only; the
+GLM-5.2 flagship model is supported; the deprecated Assistant API is
+deliberately not implemented — see <code>docs/roadmap.md</code>).</li>
+</ul>
+<h3 id="security-no-incident">Security (no incident)</h3>
+<ul>
+<li>Verified via <code>git log --all --full-history -- .env</code> (empty) and a source
+scan for the Z.AI key format that <strong>no credentials were ever committed</strong>.
+All VCR cassettes carry <code>Bearer REDACTED</code>. No key rotation was needed; the
+local <code>.env</code> stays ignored.</li>
+</ul>
+<h3 id="changed-follow-up">Changed (follow-up)</h3>
+<ul>
+<li><strong>Replaced the Go Report Card badge with OpenSSF Scorecard</strong> in both
+READMEs. goreportcard.com sunset its public badge service on
+<strong>July 1, 2026</strong> (after 11 years); the badge endpoint now serves a static
+&#34;retired&#34; placeholder for every repo, so the badge had become meaningless.
+Added <code>.github/workflows/scorecard.yml</code> running <code>ossf/scorecard-action</code>
+weekly and on <code>branch_protection_review</code>, uploading SARIF to the Security
+tab and exposing the score via <code>api.securityscorecards.dev</code>. SETUP.md
+updated accordingly.</li>
+</ul>
+<h2 id="2026-07-18">2026-07-18</h2>
+<h3 id="added-2">Added</h3>
+<ul>
+<li><strong>Regional gateway selection (<code>Config.Region</code> / <code>--region</code> / <code>ZAI_REGION</code>).</strong>
+Z.AI serves the same GLM model family from two regional gateways: the
+international host <code>api.z.ai</code> (the historical default) and the China mirror
+<code>open.bigmodel.cn</code>. Previously only Embeddings/Moderations were wired to the
+China host; monitor (quota/usage), biz (account info), agents, and account
+detection were hardcoded to <code>api.z.ai</code>, so a <code>glm_coding_plan_china</code> key
+couldn&#39;t reach its own region&#39;s usage/account endpoints and got
+mis-classified by <code>accounts add</code>/<code>account detect</code>. <code>Config.Region</code>
+(<code>RegionGlobal</code>, the default, or <code>RegionChina</code>) now selects the host for
+monitor, biz, agents, and detection. From the CLI: <code>--region {global,china}</code>
+or <code>ZAI_REGION</code> env (aliases <code>cn</code>, <code>bigmodel</code>, <code>west</code>); an unknown value
+falls back to global rather than erroring. <code>internal/coding/plans.go</code>
+mirrors this with <code>MonitorBaseURL</code> / <code>BizBaseURL</code> / <code>AgentsBaseURL</code> plan
+helpers. The China hosts are <code>NOT VERIFIED LIVE</code> (modeled by mirroring the
+<code>api.z.ai</code> path layout on <code>open.bigmodel.cn</code>, which is live-verified for
+<code>/models</code> and <code>/chat/completions</code>). See <code>docs/architecture.md</code>.</li>
+<li><strong>Chat-completion API sync (<code>pkg/client/types.go</code>, <code>chat.go</code>).</strong> New fields
+matching the current docs.z.ai chat-completion spec, all additive and
+<code>NOT VERIFIED LIVE</code> until a cassette pins them:
+<ul>
+<li><code>ChatRequest.StreamToolCall</code> — streamed tool-call deltas (GLM-4.6+).</li>
+<li><code>Tool</code> now discriminates across <code>function</code> / <code>retrieval</code> / <code>web_search</code>
+types via <code>NewFunctionTool</code> / <code>NewRetrievalTool</code> / <code>NewWebSearchTool</code>.
+The <code>web_search</code> payload shape (<code>{&#34;search_query&#34;:[...]}</code>) follows the
+official Python SDK example; <code>retrieval</code> and the full tool-type support
+are unverified live.</li>
+<li><code>ChatResponse.WebSearch</code> — the top-level <code>web_search</code> array returned when
+a web_search tool fires (entry shape reuses <code>WebSearchResult</code> from
+<code>tools.go</code>).</li>
+<li><code>ThinkingConfig.Effort</code> now documents <code>xhigh</code> (GLM-5.2; <code>xhigh</code>→<code>max</code>).
+<code>validateChatRequest</code> rejects unknown effort values client-side.</li>
+<li><code>FinishReason*</code> constants for the live values <code>sensitive</code>,
+<code>model_context_window_exceeded</code>, <code>network_error</code>.</li>
+<li>Client-side tool-name guard (<code>^[A-Za-z0-9_-]{1,64}$</code>), a 128-function
+cap, and per-type payload validation (a <code>function</code>/<code>retrieval</code>/<code>web_search</code>
+tool must carry its matching payload; unknown types are rejected).</li>
+</ul>
+</li>
+<li><strong>Live-verification scaffolding</strong> for four more services in
+<code>pkg/client/live_verify_test.go</code>: Voice Clone, Voice Delete,
+Chat-Stream-Tool-Call, and Chat-Web-Search-Response. Each skips until a
+cassette exists (CI stays green); record one with
+<code>ZAI_RECORD=1 ZAI_API_KEY=&lt;key&gt; go test -run TestVerify&lt;Name&gt; ./pkg/client</code>
+(the harness redacts <code>Authorization</code> to <code>Bearer REDACTED</code> before saving).</li>
+</ul>
+<h3 id="docs">Docs</h3>
+<ul>
+<li>Aligned every doc with the 2026-07-18 sprint: <code>--region</code>/<code>ZAI_REGION</code> added
+to the CLI Reference global-flags table; <code>xhigh</code> added to the <code>--effort</code>
+values; <code>Config.Region</code> added to the Library Guide Config table; the new
+tool types (<code>NewRetrievalTool</code>/<code>NewWebSearchTool</code>), <code>StreamToolCall</code>,
+<code>ChatResponse.WebSearch</code>, the <code>FinishReason*</code> constants, the 128-function
+cap, and the tool-name regex documented in the Library Guide&#39;s Function
+calling section; Accounts &amp; Quota&#39;s &#34;China platform key&#34; rewritten as
+&#34;Regional gateways&#34; covering both the Embeddings/Moderations axis and the
+monitor/biz/agents/detection axis; Getting Started&#39;s China note reframed;
+Architecture&#39;s &#34;three services&#34; corrected to four (detection also went
+region-aware).</li>
+<li>Rewrote <code>docs/roadmap.md</code> as a crisp, current task list — every
+&#34;Unverified live&#34; item names its exact <code>TestVerify*</code> test + recording
+command, grounded in the cassette inventory (no item was removed: none of
+the unverified services got a success cassette this sprint).</li>
+<li>Renamed <code>pkg/client/live_verification_test.go</code> → <code>live_replay_test.go</code> so
+the two live-test files self-document: <code>live_replay_test.go</code> holds the
+<code>Test*Live</code> replay-only tests (frozen findings), <code>live_verify_test.go</code>
+holds the <code>TestVerify*</code> recording harness. No behavior change.</li>
+<li>Index completeness: <code>docs/README.md</code> now lists <code>.github/SETUP.md</code> and
+<code>.env.example</code>; root <code>README.md</code>&#39;s doc table now matches the docs/ index
+(Roadmap, Security, Changelog rows added).</li>
+<li><code>.github/PULL_REQUEST_TEMPLATE.md</code> checklist aligned with CONTRIBUTING.md
+(added <code>golangci-lint run</code> and <code>govulncheck</code>).</li>
+</ul>
+<h2 id="2026-07-17">2026-07-17</h2>
+<h3 id="changed-3">Changed</h3>
+<ul>
+<li><strong>Repository layout (breaking for importers of the app packages).</strong> The CLI
+command code moved from <code>package main</code> at the repo root into <code>internal/cli</code>
+(a five-line root <code>main.go</code> now just calls <code>cli.Execute()</code>), and the
+in-repo-only packages <code>pkg/tui</code>, <code>pkg/usageview</code>, <code>pkg/accounts</code>, and
+<code>pkg/coding</code> moved under <code>internal/</code>. Only <code>pkg/client</code> remains a public,
+importable package — the documented library surface is now compiler-enforced.
+<code>go install github.com/SamyRai/go-z-ai@latest</code> still produces the <code>go-z-ai</code>
+binary; CLI behavior and <code>--help</code> output are unchanged. If you imported
+<code>pkg/accounts</code> or <code>pkg/coding</code> directly (previously documented as reusable),
+that import path no longer exists — drive the functionality through the
+<code>accounts</code>/<code>coding</code> CLI commands instead.</li>
+<li><code>interface{}</code> → <code>any</code> throughout (mechanical; <code>any</code> is an alias, so
+<code>pkg/client</code>&#39;s exported signatures are unchanged for consumers).</li>
+</ul>
+<h3 id="added-3">Added</h3>
+<ul>
+<li>Consistent <code>--format text|json</code> on every result-producing command. <code>batch</code>,
+<code>files</code>, <code>image</code>, <code>video</code>, <code>rerank</code>, and <code>ocr</code> gained JSON output (were
+text-only); <code>embeddings</code>/<code>moderations</code> keep JSON as the default but gained a
+text summary. Progress messages on JSON-capable commands now go to stderr so
+stdout stays valid JSON.</li>
+<li>First tests for the CLI layer: credential-precedence coverage
+(<code>resolveConfig</code>), an end-to-end cobra harness against <code>httptest</code>, and unit
+tests for <code>buildChatRequest</code> and the new <code>internal/fileinput</code> helper.</li>
+</ul>
+<h3 id="internal">Internal</h3>
+<ul>
+<li><code>runWithClient</code> wrapper replaces the four-line <code>getClient</code> preamble repeated
+across ~50 command handlers. <code>addFormatFlag</code>/<code>emit</code> helpers centralize output
+formatting. <code>internal/fileinput.FileOrURL</code> de-duplicates the OCR file/URL
+handling previously copied between <code>ocr parse</code> and the TUI media tab.</li>
+</ul>
+<h3 id="fixed-3">Fixed</h3>
+<ul>
+<li><code>accounts list/show/current --format json</code> masked the API key like the table
+view does (it previously printed the raw key); <code>--reveal</code> opts into raw keys
+for export/backup.</li>
+<li><code>usage</code>/account status now correctly reports an insufficient-balance account
+as <em>accessible but out of balance</em> instead of <em>inaccessible</em>. It classifies
+the failure from the structured <code>*APIError</code> (code/HTTP status) rather than
+string-matching a message; distinguishes 401 (auth) and 429 (rate limit) too.</li>
+<li>TUI: submitting a media job (esp. a multi-minute video) and switching tabs no
+longer strands the result — async results are routed back to the originating
+tab, with esc-to-cancel.</li>
+</ul>
+<h3 id="testing--docs">Testing / docs</h3>
+<ul>
+<li>First unit tests for the credential store (<code>internal/accounts</code>), every TUI
+tab, and the CLI credential-precedence path. New opt-in live-verification
+harness (<code>ZAI_RECORD=1</code>) records redacted cassettes for previously docs-only
+success shapes (Anthropic Messages, Embeddings, Moderations, Agents). Noted
+the vision + tool-calling 401 pitfall in the CLI reference.</li>
+</ul>
+<h2 id="2026-07-12">2026-07-12</h2>
+<h3 id="added-4">Added</h3>
+<ul>
+<li>Quota burn-rate (&#34;Pace&#34;) indicator on token windows in <code>accounts quota</code> /
+<code>usage quota</code> and the TUI Usage tab: extrapolates each rolling window&#39;s own
+reported usage against elapsed window time to flag when you&#39;re on pace to run
+out before reset (<code>62% used at 55% of window elapsed — on pace to run out ~24m before reset</code>). Straight-line math on real API fields — no peak/off-peak
+pricing assumptions. New <code>QuotaLimit.WindowDuration()</code>/<code>WindowStart()</code> and
+<code>usageview.Pace</code>/<code>FormatPace</code> (the first tests for the previously
+untested <code>usageview</code> package). Directly targets the common &#34;limits run out
+sooner than expected&#34; complaint.</li>
+<li>Anthropic-compatible Messages client (<code>AnthropicService</code>, <code>c.Anthropic()</code>) —
+a typed Go client for Z.AI&#39;s <code>/api/anthropic</code> surface (<code>POST /v1/messages</code>),
+the endpoint the GLM Coding Plan points Claude Code at, parallel to the
+OpenAI-style <code>Chat</code> service. Covers <code>Create</code>, streaming <code>CreateStream</code> (raw
+Anthropic SSE events), text/image/tool_use/tool_result content blocks, tools
+(with the same schema-compat rewrite), and Bearer auth + <code>anthropic-version</code>
+header. New CLI: <code>anthropic messages &lt;prompt&gt; [--stream ...]</code>. Routing/auth
+are confirmed reaching the live endpoint (bogus key → clean HTTP 401); the
+success-path body shape is documented, not yet live-verified (see
+<a href="/en/roadmap.html" rel="nofollow noreferrer">Roadmap</a>).
+<ul>
+<li>Extended thinking: <code>AnthropicThinking</code> request config, <code>thinking</code>/
+<code>redacted_thinking</code> response blocks, and <code>resp.Thinking()</code> — which falls
+back to an OpenAI-style <code>reasoning_content</code> field if GLM surfaces reasoning
+that way instead of as a thinking block (the claude-code-router#1133 case).
+CLI <code>--thinking-budget N</code> enables it and prints reasoning to stderr.</li>
+</ul>
+</li>
+<li>Tool-schema compatibility: chat requests now normalize tool (function)
+<code>parameters</code> into the flat JSON-Schema subset GLM&#39;s parser accepts, instead
+of letting <code>anyOf</code>/<code>oneOf</code>/<code>allOf</code>/<code>$ref</code>/<code>$defs</code> reach the endpoint and come
+back as an opaque HTTP 500 (a pain point for tools generated from typed
+languages — nullable fields, reused structs, composed types). Nullable
+unions collapse to their underlying type, <code>allOf</code> merges, and local <code>$ref</code>s
+inline (with cycle protection). Exposed as <code>client.SanitizeToolSchemas</code> for
+explicit use, applied automatically before every chat request, and disablable
+via <code>Config.DisableToolSchemaCompat</code>. See <code>pkg/client/toolschema.go</code> and
+<a href="/en/library-guide.html#tool-schema-compatibility" rel="nofollow noreferrer">Library Guide</a>. The exact
+set of server-rejected constructs is drawn from community reports, not yet
+reproduced live here (see <a href="/en/roadmap.html" rel="nofollow noreferrer">Roadmap</a>).</li>
+<li><code>coding mcp add/remove/status</code>: registers Z.AI&#39;s official Vision MCP Server
+(<code>@z_ai/mcp-server</code> — screenshot OCR, error-screenshot diagnosis,
+diagram/chart understanding, image/video analysis via GLM-4.6V) into any of
+the five supported coding tools, matching the &#34;manage MCP services&#34; step of
+the official <code>@z_ai/coding-helper</code> wizard that this client otherwise ports
+in full. Each tool gets its correct file and JSON shape — notably, Claude
+Code and Factory Droid keep MCP config in a different file than their
+provider/credential config. Available from the CLI and the TUI&#39;s Coding tab
+(<code>m</code> key).</li>
+</ul>
+<h3 id="changed-4">Changed</h3>
+<ul>
+<li>golangci-lint is now part of the gate: a checked-in <code>.golangci.yml</code> (default
+linter set — errcheck, govet, ineffassign, staticcheck, unused), a
+<code>golangci-lint</code> CI job on every push/PR, and a line in the CONTRIBUTING
+pre-PR checklist. The config deliberately keeps <code>io.Reader.Read</code> checked so
+the short-read pattern below can&#39;t come back unnoticed.</li>
+</ul>
+<h3 id="fixed-4">Fixed</h3>
+<ul>
+<li>Short-read bug in test HTTP servers — a single <code>r.Body.Read</code> into a
+<code>ContentLength</code>-sized buffer (<code>Read</code> isn&#39;t guaranteed to fill the buffer in
+one call, so body assertions could flake). A first pass fixed four files;
+golangci-lint then surfaced eight more occurrences across the moderations,
+rerank, tools, voice, and layout tests, now all on <code>io.ReadAll</code>.</li>
+<li><code>staticcheck</code> SA9003 empty <code>if</code> branch in <code>main.go</code>&#39;s config load, collapsed
+to the same <code>_ = ...</code> idiom already used for the <code>.env</code> load above it.</li>
+</ul>
+<h2 id="2026-07-11">2026-07-11</h2>
+<h3 id="added-5">Added</h3>
+<ul>
+<li>Agents service (<code>Invoke</code>, <code>AsyncResult</code>) — live-verified, including the
+200-with-embedded-business-failure response quirk both endpoints share.</li>
+<li>Embeddings, Moderations, Rerank, Voice (cloning), and FileParser services
+and CLI commands.</li>
+<li>Handwriting OCR (<code>ocr handwriting</code>), distinct from layout parsing (<code>ocr parse</code>).</li>
+<li>A <a href="https://github.com/dnaeon/go-vcr" rel="nofollow noreferrer noopener" target="_blank">go-vcr</a>-based live-verification test
+suite (now <code>pkg/client/live_replay_test.go</code> + <code>live_verify_test.go</code>,
+<code>testdata/cassettes/</code>) that replays real recorded API interactions instead
+of hand-written fixtures.</li>
+<li>Cursor as a fifth supported coding tool alongside Claude Code, OpenCode,
+Crush, and Factory Droid.</li>
+<li>Full documentation rewrite: a <code>docs/</code> guide (Getting Started, CLI
+Reference, Accounts &amp; Quota, Coding Tools, Library Guide, Error Handling,
+Architecture), <code>CONTRIBUTING.md</code>, <code>SECURITY.md</code>, this changelog, and a CI
+workflow (build/vet/gofmt/test -race/govulncheck).</li>
+</ul>
+<h3 id="changed-5">Changed</h3>
+<ul>
+<li>Module path renamed to <code>github.com/SamyRai/go-z-ai</code> (was the
+non-installable <code>zai-api-client</code>) ahead of the public release.</li>
+<li>Licensed under Apache 2.0.</li>
+<li><code>pkg/coding</code>&#39;s API-key validator no longer mutates <code>http.DefaultClient</code>
+(a shared global) — it now bounds the request with <code>context.Context</code>
+instead, fixing a data race under concurrent callers (the TUI validates
+keys from a background goroutine).</li>
+<li>Config-file writers in <code>pkg/coding</code> (the credential store and every
+third-party tool config it edits) now write atomically via
+temp-file-then-rename, matching the pattern <code>pkg/accounts</code> already used —
+a crash mid-write can no longer truncate your Claude Code/OpenCode/Crush/
+Factory Droid/Cursor settings.</li>
+<li>Resource IDs (<code>batchID</code>, <code>fileID</code>, task IDs) are now URL-path-escaped
+before being interpolated into request paths.</li>
+<li>Removed unused &#34;legacy compatibility&#34; error constructors/sentinels from
+<code>pkg/client</code> that had no real callers anywhere in the codebase.</li>
+</ul>
+<h2 id="2026-07-10">2026-07-10</h2>
+<h3 id="added-6">Added</h3>
+<ul>
+<li>Streaming chat completions (SSE), with CLI <code>chat create --stream</code>.</li>
+<li>Structured output (<code>json_schema</code> response format, <code>--json-schema</code>).</li>
+<li>Function-calling: a <code>RunWithTools</code>/<code>RunWithToolsLimit</code> auto-executing loop,
+plus CLI tool declarations (<code>--tool</code>).</li>
+<li>Deep-thinking controls (<code>--thinking</code>, <code>--effort</code>) and advanced sampling
+flags (<code>--stop</code>, <code>--top-p</code>, <code>--do-sample</code>, <code>--show-reasoning</code>).</li>
+<li>Automatic retry with exponential backoff, jitter, and <code>Retry-After</code>
+support on 429/5xx/network errors.</li>
+<li>Multimodal messages (<code>Message.Images</code>) for vision models (GLM-4.6V/4.5V),
+wire-compatible with plain-text messages when no image is attached.</li>
+<li>Image generation (<code>glm-image</code>/CogView-4), video generation
+(CogVideoX-3/Vidu, always async), audio transcription/TTS, and OCR
+(layout parsing) services and CLI commands.</li>
+<li>Files and Batch API services for bulk/async request processing.</li>
+<li>A full-screen terminal UI (<code>zai-client tui</code>, now <code>go-z-ai tui</code>) with seven tabs: chat, models,
+usage, accounts, coding, media, tools.</li>
+<li><code>pkg/usageview</code>, a presentation-only package shared by the CLI and TUI so
+usage/quota rendering (time windows, heat maps, relative timestamps)
+can&#39;t drift between the two.</li>
+</ul>
+<h3 id="changed-6">Changed</h3>
+<ul>
+<li><code>context.Context</code> is now the first parameter on every <code>pkg/client</code> service
+method, threaded all the way to the HTTP call.</li>
+<li>Removed a provider/app-config abstraction layer in favor of the simpler
+multi-account model.</li>
+</ul>
+<h3 id="fixed-5">Fixed</h3>
+<ul>
+<li><code>CreateStream</code> no longer gets cut off mid-generation by <code>Config.Timeout</code> —
+the timeout now bounds dial/TLS/response-header wait, not the whole
+response body read.</li>
+<li><code>Tools</code>, <code>Account</code>, and <code>Quota</code> services no longer built their own
+unconfigured <code>http.Client</code> per call (bypassing retry, timeout, and
+structured error parsing) — routed through the shared request facade.</li>
+</ul>
+<h2 id="2026-07-08">2026-07-08</h2>
+<h3 id="added-7">Added</h3>
+<ul>
+<li>Initial release: chat completions, models, usage/quota/billing monitoring,
+and account operations, as both a CLI and a Go client library.</li>
+<li>A Go port of <code>@z_ai/coding-helper</code> (<code>pkg/coding</code>) for configuring Claude
+Code, OpenCode, Crush, and Factory Droid to use a GLM Coding Plan
+credential, sharing the official helper&#39;s <code>~/.chelper/config.yaml</code> file.</li>
+<li>Multi-account credential management (<code>pkg/accounts</code>) with automatic
+<code>coding_plan</code>/<code>pay_as_you_go</code> type detection.</li>
+<li>Structured API error parsing with categories, user-facing messages, and
+retriable flags.</li>
+</ul>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — <br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      Built from commit 9c7c610
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Changelog</a> ·
+      <a href="/CONTRIBUTING.html">Contributing</a> ·
+      <a href="/SECURITY.html">Security</a> ·
+      <a href="/sitemap.xml">Sitemap</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Switch to light mode" : "Switch to dark mode");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Switch to dark mode" : "Switch to light mode");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Accounts and quota · go-z-ai</title>
+  <meta name="description" content="">
+  <link rel="canonical" href="/ru/accounts-and-quota.html">
+  <link rel="alternate" hreflang="en" href="/en/accounts-and-quota.html">
+  <link rel="alternate" hreflang="ru" href="/ru/accounts-and-quota.html">
+  <link rel="alternate" hreflang="zh" href="/zh/accounts-and-quota.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/accounts-and-quota.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Accounts and quota · go-z-ai">
+  <meta property="og:description" content="">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/ru/accounts-and-quota.html">
+  <meta property="og:locale" content="ru">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Accounts and quota · go-z-ai">
+  <meta name="twitter:description" content="">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/ru/accounts-and-quota.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Accounts and quota","inLanguage":"ru","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Accounts and quota","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/ru/accounts-and-quota.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/ru/accounts-and-quota.html","name":"Accounts and quota","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержимому</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/ru/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">G</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/ru/" >Главная</a>
+      <a href="/ru/getting-started.html" aria-current="page">Документация</a>
+      <a href="/ru/cli-reference.html">CLI</a>
+      <a href="/ru/library-guide.html">Библиотека</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Журнал изменений</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Русский</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/accounts-and-quota.html" >English</a>
+    <a role="menuitem" href="/ru/accounts-and-quota.html" aria-current="true">Русский</a>
+    <a role="menuitem" href="/zh/accounts-and-quota.html" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Переключить тему" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="--">Аккаунты и квоты</h1>
+<h2 id="-">Несколько аккаунтов</h2>
+<p>Вместо ручного редактирования <code>.env</code> при каждой смене ключа, один раз
+зарегистрируйте именованные аккаунты и переключайтесь между ними:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai accounts add personal --api-key sk-...          <span class="c1"># тип определяется автоматически</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts add work --api-key sk-... --type coding_plan
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">go-z-ai accounts list
+</span></span><span class="line"><span class="cl">go-z-ai accounts use personal        <span class="c1"># задаёт значение по умолчанию для будущих команд</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts show                <span class="c1"># показывает активный аккаунт</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts remove work --yes
+</span></span></code></pre><p>Аккаунты хранятся в <code>$XDG_CONFIG_HOME/go-z-ai/accounts.json</code> (или
+<code>~/.config/go-z-ai/accounts.json</code>), запись выполняется атомарно с правами
+<code>0600</code>.</p>
+<p><strong>Автоопределение типа:</strong> <code>accounts add</code> опрашивает monitor/quota-эндпоинт,
+применимый только к coding plan, одним бесплатным (без расхода token) вызовом.
+Успешный, корректно сформированный ответ означает <code>coding_plan</code>; в остальных
+случаях выполняется откат к <code>pay_as_you_go</code> — это вывод методом исключения, а
+не положительное подтверждение, поскольку неизвестно о существовании
+эндпоинта, специфичного для ключей pay-as-you-go. Передайте <code>--type</code> явно,
+чтобы пропустить опрос. Опрос учитывает <code>--region</code>: ключ
+<code>glm_coding_plan_china</code> опрашивает coding-эндпоинт <code>open.bigmodel.cn</code> вместо
+эндпоинта <code>api.z.ai</code>, поэтому классификация выполняется относительно нужной
+платформы (см. раздел <a href="#regional-gateways-apiza--openbigmodelcn" rel="nofollow noreferrer">Региональные шлюзы</a>
+ниже).</p>
+<p><strong>Порядок разрешения</strong> — полный список приоритетов для <code>--api-key</code>,
+<code>--account</code>, переменных окружения и активного сохранённого аккаунта см. в
+разделe <a href="getting-started.html#2-authenticate" rel="nofollow noreferrer">Начало работы</a>.</p>
+<h2 id="---">Мониторинг квоты и использования</h2>
+<p>У аккаунтов GLM Coding Plan есть три независимых окна квоты:</p>
+<table>
+<thead>
+<tr>
+<th>Окно</th>
+<th>Что отслеживает</th>
+<th>Тип</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5-часовое скользящее</td>
+<td>token запросов API</td>
+<td>Скользящее — использование за последние 5 часов, а не фиксированный период</td>
+</tr>
+<tr>
+<td>Недельное скользящее</td>
+<td>token запросов API</td>
+<td>Скользящее — использование за последние 7 дней</td>
+</tr>
+<tr>
+<td>Месячное</td>
+<td>Вызовы MCP-инструментов (web search, web-reader, zread)</td>
+<td>Фиксированное, сброс по календарному месяцу</td>
+</tr>
+</tbody>
+</table>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai accounts quota                    <span class="c1"># по всем сохранённым аккаунтам</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts usage --days <span class="m">14</span>          <span class="c1"># тепловая карта использования token/инструментов</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts usage --today            <span class="c1"># сокращение для --days 1</span>
+</span></span><span class="line"><span class="cl">go-z-ai usage quota                       <span class="c1"># одиночный активный аккаунт</span>
+</span></span><span class="line"><span class="cl">go-z-ai usage check --watch               <span class="c1"># предупреждение, когда использование превышает 80%</span>
+</span></span></code></pre><p>Пример вывода <code>accounts quota</code>:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">📊 GLM Coding Plan Usage (PRO tier)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">• 5-hour rolling token window
+</span></span><span class="line"><span class="cl">  Usage: 62%
+</span></span><span class="line"><span class="cl">  Resets: 2026-07-11 09:30:00 CEST (in 2h 14m)
+</span></span><span class="line"><span class="cl">  Pace: 62% used at 55% of window elapsed — on pace to run out ~24m before reset
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">• weekly token window
+</span></span><span class="line"><span class="cl">  Usage: 41%
+</span></span><span class="line"><span class="cl">  Resets: 2026-07-17 09:17:18 CEST (in 5d 22h)
+</span></span><span class="line"><span class="cl">  Pace: 41% used at 15% of window elapsed — on pace to run out ~4d before reset
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">• monthly MCP tools quota
+</span></span><span class="line"><span class="cl">  Usage: 574/1000 (57%) — 426 remaining
+</span></span><span class="line"><span class="cl">  Resets: 2026-07-26 09:17:18 CEST (in 18d 6h)
+</span></span><span class="line"><span class="cl">  By tool:
+</span></span><span class="line"><span class="cl">    - search-prime: 470
+</span></span><span class="line"><span class="cl">    - web-reader: 97
+</span></span><span class="line"><span class="cl">    - zread: 7
+</span></span></code></pre><p>Строка <strong>Pace</strong> (только для окон token) отвечает на вопрос «тратим ли слишком
+быстро?» — она экстраполирует <em>собственное</em> сообщённое окном использование на
+долю истекшего времени окна, так что вы узнаёте о риске преждевременного
+исчерпания <em>до того</em>, как упрётесь в стену. Это линейная математика по числам,
+возвращаемым API (никаких допущений о пиковых/внепиковых тарифах).</p>
+<p>Не каждый аккаунт отображает все окна — на то, какие окна применимы, влияют и
+уровень тарифа, и тип аккаунта (<code>accounts show &lt;name&gt;</code> сообщает тип аккаунта;
+аккаунты <code>pay_as_you_go</code> полностью пропускаются командами <code>accounts quota</code> /
+<code>accounts usage</code>, поскольку coding-plan monitor-эндпоинт к ним неприменим).</p>
+<h3 id="-----">Почему утверждение «использование не существует» неверно</h3>
+<p>Если вы встретите старые заметки в интернете (или в истории git этого репозитория),
+утверждающие, что у Z.AI нет API использования/квоты — это было справедливо
+только для общей поверхности <code>/api/paas/v4</code>, проверенной изолированно.
+Monitor-эндпоинты coding plan (<code>/monitor/usage/quota/limit</code>,
+<code>/monitor/usage/model-usage</code>, <code>/monitor/usage/tool-usage</code>) реальны,
+задокументированы и именно на них построены <code>QuotaService</code>/<code>UsageService</code> из
+<code>pkg/client</code>. Если <code>accounts quota</code> ничего не возвращает для аккаунта, сначала
+проверьте его тип (у аккаунтов <code>pay_as_you_go</code> действительно нет этих данных),
+прежде чем предполагать, что API сломан.</p>
+<h2 id="--apizai--openbigmodelcn">Региональные шлюзы (api.z.ai / open.bigmodel.cn)</h2>
+<p>Z.AI обслуживает одно и то же семейство моделей GLM с двух региональных
+шлюзов: международный хост <code>api.z.ai</code> (по умолчанию) и материковый китайский
+зеркальный <code>open.bigmodel.cn</code>. То, на какой хост попадёт конкретный вызов,
+решают два независимых фактора:</p>
+<p><strong>1. Embeddings и Moderations всегда маршрутизируются на
+<code>open.bigmodel.cn</code></strong> — это единственные сервисы, привязанные к китайскому хосту
+в коде (<code>pkg/client/embeddings.go</code> и <code>pkg/client/moderations.go</code> вызывают
+<code>doRequestBaseKey(BigModelBaseURL, …)</code>). <code>--china-api-key</code> /
+<code>ZAI_CHINA_API_KEY</code> — переключатель учётных данных здесь; он опционален,
+поскольку обычный <code>ZAI_API_KEY</code> аутентифицируется одинаково на обеих
+платформах (тот же каталог <code>/models</code>, те же ошибки биллинг-уровня — живая
+верификация), поэтому откат к общему ключу — частый случай. Задайте отдельный
+китайский ключ, только если у вас есть отдельный Credential, применимый
+исключительно на bigmodel.cn. Rerank и Voice используют <code>--base-url</code> по
+умолчанию (<code>api.z.ai</code> по умолчанию) — они задокументированы только на китайской
+платформе, но клиент не принудительно маршрутизирует их.</p>
+<p><strong>2. monitor / biz / agents / detection маршрутизируются на
+<code>open.bigmodel.cn</code>, если задано <code>--region china</code> (или <code>ZAI_REGION=china</code>)</strong>; в
+противном случае они идут на <code>api.z.ai</code>. Именно этот переключатель нужен
+пользователю <code>glm_coding_plan_china</code>, чтобы квота/использование, информация об
+аккаунте, агенты и определение типа аккаунта попадали на нужный хост — без
+него эти вызовы уходят на <code>api.z.ai</code>, и ключ, выпущенный для Китая, может
+провалить аутентификацию или быть неверно классифицированным. <code>--region</code>
+<strong>не</strong> меняет базовый URL чата (для этого используйте <code>--base-url</code>) и хост
+Embeddings/Moderations. Псевдонимы: <code>cn</code>, <code>bigmodel</code>, <code>west</code>; неизвестное
+значение откатывается к global.</p>
+<p>То, получите ли вы реальные результаты от китайских задокументированных сервисов
+(Embeddings, Moderations, Rerank, Voice), зависит от <strong>тарифа аккаунта</strong>, а не
+от того, какой ключ вы используете. Каталог моделей аккаунта GLM Coding Plan
+содержит только чат — вызов этих сервисов с таким аккаунтом возвращает
+<code>400 Unknown Model</code> (код ошибки 1211) на любой из платформ. Это ожидаемое
+поведение, а не баг: проверьте <code>go-z-ai models list</code>, чтобы увидеть, что
+реально входит в каталог вашего аккаунта.</p>
+<p>Хосты китайского зеркала для monitor/biz/agents/detection повторяют структуру
+путей <code>api.z.ai</code>, но здесь <strong>НЕ ВЕРИФИЦИРОВАНЫ ВЖИВУЮ</strong> — для
+<code>open.bigmodel.cn</code> живая верификация подтвердила ту же поверхность OpenAPI для
+<code>/models</code> и <code>/chat/completions</code>, но пути monitor/biz/agents на китайской
+стороне ещё не были зафиксированы в cassette. См. <a href="roadmap.html" rel="nofollow noreferrer">Дорожная карта</a>.</p>
+<h2 id="--1">Коды ошибок</h2>
+<p><code>APIError</code> (см. <a href="error-handling.html" rel="nofollow noreferrer">Обработка ошибок</a>) категоризирует каждый
+код ошибки Z.AI, с которым сталкивался клиентский код. Два наиболее частых,
+встречающихся в контексте квоты:</p>
+<table>
+<thead>
+<tr>
+<th>Код</th>
+<th>Значение</th>
+<th>Повторяемая</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1113</td>
+<td>Недостаточный баланс / нет пакета ресурсов</td>
+<td>Нет — пополните счёт или смените аккаунт</td>
+</tr>
+<tr>
+<td>1308</td>
+<td>Достигнут лимит использования для текущего окна</td>
+<td>Нет — дождитесь сброса</td>
+</tr>
+<tr>
+<td>1211</td>
+<td>Неизвестная модель</td>
+<td>Нет — обычно ограничение по тарифу, см. выше</td>
+</tr>
+<tr>
+<td>1302</td>
+<td>Достигнуто ограничение скорости</td>
+<td>Да — клиент уже повторяет с backoff</td>
+</tr>
+</tbody>
+</table>
+<p>Полная таблица и способы ветвления по <code>APIError.Category</code> в собственном коде —
+в разделе <a href="error-handling.html" rel="nofollow noreferrer">Обработка ошибок</a>.</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — <br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      Собрано из коммита 9c7c610
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Журнал изменений</a> ·
+      <a href="/CONTRIBUTING.html">Участие в проекте</a> ·
+      <a href="/SECURITY.html">Безопасность</a> ·
+      <a href="/sitemap.xml">Карта сайта</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Перейти в светлую тему" : "Перейти в тёмную тему");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Перейти в тёмную тему" : "Перейти в светлую тему");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

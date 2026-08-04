@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Getting started · go-z-ai</title>
+  <meta name="description" content="">
+  <link rel="canonical" href="/zh/getting-started.html">
+  <link rel="alternate" hreflang="en" href="/en/getting-started.html">
+  <link rel="alternate" hreflang="ru" href="/ru/getting-started.html">
+  <link rel="alternate" hreflang="zh" href="/zh/getting-started.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/getting-started.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Getting started · go-z-ai">
+  <meta property="og:description" content="">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/zh/getting-started.html">
+  <meta property="og:locale" content="zh">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Getting started · go-z-ai">
+  <meta name="twitter:description" content="">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/zh/getting-started.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Getting started","inLanguage":"zh","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Getting started","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/zh/getting-started.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/zh/getting-started.html","name":"Getting started","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">跳到正文</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/zh/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">G</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/zh/" >首页</a>
+      <a href="/zh/getting-started.html" aria-current="page">文档</a>
+      <a href="/zh/cli-reference.html">CLI</a>
+      <a href="/zh/library-guide.html">库</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">更新日志</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>简体中文</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/getting-started.html" >English</a>
+    <a role="menuitem" href="/ru/getting-started.html" >Русский</a>
+    <a role="menuitem" href="/zh/getting-started.html" aria-current="true">简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="切换主题" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="heading">快速开始</h1>
+<p>本指南让你在几分钟内从零开始跑通第一条 <code>go-z-ai</code> 命令。</p>
+<h2 id="1-">1. 安装</h2>
+<p><strong>前置条件：</strong> Go 1.26.4+，一个 Z.AI API Key（<a href="https://z.ai/manage-apikey/apikey-list" rel="nofollow noreferrer noopener" target="_blank">在此创建</a>）。</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go install github.com/SamyRai/go-z-ai@latest
+</span></span></code></pre><p>安装后的二进制名为 <code>go-z-ai</code>。可选简写别名：</p>
+<pre class="chroma"><code><span class="line"><span class="cl">ln -s <span class="s2">&#34;</span><span class="k">$(</span>go env GOPATH<span class="k">)</span><span class="s2">/bin/go-z-ai&#34;</span> <span class="s2">&#34;</span><span class="k">$(</span>go env GOPATH<span class="k">)</span><span class="s2">/bin/zai&#34;</span>
+</span></span></code></pre><p>或者直接从源码构建：</p>
+<pre class="chroma"><code><span class="line"><span class="cl">git clone https://github.com/SamyRai/go-z-ai.git
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> go-z-ai
+</span></span><span class="line"><span class="cl">go build -o go-z-ai .
+</span></span></code></pre><p>无论你走哪条路径，都请确认 <code>go-z-ai</code> 能被解析到、并且位于你的 <code>PATH</code> 上：</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai --version
+</span></span></code></pre><p>本指南余下部分假设这个二进制文件叫做 <code>go-z-ai</code>。</p>
+<h2 id="2-">2. 鉴权</h2>
+<p>按你习惯的方式挑一种即可。它们的解析优先级如下（高者优先）：</p>
+<table>
+<thead>
+<tr>
+<th>方式</th>
+<th>何时使用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--api-key</code> 标志</td>
+<td>一次性调用、脚本、CI</td>
+</tr>
+<tr>
+<td><code>--account &lt;name&gt;</code> 标志</td>
+<td>你注册了多个账户（见 <a href="accounts-and-quota.html" rel="nofollow noreferrer">Accounts &amp; Quota</a>）</td>
+</tr>
+<tr>
+<td><code>ZAI_API_KEY</code> 环境变量（或 <code>.env</code> 文件）</td>
+<td>日常本地 shell 使用——最常见的情况</td>
+</tr>
+<tr>
+<td>账户仓库的活动账户</td>
+<td>你已经运行过 <code>accounts use &lt;name&gt;</code>，并希望它默认生效</td>
+</tr>
+</tbody>
+</table>
+<p>只有一个 key 时，最快的路径：</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">ZAI_API_KEY</span><span class="o">=</span>your_api_key_here
+</span></span><span class="line"><span class="cl">go-z-ai validate
+</span></span></code></pre><p><code>validate</code> 会发起一次真实的 API 调用，在继续之前确认 key 可用。</p>
+<p>如果你的 key 是在 Z.AI 中国平台（<code>open.bigmodel.cn</code>）签发的，请设置
+<code>--region china</code>（或 <code>ZAI_REGION=china</code>），这样配额 / 用量、账户信息、agents
+以及账户类型检测都会路由到正确的 host——否则这些调用会打到 <code>api.z.ai</code>，而
+中国签发的 key 可能在鉴权时失败。完整情况见
+<a href="accounts-and-quota.html#regional-gateways-apiza--openbigmodelcn" rel="nofollow noreferrer">Accounts &amp; Quota § Regional gateways</a>；
+大多数 chat / embeddings / moderations 的使用都不需要额外设置（普通的
+<code>ZAI_API_KEY</code> 在两个平台上都能完成鉴权）。</p>
+<h2 id="3-">3. 你的第一批命令</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="c1"># 查看你能访问哪些模型</span>
+</span></span><span class="line"><span class="cl">go-z-ai models list
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 发起一次聊天补全</span>
+</span></span><span class="line"><span class="cl">go-z-ai chat create <span class="s2">&#34;用一段话解释 goroutine&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 流式地逐 token 输出响应</span>
+</span></span><span class="line"><span class="cl">go-z-ai chat create <span class="s2">&#34;写一首关于 Go 的俳句&#34;</span> --stream
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 查看你的配额（GLM Coding Plan 账户）</span>
+</span></span><span class="line"><span class="cl">go-z-ai usage quota
+</span></span></code></pre><p>接下来：</p>
+<ul>
+<li><strong>完整命令参考：</strong> <a href="cli-reference.html" rel="nofollow noreferrer">CLI Reference</a></li>
+<li><strong>多账户 / 配额监控：</strong> <a href="accounts-and-quota.html" rel="nofollow noreferrer">Accounts &amp; Quota</a></li>
+<li><strong>把 Claude Code / OpenCode / Crush / Factory Droid / Cursor 接入你的 GLM Coding Plan：</strong> <a href="coding-tools.html" rel="nofollow noreferrer">Coding Tools</a></li>
+<li><strong>把本项目当作 Go 库使用，而不是 CLI：</strong> <a href="library-guide.html" rel="nofollow noreferrer">Library Guide</a></li>
+<li><strong>全屏终端 UI</strong>（把 chat、models、usage、accounts、coding、media、tools 这些标签页放到一个界面里）：<code>go-z-ai tui</code></li>
+</ul>
+<h2 id="heading-1">故障排查</h2>
+<p><strong>&#34;API key is required&#34;</strong>——上面四种方式都没有解析到 key。
+再检查一下 <code>echo $ZAI_API_KEY</code>，或者显式传入 <code>--api-key</code> 来确认。</p>
+<p><strong>&#34;invalid API key&#34; / HTTP 401</strong>——找到了 key，但 Z.AI 拒绝了它。
+去 <a href="https://z.ai/manage-apikey/apikey-list" rel="nofollow noreferrer noopener" target="_blank">z.ai/manage-apikey</a> 重新生成。</p>
+<p><strong>在 <code>embeddings</code>/<code>moderations</code>/<code>rerank</code>/<code>voice</code> 上出现 &#34;Unknown Model&#34;（错误 1211）</strong>——
+这几乎总是账户的权益门槛，而不是 bug：你的账户套餐目录里不包含该模型。运行
+<code>go-z-ai models list</code> 来看看你的 key 实际能访问哪些模型。完整解释见
+<a href="accounts-and-quota.html" rel="nofollow noreferrer">Accounts &amp; Quota</a>。</p>
+<p><strong>其它问题</strong>——<a href="https://github.com/SamyRai/go-z-ai/issues" rel="nofollow noreferrer noopener" target="_blank">提一个 issue</a>，
+附上具体命令和错误输出（记得给 key 打码）。</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — <br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      基于提交 9c7c610 构建
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">更新日志</a> ·
+      <a href="/CONTRIBUTING.html">贡献指南</a> ·
+      <a href="/SECURITY.html">安全</a> ·
+      <a href="/sitemap.xml">站点地图</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "切换到浅色模式" : "切换到深色模式");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "切换到深色模式" : "切换到浅色模式");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

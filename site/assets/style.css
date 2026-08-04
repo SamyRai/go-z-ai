@@ -1,0 +1,1096 @@
+/* sitegen generated site stylesheet.
+ *
+ * Organized with cascade layers (specificity low → high):
+ *   @layer reset, tokens, base, typography, components, utilities, overrides
+ *
+ * Palette: Catppuccin Mocha (dark) and Latte (light), MIT-licensed values
+ * from https://catppuccin.com/palette. Exposed as CSS custom properties and
+ * consumed via the light-dark() function so a single declaration covers both
+ * modes — the actual switch happens on the root `color-scheme` property.
+ *
+ * No CSS framework. No web fonts. System stack only.
+ */
+
+/* ─── Layer order (declared once, lowest priority first) ─────────────── */
+@layer reset, tokens, base, typography, components, utilities, overrides;
+
+/* ─── reset ──────────────────────────────────────────────────────────── */
+@layer reset {
+  *, *::before, *::after { box-sizing: border-box; }
+  * { margin: 0; }
+  html, body { height: 100%; }
+  html { -moz-text-size-adjust: none; -webkit-text-size-adjust: none; text-size-adjust: none; }
+  img, picture, svg, video { display: block; max-width: 100%; }
+  input, button, textarea, select { font: inherit; color: inherit; letter-spacing: inherit; }
+  button { background: none; border: 0; cursor: pointer; }
+  table { border-collapse: collapse; }
+  ul[role="list"], ol[role="list"] { list-style: none; padding: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    :has(:target) { scroll-margin-block: var(--scroll-offset); }
+    html { scroll-behavior: smooth; }
+  }
+}
+
+/* ─── tokens (design primitives) ─────────────────────────────────────── */
+@layer tokens {
+  :root {
+    /* Catppuccin Mocha — dark-mode palette. */
+    --mocha-base: #1e1e2e;
+    --mocha-mantle: #181825;
+    --mocha-crust: #11111b;
+    --mocha-surface0: #313244;
+    --mocha-surface1: #45475a;
+    --mocha-surface2: #585b70;
+    --mocha-overlay0: #6c7086;
+    --mocha-overlay1: #7f849c;
+    --mocha-overlay2: #9399b2;
+    --mocha-text: #cdd6f4;
+    --mocha-subtext: #a6adc8;
+    --mocha-mauve: #cba6f7;
+    --mocha-sapphire: #74c7ec;
+    --mocha-teal: #94e2d5;
+    --mocha-green: #a6e3a1;
+    --mocha-yellow: #f9e2af;
+    --mocha-peach: #fab387;
+    --mocha-red: #f38ba8;
+
+    /* Catppuccin Latte — light-mode palette. */
+    --latte-base: #eff1f5;
+    --latte-mantle: #e6e9ef;
+    --latte-crust: #dce0e8;
+    --latte-surface0: #ccd0da;
+    --latte-surface1: #bcc0cc;
+    --latte-surface2: #acb0be;
+    --latte-overlay0: #9ca0b0;
+    --latte-overlay1: #8c8fa1;
+    --latte-overlay2: #7c7f93;
+    --latte-text: #4c4f69;
+    --latte-subtext: #6c6f85;
+    --latte-mauve: #8839ef;
+    --latte-sapphire: #209fb5;
+    --latte-teal: #179299;
+    --latte-green: #40a02b;
+    --latte-yellow: #df8e1d;
+    --latte-peach: #fe640b;
+    --latte-red: #d20f39;
+
+    /* color-scheme is the master switch for light-dark() and form controls.
+     * The theme toggle flips this between "light dark" (auto, OS-driven) and
+     * an explicit "light" or "dark". Initial value honors the OS preference
+     * by default; JS in layout.html persists a manual override. */
+    color-scheme: light dark;
+
+    /* Semantic surface tokens. Each maps to a Catppuccin role via light-dark(). */
+    --color-canvas: light-dark(var(--latte-base), var(--mocha-base));
+    --color-canvas-recessed: light-dark(var(--latte-mantle), var(--mocha-mantle));
+    --color-canvas-deep: light-dark(var(--latte-crust), var(--mocha-crust));
+    --color-surface: light-dark(var(--latte-surface0), var(--mocha-surface0));
+    --color-surface-raised: light-dark(var(--latte-surface1), var(--mocha-surface1));
+    --color-border: light-dark(var(--latte-surface1), var(--mocha-surface0));
+    --color-border-strong: light-dark(var(--latte-surface2), var(--mocha-surface1));
+    --color-text: light-dark(var(--latte-text), var(--mocha-text));
+    --color-text-muted: light-dark(var(--latte-subtext), var(--mocha-subtext));
+    --color-text-faint: light-dark(var(--latte-overlay2), var(--mocha-overlay0));
+
+    /* Semantic accents (brand, status). */
+    --color-accent: light-dark(var(--latte-mauve), var(--mocha-mauve));
+    --color-accent-2: light-dark(var(--latte-sapphire), var(--mocha-sapphire));
+    --color-link: var(--color-accent-2);
+    --color-link-hover: var(--color-accent);
+    --color-success: light-dark(var(--latte-green), var(--mocha-green));
+    --color-warning: light-dark(var(--latte-yellow), var(--mocha-yellow));
+    --color-danger: light-dark(var(--latte-red), var(--mocha-red));
+    --color-teal: light-dark(var(--latte-teal), var(--mocha-teal));
+    /* Foreground for content sitting on an accent-colored surface. Light mode
+     * puts near-white text on the dark mauve; dark mode puts near-black text
+     * on the light mauve — both stay legible. */
+    --color-on-accent: light-dark(var(--latte-base), var(--mocha-crust));
+
+    /* Opacity steps for color-mix() tints — keeps translucent fills on one
+     * scale instead of scattered magic percentages. */
+    --mix-subtle: 12%;
+    --mix-badge: 22%;
+    --mix-hover: 40%;
+
+    /* Type scale (1.250 major third). Generated from a single --step-0 base
+     * via clamp() so it breathes with viewport width. */
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+                 "Helvetica Neue", Arial, "Noto Sans", sans-serif,
+                 "Apple Color Emoji", "Segoe UI Emoji";
+    --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono",
+                 ui-monospace, "Menlo", "Consolas", "DejaVu Sans Mono",
+                 "Liberation Mono", monospace;
+    --font-mono-features: "calt" 1, "liga" 1, "zero" 1, "ss01" 1, "ss02" 1;
+
+    --text-xs:   clamp(0.72rem, 0.70rem + 0.10vw, 0.78rem);
+    --text-sm:   clamp(0.83rem, 0.81rem + 0.10vw, 0.90rem);
+    --text-base: clamp(0.95rem, 0.92rem + 0.16vw, 1.05rem);
+    --text-md:   clamp(1.05rem, 1.01rem + 0.20vw, 1.20rem);
+    --text-lg:   clamp(1.20rem, 1.13rem + 0.35vw, 1.50rem);
+    --text-xl:   clamp(1.45rem, 1.35rem + 0.50vw, 1.95rem);
+    --text-2xl:  clamp(1.75rem, 1.60rem + 0.75vw, 2.55rem);
+    --text-3xl:  clamp(2.15rem, 1.90rem + 1.25vw, 3.40rem);
+
+    --leading-tight: 1.15;
+    --leading-snug: 1.3;
+    --leading-normal: 1.55;
+    --leading-relaxed: 1.7;
+
+    --tracking-tighter: -0.03em;
+    --tracking-tight: -0.02em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.04em;
+    --tracking-wider: 0.08em;
+
+    /* Font-weight scale — the system font stack renders these cleanly. */
+    --weight-normal: 400;
+    --weight-medium: 500;
+    --weight-semibold: 600;
+    --weight-bold: 700;
+
+    /* Spacing scale (1.250 major-third ratio, base 0.25rem). Every
+     * padding/margin/gap reads from this so rhythm is consistent everywhere. */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-7: 2rem;
+    --space-8: 2.5rem;
+    --space-9: 3.125rem;
+    --space-10: 4rem;
+    --space-11: 5rem;
+    --space-12: 6rem;
+
+    /* Special-purpose length tokens (not part of the spacing rhythm). */
+    --scroll-offset: 5rem;        /* scroll-margin for sticky-header clearance */
+    --scrollbar-size: 10px;       /* WebKit scrollbar width/height */
+    --blur-md: 12px;              /* backdrop-filter blur radius */
+    --focus-offset: 2px;          /* :focus-visible outline offset */
+    --nav-height: 4rem;           /* sticky header min-height */
+    --touch-target: 2.75rem;      /* WCAG 2.2 AA minimum touch target */
+    --touch-target-lg: 3rem;      /* touch-coarse pointer minimum */
+
+    /* Sizing tokens */
+    --container-max: 72rem;
+    --container-prose: 48rem;
+    --container-narrow: 36rem;
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-full: 9999px;
+
+    /* Border widths — the single source for hairlines, emphasis, and accent
+     * rules so stroke weight stays uniform across every component. */
+    --border-thin: 1px;
+    --border-thick: 2px;
+    --border-accent: 3px;
+
+    /* Shadows — subtle, two-layer for softness. The shadow color is theme-aware
+     * (space-separated channels fed to rgb(... / <alpha>)): a muted blue-grey in
+     * light mode, near-black crust in dark mode, so cards keep depth in both. */
+    --shadow-color: light-dark(140 152 172, 17 17 27);
+    --shadow-sm: 0 1px 2px rgb(var(--shadow-color) / 0.06);
+    --shadow-md: 0 2px 6px rgb(var(--shadow-color) / 0.08), 0 1px 2px rgb(var(--shadow-color) / 0.04);
+    --shadow-lg: 0 12px 32px -8px rgb(var(--shadow-color) / 0.18), 0 2px 8px -2px rgb(var(--shadow-color) / 0.08);
+    --shadow-glow: 0 0 0 var(--border-accent) color-mix(in oklch, var(--color-accent) 25%, transparent);
+
+    /* Motion — short, uses transform/opacity only */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --duration-fast: 120ms;
+    --duration-normal: 220ms;
+    --duration-slow: 480ms;
+
+    /* Z-index scale */
+    --z-sticky: 10;
+    --z-overlay: 100;
+    --z-toast: 1000;
+  }
+
+  /* Manual theme override — toggled by JS on the root <html>. */
+  :root[data-theme="dark"] { color-scheme: dark; }
+  :root[data-theme="light"] { color-scheme: light; }
+
+  /* Honour high-contrast and reduced-transparency preferences. */
+  @media (prefers-contrast: more) {
+    :root {
+      --color-border: light-dark(var(--latte-overlay0), var(--mocha-overlay1));
+      --shadow-sm: 0 0 0 var(--border-thin) var(--color-border);
+      --shadow-md: 0 0 0 var(--border-thin) var(--color-border);
+    }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    header.site, .lang-switch .menu { backdrop-filter: none !important; }
+  }
+}
+
+/* ─── base (element defaults) ────────────────────────────────────────── */
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    color: var(--color-text);
+    background: var(--color-canvas);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+    min-height: 100dvh;
+    /* Clip the sub-pixel overflow from full-bleed 100vw elements (the statbar)
+     * on platforms with classic scrollbars. `clip` (not `hidden`) avoids
+     * creating a scroll container, so the sticky header keeps working. */
+    overflow-x: clip;
+  }
+
+  /* Reading rhythm: wrap paragraphs/headings/lists. */
+  p { line-height: var(--leading-relaxed); text-wrap: pretty; }
+  h1, h2, h3, h4, h5, h6 {
+    line-height: var(--leading-tight);
+    text-wrap: balance;
+    letter-spacing: var(--tracking-tight);
+    font-weight: var(--weight-semibold);
+  }
+  small { font-size: var(--text-sm); }
+  strong, b { font-weight: var(--weight-semibold); }
+
+  /* Links */
+  a { color: var(--color-link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.15em; }
+  a:hover { color: var(--color-link-hover); text-decoration-thickness: 2px; }
+  a:not([href]) { color: inherit; text-decoration: none; }
+
+  /* Code — inline */
+  code, kbd, samp, var {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    font-feature-settings: var(--font-mono-features);
+  }
+  :not(pre) > code {
+    background: var(--color-surface);
+    padding: 0.12em 0.4em;
+    border-radius: var(--radius-xs);
+    border: var(--border-thin) solid var(--color-border);
+  }
+
+  /* Code — block. Both raw `<pre>` and goldmark-chroma's `<pre class="chroma">`
+   * get the same surface treatment so unstyled fences and highlighted ones
+   * stay visually consistent. Font-size at 0.875em is the 2026 consensus
+   * (GitHub Primer, MDN, dev.to) — monospace fonts have a larger visual
+   * em-box than proportional sans, so ~14px on a 16px base aligns x-height
+   * with body prose. */
+  pre, pre.chroma {
+    background: var(--color-canvas-deep);
+    border: var(--border-thin) solid var(--color-border);
+    padding: var(--space-5);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    line-height: var(--leading-normal);
+    box-shadow: var(--shadow-sm);
+    scrollbar-width: thin;
+    font-size: 0.875em;
+  }
+  pre code, pre.chroma code {
+    font-size: inherit;
+    background: none;
+    border: 0;
+    padding: 0;
+    color: var(--color-text);
+    font-feature-settings: var(--font-mono-features);
+  }
+  /* Chroma's "line" wrapper is a flex row by default — force block + pre
+   * so it doesn't break horizontal scroll on long lines. */
+  pre.chroma .line { display: block; white-space: pre; }
+
+  /* Tables */
+  table { width: 100%; }
+  th, td { padding: var(--space-3) var(--space-4); text-align: start; vertical-align: top; }
+
+  /* Form elements inherit cleanly. */
+  input, button, select, textarea { border-radius: var(--radius-sm); }
+
+  /* Selection */
+  ::selection {
+    background: color-mix(in oklch, var(--color-accent) 30%, transparent);
+    color: var(--color-text);
+  }
+
+  /* Scrollbars (WebKit) */
+  * { scrollbar-width: thin; scrollbar-color: var(--color-border-strong) transparent; }
+  ::-webkit-scrollbar { width: var(--scrollbar-size); height: var(--scrollbar-size); }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong);
+    border-radius: var(--radius-full);
+    border: var(--border-thick) solid var(--color-canvas);
+  }
+
+  /* Focus ring — visible only on keyboard nav, never on mouse click. */
+  :focus-visible {
+    outline: var(--border-thick) solid var(--color-accent);
+    outline-offset: var(--focus-offset);
+    border-radius: var(--radius-xs);
+  }
+  :focus:not(:focus-visible) { outline: none; }
+
+  /* Smooth height animation for <details> on supporting browsers (Baseline
+   * 2024). Browsers without interpolate-size fall back to instant open. */
+  @supports (interpolate-size: allow-keywords) {
+    html { interpolate-size: allow-keywords; }
+    details.lang-switch { transition: content-visibility var(--duration-normal) var(--ease-out) allow-discrete; }
+    details.lang-switch .menu { transition: opacity var(--duration-normal) var(--ease-out), transform var(--duration-normal) var(--ease-out); }
+    details.lang-switch[open] .menu { opacity: 1; transform: translateY(0); }
+    details.lang-switch:not([open]) .menu { opacity: 0; transform: translateY(-4px); }
+    /* Avoid flashing the menu in non-open state for users without JS. */
+    details.lang-switch:not([open]):not(:defined) .menu { display: none; }
+    @starting-style {
+      details.lang-switch[open] .menu { opacity: 0; transform: translateY(-4px); }
+    }
+  }
+}
+
+/* ─── typography (content blocks: .prose) ────────────────────────────── */
+@layer typography {
+  /* .prose wraps rendered markdown — establishes a vertical rhythm. */
+  .prose {
+    max-width: var(--container-prose);
+    font-size: var(--text-base);
+    line-height: var(--leading-relaxed);
+  }
+  .prose > * + * { margin-block-start: var(--space-5); }
+  .prose h1 { font-size: var(--text-2xl); margin-block: var(--space-7) var(--space-5); }
+  .prose h2 {
+    font-size: var(--text-xl);
+    margin-block: var(--space-8) var(--space-5);
+    padding-block-end: var(--space-3);
+    border-block-end: var(--border-thin) solid var(--color-border);
+  }
+  .prose h3 { font-size: var(--text-lg); margin-block: var(--space-7) var(--space-4); color: var(--color-accent-2); }
+  .prose h4 { font-size: var(--text-md); margin-block: var(--space-6) var(--space-3); color: var(--color-text-muted); }
+  .prose h5, .prose h6 { font-size: var(--text-base); color: var(--color-text-muted); }
+  .prose p, .prose li { text-wrap: pretty; }
+  .prose ul, .prose ol { padding-inline-start: var(--space-6); }
+  .prose li + li { margin-block-start: var(--space-2); }
+  .prose blockquote {
+    border-inline-start: var(--border-accent) solid var(--color-accent);
+    padding: var(--space-3) var(--space-5);
+    background: color-mix(in oklch, var(--color-surface) 50%, transparent);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+  .prose blockquote > * + * { margin-block-start: var(--space-3); }
+  .prose hr { border: 0; border-block-start: var(--border-thin) solid var(--color-border); margin-block: var(--space-8); }
+  .prose img { border-radius: var(--radius-md); inline-size: 100%; height: auto; }
+  .prose table { display: block; overflow-x: auto; max-width: 100%; }
+  .prose th { background: var(--color-canvas-recessed); font-weight: var(--weight-semibold); }
+  .prose th, .prose td { border: var(--border-thin) solid var(--color-border); }
+
+  /* Heading anchors — goldmark emits <h2 id="...">. Add a hover-only pilcrow
+   * so deep-linking is discoverable but unobtrusive. */
+  .prose :is(h2, h3, h4)[id] {
+    scroll-margin-block-start: var(--scroll-offset);
+    position: relative;
+  }
+  .prose :is(h2, h3, h4)[id]::after {
+    content: "#";
+    margin-inline-start: var(--space-3);
+    color: var(--color-text-faint);
+    opacity: 0;
+    text-decoration: none;
+    transition: opacity var(--duration-fast) var(--ease-out);
+  }
+  .prose :is(h2, h3, h4)[id]:hover::after,
+  .prose :is(h2, h3, h4)[id]:target::after { opacity: 1; }
+}
+
+/* ─── components ─────────────────────────────────────────────────────── */
+@layer components {
+
+  /* Layout primitives */
+  .container {
+    max-width: var(--container-max);
+    margin-inline: auto;
+    padding-inline: clamp(var(--space-4), 4vw, var(--space-7));
+  }
+  /* The main content column is a query container so components (stats grid,
+   * activity feed) respond to the column width, not the viewport. Scoped to
+   * <main> only — the sticky header/footer must not establish containment. */
+  main.container { container: content / inline-size; }
+
+  /* Skip link — visible on focus only, jumps keyboard users past the header. */
+  .skip-link {
+    position: absolute;
+    inset-block-start: var(--space-3);
+    inset-inline-start: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-accent);
+    color: var(--color-canvas-deep);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: var(--weight-semibold);
+    z-index: var(--z-overlay);
+    transform: translateY(-150%);
+    transition: transform var(--duration-normal) var(--ease-out);
+
+    &:focus-visible { transform: translateY(0); }
+  }
+
+  /* Site header — sticky, subtle glassmorphism on supporting browsers. */
+  header.site {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: var(--z-sticky);
+    border-block-end: var(--border-thin) solid var(--color-border);
+    /* 88% keeps the frosted header legible over scrolling content. */
+    background: color-mix(in oklch, var(--color-canvas-recessed) 88%, transparent);
+    backdrop-filter: blur(var(--blur-md)) saturate(1.4);
+    -webkit-backdrop-filter: blur(var(--blur-md)) saturate(1.4);
+
+    & .container {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      min-block-size: var(--nav-height);
+      flex-wrap: wrap;
+    }
+  }
+
+  /* Brand lockup */
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-md);
+    color: var(--color-text);
+    text-decoration: none;
+    margin-inline-end: auto;
+
+    &:hover { color: var(--color-accent); }
+  }
+  .brand-mark {
+    inline-size: 1.75rem;      /* glyph box — fixed, not on the space scale */
+    block-size: 1.75rem;
+    background: linear-gradient(135deg, var(--mocha-mauve), var(--mocha-sapphire));
+    border-radius: var(--radius-sm);
+    /* Gradient uses fixed bright mocha stops in both themes, so the on-color
+     * stays the dark crust regardless of light/dark mode. */
+    color: var(--mocha-crust);
+    font-family: var(--font-mono);
+    font-weight: var(--weight-bold);
+    font-size: 1rem;           /* glyph size — matches the 1.75rem box */
+    text-align: center;
+    line-height: 1.75rem;
+    box-shadow: var(--shadow-sm), inset 0 var(--border-thin) 0 rgba(255,255,255,0.15);
+  }
+
+  /* Primary nav */
+  nav.site {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    flex-wrap: wrap;
+
+    & a {
+      padding: var(--space-3) var(--space-4);
+      /* WCAG 2.2 AA target-size: ensure the tappable area is ≥24×24 CSS px
+       * even when text is short. Block size is enforced by the nav line-height
+       * + padding combination. */
+      min-block-size: 1.5rem;
+      border-radius: var(--radius-sm);
+      color: var(--color-text-muted);
+      font-size: var(--text-sm);
+      text-decoration: none;
+      transition: color var(--duration-fast) var(--ease-out),
+                  background-color var(--duration-fast) var(--ease-out);
+
+      &:hover { color: var(--color-text); background: var(--color-surface); }
+      &[aria-current="page"],
+      &.active { color: var(--color-accent); }
+    }
+  }
+
+  /* Language switcher (details-based dropdown) */
+  .lang-switch {
+    position: relative;
+
+    /* Matched to .theme-toggle: same height, border, radius, and hover so the
+     * two header controls read as one unified pair. */
+    & > summary {
+      list-style: none;
+      cursor: pointer;
+      min-block-size: var(--touch-target);
+      padding: var(--space-2) var(--space-3);
+      border: var(--border-thin) solid var(--color-border);
+      border-radius: var(--radius-sm);
+      color: var(--color-text-muted);
+      font-size: var(--text-sm);
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      transition: color var(--duration-fast) var(--ease-out),
+                  background-color var(--duration-fast) var(--ease-out),
+                  border-color var(--duration-fast) var(--ease-out);
+
+      &::-webkit-details-marker { display: none; }
+      &:hover { color: var(--color-text); background: var(--color-surface); border-color: var(--color-border-strong); }
+      & svg { inline-size: 0.85em; block-size: 0.85em; transition: transform var(--duration-fast) var(--ease-out); }
+    }
+    &[open] > summary { color: var(--color-text); background: var(--color-surface); border-color: var(--color-border-strong); }
+    &[open] > summary svg { transform: rotate(180deg); }
+
+    & .menu {
+      position: absolute;
+      inset-block-start: calc(100% + var(--space-2));
+      inset-inline-end: 0;
+      min-inline-size: 12rem;
+      background: var(--color-canvas-recessed);
+      border: var(--border-thin) solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-2);
+      box-shadow: var(--shadow-lg);
+
+      & a {
+        display: block;
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-sm);
+        color: var(--color-text);
+        font-size: var(--text-sm);
+        text-decoration: none;
+
+        &:hover { background: var(--color-surface); }
+        &[aria-current="true"] {
+          color: var(--color-accent);
+          font-weight: var(--weight-semibold);
+          background: color-mix(in oklch, var(--color-accent) var(--mix-subtle), transparent);
+        }
+      }
+    }
+  }
+
+  /* Theme toggle */
+  .theme-toggle {
+    inline-size: var(--touch-target);
+    block-size: var(--touch-target);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: var(--border-thin) solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    font-size: 1.1rem;   /* icon glyph — sized above body text, off the scale */
+    line-height: 1;      /* single-line control */
+    transition: color var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out);
+
+    &:hover { color: var(--color-text); background: var(--color-surface); border-color: var(--color-border-strong); }
+    &[aria-pressed="true"] { color: var(--color-accent); }
+  }
+
+  /* Hero */
+  .hero {
+    padding-block: clamp(var(--space-7), 6vw, var(--space-10)) clamp(var(--space-6), 4vw, var(--space-8));
+
+    /* Same flow rhythm as section.block / .prose so spacing is uniform. */
+    & > * + * { margin-block-start: var(--space-5); }
+
+    & h1 {
+      font-size: var(--text-3xl);
+      font-weight: var(--weight-bold);
+      letter-spacing: var(--tracking-tighter);
+      max-inline-size: 18ch;
+    }
+    & .lead {
+      font-size: var(--text-md);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-muted);
+      max-inline-size: 52ch;
+    }
+    & .ctas { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5);
+    min-block-size: var(--touch-target);
+    border-radius: var(--radius-sm);
+    font-weight: var(--weight-medium);
+    font-size: var(--text-sm);
+    line-height: 1;      /* single-line control */
+    text-decoration: none;
+    border: var(--border-thin) solid transparent;
+    transition: transform var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+
+    &:hover { text-decoration: none; }
+    &:active { transform: scale(0.98); }
+  }
+  .btn-primary {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    box-shadow: var(--shadow-sm);
+
+    /* Mix toward white to lighten the accent on hover (distinct axis from the
+     * opacity tints — this brightens rather than fades). */
+    &:hover {
+      background: color-mix(in oklch, var(--color-accent), white 14%);
+      color: var(--color-on-accent);
+    }
+  }
+  .btn-secondary {
+    background: transparent;
+    color: var(--color-text);
+    border-color: var(--color-border-strong);
+
+    &:hover {
+      background: var(--color-surface);
+      border-color: var(--color-accent);
+    }
+  }
+
+  /* Badges row — small status images from shields.io. Vertical spacing comes
+   * from the hero flow rhythm. */
+  .badges {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+
+    & img {
+      block-size: 20px;    /* shields.io renders at a fixed 20px height */
+      border-radius: var(--radius-xs);
+    }
+  }
+
+  /* Section block — vertical rhythm container. Tighter than before to
+   * eliminate the "unnecessary padding" around the activity feed: section
+   * padding is now 1.5× the inner item padding, not 3-4×. */
+  section.block {
+    padding-block: clamp(var(--space-6), 3.5vw, var(--space-8));
+    border-block-start: var(--border-thin) solid var(--color-border);
+
+    /* Uniform vertical rhythm between direct children (mirrors .prose), so the
+     * heading, code blocks, paragraphs, and lists are evenly spaced instead of
+     * relying on ad-hoc per-element margins. Headings override for a larger gap. */
+    & > * + * { margin-block-start: var(--space-5); }
+
+    &:first-of-type { border-block-start: 0; }
+    & > h2 {
+      font-size: var(--text-xl);
+      letter-spacing: var(--tracking-tight);
+    }
+    & > h3 {
+      font-size: var(--text-md);
+      margin-block: var(--space-6) var(--space-3);
+      color: var(--color-accent-2);
+    }
+    & li + li { margin-block-start: var(--space-2); }
+  }
+  /* Indent generic prose lists only. The whole selector is wrapped in :where()
+   * → zero specificity, so the .feed / .timeline `padding:0` resets below win
+   * and the activity feed + release timeline sit flush with the section heading
+   * instead of inheriting a stray 1.5rem left indent. */
+  :where(section.block ul, section.block ol) { padding-inline-start: var(--space-6); }
+
+  /* Stats bar — a slim, full-bleed strip of key metrics under the hero.
+   * Breaks out of the centered container to span the viewport, then re-centers
+   * its inner row to the container width. */
+  .statbar {
+    width: 100vw;
+    margin-inline: calc(50% - 50vw);
+    margin-block: clamp(var(--space-6), 4vw, var(--space-8));
+    background: var(--color-canvas-recessed);
+    border-block: var(--border-thin) solid var(--color-border);
+
+    & .statbar-inner {
+      max-inline-size: var(--container-max);
+      margin-inline: auto;
+      padding-inline: clamp(var(--space-4), 4vw, var(--space-7));
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    & .statbar-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-1);
+      text-align: center;
+      flex: 1 1 auto;
+      padding: clamp(var(--space-3), 2vw, var(--space-5)) clamp(var(--space-3), 2.2vw, var(--space-5));
+      border-inline-start: var(--border-thin) solid var(--color-border);
+
+      &:first-child { border-inline-start: 0; }
+    }
+    & .statbar-num {
+      font-family: var(--font-mono);
+      font-feature-settings: var(--font-mono-features);
+      font-size: var(--text-md);
+      font-weight: var(--weight-bold);
+      color: var(--color-accent);
+      line-height: 1.2;   /* tight single-line numeral */
+    }
+    & .statbar-lbl {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wide);
+    }
+
+    /* Status chips (CI / scorecard / license) — same cell layout as metrics,
+     * but the value is a word in body color prefixed by a semantic status dot,
+     * and the group is faintly separated from the metrics. */
+    & .is-status .statbar-num {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--text-sm);
+      color: var(--color-text);
+    }
+    & .statbar-num em {
+      font-style: normal;
+      color: var(--color-text-faint);
+      font-weight: var(--weight-medium);
+    }
+    & .statbar-dot {
+      inline-size: 0.5rem;
+      block-size: 0.5rem;
+      border-radius: var(--radius-full);
+      background: var(--status-color, var(--color-accent-2));
+      box-shadow: 0 0 0 3px color-mix(in oklch, var(--status-color, var(--color-accent-2)) var(--mix-badge), transparent);
+    }
+    & .is-status.s-ok   { --status-color: var(--color-success); }
+    & .is-status.s-bad  { --status-color: var(--color-danger); }
+    & .is-status.s-warn { --status-color: var(--color-warning); }
+    & .is-status.s-info { --status-color: var(--color-accent-2); }
+    /* Extra breathing room where the status group meets the metrics group. */
+    & .is-status + .statbar-item:not(.is-status) { border-inline-start-width: var(--border-thick); }
+  }
+
+  /* Recent releases + changelog timeline */
+  .timeline {
+    list-style: none;
+    padding: 0;
+
+    & > li {
+      padding-block: var(--space-6);
+      border-block-start: var(--border-thin) solid var(--color-border);
+
+      &:first-child { border-block-start: 0; }
+    }
+    & h3 { font-size: var(--text-md); color: var(--color-accent); margin-block-end: var(--space-3); }
+    & h4 { font-size: var(--text-sm); color: var(--color-accent-2); margin-block: var(--space-4) var(--space-2); font-weight: var(--weight-semibold); }
+    /* Nested release bullets — one step tighter than a prose list. */
+    & ul { padding-inline-start: var(--space-5); }
+    & li { margin-block: var(--space-1); color: var(--color-text-muted); font-size: var(--text-sm); }
+    & li strong { color: var(--color-text); }
+  }
+  /* Muted metadata line under a release heading (date · assets · prerelease).
+   * Mirrors the .feed-date / .feed-author treatment so both feeds match. */
+  .timeline-meta { color: var(--color-text-faint); font-size: var(--text-xs); }
+
+  /* Activity feed — clickable commit list with type badges */
+  .feed { list-style: none; padding: 0; }
+  .feed-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: var(--space-3);
+    align-items: center;
+    padding: var(--space-2) var(--space-3);
+    border-block-end: var(--border-thin) solid var(--color-border);
+    transition: background-color var(--duration-fast) var(--ease-out);
+    border-radius: var(--radius-sm);
+
+    &:last-child { border-block-end: 0; }
+    &:hover { background: color-mix(in oklch, var(--color-surface) var(--mix-hover), transparent); }
+  }
+  .feed-hash {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--color-accent);
+    text-decoration: none;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-xs);
+    background: color-mix(in oklch, var(--color-accent) var(--mix-subtle), transparent);
+    white-space: nowrap;
+    flex-shrink: 0;
+    line-height: 1.5;   /* aligns the mono hash pill with adjacent badges */
+
+    &:hover {
+      /* one-off emphasis tint, a touch stronger than the resting fill */
+      background: color-mix(in oklch, var(--color-accent) 24%, transparent);
+      text-decoration: none;
+      color: var(--color-accent);
+    }
+  }
+  .feed-body {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    min-inline-size: 0;
+  }
+  .feed-type {
+    display: inline-block;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    padding: 0.1em 0.4em;
+    border-radius: var(--radius-full);
+    line-height: 1.6;   /* vertical centering inside the pill */
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  /* Conventional-commit type colors (Catppuccin-aligned). */
+  .type-feat  { background: color-mix(in oklch, var(--color-success) var(--mix-badge), transparent); color: var(--color-success); }
+  .type-fix   { background: color-mix(in oklch, var(--color-danger) var(--mix-badge), transparent); color: var(--color-danger); }
+  .type-docs  { background: color-mix(in oklch, var(--color-accent-2) var(--mix-badge), transparent); color: var(--color-accent-2); }
+  .type-ci    { background: color-mix(in oklch, var(--color-accent) var(--mix-badge), transparent); color: var(--color-accent); }
+  .type-chore { background: color-mix(in oklch, var(--color-text-faint) var(--mix-badge), transparent); color: var(--color-text-muted); }
+  .type-refactor { background: color-mix(in oklch, var(--color-warning) var(--mix-badge), transparent); color: var(--color-warning); }
+  .type-test  { background: color-mix(in oklch, var(--color-teal) var(--mix-badge), transparent); color: var(--color-teal); }
+  .type-style { background: color-mix(in oklch, var(--color-text-faint) var(--mix-badge), transparent); color: var(--color-text-muted); }
+  .type-perf  { background: color-mix(in oklch, var(--color-success) var(--mix-badge), transparent); color: var(--color-success); }
+  .type-build { background: color-mix(in oklch, var(--color-warning) var(--mix-badge), transparent); color: var(--color-warning); }
+  .feed-scope {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+    padding: 0.1em 0.4em;
+    border-radius: var(--radius-xs);
+    flex-shrink: 0;
+  }
+  .feed-subj {
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    overflow-wrap: anywhere;
+  }
+  .feed-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-1);
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .feed-author { color: var(--color-text-muted); font-size: var(--text-xs); }
+  .feed-date { color: var(--color-text-faint); font-size: var(--text-xs); }
+
+  /* Forward "explore" links — one consistent treatment shared by the inline
+   * "full list" nav line (.moreline) and the standalone section footer actions
+   * (.section-more): link-colored, no rest underline, underline on hover. */
+  .section-more a,
+  .moreline a {
+    color: var(--color-link);
+    font-weight: var(--weight-medium);
+    text-decoration: none;
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+  .section-more a:hover,
+  .moreline a:hover { color: var(--color-link-hover); text-decoration: underline; }
+
+  /* Standalone "view all →" rows add the arrow and smaller type; vertical
+   * spacing comes from the section.block flow rhythm. */
+  .section-more {
+    font-size: var(--text-sm);
+
+    & a { display: inline-flex; align-items: center; gap: var(--space-2); }
+    & a span { transition: transform var(--duration-fast) var(--ease-out); }
+    & a:hover span { transform: translateX(3px); }
+  }
+
+  /* ── Download / install hub ─────────────────────────────────────────── */
+  /* Platform download cards */
+  .dl-grid {
+    display: grid;
+    gap: var(--space-3);
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    margin-block: var(--space-5);
+  }
+  .dl-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-5);
+    background: var(--color-canvas-recessed);
+    border: var(--border-thin) solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    text-decoration: none;
+    transition: transform var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out);
+
+    &:hover { transform: translateY(-2px); border-color: var(--color-accent); text-decoration: none; }
+    &.dl-card--rec { border-color: var(--color-accent); box-shadow: 0 0 0 var(--border-thin) var(--color-accent); }
+  }
+  .dl-os { display: flex; align-items: center; gap: var(--space-2); font-weight: var(--weight-semibold); font-size: var(--text-md); }
+  .dl-glyph { font-size: 1.25rem; line-height: 1; }
+  .dl-arch { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--color-text-muted); }
+  .dl-meta { font-size: var(--text-xs); color: var(--color-text-faint); }
+  .dl-action {
+    margin-block-start: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    text-align: center;
+    font-weight: var(--weight-medium);
+    font-size: var(--text-sm);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+  .dl-card--rec .dl-action { background: var(--color-accent); color: var(--color-on-accent); }
+  .dl-badge {
+    position: absolute;
+    inset-block-start: calc(-1 * var(--space-2));
+    inset-inline-start: var(--space-4);
+    padding: 0.1em 0.5em;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    border-radius: var(--radius-full);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+
+  /* Supply-chain provenance strip */
+  .provenance {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-5);
+    align-items: center;
+    padding: var(--space-4) var(--space-5);
+    border: var(--border-thin) solid color-mix(in oklch, var(--color-success) 30%, var(--color-border));
+    background: color-mix(in oklch, var(--color-success) var(--mix-subtle), transparent);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+  }
+  .prov-title { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: var(--weight-bold); color: var(--color-success); }
+  .prov-dot {
+    inline-size: 0.5rem; block-size: 0.5rem; border-radius: var(--radius-full);
+    background: var(--color-success);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-success) var(--mix-badge), transparent);
+  }
+  .prov-item { color: var(--color-text-muted); }
+  .prov-item::before { content: "✓ "; color: var(--color-success); font-weight: var(--weight-bold); }
+
+  /* Release-notes meta + copy-to-clipboard button (added by JS) */
+  .dl-relmeta { font-size: var(--text-sm); color: var(--color-text-muted); }
+  .codewrap { position: relative; }
+  .code-copy {
+    position: absolute;
+    inset-block-start: var(--space-3);
+    inset-inline-end: var(--space-3);
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    color: var(--color-text-muted);
+    background: var(--color-canvas-recessed);
+    border: var(--border-thin) solid var(--color-border);
+    border-radius: var(--radius-sm);
+
+    &:hover { color: var(--color-text); border-color: var(--color-border-strong); }
+  }
+
+  /* Footer */
+  footer.site {
+    border-block-start: var(--border-thin) solid var(--color-border);
+    padding-block: var(--space-8);
+    margin-block-start: var(--space-9);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    background: var(--color-canvas-recessed);
+
+    & a { color: var(--color-text-muted); }
+    & a:hover { color: var(--color-accent); }
+    & .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-5);
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+  }
+
+  /* Translation-pending banner */
+  .banner-pending {
+    /* 18% warning tint reads as a soft caution wash without shouting. */
+    background: color-mix(in oklch, var(--color-warning) 18%, transparent);
+    border: var(--border-thin) solid var(--color-warning);
+    border-radius: var(--radius-md);
+    padding: var(--space-4) var(--space-5);
+    margin-block-end: var(--space-6);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+  }
+}
+
+/* ─── utilities ──────────────────────────────────────────────────────── */
+@layer utilities {
+  .visually-hidden {
+    position: absolute !important;
+    inline-size: 1px; block-size: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0);
+    white-space: nowrap; border: 0;
+  }
+}
+
+/* ─── overrides (last resort) ────────────────────────────────────────── */
+@layer overrides {
+  /* Honour reduced motion — disable all transitions/animations. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Small viewports — tighten nav and hero (these track the viewport, not a
+   * container: the header is outside the content query-container). */
+  @media (max-width: 540px) {
+    nav.site a { padding: var(--space-2); font-size: var(--text-xs); }
+    .hero { padding-block: var(--space-7) var(--space-5); }
+    .hero h1 { max-inline-size: none; }
+  }
+
+  /* Narrow content column — stack the stats grid and activity feed based on the
+   * content column's own width (the `content` container on <main>), so they
+   * respond correctly even when the column is constrained. */
+  @container content (max-width: 32rem) {
+    /* Statbar → tidy 3-col grid (no dividers) instead of a wrapping row. */
+    .statbar .statbar-inner { display: grid; grid-template-columns: repeat(3, 1fr); }
+    .statbar .statbar-item { border-inline-start: 0; padding-inline: var(--space-2); }
+    .feed-item { grid-template-columns: 1fr; gap: var(--space-2); }
+    .feed-meta { flex-direction: row; align-items: baseline; gap: var(--space-3); }
+  }
+
+  /* Touch-coarse devices — bigger hit targets. */
+  @media (pointer: coarse) {
+    nav.site a { padding: var(--space-3); }
+    .btn { min-block-size: var(--touch-target-lg); }
+  }
+
+  /* Print — strip backgrounds, force black-on-white. */
+  @media print {
+    header.site, footer.site, .theme-toggle, .lang-switch, .badges, .ctas { display: none !important; }
+    body { background: white; color: black; }
+    pre, blockquote { border-color: #ccc; }
+    a { color: black; text-decoration: underline; }
+    a::after { content: " (" attr(href) ")"; font-size: var(--text-xs); color: #555; }
+  }
+}

@@ -1,0 +1,21 @@
+# go-z-ai
+
+The full documentation as one file for agents: https://SamyRai.github.io/go-z-ai/llms-full.txt
+
+## Documentation
+
+- [Accounts and quota](https://SamyRai.github.io/go-z-ai/en/accounts-and-quota.html): Instead of hand-editing `.env` every time you switch keys, register named
+- [Architecture](https://SamyRai.github.io/go-z-ai/en/architecture.html): - [Package layout](#package-layout)
+- [CLI reference](https://SamyRai.github.io/go-z-ai/en/cli-reference.html): Every command supports `--help` for its authoritative, always-up-to-date flag
+- [Coding tools](https://SamyRai.github.io/go-z-ai/en/coding-tools.html): `go-z-ai coding` configures third-party coding assistants to use your GLM
+- [Error handling](https://SamyRai.github.io/go-z-ai/en/error-handling.html): Every service method returns a plain `error`. Transport-level failures (DNS,
+- [Getting started](https://SamyRai.github.io/go-z-ai/en/getting-started.html): This gets you from zero to your first `go-z-ai` command in a couple of minutes.
+- [Library guide](https://SamyRai.github.io/go-z-ai/en/library-guide.html): `pkg/client` is a standalone Go library — everything the CLI does, it does by
+- [Roadmap](https://SamyRai.github.io/go-z-ai/en/roadmap.html): What's still open, why, and the exact action that closes it. Items leave this
+
+## Project
+
+- [Download & install](https://SamyRai.github.io/go-z-ai/download.html): prebuilt signed binaries (macOS/Linux) or `go install`
+- [Source code (go-z-ai)](https://github.com/SamyRai/go-z-ai): the Go source, issues, and releases
+- [Changelog](https://SamyRai.github.io/go-z-ai/CHANGELOG.html): released changes by version
+- [Contributing](https://SamyRai.github.io/go-z-ai/CONTRIBUTING.html): how to build, test, and submit changes

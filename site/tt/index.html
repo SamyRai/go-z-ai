@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="tt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>go-z-ai</title>
+  <meta name="description" content="">
+  <link rel="canonical" href="/tt/">
+  <link rel="alternate" hreflang="en" href="/en/">
+  <link rel="alternate" hreflang="ru" href="/ru/">
+  <link rel="alternate" hreflang="zh" href="/zh/">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="go-z-ai">
+  <meta property="og:description" content="">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/tt/">
+  <meta property="og:locale" content="tt">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="go-z-ai">
+  <meta name="twitter:description" content="">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/#website","@type":"WebSite","description":"","inLanguage":"tt","name":"go-z-ai","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/"},{"@id":"https://SamyRai.github.io/go-z-ai/#software","@type":["SoftwareApplication","SoftwareSourceCode"],"applicationCategory":"DeveloperApplication","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"codeRepository":"https://github.com/SamyRai/go-z-ai","description":"","name":"go-z-ai","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"operatingSystem":"Linux, macOS, Windows","programmingLanguage":"Go","url":"https://SamyRai.github.io/go-z-ai/"},{"@id":"https://SamyRai.github.io/go-z-ai/#org","@type":"Organization","name":"SamyRai","url":"https://github.com/SamyRai/go-z-ai"}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Эчтәлеккә сикерү</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/en/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">G</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/en/" aria-current="page">Баш бит</a>
+      <a href="/en/getting-started.html" >Документация</a>
+      <a href="/en/cli-reference.html">CLI</a>
+      <a href="/en/library-guide.html">Китапханә</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Үзгәрешләр журналы</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Татарча</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/" >English</a>
+    <a role="menuitem" href="/ru/" >Русский</a>
+    <a role="menuitem" href="/zh/" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" aria-current="true">Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Теманы алмаштыру" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<section class="hero">
+  <h1>go-z-ai</h1>
+  <div class="ctas">
+    <a class="btn btn-primary" href="/en/getting-started.html">Башлау <span aria-hidden="true">→</span></a>
+    <a class="btn btn-secondary" href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub&#39;та чыганак</a>
+  </div>
+</section>
+<div class="statbar" role="group" aria-label="Кыскача">
+  <div class="statbar-inner">
+    <div class="statbar-item"><span class="statbar-num">0</span><span class="statbar-lbl">GitHub йолдызлары</span></div>
+    <div class="statbar-item"><span class="statbar-num">1</span><span class="statbar-lbl">Өлеш кертүчеләр</span></div>
+    <div class="statbar-item"><span class="statbar-num">5</span><span class="statbar-lbl">Коммитлар / 30 көн</span></div>
+    <div class="statbar-item"><span class="statbar-num">0</span><span class="statbar-lbl">Ачык мәсьәләләр</span></div>
+  </div>
+</div>
+<section class="block">
+  <h2>Соңгы эшчәнлек</h2>
+  <ul class="feed">
+    <li class="feed-item">
+      <a class="feed-hash" href="https://github.com/SamyRai/go-z-ai/commit/9c7c610" rel="external" title="docs: standalone README, sample sitegen.yaml, LICENSE, CONTRIBUTING, usage guide">9c7c610</a>
+      <div class="feed-body">
+        <span class="feed-type type-docs">docs</span>
+        <span class="feed-subj" title="docs: standalone README, sample sitegen.yaml, LICENSE, CONTRIBUTING, usage guide">standalone README, sample sitegen.yaml, LICENSE, CONTRIBUTING, usage guide</span>
+      </div>
+      <div class="feed-meta">
+        <span class="feed-author">Damir Mukimov</span><time class="feed-date" datetime="2026-08-03T00:16:57Z">just now</time>
+      </div>
+    </li>
+    <li class="feed-item">
+      <a class="feed-hash" href="https://github.com/SamyRai/go-z-ai/commit/57c7c9c" rel="external" title="test: end-to-end Run coverage &#43; direct ParseChangelog tests">57c7c9c</a>
+      <div class="feed-body">
+        <span class="feed-type type-test">test</span>
+        <span class="feed-subj" title="test: end-to-end Run coverage &#43; direct ParseChangelog tests">end-to-end Run coverage &#43; direct ParseChangelog tests</span>
+      </div>
+      <div class="feed-meta">
+        <span class="feed-author">Damir Mukimov</span><time class="feed-date" datetime="2026-08-03T00:13:24Z">3m ago</time>
+      </div>
+    </li>
+    <li class="feed-item">
+      <a class="feed-hash" href="https://github.com/SamyRai/go-z-ai/commit/7e8c2d3" rel="external" title="feat: make sitegen fully generic and config-driven">7e8c2d3</a>
+      <div class="feed-body">
+        <span class="feed-type type-feat">feat</span>
+        <span class="feed-subj" title="feat: make sitegen fully generic and config-driven">make sitegen fully generic and config-driven</span>
+      </div>
+      <div class="feed-meta">
+        <span class="feed-author">Damir Mukimov</span><time class="feed-date" datetime="2026-08-03T00:11:39Z">5m ago</time>
+      </div>
+    </li>
+    <li class="feed-item">
+      <a class="feed-hash" href="https://github.com/SamyRai/go-z-ai/commit/2e0aedd" rel="external" title="refactor: back markdown render with gdk-markdown, HTTP with gdk-httpclient">2e0aedd</a>
+      <div class="feed-body">
+        <span class="feed-type type-refactor">refactor</span>
+        <span class="feed-subj" title="refactor: back markdown render with gdk-markdown, HTTP with gdk-httpclient">back markdown render with gdk-markdown, HTTP with gdk-httpclient</span>
+      </div>
+      <div class="feed-meta">
+        <span class="feed-author">Damir Mukimov</span><time class="feed-date" datetime="2026-08-03T00:00:31Z">16m ago</time>
+      </div>
+    </li>
+    <li class="feed-item">
+      <a class="feed-hash" href="https://github.com/SamyRai/go-z-ai/commit/8c38d52" rel="external" title="chore: scaffold sitegen (extracted from zai-api)">8c38d52</a>
+      <div class="feed-body">
+        <span class="feed-type type-chore">chore</span>
+        <span class="feed-subj" title="chore: scaffold sitegen (extracted from zai-api)">scaffold sitegen (extracted from zai-api)</span>
+      </div>
+      <div class="feed-meta">
+        <span class="feed-author">Damir Mukimov</span><time class="feed-date" datetime="2026-08-02T23:55:22Z">21m ago</time>
+      </div>
+    </li>
+  </ul>
+  <p class="section-more"><a href="https://github.com/SamyRai/go-z-ai/commits/main" rel="external">Барлык коммитлар <span aria-hidden="true">→</span></a></p>
+</section>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — <br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      9c7c610 коммитыннан җыелган
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Үзгәрешләр журналы</a> ·
+      <a href="/CONTRIBUTING.html">Өлеш кертү</a> ·
+      <a href="/SECURITY.html">Иминлек</a> ·
+      <a href="/sitemap.xml">Сайт хәритәсе</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Ачык режимга күчәргә" : "Караңгы режимга күчәргә");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Караңгы режимга күчәргә" : "Ачык режимга күчәргә");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>

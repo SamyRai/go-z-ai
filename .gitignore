@@ -52,10 +52,12 @@ dist/
 build/
 bin/
 
-# Generated static site (output of cmd/sitegen — never commit the build)
-site/
-# Generator binary built by `go build -o sitegen ./cmd/sitegen`.
-# Source files under cmd/sitegen/ and internal/sitegen/ ARE committed.
+# Generated static site — committed (manually regenerated via the standalone
+# sitegen tool at github.com/SamyRai/sitegen, then deployed by pages.yml).
+# See docs/en/site-generation.md for the regenerate command.
+# site/
+
+# Local sitegen binary if you build it here (the source lives in its own repo).
 /sitegen
 
 # Temporary files

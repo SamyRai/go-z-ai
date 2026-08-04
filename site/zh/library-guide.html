@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Library guide · go-z-ai</title>
+  <meta name="description" content="">
+  <link rel="canonical" href="/zh/library-guide.html">
+  <link rel="alternate" hreflang="en" href="/en/library-guide.html">
+  <link rel="alternate" hreflang="ru" href="/ru/library-guide.html">
+  <link rel="alternate" hreflang="zh" href="/zh/library-guide.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/library-guide.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Library guide · go-z-ai">
+  <meta property="og:description" content="">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/zh/library-guide.html">
+  <meta property="og:locale" content="zh">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Library guide · go-z-ai">
+  <meta name="twitter:description" content="">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/zh/library-guide.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Library guide","inLanguage":"zh","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Library guide","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/zh/library-guide.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/zh/library-guide.html","name":"Library guide","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">跳到正文</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/zh/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">G</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/zh/" >首页</a>
+      <a href="/zh/getting-started.html" aria-current="page">文档</a>
+      <a href="/zh/cli-reference.html">CLI</a>
+      <a href="/zh/library-guide.html">库</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">更新日志</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>简体中文</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/library-guide.html" >English</a>
+    <a role="menuitem" href="/ru/library-guide.html" >Русский</a>
+    <a role="menuitem" href="/zh/library-guide.html" aria-current="true">简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="切换主题" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="heading">库使用指南</h1>
+<p><code>pkg/client</code> 是一个独立的 Go 库——CLI 所做的一切，都是通过调用这个 package
+完成的。你可以直接依赖它，完全不需要带上 CLI。</p>
+<h2 id="heading-1">目录</h2>
+<ul>
+<li><a href="#%E5%88%9B%E5%BB%BA%E5%AE%A2%E6%88%B7%E7%AB%AF" rel="nofollow noreferrer">创建客户端</a></li>
+<li><a href="#%E6%9C%8D%E5%8A%A1" rel="nofollow noreferrer">服务</a></li>
+<li><a href="#%E8%81%8A%E5%A4%A9%E8%A1%A5%E5%85%A8" rel="nofollow noreferrer">聊天补全</a></li>
+<li><a href="#anthropic-%E5%85%BC%E5%AE%B9%E7%9A%84-messages-api" rel="nofollow noreferrer">Anthropic 兼容的 Messages API</a></li>
+<li><a href="#%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86" rel="nofollow noreferrer">错误处理</a></li>
+<li><a href="#%E5%A4%9A%E8%B4%A6%E6%88%B7%E5%87%AD%E6%8D%AE%E7%AE%A1%E7%90%86" rel="nofollow noreferrer">多账户凭据管理</a></li>
+<li><a href="#%E7%94%A8%E6%9C%AC%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%B5%8B%E8%AF%95%E4%BD%A0%E8%87%AA%E5%B7%B1%E7%9A%84%E4%BB%A3%E7%A0%81" rel="nofollow noreferrer">用本客户端测试你自己的代码</a></li>
+<li><a href="#%E6%9E%B6%E6%9E%84%E8%AF%B4%E6%98%8E" rel="nofollow noreferrer">架构说明</a></li>
+</ul>
+<pre class="chroma"><code><span class="line"><span class="cl">go get github.com/SamyRai/go-z-ai
+</span></span></code></pre><pre class="chroma"><code><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="s">&#34;github.com/SamyRai/go-z-ai/pkg/client&#34;</span><span class="w">
+</span></span></span></code></pre><h2 id="heading-2">创建客户端</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">c</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nf">NewClient</span><span class="p">(</span><span class="nx">client</span><span class="p">.</span><span class="nx">Config</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">APIKey</span><span class="p">:</span><span class="w"> </span><span class="nx">os</span><span class="p">.</span><span class="nf">Getenv</span><span class="p">(</span><span class="s">&#34;ZAI_API_KEY&#34;</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">})</span><span class="w">
+</span></span></span></code></pre><p>或者，如果你只想要默认的环境变量配置、不要其他选项：</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">c</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nf">NewClientFromEnv</span><span class="p">()</span><span class="w"> </span><span class="c1">// reads ZAI_API_KEY, ZAI_API_BASE_URL</span><span class="w">
+</span></span></span></code></pre><p><code>Config</code> 字段：</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>APIKey</code></td>
+<td>—</td>
+<td>必填</td>
+</tr>
+<tr>
+<td><code>BaseURL</code></td>
+<td><code>https://api.z.ai/api/paas/v4</code></td>
+<td>用于覆盖 coding-plan 端点等</td>
+</tr>
+<tr>
+<td><code>HTTPClient</code></td>
+<td>内部配置的 <code>*http.Client</code></td>
+<td>如需自定义 TLS/代理行为，可传入自己的 transport</td>
+</tr>
+<tr>
+<td><code>Timeout</code></td>
+<td>30s</td>
+<td>仅限制拨号/TLS/响应头等待时间——<strong>不</strong>包含整个响应体的读取，因此绝不会截断正在进行的 SSE 流</td>
+</tr>
+<tr>
+<td><code>MaxRetries</code></td>
+<td>3</td>
+<td>在 429/5xx/网络错误时重试。<code>-1</code> 表示完全禁用重试</td>
+</tr>
+<tr>
+<td><code>RetryDelay</code></td>
+<td>200ms</td>
+<td>指数退避的基础延迟</td>
+</tr>
+<tr>
+<td><code>ChinaAPIKey</code></td>
+<td>回退到 <code>APIKey</code></td>
+<td>仅在你持有单独的 bigmodel.cn 专用凭据时才需要——见 <a href="accounts-and-quota.html#regional-gateways-apiza--openbigmodelcn" rel="nofollow noreferrer">账户与配额</a></td>
+</tr>
+<tr>
+<td><code>Region</code></td>
+<td><code>RegionGlobal</code></td>
+<td>选择 monitor/biz/agents/detection 的主机：<code>RegionGlobal</code>（api.z.ai）或 <code>RegionChina</code>（open.bigmodel.cn）。不会覆盖 <code>BaseURL</code>（聊天接口）或 Embeddings/Moderations 的主机。见 <a href="accounts-and-quota.html#regional-gateways-apiza--openbigmodelcn" rel="nofollow noreferrer">账户与配额</a>。</td>
+</tr>
+</tbody>
+</table>
+<p>每个服务方法的第一个参数都是 <code>context.Context</code>，并一路传递到底层的 HTTP
+调用——取消它即可中止请求或正在等待的重试退避。</p>
+<h2 id="heading-3">服务</h2>
+<p><code>Client</code> 为每个服务暴露一个方法，全部遵循同样的 <code>c.&lt;Service&gt;().&lt;Method&gt;(ctx, ...)</code>
+形式：</p>
+<table>
+<thead>
+<tr>
+<th>Accessor</th>
+<th>Covers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>c.Chat()</code></td>
+<td>Completions — <code>Create</code>、<code>CreateAsync</code>、<code>CreateStream</code>、<code>CreateSimple</code>、<code>RunWithTools</code></td>
+</tr>
+<tr>
+<td><code>c.Models()</code></td>
+<td><code>List</code>、<code>Get</code>、<code>GetTextModels</code>、<code>GetVisionModels</code>、<code>GetFreeModels</code>、<code>RefreshCache</code></td>
+</tr>
+<tr>
+<td><code>c.Images()</code></td>
+<td><code>Generate</code>、<code>GenerateAsync</code></td>
+</tr>
+<tr>
+<td><code>c.Videos()</code></td>
+<td><code>Generate</code>（始终异步）</td>
+</tr>
+<tr>
+<td><code>c.Audio()</code></td>
+<td><code>Transcribe</code>、<code>Speech</code></td>
+</tr>
+<tr>
+<td><code>c.Voice()</code></td>
+<td><code>Clone</code>、<code>Delete</code>、<code>List</code>——GLM-TTS 声音克隆</td>
+</tr>
+<tr>
+<td><code>c.Layout()</code></td>
+<td><code>Parse</code>、<code>HandwritingOCR</code></td>
+</tr>
+<tr>
+<td><code>c.FileParser()</code></td>
+<td><code>Create</code>、<code>Sync</code>、<code>Result</code>——用于 RAG 的文档转文本</td>
+</tr>
+<tr>
+<td><code>c.Files()</code></td>
+<td><code>Upload</code>、<code>List</code>、<code>Delete</code>、<code>Content</code></td>
+</tr>
+<tr>
+<td><code>c.Batch()</code></td>
+<td><code>Create</code>、<code>Retrieve</code>、<code>List</code>、<code>Cancel</code></td>
+</tr>
+<tr>
+<td><code>c.Agents()</code></td>
+<td><code>Invoke</code>、<code>AsyncResult</code></td>
+</tr>
+<tr>
+<td><code>c.Anthropic()</code></td>
+<td><code>Create</code>、<code>CreateStream</code>——Anthropic 协议 <code>/v1/messages</code> 接口</td>
+</tr>
+<tr>
+<td><code>c.Embeddings()</code></td>
+<td><code>Create</code>（路由到 <code>open.bigmodel.cn</code>）</td>
+</tr>
+<tr>
+<td><code>c.Moderations()</code></td>
+<td><code>Create</code>（路由到 <code>open.bigmodel.cn</code>）</td>
+</tr>
+<tr>
+<td><code>c.Rerank()</code></td>
+<td><code>Create</code></td>
+</tr>
+<tr>
+<td><code>c.Tools()</code></td>
+<td><code>WebSearch</code>、<code>WebReader</code>、<code>Tokenize</code></td>
+</tr>
+<tr>
+<td><code>c.Usage()</code>、<code>c.Quota()</code>、<code>c.Detection()</code>、<code>c.Account()</code></td>
+<td>GLM Coding Plan 用量/配额/账户监控</td>
+</tr>
+<tr>
+<td><code>c.GetAsyncResult(ctx, id)</code>、<code>c.WaitForResult(ctx, id, interval)</code></td>
+<td>异步图像/视频/聊天任务的共享轮询</td>
+</tr>
+</tbody>
+</table>
+<p>每一项请求校验（必填字段等）都在请求发送之前于客户端完成——对于缺少
+<code>model</code> 这类问题，你会立刻拿到一个本地 <code>error</code>，而不是白白跑一次往返。</p>
+<h2 id="heading-4">聊天补全</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">resp</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">c</span><span class="p">.</span><span class="nf">Chat</span><span class="p">().</span><span class="nf">Create</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">ChatRequest</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Model</span><span class="p">:</span><span class="w"> </span><span class="s">&#34;glm-5.2&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Messages</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">client</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">{</span><span class="nx">Role</span><span class="p">:</span><span class="w"> </span><span class="s">&#34;system&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">Content</span><span class="p">:</span><span class="w"> </span><span class="s">&#34;You are a helpful assistant.&#34;</span><span class="p">},</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">{</span><span class="nx">Role</span><span class="p">:</span><span class="w"> </span><span class="s">&#34;user&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">Content</span><span class="p">:</span><span class="w"> </span><span class="s">&#34;Explain goroutines in one paragraph&#34;</span><span class="p">},</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">},</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Temperature</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">})</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nx">Choices</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Message</span><span class="p">.</span><span class="nx">Content</span><span class="p">)</span><span class="w">
+</span></span></span></code></pre><h3 id="heading-5">流式</h3>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">c</span><span class="p">.</span><span class="nf">Chat</span><span class="p">().</span><span class="nf">CreateStream</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">req</span><span class="p">,</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">chunk</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">StreamChunk</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="nx">chunk</span><span class="p">.</span><span class="nx">Choices</span><span class="p">)</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Print</span><span class="p">(</span><span class="nx">chunk</span><span class="p">.</span><span class="nx">Choices</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Delta</span><span class="p">.</span><span class="nx">Content</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="c1">// a non-nil return aborts the stream</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">})</span><span class="w">
+</span></span></span></code></pre><p>设置 <code>req.StreamToolCall = true</code>（GLM-4.6+）可以把工具调用的增量
+跨多个事件流式地投放到 <code>chunk.Choices[0].Delta.ToolCalls</code> 里，
+而不是在该轮结束时一次性整批返回。这在 UI 上展示&#34;模型正在调用工具…&#34;的进度时
+很有用。尚未实测验证——见 <a href="roadmap.html" rel="nofollow noreferrer">路线图</a>。</p>
+<h3 id="heading-6">异步</h3>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">task</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">c</span><span class="p">.</span><span class="nf">Chat</span><span class="p">().</span><span class="nf">CreateAsync</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">req</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nx">result</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">c</span><span class="p">.</span><span class="nf">WaitForResult</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">task</span><span class="p">.</span><span class="nx">ID</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span><span class="w">
+</span></span></span></code></pre><h3 id="heading-7">视觉（消息中的图像）</h3>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">req</span><span class="p">.</span><span class="nx">Messages</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">Messages</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="nx">Images</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s">&#34;https://example.com/photo.jpg&#34;</span><span class="p">,</span><span class="w"> </span><span class="c1">// or a data: URI</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nx">req</span><span class="p">.</span><span class="nx">Model</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&#34;glm-4.6v&#34;</span><span class="w">
+</span></span></span></code></pre><h3 id="heading-8">结构化输出</h3>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">req</span><span class="p">.</span><span class="nx">ResponseFormat</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nf">NewJSONSchemaFormat</span><span class="p">(</span><span class="s">&#34;my_schema&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">rawJSONSchema</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="cm">/* strict */</span><span class="p">)</span><span class="w">
+</span></span></span></code></pre><h3 id="heading-9">函数调用</h3>
+<p>如果需要手动控制，自行检查 <code>resp.Choices[0].Message.ToolCalls</code>，
+然后在再次调用 <code>Create</code> 之前追加 <code>role: &#34;tool&#34;</code> 消息。对于常见场景，
+<code>RunWithTools</code> 会替你驱动这个循环：</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">resp</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">c</span><span class="p">.</span><span class="nf">Chat</span><span class="p">().</span><span class="nf">RunWithTools</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">req</span><span class="p">,</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="nx">arguments</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">switch</span><span class="w"> </span><span class="nx">name</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="s">&#34;get_weather&#34;</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="s">`{&#34;temp_c&#34;: 18}`</span><span class="p">,</span><span class="w"> </span><span class="kc">nil</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">default</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="s">&#34;&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;unknown tool %q&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">})</span><span class="w">
+</span></span></span></code></pre><p>它会执行每一次工具调用，追加 assistant 和 tool 消息，并循环重复，
+直到模型返回非工具类型的 finish reason 或超过 <code>ToolMaxRounds</code>（8）——
+可用 <code>RunWithToolsLimit</code> 设置不同的上限。工具执行器返回的错误会以工具结果
+（<code>&#34;error: ...&#34;</code>）的形式回传给模型，而不是返回给你的调用方，这样模型可以
+自行恢复，整轮对话也不会因此失败。</p>
+<h4 id="heading-10">工具类型</h4>
+<p>一个 <code>Tool</code> 携带三种 payload 之一，由其 <code>Type</code> 决定：</p>
+<table>
+<thead>
+<tr>
+<th>Constructor</th>
+<th><code>Type</code></th>
+<th>Payload</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NewFunctionTool(name, desc, params)</code></td>
+<td><code>ToolTypeFunction</code>（<code>&#34;function&#34;</code>）</td>
+<td><code>FunctionDef</code>——模型按名称调用的可执行体</td>
+</tr>
+<tr>
+<td><code>NewRetrievalTool(knowledgeID, prompt)</code></td>
+<td><code>ToolTypeRetrieval</code>（<code>&#34;retrieval&#34;</code>）</td>
+<td><code>Retrieval</code>——用于为回答提供依据的知识库</td>
+</tr>
+<tr>
+<td><code>NewWebSearchTool(queries...)</code></td>
+<td><code>ToolTypeWebSearch</code>（<code>&#34;web_search&#34;</code>）</td>
+<td><code>WebSearch</code>——一个 <code>search_query</code> 列表</td>
+</tr>
+</tbody>
+</table>
+<p><code>retrieval</code> 和 <code>web_search</code> 在 docs.z.ai 上有文档，但此处<strong>尚未实测
+验证</strong>——只有 <code>function</code> 已对照真实 API 确认。<code>web_search</code> 的 payload
+形态（<code>{&#34;search_query&#34;:[...]}</code>）遵循官方 Python SDK 示例；见
+<a href="roadmap.html" rel="nofollow noreferrer">路线图</a>。</p>
+<p><code>validateChatRequest</code> 在客户端强制执行三条文档化的规则，这样你会拿到
+清晰的本地错误，而不是服务器返回的晦涩错误：</p>
+<ul>
+<li><strong>工具名格式</strong>——<code>tools[].function.name</code> 必须匹配
+<code>^[A-Za-z0-9_-]{1,64}$</code>。</li>
+<li><strong>函数上限</strong>——每次请求最多 <code>ToolMaxFunctions</code>（128）个 function 工具。</li>
+<li><strong>按类型匹配 payload</strong>——<code>function</code>/<code>retrieval</code>/<code>web_search</code> 工具必须
+携带对应的 payload；未知类型会被拒绝。</li>
+</ul>
+<h4 id="heading-11">值得检查的响应字段</h4>
+<p>除了 <code>resp.Choices[0].Message.Content</code> 之外：</p>
+<ul>
+<li><code>resp.Choices[0].FinishReason</code>——与 <code>FinishReason*</code> 常量
+（<code>FinishReasonStop</code>、<code>FinishReasonToolCalls</code>、<code>FinishReasonLength</code>、
+<code>FinishReasonSensitive</code>、<code>FinishReasonModelContextWindowExceeded</code>、
+<code>FinishReasonNetworkError</code>）做比较。后三个是文档化的真实取值，
+表示非内容性终止。</li>
+<li><code>resp.WebSearch</code>——响应在 <code>web_search</code> 工具触发时携带的顶层
+<code>web_search</code> 数组（每条的 <code>Link</code>/<code>Title</code>/<code>Content</code> 就是回答所依据的
+来源）。尚未实测验证。</li>
+</ul>
+<h4 id="-schema-">工具 schema 兼容性</h4>
+<p>GLM 的聊天端点对工具 <code>parameters</code> 使用严格的 JSON-Schema 解析器：
+包含 <code>anyOf</code>、<code>oneOf</code>、<code>allOf</code>，或 <code>$ref</code>/<code>$defs</code> 引用的 schema 会让
+它返回 <strong>HTTP 500</strong>，而不是一个可用的错误。这些构造恰恰就是带类型的语言
+所生成的——一个可为 null 的字段会变成
+<code>anyOf: [{…}, {&#34;type&#34;:&#34;null&#34;}]</code>，一个被复用的 struct 会变成 <code>$ref</code>。</p>
+<p>默认情况下，客户端会在每次聊天请求之前把工具 schema 改写成 GLM 接受的
+扁平子集（可为 null 的联合类型坍缩为底层类型、<code>allOf</code> 合并、<code>$ref</code>
+内联展开），并尽量保留类型/描述信息。对于已经在受支持子集内的 schema
+这是 no-op，并且永远不会改动你的 <code>req.Tools</code>。</p>
+<ul>
+<li>想自行规范化 schema（例如你在别处构造请求）：
+<code>client.SanitizeToolSchemas(tools)</code>。</li>
+<li>想原样发送 schema（用于调试，或将来某个支持完整 draft 的端点）：
+设置 <code>Config.DisableToolSchemaCompat = true</code>。</li>
+</ul>
+<h3 id="anthropic--messages-api">Anthropic 兼容的 Messages API</h3>
+<p>Z.AI 还在 <code>/api/anthropic</code> 暴露了一个 Anthropic 协议接口——也就是
+GLM Coding Plan 把 Claude Code 指向的同一个端点。<code>c.Anthropic()</code>
+是其 <code>POST /v1/messages</code> 的类型化客户端，与 OpenAI 风格接口的
+<code>c.Chat()</code> 并列。它用你的 z.ai key 以 Bearer token 形式鉴权（不是
+Anthropic 的 <code>x-api-key</code>），并自动发送 <code>anthropic-version</code> 头。</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">resp</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">c</span><span class="p">.</span><span class="nf">Anthropic</span><span class="p">().</span><span class="nf">Create</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">AnthropicMessageRequest</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Model</span><span class="p">:</span><span class="w">     </span><span class="s">&#34;glm-4.6&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">MaxTokens</span><span class="p">:</span><span class="w"> </span><span class="mi">1024</span><span class="p">,</span><span class="w"> </span><span class="c1">// required by the Messages API</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">System</span><span class="p">:</span><span class="w">    </span><span class="s">&#34;You are concise.&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Messages</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">client</span><span class="p">.</span><span class="nx">AnthropicMessage</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">client</span><span class="p">.</span><span class="nf">AnthropicTextMessage</span><span class="p">(</span><span class="s">&#34;user&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;Explain goroutines in one line&#34;</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">},</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">})</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nf">Text</span><span class="p">())</span><span class="w"> </span><span class="c1">// concatenated text blocks</span><span class="w">
+</span></span></span></code></pre><p>流式传输会交付 Anthropic 原生的 SSE 事件（<code>message_start</code>、
+<code>content_block_delta</code>、……），包含事件名和 JSON payload，你按事件类型
+分别 unmarshal：</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">c</span><span class="p">.</span><span class="nf">Anthropic</span><span class="p">().</span><span class="nf">CreateStream</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">req</span><span class="p">,</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">ev</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">AnthropicStreamEvent</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">ev</span><span class="p">.</span><span class="nx">Type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&#34;content_block_delta&#34;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// ev.Data is {&#34;delta&#34;:{&#34;type&#34;:&#34;text_delta&#34;,&#34;text&#34;:&#34;…&#34;}, …}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">})</span><span class="w">
+</span></span></span></code></pre><p>通过 <code>AnthropicTool.InputSchema</code> 声明的工具会得到与聊天工具相同的 GLM
+schema 规范化（见上文）。<code>Config.DisableToolSchemaCompat</code> 可关闭它。</p>
+<p>深度思考（GLM 模型是推理模型）按请求开启，并用 <code>resp.Thinking()</code> 读回：</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">req</span><span class="p">.</span><span class="nx">Thinking</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">client</span><span class="p">.</span><span class="nx">AnthropicThinking</span><span class="p">{</span><span class="nx">Type</span><span class="p">:</span><span class="w"> </span><span class="s">&#34;enabled&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">BudgetTokens</span><span class="p">:</span><span class="w"> </span><span class="mi">2048</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nx">resp</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">c</span><span class="p">.</span><span class="nf">Anthropic</span><span class="p">().</span><span class="nf">Create</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">req</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nf">Thinking</span><span class="p">())</span><span class="w"> </span><span class="c1">// thinking blocks, or reasoning_content if the</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                             </span><span class="c1">// endpoint surfaces reasoning that way instead</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nf">Text</span><span class="p">())</span><span class="w">     </span><span class="c1">// the answer, without the reasoning mixed in</span><span class="w">
+</span></span></span></code></pre><p>成功路径上的响应形态是按 Anthropic 文档化的 Messages API 建模的，此处
+尚未实测验证——见 <a href="roadmap.html" rel="nofollow noreferrer">路线图</a>。</p>
+<h2 id="heading-12">错误处理</h2>
+<p>完整的 <code>APIError</code> 参考、错误码，以及默认的重试行为，请见
+<a href="error-handling.html" rel="nofollow noreferrer">错误处理</a>。</p>
+<h2 id="heading-13">多账户凭据管理</h2>
+<p>多账户凭据存储以及 GLM Coding Plan 的凭据/配置写入器位于
+<code>internal/accounts</code> 和 <code>internal/coding</code>。它们对本模块是内部的——不属于
+可导入的公开 API——因此可以不受 semver 约束地演进。<code>pkg/client</code> 是唯一
+受支持的公开 package；<code>accounts</code> 和 <code>coding</code> CLI 命令是驱动这些功能的
+稳定入口。（这些 package 之前位于 <code>pkg/</code> 下且可导入；迁移说明见
+<a href="/CHANGELOG.html" rel="nofollow noreferrer">CHANGELOG</a>。）</p>
+<h2 id="heading-14">用本客户端测试你自己的代码</h2>
+<p>每个服务方法都是无接口的具体类型上的普通函数，因此常规的 Go 做法是把
+<code>Config.BaseURL</code> 指向你控制的 <code>httptest.Server</code>。如果你想回放<strong>真实</strong>录制
+的 Z.AI 流量而不是手写 stub，可以参考本仓库自身的测试是如何用
+<a href="https://github.com/dnaeon/go-vcr" rel="nofollow noreferrer noopener" target="_blank">go-vcr</a> 做的——<code>pkg/client/*_test.go</code>
+和 <code>pkg/client/testdata/cassettes/</code>——并阅读
+<a href="/CONTRIBUTING.html" rel="nofollow noreferrer">贡献指南 § 实测验证约定</a> 了解背后原因。</p>
+<h2 id="heading-15">架构说明</h2>
+<p>关于服务在内部是如何组织的（<code>doRequest</code> 门面、重试/退避设计、为何有些服务
+针对不同的 base URL 鉴权），请见 <a href="architecture.html" rel="nofollow noreferrer">架构</a>。</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — <br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      基于提交 9c7c610 构建
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">更新日志</a> ·
+      <a href="/CONTRIBUTING.html">贡献指南</a> ·
+      <a href="/SECURITY.html">安全</a> ·
+      <a href="/sitemap.xml">站点地图</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "切换到浅色模式" : "切换到深色模式");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "切换到深色模式" : "切换到浅色模式");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

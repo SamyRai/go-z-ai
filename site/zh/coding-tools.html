@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Coding tools · go-z-ai</title>
+  <meta name="description" content="">
+  <link rel="canonical" href="/zh/coding-tools.html">
+  <link rel="alternate" hreflang="en" href="/en/coding-tools.html">
+  <link rel="alternate" hreflang="ru" href="/ru/coding-tools.html">
+  <link rel="alternate" hreflang="zh" href="/zh/coding-tools.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/coding-tools.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Coding tools · go-z-ai">
+  <meta property="og:description" content="">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/zh/coding-tools.html">
+  <meta property="og:locale" content="zh">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Coding tools · go-z-ai">
+  <meta name="twitter:description" content="">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/zh/coding-tools.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Coding tools","inLanguage":"zh","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Coding tools","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/zh/coding-tools.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/zh/coding-tools.html","name":"Coding tools","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">跳到正文</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/zh/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">G</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/zh/" >首页</a>
+      <a href="/zh/getting-started.html" aria-current="page">文档</a>
+      <a href="/zh/cli-reference.html">CLI</a>
+      <a href="/zh/library-guide.html">库</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">更新日志</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>简体中文</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/coding-tools.html" >English</a>
+    <a role="menuitem" href="/ru/coding-tools.html" >Русский</a>
+    <a role="menuitem" href="/zh/coding-tools.html" aria-current="true">简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="切换主题" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="glm-coding-plan">编码工具（GLM Coding Plan）</h1>
+<p><code>go-z-ai coding</code> 用于把第三方编码助手配置为使用你的 GLM
+Coding Plan，而不是它们默认的供应商。它是 Z.AI 官方
+<code>@z_ai/coding-helper</code>（&#34;chelper&#34;）CLI 的 Go 移植版，共享同一个凭证文件，因此
+两者可以互换使用。</p>
+<h2 id="heading">支持的工具</h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>写入的配置文件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Claude Code</td>
+<td><code>~/.claude/settings.json</code>（外加 <code>~/.claude.json</code> 的引导标志）</td>
+</tr>
+<tr>
+<td>OpenCode</td>
+<td><code>~/.config/opencode/opencode.json</code></td>
+</tr>
+<tr>
+<td>Crush</td>
+<td><code>~/.config/crush/crush.json</code></td>
+</tr>
+<tr>
+<td>Factory Droid</td>
+<td><code>~/.factory/settings.json</code></td>
+</tr>
+<tr>
+<td>Cursor</td>
+<td>随操作系统而异——macOS 上为 <code>~/Library/Application Support/Cursor/User/settings.json</code>，其他平台为 <code>~/.cursor/settings.json</code>（或 <code>~/.config/Cursor/User/settings.json</code>）</td>
+</tr>
+</tbody>
+</table>
+<p>运行 <code>go-z-ai coding tools</code> 可以查看本机上的安装状态以及解析出的精确路径。</p>
+<h2 id="heading-1">套餐</h2>
+<table>
+<thead>
+<tr>
+<th>Plan identifier</th>
+<th>Endpoint</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>glm_coding_plan_global</code></td>
+<td><code>https://api.z.ai</code></td>
+</tr>
+<tr>
+<td><code>glm_coding_plan_china</code></td>
+<td><code>https://open.bigmodel.cn</code></td>
+</tr>
+</tbody>
+</table>
+<p>选择与你 GLM Coding Plan 套餐所在区域匹配的那一个即可。</p>
+<h2 id="heading-2">快速开始</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="c1"># 1. 存储并校验你的 GLM Coding Plan key（一次性）</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding auth glm_coding_plan_global YOUR_KEY
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 2. 把它加载到某个工具中</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding load claude-code
+</span></span><span class="line"><span class="cl"><span class="c1"># 工具 ID：claude-code, opencode, crush, factory-droid, cursor</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 也支持别名：claude, droid, factory</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 3. 检查是否一切就绪</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding status
+</span></span><span class="line"><span class="cl">go-z-ai coding doctor
+</span></span></code></pre><p>凭证存放在 <code>~/.chelper/config.yaml</code>（与官方 Node 助手字节兼容）——<code>coding auth</code>
+会写入这里一次，之后 <code>coding load</code> 在没有传入 <code>--key</code>/<code>--plan</code> 覆盖时，会为每个
+工具从这里读取。</p>
+<p>如果想让某个工具停止使用 Z.AI，但又不丢失已存储的凭证：</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding unload claude-code
+</span></span></code></pre><p>这只会移除它添加的 Z.AI 专属字段，不会动你现有配置文件的其余部分。</p>
+<h2 id="claude-code">Claude Code：模型映射</h2>
+<p>官方助手只会设置 <code>ANTHROPIC_AUTH_TOKEN</code>、<code>ANTHROPIC_BASE_URL</code>、
+<code>API_TIMEOUT_MS</code> 和 <code>CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC</code>。本客户端默认
+更进一步，还会通过 <code>ANTHROPIC_DEFAULT_*_MODEL</code> 把 Claude Code 的各模型层级映射
+到具体的 GLM 模型，与
+<a href="https://docs.z.ai/scenario-example/develop-tools/claude" rel="nofollow noreferrer noopener" target="_blank">Z.AI 文档中的推荐配置</a>
+保持一致：</p>
+<table>
+<thead>
+<tr>
+<th>Claude tier</th>
+<th>默认 GLM 模型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>haiku</td>
+<td><code>glm-4.5-air</code></td>
+</tr>
+<tr>
+<td>sonnet</td>
+<td><code>glm-4.7</code></td>
+</tr>
+<tr>
+<td>opus</td>
+<td><code>glm-4.7</code></td>
+</tr>
+</tbody>
+</table>
+<p>可以覆盖任意层级，或完全停用模型映射：</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding auth glm_coding_plan_global YOUR_KEY <span class="se">\
+</span></span></span><span class="line"><span class="cl">  --sonnet glm-5.2 --opus glm-5.2
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">go-z-ai coding auth glm_coding_plan_global YOUR_KEY --no-model-mapping
+</span></span></code></pre><p>以下 flag 也可配置，均为可选（值为 0 或省略则不设置对应环境变量）：</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>设置的环境变量</th>
+<th>使用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--auto-compact-window int</code></td>
+<td><code>CLAUDE_CODE_AUTO_COMPACT_WINDOW</code></td>
+<td>默认为 1,000,000（GLM-5.2 的上下文长度）；如果你固定使用 128K 上下文的模型，可以调低（例如 128000）</td>
+</tr>
+<tr>
+<td><code>--max-thinking-tokens int</code></td>
+<td><code>MAX_THINKING_TOKENS</code></td>
+<td>扩展思考的预算</td>
+</tr>
+<tr>
+<td><code>--max-output-tokens int</code></td>
+<td><code>CLAUDE_CODE_MAX_OUTPUT_TOKENS</code></td>
+<td>输出上限</td>
+</tr>
+</tbody>
+</table>
+<p>这些 flag 在 <code>coding</code> 命令上是持久化的，因此对 <code>auth</code>、<code>load</code> 和 <code>reload</code>
+的作用方式相同。</p>
+<h2 id="key-">Key 管理</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding auth revoke              <span class="c1"># 清除已存储的 key，保留所选套餐</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding auth reload &lt;tool&gt;       <span class="c1"># 重新把已存储的凭证推送到某个工具</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding load &lt;tool&gt; --key OTHER_KEY --plan glm_coding_plan_china  <span class="c1"># 一次性覆盖</span>
+</span></span></code></pre><p>默认情况下，<code>coding auth</code> 在存储新 key 前会先对 API 进行校验（发起一次真实的
+<code>/models</code> 调用）。如果你想离线存储 key（例如为尚未联网测试过的机器编写脚本），
+可以用 <code>--no-validate</code> 跳过这一步。</p>
+<h2 id="vision-mcp-server">Vision MCP Server</h2>
+<p>官方 <code>@z_ai/coding-helper</code> 向导中有一个&#34;管理 MCP 服务&#34;的步骤，本客户端此前并未
+复刻：Z.AI 自带一个
+<a href="https://docs.z.ai/devpack/mcp/vision-mcp-server" rel="nofollow noreferrer noopener" target="_blank">Vision MCP Server</a>
+（<code>@z_ai/mcp-server</code>）——截图 OCR、错误截图诊断、图表/图形理解，以及基于
+GLM-4.6V 的通用图像/视频分析，通过 <code>npx</code> 按需启动。<code>coding mcp</code> 会把它注册到你
+正在使用的工具中：</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding mcp add claude-code     <span class="c1"># 使用已存储的 API Key</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp add crush --key OTHER_KEY
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp status              <span class="c1"># 查看哪些工具已配置</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp remove claude-code
+</span></span></code></pre><p><strong>需要 Node.js。</strong> 该 server 本身通过 <code>npx -y @z_ai/mcp-server</code> 运行——Z.AI 自家
+文档目前推荐 Node.js 22+，不过 npm 包只声明了 18+ 的要求。如果 <code>PATH</code> 上找不到
+<code>npx</code>，<code>coding mcp add</code>/<code>doctor</code> 会发出警告（不会中断），因为只要 Node.js 一可用，
+该配置就是有效的。</p>
+<p><strong>MCP 配置文件往往与你的 GLM 凭证不是同一个文件。</strong> 五个工具中有两个把 MCP
+服务存放在与 provider/API 设置不同的文件里：</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>凭证配置</th>
+<th>MCP 配置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Claude Code</td>
+<td><code>~/.claude/settings.json</code></td>
+<td><code>~/.claude.json</code></td>
+</tr>
+<tr>
+<td>OpenCode</td>
+<td><code>opencode.json</code></td>
+<td>同一文件，<code>mcp</code> 键</td>
+</tr>
+<tr>
+<td>Crush</td>
+<td><code>crush.json</code></td>
+<td>同一文件，<code>mcp</code> 键</td>
+</tr>
+<tr>
+<td>Factory Droid</td>
+<td><code>~/.factory/settings.json</code></td>
+<td><code>~/.factory/mcp.json</code></td>
+</tr>
+<tr>
+<td>Cursor</td>
+<td>随操作系统而异的 <code>settings.json</code></td>
+<td>同目录下的同级 <code>mcp.json</code></td>
+</tr>
+</tbody>
+</table>
+<p>Z.AI 自家文档并未把 Cursor 明确列为受支持的 Vision MCP 客户端——这里使用的是
+Cursor 文档中对任意 server 通用的 MCP 结构，理论上应可用，但尚未经 Z.AI
+针对该 server 确认。</p>
+<h2 id="doctor">Doctor</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding doctor
+</span></span></code></pre><p>检查内容：是否已存储凭证、凭证格式是否正确、<code>PATH</code> 上安装了哪些受支持的工具，
+以及这些工具中哪些已经配置好 Z.AI（如已注册则包括 Vision MCP Server）。出问题时
+这是很好的第一步。</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — <br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      基于提交 9c7c610 构建
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">更新日志</a> ·
+      <a href="/CONTRIBUTING.html">贡献指南</a> ·
+      <a href="/SECURITY.html">安全</a> ·
+      <a href="/sitemap.xml">站点地图</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "切换到浅色模式" : "切换到深色模式");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "切换到深色模式" : "切换到浅色模式");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

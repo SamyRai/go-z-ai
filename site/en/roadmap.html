@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Roadmap · go-z-ai</title>
+  <meta name="description" content="">
+  <link rel="canonical" href="/en/roadmap.html">
+  <link rel="alternate" hreflang="en" href="/en/roadmap.html">
+  <link rel="alternate" hreflang="ru" href="/ru/roadmap.html">
+  <link rel="alternate" hreflang="zh" href="/zh/roadmap.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/roadmap.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Roadmap · go-z-ai">
+  <meta property="og:description" content="">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/en/roadmap.html">
+  <meta property="og:locale" content="en">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Roadmap · go-z-ai">
+  <meta name="twitter:description" content="">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/en/roadmap.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Roadmap","inLanguage":"en","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Roadmap","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/en/roadmap.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/en/roadmap.html","name":"Roadmap","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/en/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">G</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/en/" >Home</a>
+      <a href="/en/getting-started.html" aria-current="page">Docs</a>
+      <a href="/en/cli-reference.html">CLI</a>
+      <a href="/en/library-guide.html">Library</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Changelog</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>English</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/roadmap.html" aria-current="true">English</a>
+    <a role="menuitem" href="/ru/roadmap.html" >Русский</a>
+    <a role="menuitem" href="/zh/roadmap.html" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="roadmap--known-limitations">Roadmap &amp; Known Limitations</h1>
+<p>What&#39;s still open, why, and the exact action that closes it. Items leave this
+page when a committed cassette or a merged change resolves them — this is the
+verify-first convention&#39;s working list (see
+<a href="/CONTRIBUTING.html" rel="nofollow noreferrer">Contributing § the live-verification convention</a> and
+<a href="architecture.html#the-live-verification-convention" rel="nofollow noreferrer">Architecture § the live-verification convention</a>
+for the why).</p>
+<blockquote>
+<p><strong>Recording a cassette yourself:</strong> every &#34;Unverified live&#34; item below has a
+matching <code>TestVerify*</code> test that SKIPS until you capture a success-path
+cassette with <code>ZAI_RECORD=1</code>. The harness redacts <code>Authorization</code> to
+<code>Bearer REDACTED</code> before saving — confirm with
+<code>grep &#34;Bearer &#34; pkg/client/testdata/cassettes/&lt;name&gt;.yaml</code> before committing.</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nv">ZAI_RECORD</span><span class="o">=</span><span class="m">1</span> <span class="nv">ZAI_API_KEY</span><span class="o">=</span>&lt;real-key&gt; go <span class="nb">test</span> -run TestVerify&lt;Name&gt; ./pkg/client
+</span></span></code></pre></blockquote>
+<h2 id="unverified-live">Unverified live</h2>
+<p>Two groups: <strong>services</strong> whose success-path response shape isn&#39;t captured
+yet, and <strong>fields added in the 2026-07-18 sprint</strong> that match the docs but
+aren&#39;t pinned by a cassette.</p>
+<h3 id="services-needing-a-success-path-cassette">Services needing a success-path cassette</h3>
+<p>The dev account used so far has no PAYG balance / entitlement for these, so
+only their request shape and error paths are confirmed. A cassette that
+captures a real success response closes each item.</p>
+<ul>
+<li><strong>Anthropic Messages</strong> (<code>TestVerifyAnthropicMessages</code>) — routing, the
+<code>anthropic-version</code> header, and Bearer auth are confirmed (a bogus key
+returns a clean 401, not a 404/timeout). Open question the cassette would
+settle: does GLM surface reasoning as Anthropic <code>thinking</code> blocks or the
+OpenAI-style <code>reasoning_content</code> field? (<a href="https://github.com/musistudio/claude-code-router/issues/1133" rel="nofollow noreferrer noopener" target="_blank">claude-code-router#1133</a>)</li>
+<li><strong>Embeddings</strong> (<code>TestVerifyEmbeddings</code>) — currently returns <code>400 Unknown Model</code> (code 1211) on every account tested; that&#39;s an entitlement gate,
+not a routing bug (see <a href="accounts-and-quota.html" rel="nofollow noreferrer">Accounts &amp; Quota</a>).</li>
+<li><strong>Moderations</strong> (<code>TestVerifyModerations</code>) — same 1211 entitlement gate.</li>
+<li><strong>Agents <code>Invoke</code> success shape</strong> (<code>TestVerifyAgentsInvoke</code>) — only the
+failure envelope (<code>ID</code>/<code>AgentID</code>/<code>Status</code>/<code>Error</code>) is live-confirmed today,
+via <code>testdata/cassettes/agents_invoke.yaml</code> (a 200-with-embedded-failure).
+The <code>Choices</code>/<code>Usage</code> success shape is modeled from docs only.</li>
+<li><strong>Voice <code>Clone</code> / <code>Delete</code></strong> (<code>TestVerifyVoiceClone</code>, <code>TestVerifyVoiceDelete</code>)
+— <code>Voice List</code> is confirmed live; clone/delete need an uploaded sample
+audio and a real cloned voice ID to record. Clone needs
+<code>ZAI_VOICE_SAMPLE_FILE_ID</code> + <code>ZAI_VOICE_NAME</code>; delete needs <code>ZAI_VOICE_ID</code>.</li>
+<li><strong>Batch and Files endpoints generally</strong> — no dedicated <code>TestVerify*</code>
+scaffold yet; would need an entitled PAYG account to record.</li>
+</ul>
+<h3 id="fields-added-in-the-2026-07-18-sprint-pending-a-cassette">Fields added in the 2026-07-18 sprint, pending a cassette</h3>
+<p>These fields were added to <code>pkg/client/types.go</code> / <code>chat.go</code> to match the
+current docs.z.ai chat-completion spec. They&#39;re additive and unit-tested,
+but NOT VERIFIED LIVE until a cassette pins the exact wire shape. Each has a
+<code>TestVerify*</code> test ready to record.</p>
+<ul>
+<li><strong><code>ChatRequest.StreamToolCall</code></strong> (<code>TestVerifyChatStreamToolCall</code>) — GLM-4.6+
+streamed tool-call deltas. Cassette should show tool-call deltas arriving
+across multiple SSE chunks in <code>StreamDelta.ToolCalls</code>.</li>
+<li><strong><code>Tool</code> discrimination across <code>function</code> / <code>retrieval</code> / <code>web_search</code></strong>
+(<code>NewFunctionTool</code> / <code>NewRetrievalTool</code> / <code>NewWebSearchTool</code>) — the spec
+lists all three types; only <code>function</code> is confirmed. The <code>web_search</code>
+payload shape (<code>{&#34;search_query&#34;:[...]}</code>) follows the official Python SDK
+example.</li>
+<li><strong><code>ChatResponse.WebSearch</code></strong> (<code>TestVerifyChatWebSearchResponse</code>) — the
+top-level <code>web_search</code> array returned when a <code>web_search</code> tool fires.
+Entry shape reuses <code>WebSearchResult</code> from <code>tools.go</code> (live-verified for the
+standalone web-search tool); placement as a top-level array is modeled from
+the docs.</li>
+<li><strong><code>ThinkingConfig.Effort = &#34;xhigh&#34;</code></strong> — added to the validated enum
+(<code>xhigh</code>→<code>max</code>, GLM-5.2 only). No dedicated test; covered by any
+thinking + xhigh cassette.</li>
+<li><strong><code>FinishReason*</code> constants</strong> (<code>sensitive</code>, <code>model_context_window_exceeded</code>,
+<code>network_error</code>) — added from the docs; no cassette reproduces these
+termination paths yet.</li>
+<li><strong>Client-side tool-name regex</strong> (<code>^[A-Za-z0-9_-]{1,64}$</code>) and <strong>128-function
+cap</strong> — documented server-side rules we enforce locally; not confirmed as
+the server&#39;s exact rejection criteria.</li>
+<li><strong>China regional gateway for monitor/biz/agents/detection</strong> — <code>RegionChina</code>
+routes quota/usage/account/agents/detection to <code>open.bigmodel.cn</code>.
+<code>/models</code> and <code>/chat/completions</code> are live-verified on the China host; the
+monitor/biz/agents paths are modeled by mirroring <code>api.z.ai</code>&#39;s layout and
+need a cassette against an entitled China key to confirm.</li>
+</ul>
+<h3 id="older-open-questions-no-dedicated-test-yet">Older open questions (no dedicated test yet)</h3>
+<ul>
+<li><strong>Tool-schema compatibility rewriting</strong> — the set of JSON-Schema constructs
+GLM&#39;s parser rejects with HTTP 500 (<code>anyOf</code>/<code>oneOf</code>/<code>allOf</code>/<code>$ref</code>) is
+drawn from community bug reports
+(<a href="https://github.com/musistudio/claude-code-router/issues/1474" rel="nofollow noreferrer noopener" target="_blank">claude-code-router#1474</a>),
+not reproduced against a live account here. The rewrite itself is fully
+unit-tested and inert on already-flat schemas; a cassette pinning exactly
+which constructs 500 (and which the flattened output makes pass) would
+upgrade this from &#34;documented behavior&#34; to &#34;live-verified.&#34; See
+<code>pkg/client/toolschema.go</code>.</li>
+</ul>
+<h2 id="not-implemented">Not implemented</h2>
+<ul>
+<li><strong>Performance benchmarks</strong> — deferred until a real bottleneck is measured;
+no known hot path currently justifies one (profile before optimizing).</li>
+</ul>
+<h2 id="shipped-kept-for-orientation">Shipped (kept for orientation)</h2>
+<ul>
+<li><strong>Request/response observability hooks</strong> — landed in v0.2.0. The <code>Hook</code>
+seam in <code>pkg/client</code> (<code>OnRequest</code>/<code>OnResponse</code>/<code>OnError</code>/<code>OnStreamChunk</code>)
+fires on every request lifecycle event; the first concrete implementation
+is <code>OTelHook</code> in <code>pkg/observe</code> (OpenTelemetry spans + metrics). See
+<a href="library-guide.html#observability-hooks" rel="nofollow noreferrer">Library Guide → Observability hooks</a>.</li>
+</ul>
+<h2 id="deliberately-not-implemented">Deliberately not implemented</h2>
+<ul>
+<li><strong>Assistant API</strong> — confirmed deprecated. Z.AI&#39;s own live OpenAPI spec
+(<code>docs.bigmodel.cn/openapi/openapi.json</code>) marks every Assistant path
+<code>&#34;deprecated&#34;: true</code>, and calling it from <code>api.z.ai</code> times out entirely
+rather than erroring. Building a client for a sunset API isn&#39;t worth the
+maintenance surface — if Z.AI ever un-deprecates it, the spec above has
+the full request/response schemas ready to transcribe.</li>
+</ul>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — <br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      Built from commit 9c7c610
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Changelog</a> ·
+      <a href="/CONTRIBUTING.html">Contributing</a> ·
+      <a href="/SECURITY.html">Security</a> ·
+      <a href="/sitemap.xml">Sitemap</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Switch to light mode" : "Switch to dark mode");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Switch to dark mode" : "Switch to light mode");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

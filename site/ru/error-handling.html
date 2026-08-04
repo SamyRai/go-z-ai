@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Error handling · go-z-ai</title>
+  <meta name="description" content="">
+  <link rel="canonical" href="/ru/error-handling.html">
+  <link rel="alternate" hreflang="en" href="/en/error-handling.html">
+  <link rel="alternate" hreflang="ru" href="/ru/error-handling.html">
+  <link rel="alternate" hreflang="zh" href="/zh/error-handling.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/error-handling.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Error handling · go-z-ai">
+  <meta property="og:description" content="">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/ru/error-handling.html">
+  <meta property="og:locale" content="ru">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Error handling · go-z-ai">
+  <meta name="twitter:description" content="">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/ru/error-handling.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Error handling","inLanguage":"ru","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Error handling","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/ru/error-handling.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/ru/error-handling.html","name":"Error handling","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержимому</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/ru/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">G</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/ru/" >Главная</a>
+      <a href="/ru/getting-started.html" aria-current="page">Документация</a>
+      <a href="/ru/cli-reference.html">CLI</a>
+      <a href="/ru/library-guide.html">Библиотека</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Журнал изменений</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Русский</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/error-handling.html" >English</a>
+    <a role="menuitem" href="/ru/error-handling.html" aria-current="true">Русский</a>
+    <a role="menuitem" href="/zh/error-handling.html" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Переключить тему" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="-">Обработка ошибок</h1>
+<p>Каждый метод сервиса возвращает обычный <code>error</code>. Сбои на транспортном уровне
+(DNS, отказ соединения, таймаут) возвращаются обёрнутыми в <code>fmt.Errorf</code>; всё,
+что отклонил сам API Z.AI, возвращается как <code>*client.APIError</code> со
+структурированными полями, по которым можно ветвить логику, вместо разбора
+строк сообщения.</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">resp</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">c</span><span class="p">.</span><span class="nf">Chat</span><span class="p">().</span><span class="nf">Create</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">req</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="nx">apiErr</span><span class="w"> </span><span class="o">*</span><span class="nx">client</span><span class="p">.</span><span class="nx">APIError</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nf">As</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">apiErr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;[%d] %s\n&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">apiErr</span><span class="p">.</span><span class="nx">Code</span><span class="p">,</span><span class="w"> </span><span class="nx">apiErr</span><span class="p">.</span><span class="nx">UserMessage</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">switch</span><span class="w"> </span><span class="nx">apiErr</span><span class="p">.</span><span class="nx">Category</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">ErrorCategoryAuth</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// bad/expired key — don&#39;t retry, tell the user</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">ErrorCategoryQuota</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// out of balance/quota — don&#39;t retry, surface to the user</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">ErrorCategoryRateLimit</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="nx">apiErr</span><span class="p">.</span><span class="nx">IsRetriable</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="c1">// the client already retries this internally up to</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="c1">// Config.MaxRetries — you&#39;ll only see it here if retries</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="c1">// were exhausted or disabled (MaxRetries: -1)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// transport-level failure — network, DNS, timeout</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre><p>Поля <code>APIError</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Назначение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>HTTPStatus</code></td>
+<td>HTTP-код состояния</td>
+</tr>
+<tr>
+<td><code>Code</code></td>
+<td>Бизнес-код ошибки Z.AI (int)</td>
+</tr>
+<tr>
+<td><code>Message</code></td>
+<td>Исходное сообщение от API</td>
+</tr>
+<tr>
+<td><code>Category</code></td>
+<td>Одна из категорий ниже</td>
+</tr>
+<tr>
+<td><code>UserMessage</code></td>
+<td>Более понятное, заранее подготовленное описание</td>
+</tr>
+<tr>
+<td><code>IsRetriable</code></td>
+<td>Считает ли собственная логика повторов клиента эту ошибку временной</td>
+</tr>
+<tr>
+<td><code>RequestID</code></td>
+<td>Для поддержки/отладки, когда API его вернул</td>
+</tr>
+</tbody>
+</table>
+<p>Вспомогательные предикаты: <code>IsAuthError()</code>, <code>IsRateLimitError()</code>,
+<code>IsQuotaError()</code>, <code>IsParameterError()</code>, <code>IsServerError()</code> — эквивалентны прямой
+проверке <code>.Category</code>, предоставлены для читаемости в местах вызова.</p>
+<h2 id="---">Поведение повторов из коробки</h2>
+<p><code>Client.doRequest</code> (используется каждым сервисом) уже повторяет ошибки
+429/5xx/сети с экспоненциальной задержкой, джиттером и поддержкой
+<code>Retry-After</code>, до <code>Config.MaxRetries</code> (по умолчанию 3; установите <code>-1</code> для
+отключения). Обычно вам не нужен собственный цикл повторов —
+<code>APIError.IsRetriable</code> подскажет, исчерпала ли ошибка, дошедшая до вашего
+кода, эти повторные попытки.</p>
+<h2 id="--">Справочник кодов ошибок</h2>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Constant</th>
+<th>Category</th>
+<th>Повторяемый</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1000</td>
+<td><code>ErrCodeAuthFailed</code></td>
+<td>Auth</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1001</td>
+<td><code>ErrCodeAuthNotFound</code></td>
+<td>Auth</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1003</td>
+<td><code>ErrCodeAuthTokenExpired</code></td>
+<td>Auth</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1005</td>
+<td><code>ErrCodeAuthNeed2FA</code></td>
+<td>Auth</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1113</td>
+<td><code>ErrCodeInsufficientBalance</code></td>
+<td>Quota</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1302</td>
+<td><code>ErrCodeRateLimitReached</code></td>
+<td>RateLimit</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>1305</td>
+<td><code>ErrCodeServiceOverloaded</code></td>
+<td>Server</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>1308</td>
+<td><code>ErrCodeUsageLimitReached</code></td>
+<td>Quota</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1309</td>
+<td><code>ErrCodeCodingPlanExpired</code></td>
+<td>Quota</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1310</td>
+<td><code>ErrCodeWeeklyMonthlyExhausted</code></td>
+<td>Quota</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1311</td>
+<td><code>ErrCodeModelNotIncluded</code></td>
+<td>Quota</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1313</td>
+<td><code>ErrCodeFairUsageViolation</code></td>
+<td>Quota</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1314</td>
+<td><code>ErrCodeEnterpriseExpired</code></td>
+<td>Quota</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1315</td>
+<td><code>ErrCodeEnterpriseKeyOnly</code></td>
+<td>Quota</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1316–1321</td>
+<td>usage-limit variants</td>
+<td>Quota</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1210</td>
+<td><code>ErrCodeInvalidParameter</code></td>
+<td>Parameter</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1211</td>
+<td><code>ErrCodeUnknownModel</code></td>
+<td>Parameter</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1212</td>
+<td><code>ErrCodeMethodNotSupported</code></td>
+<td>Parameter</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1213</td>
+<td><code>ErrCodeParameterMissing</code></td>
+<td>Parameter</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1214</td>
+<td><code>ErrCodeParameterInvalid</code></td>
+<td>Parameter</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1215</td>
+<td><code>ErrCodeParametersConflict</code></td>
+<td>Parameter</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1221</td>
+<td><code>ErrCodeAPITakenOffline</code></td>
+<td>Parameter</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1222</td>
+<td><code>ErrCodeAPINotExist</code></td>
+<td>Parameter</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1261</td>
+<td><code>ErrCodePromptTooLong</code></td>
+<td>Parameter</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1301</td>
+<td><code>ErrCodeUnsafeContent</code></td>
+<td>Content</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>1220</td>
+<td><code>ErrCodeNoPermission</code></td>
+<td>Permission</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>-1</td>
+<td><code>ErrCodeInternalError</code></td>
+<td>Server</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>1200</td>
+<td><code>ErrCodeAPICallError</code></td>
+<td>Server</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>1230</td>
+<td><code>ErrCodeProcessError</code></td>
+<td>Server</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>1234</td>
+<td><code>ErrCodeNetworkError</code></td>
+<td>Server</td>
+<td>Да</td>
+</tr>
+</tbody>
+</table>
+<p>Код ошибки, неизвестный этому клиенту, по умолчанию получает
+<code>ErrorCategoryServer</code> с <code>IsRetriable: true</code> — разумное значение по умолчанию
+(неизвестные коды трактуются как временные проблемы сервера), но именно для
+перечисленных выше констант задано специально подобранное <code>UserMessage</code> и
+решение о повторе.</p>
+<p>Источник истины: <a href="/en/errors.go.html" rel="nofollow noreferrer"><code>pkg/client/errors.go</code></a>.</p>
+<h2 id="-200---">Особенность: 200 со встроенным сбоем</h2>
+<p>Несколько эндпоинтов (<code>Invoke</code>/<code>AsyncResult</code> у агентов) возвращают HTTP 200
+даже в случае неудачи на бизнес-уровне — сбой встроен в тело ответа, а не
+сигнализируется через HTTP-статус. Ненулевой <code>error</code> из этих методов означает,
+что не сработал <em>транспортный уровень</em>; для обнаружения сбоя на бизнес-уровне
+внутри успешного ответа проверяйте <code>resp.Failed()</code> (или напрямую <code>resp.Error</code>/
+<code>resp.Status</code>). Оба типа ответов документируют это в методе <code>Failed()</code> —
+легко пропустить, если проверять только <code>err != nil</code>.</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — <br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      Собрано из коммита 9c7c610
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Журнал изменений</a> ·
+      <a href="/CONTRIBUTING.html">Участие в проекте</a> ·
+      <a href="/SECURITY.html">Безопасность</a> ·
+      <a href="/sitemap.xml">Карта сайта</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Перейти в светлую тему" : "Перейти в тёмную тему");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Перейти в тёмную тему" : "Перейти в светлую тему");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

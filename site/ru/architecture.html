@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Architecture · go-z-ai</title>
+  <meta name="description" content="">
+  <link rel="canonical" href="/ru/architecture.html">
+  <link rel="alternate" hreflang="en" href="/en/architecture.html">
+  <link rel="alternate" hreflang="ru" href="/ru/architecture.html">
+  <link rel="alternate" hreflang="zh" href="/zh/architecture.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/architecture.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Architecture · go-z-ai">
+  <meta property="og:description" content="">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/ru/architecture.html">
+  <meta property="og:locale" content="ru">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Architecture · go-z-ai">
+  <meta name="twitter:description" content="">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/ru/architecture.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Architecture","inLanguage":"ru","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Architecture","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/ru/architecture.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/ru/architecture.html","name":"Architecture","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержимому</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/ru/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">G</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/ru/" >Главная</a>
+      <a href="/ru/getting-started.html" aria-current="page">Документация</a>
+      <a href="/ru/cli-reference.html">CLI</a>
+      <a href="/ru/library-guide.html">Библиотека</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Журнал изменений</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Русский</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/architecture.html" >English</a>
+    <a role="menuitem" href="/ru/architecture.html" aria-current="true">Русский</a>
+    <a role="menuitem" href="/zh/architecture.html" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Переключить тему" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="heading">Архитектура</h1>
+<h2 id="heading-1">Содержание</h2>
+<ul>
+<li><a href="#%D1%81%D1%82%D1%80%D1%83%D0%BA%D1%82%D1%83%D1%80%D0%B0-%D0%BF%D0%B0%D0%BA%D0%B5%D1%82%D0%BE%D0%B2" rel="nofollow noreferrer">Структура пакетов</a></li>
+<li><a href="#%D1%81%D0%BE%D0%B3%D0%BB%D0%B0%D1%88%D0%B5%D0%BD%D0%B8%D1%8F-cli" rel="nofollow noreferrer">Соглашения CLI</a></li>
+<li><a href="#%D1%84%D0%B0%D1%81%D0%B0%D0%B4-%D0%B7%D0%B0%D0%BF%D1%80%D0%BE%D1%81%D0%BE%D0%B2" rel="nofollow noreferrer">Фасад запросов</a></li>
+<li><a href="#%D0%B4%D0%B8%D0%B7%D0%B0%D0%B9%D0%BD-%D0%BF%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%BD%D1%8B%D1%85-%D0%BF%D0%BE%D0%BF%D1%8B%D1%82%D0%BE%D0%BA-%D0%B8-%D1%82%D0%B0%D0%B9%D0%BC-%D0%B0%D1%83%D1%82%D0%BE%D0%B2" rel="nofollow noreferrer">Дизайн повторных попыток и тайм-аутов</a></li>
+<li><a href="#%D0%BF%D0%BE%D1%87%D0%B5%D0%BC%D1%83-%D0%BD%D0%B5%D0%BA%D0%BE%D1%82%D0%BE%D1%80%D1%8B%D0%B5-%D1%81%D0%B5%D1%80%D0%B2%D0%B8%D1%81%D1%8B-%D0%BE%D0%B1%D1%80%D0%B0%D1%89%D0%B0%D1%8E%D1%82%D1%81%D1%8F-%D0%BA-%D0%B4%D1%80%D1%83%D0%B3%D0%BE%D0%BC%D1%83-%D1%85%D0%BE%D1%81%D1%82%D1%83" rel="nofollow noreferrer">Почему некоторые сервисы обращаются к другому хосту</a></li>
+<li><a href="#%D1%81%D0%BE%D0%B3%D0%BB%D0%B0%D1%88%D0%B5%D0%BD%D0%B8%D0%B5-%D0%BE-%D0%B6%D0%B8%D0%B2%D0%BE%D0%B9-%D0%B2%D0%B5%D1%80%D0%B8%D1%84%D0%B8%D0%BA%D0%B0%D1%86%D0%B8%D0%B8" rel="nofollow noreferrer">Соглашение о живой верификации</a></li>
+<li><a href="#%D1%80%D0%B0%D1%81%D1%88%D0%B8%D1%80%D0%B5%D0%BD%D0%B8%D0%B5-%D1%82%D0%B0%D0%B1%D0%BB%D0%B8%D1%86%D1%8B-%D1%81%D1%82%D1%80%D1%83%D0%BA%D1%82%D1%83%D1%80%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE-%D0%BF%D0%BE%D0%B8%D1%81%D0%BA%D0%B0" rel="nofollow noreferrer">Расширение таблицы структурированного поиска</a></li>
+<li><a href="#%D0%B1%D0%B5%D0%B7%D0%BE%D0%BF%D0%B0%D1%81%D0%BD%D0%BE%D1%81%D1%82%D1%8C-%D1%84%D0%B0%D0%B9%D0%BB%D0%BE%D0%B2-%D1%83%D1%87%D1%91%D1%82%D0%BD%D1%8B%D1%85-%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D1%85" rel="nofollow noreferrer">Безопасность файлов учётных данных</a></li>
+<li><a href="#tui" rel="nofollow noreferrer">TUI</a></li>
+</ul>
+<h2 id="-">Структура пакетов</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">main.go               Пятистрочная точка входа: package main → internal/cli.Execute()
+</span></span><span class="line"><span class="cl">internal/cli/         Команды CLI (пакет cli), по одному файлу на группу команд:
+</span></span><span class="line"><span class="cl">                      chat.go, accounts_cli.go, coding_cli.go, ...
+</span></span><span class="line"><span class="cl">pkg/client/           Библиотека на Go — по одному файлу на сервис API, без зависимостей от CLI/TUI
+</span></span><span class="line"><span class="cl">internal/accounts/    Хранилище учётных данных нескольких аккаунтов (~/.config/go-z-ai/accounts.json)
+</span></span><span class="line"><span class="cl">internal/coding/      Хранилище учётных данных GLM Coding Plan + генераторы конфигураций для инструментов
+</span></span><span class="line"><span class="cl">internal/usageview/   Чисто презентационные помощники (временные окна, тепловые карты, форматирование) —
+</span></span><span class="line"><span class="cl">                      используются и CLI, и TUI, поэтому их вывод не может разойтись
+</span></span><span class="line"><span class="cl">internal/tui/         Терминальный интерфейс на Bubble Tea, по одному подпакету на вкладку
+</span></span><span class="line"><span class="cl">internal/fileinput/   FileOrURL: URL пропускается как есть, локальный путь кодируется в base64 —
+</span></span><span class="line"><span class="cl">                      общий для `ocr parse` и вкладки media в TUI
+</span></span></code></pre><p><code>pkg/client</code> не имеет никаких зависимостей от чего-либо специфичного для CLI
+или TUI — он спроектирован для отдельного импорта (см. <a href="library-guide.html" rel="nofollow noreferrer">Руководство по
+библиотеке</a>) и является <strong>единственным</strong> публичным пакетом.
+Всё, что находится под <code>internal/</code>, является реализацией, которую компилятор
+запрещает импортировать внешнему коду, поэтому слои CLI/TUI можно свободно
+рефакторить. И CLI, и TUI — тонкие обёртки над <code>pkg/client</code>.
+<code>go install github.com/SamyRai/go-z-ai@latest</code> по-прежнему собирает корневой
+<code>main.go</code> в бинарник <code>go-z-ai</code>.</p>
+<h2 id="-cli">Соглашения CLI</h2>
+<p>Обработчики команд, которым нужен клиент API, регистрируются как
+<code>RunE: runWithClient(runX)</code> и принимают уже разрешённый <code>*client.Client</code> как
+третий параметр — <code>runWithClient</code> (в <code>internal/cli/common.go</code>) разрешает его
+один раз через <code>getClient</code>, так что обработчикам не нужно повторять
+преамбулу с разрешением и проверкой в каждом из них. Сам приоритет учётных
+данных живёт в <code>resolveConfig</code> (флаг → <code>--account</code> →
+<code>ZAI_API_KEY</code>/<code>KEY</code> → активный аккаунт), он покрыт юнит-тестами в
+<code>credentials_test.go</code>.</p>
+<p>Формат вывода единообразен: каждая команда, печатающая результат,
+регистрирует общий флаг <code>--format</code> через <code>addFormatFlag</code> и рендерит через
+<code>emit(cmd, v, textFn)</code>, который выдаёт красивый JSON для <code>--format json</code>, а
+иначе запускает читаемый человеком <code>textFn</code>. Прогресс-логи на командах,
+поддерживающих JSON, идут в stderr, поэтому stdout остаётся валидным JSON.</p>
+<h2 id="--1">Фасад запросов</h2>
+<p>Каждый метод сервиса проходит через один из трёх методов <code>Client</code> — сервисы
+никогда не создают собственный <code>http.Client</code> и не отправляют сырой запрос:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">doRequest(ctx, method, endpoint, body, result)
+</span></span><span class="line"><span class="cl">  → doRequestBase(ctx, baseURL, method, endpoint, body, result)   // для нестандартных базовых URL
+</span></span><span class="line"><span class="cl">    → doRequestBaseKey(ctx, baseURL, apiKey, method, endpoint, body, result)  // для другой учётной записи
+</span></span></code></pre><p>Именно здесь централизованно в одном месте сосредоточены повтор/экспоненциальная
+задержка, разбор ошибок и аутентификация для каждого эндпоинта. Сервис,
+которому нужен другой базовый URL (Agents) или другая учётная запись
+(Embeddings/Moderations, использующие <code>ChinaAPIKey</code>), вызывает следующее
+звено цепочки — он никогда не обходит фасад.</p>
+<p><code>sendMultipart</code> — параллельный путь для загрузок multipart/form-data (файлы,
+транскрипция аудио, разбор документов) — он <strong>не</strong> выполняет повторные
+попытки, поскольку повторная загрузка файла при временном сбое — это решение
+вызывающей стороны, а не безопасное поведение по умолчанию.</p>
+<h2 id="-----">Дизайн повторных попыток и тайм-аутов</h2>
+<ul>
+<li><code>Config.Timeout</code> ограничивает установку соединения + TLS-рукопожатие +
+ожидание заголовков ответа — намеренно <strong>не</strong> весь <code>http.Client.Timeout</code>,
+который обрезал бы долгое чтение SSE-потока <code>CreateStream</code> посреди
+генерации.</li>
+<li>Повторные попытки применяются к ошибкам 429/5xx/сети, с экспоненциальной
+задержкой, джиттером (до 25%) и поддержкой заголовка <code>Retry-After</code>, до
+<code>Config.MaxRetries</code> (по умолчанию 3). Каждая повторная попытка сначала
+проверяет <code>ctx.Err()</code>, так что отменённый контекст прерывается немедленно,
+а не доспивает задержку.</li>
+<li>Потоковая передача (<code>CreateStream</code>) повторяет только <em>соединение</em> — как
+только SSE-поток действительно начался, сбой в середине потока доносится
+до вызывающей стороны, а не замалчивается повтором (нет способа узнать,
+какую часть ответа уже получил вызывающий).</li>
+</ul>
+<h2 id="------">Почему некоторые сервисы обращаются к другому хосту</h2>
+<table>
+<thead>
+<tr>
+<th>Сервис</th>
+<th>Базовый URL</th>
+<th>Почему</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Embeddings, Moderations</td>
+<td><code>open.bigmodel.cn</code></td>
+<td>Единственная платформа, документирующая эти эндпоинты — индекс документации <code>api.z.ai</code> не упоминает ни один из них. Живая верификация подтвердила, что обычный ключ z.ai аутентифицируется одинаково на обеих платформах, поэтому <code>Config.ChinaAPIKey</code> по умолчанию откатывается к <code>Config.APIKey</code>.</td>
+</tr>
+<tr>
+<td>Agents</td>
+<td><code>https://api.z.ai/api</code> (голый корень, без <code>/paas/v4</code>) по умолчанию; <code>https://open.bigmodel.cn/api</code> при <code>Config.Region = RegionChina</code></td>
+<td>Проверено на живой API — вложение <code>/v1/agents</code> под базовый URL chat-completions возвращает 404.</td>
+</tr>
+<tr>
+<td>Всё остальное</td>
+<td><code>Config.BaseURL</code> (<code>/api/paas/v4</code> либо <code>/api/coding/paas/v4</code> для аккаунтов GLM Coding Plan)</td>
+<td>Общий случай.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="---configregion">Выбор регионального шлюза (Config.Region)</h3>
+<p>Z.AI обслуживает то же семейство моделей GLM с двух региональных шлюзов:
+международного хоста <code>api.z.ai</code> и зеркала для материкового Китая
+<code>open.bigmodel.cn</code>. Большинство сервисов выбирают хост через <code>Config.BaseURL</code>
+(chat, files, tools и т. д.) либо через фиксированную константу
+(Embeddings/Moderations всегда используют китайский хост). Четыре сервиса —
+<strong>monitor</strong> (квота/использование), <strong>biz</strong> (информация об аккаунте),
+<strong>agents</strong> и <strong>определение типа аккаунта</strong> — раньше были жёстко привязаны к
+<code>api.z.ai</code>, из-за чего ключ <code>glm_coding_plan_china</code> не мог достучаться до
+эндпоинтов monitor/usage своего региона (и некорректно классифицировался
+командами <code>accounts add</code>/<code>account detect</code>).</p>
+<p><code>Config.Region</code> (<code>RegionGlobal</code> по умолчанию или <code>RegionChina</code>) выбирает
+хост только для этих четырёх регионно-зависимых сервисов. Он <strong>не</strong>
+переопределяет <code>Config.BaseURL</code> (поверхность chat) и не меняет хост
+Embeddings/Moderations. Из CLI используйте <code>--region {global,china}</code> или
+<code>ZAI_REGION</code> (псевдонимы: <code>cn</code>, <code>bigmodel</code>, <code>west</code>). Неизвестное значение
+откатывается к global, а не вызывает ошибку, поэтому опечатка никогда не
+блокирует постороннюю команду.</p>
+<p>Хосты китайского зеркала для monitor/biz/agents/определения типа
+смоделированы зеркалированием структуры путей <code>api.z.ai</code> на
+<code>open.bigmodel.cn</code> и помечены <code>NOT VERIFIED LIVE</code> — китайская платформа
+прошла живую верификацию на предоставление той же OpenAPI-поверхности для
+<code>/models</code> и <code>/chat/completions</code> (см. <code>BigModelBaseURL</code>), но хосты
+monitor/biz/agents на стороне Китая пока не зафиксированы ни в одной
+cassette. Зафиксируйте их через <code>ZAI_RECORD=1</code>, если у вас есть китайский
+ключ с соответствующими правами.</p>
+<h2 id="---">Соглашение о живой верификации</h2>
+<p>Собственные SDK и документация Z.AI иногда расходятся между собой, а иногда
+— с тем, что реально возвращает живой API (эндпоинт, заявленный как
+необязательный, но возвращающий 400 без него; ошибка, встроенная в тело
+ответа 200; поле с разным типом в двух официальных SDK). Вместо того чтобы
+доверять одному источнику, новые сервисы здесь проверяются реальным вызовом
+API, а взаимодействие записывается как cassette
+<a href="https://github.com/dnaeon/go-vcr" rel="nofollow noreferrer noopener" target="_blank">go-vcr</a>
+(<code>pkg/client/testdata/cassettes/</code>) и проигрывается в <code>ModeReplayOnly</code>,
+поэтому тестовый набор никогда не обращается к сети.</p>
+<p>Два файла в <code>pkg/client</code> ведут работу по живой верификации, с разными
+ролями: <strong><code>live_replay_test.go</code></strong> содержит тесты <code>Test*Live</code>, которые
+проигрывают зафиксированные cassette как замороженные находки (проверки
+прав, аномалия 200-со-встроенным-сбоем, утверждение об одном ключе для
+нескольких хостов); это текущий журнал того, что подтверждено и почему это
+важно. <strong><code>live_verify_test.go</code></strong> содержит инструмент записи <code>TestVerify*</code> —
+каждый тест SKIP-ается, пока вы не захватите новую cassette успешного пути
+через <code>ZAI_RECORD=1</code>, после чего её проигрывает; это список дел для форм,
+ожидающих реального захвата.</p>
+<p>Если вы расширяете сервис, см.
+<a href="/CONTRIBUTING.html" rel="nofollow noreferrer">Contributing § the live-verification convention</a>
+прежде чем добавлять новую cassette.</p>
+<h2 id="----1">Расширение таблицы структурированного поиска</h2>
+<p>Несколько типов в этой кодовой базе сопоставляют небольшое замкнутое
+множество заданных API значений с человекочитаемыми метаданными через
+таблицу конфигурации плюс функцию поиска, а не через цепочку
+<code>if</code>/<code>switch</code>-условий — <code>quotaWindowConfigs</code>/<code>findWindowConfig</code> из
+<code>pkg/client/quota.go</code> самый наглядный пример:</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="kd">var</span><span class="w"> </span><span class="nx">quotaWindowConfigs</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[]</span><span class="nx">QuotaWindowConfig</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">{</span><span class="nx">Type</span><span class="p">:</span><span class="w"> </span><span class="nx">QuotaTypeTokensLimit</span><span class="p">,</span><span class="w"> </span><span class="nx">UnitCode</span><span class="p">:</span><span class="w"> </span><span class="nx">UnitCodeHourly</span><span class="p">,</span><span class="w"> </span><span class="nx">Number</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="nx">Description</span><span class="p">:</span><span class="w"> </span><span class="s">&#34;5-hour rolling token window&#34;</span><span class="p">},</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">{</span><span class="nx">Type</span><span class="p">:</span><span class="w"> </span><span class="nx">QuotaTypeTokensLimit</span><span class="p">,</span><span class="w"> </span><span class="nx">UnitCode</span><span class="p">:</span><span class="w"> </span><span class="nx">UnitCodeWeekly</span><span class="p">,</span><span class="w"> </span><span class="nx">Number</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nx">Description</span><span class="p">:</span><span class="w"> </span><span class="s">&#34;weekly token window&#34;</span><span class="p">},</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">{</span><span class="nx">Type</span><span class="p">:</span><span class="w"> </span><span class="nx">QuotaTypeTimeLimit</span><span class="p">,</span><span class="w"> </span><span class="nx">UnitCode</span><span class="p">:</span><span class="w"> </span><span class="nx">UnitCodeMonthly</span><span class="p">,</span><span class="w"> </span><span class="nx">Number</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nx">Description</span><span class="p">:</span><span class="w"> </span><span class="s">&#34;monthly MCP tools quota&#34;</span><span class="p">},</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre><p>Когда Z.AI добавляет новый тип окна, изменение носит аддитивный характер
+(добавить строку) и локализовано, с обобщённым запасным описанием для всего,
+чего ещё нет в таблице, а не жёстким сбоем. Тот же паттерн встречается при
+категоризации моделей (<code>visionModelMarkers</code> из <code>pkg/client/models.go</code> —
+единый источник истины, так что <code>isTextModel</code>/<code>isVisionModel</code> никогда не
+противоречат друг другу) и при разрешении типа аккаунта в эндпоинт
+(<code>internal/coding/plans.go</code>). Предпочитайте эту форму ещё одной условной
+ветке, когда вы добавляете новое распознаваемое значение к существующему
+понятию.</p>
+<h2 id="----2">Безопасность файлов учётных данных</h2>
+<p>И <code>internal/accounts</code> (хранилище нескольких аккаунтов), и <code>internal/coding</code>
+(хранилище учётных данных GLM Coding Plan плюс все конфиги сторонних
+инструментов, которые оно пишет — Claude Code, OpenCode, Crush, Factory
+Droid, Cursor) пишут через атомарную запись во временный файл с последующим
+переименованием, а не прямой записью по месту. Сбой или kill в процессе
+записи оставляет исходный файл нетронутым, а не обрезанным — это важно
+именно здесь, потому что некоторые из них — реальные конфиги <em>других
+программ</em>, в которые выполняется слияние, а не файлы, которыми этот проект
+владеет безраздельно. Файлы, содержащие ключ, создаются с правами <code>0600</code>;
+каталоги — <code>0700</code>.</p>
+<h2 id="tui">TUI</h2>
+<p><code>internal/tui</code> — программа на <a href="https://github.com/charmbracelet/bubbletea" rel="nofollow noreferrer noopener" target="_blank">Bubble Tea</a>
+с одной вкладкой на подпакет (<code>chat</code>, <code>models</code>, <code>usage</code>, <code>accounts</code>,
+<code>coding</code>, <code>media</code>, <code>tools</code>). Каждая вкладка — независимая <code>tea.Model</code> со
+своими <code>Update</code>/<code>View</code>; <code>internal/tui/root.go</code> выполняет диспетчеризацию
+между ними. Длительная работа (вызов API, файловая операция) оборачивается в
+замыкание <code>tea.Cmd</code>, которое Bubble Tea запускает в собственной goroutine —
+код, вызываемый из <code>tea.Cmd</code>, не должен рассчитывать, что изменяемое
+состояние уровня пакета свободно от конкуренции (однажды это ударило нас с
+<code>http.DefaultClient.Timeout</code>; детали — в комментарии-документации к фиксу в
+<code>internal/coding/validator.go</code>).</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — <br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      Собрано из коммита 9c7c610
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Журнал изменений</a> ·
+      <a href="/CONTRIBUTING.html">Участие в проекте</a> ·
+      <a href="/SECURITY.html">Безопасность</a> ·
+      <a href="/sitemap.xml">Карта сайта</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Перейти в светлую тему" : "Перейти в тёмную тему");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Перейти в тёмную тему" : "Перейти в светлую тему");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

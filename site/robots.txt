@@ -1,0 +1,29 @@
+# go-z-ai — https://github.com/SamyRai/go-z-ai
+# Search and AI crawlers are welcome.
+
+User-agent: *
+Allow: /
+
+# AI search / retrieval crawlers — power cited AI answers.
+User-agent: OAI-SearchBot
+Allow: /
+User-agent: ChatGPT-User
+Allow: /
+User-agent: Claude-SearchBot
+Allow: /
+User-agent: Claude-User
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+
+# AI training crawlers — allowed to build model familiarity.
+User-agent: GPTBot
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: Google-Extended
+Allow: /
+User-agent: CCBot
+Allow: /
+
+Sitemap: https://SamyRai.github.io/go-z-ai/sitemap.xml

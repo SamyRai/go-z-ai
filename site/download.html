@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Download · go-z-ai</title>
+  <meta name="description" content="Download and install go-z-ai — prebuilt, signed binaries for macOS and Linux, or a one-line go install.">
+  <link rel="canonical" href="/download.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Download · go-z-ai">
+  <meta property="og:description" content="Download and install go-z-ai — prebuilt, signed binaries for macOS and Linux, or a one-line go install.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/download.html">
+  <meta property="og:locale" content="en">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Download · go-z-ai">
+  <meta name="twitter:description" content="Download and install go-z-ai — prebuilt, signed binaries for macOS and Linux, or a one-line go install.">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/#software","@type":["SoftwareApplication","SoftwareSourceCode"],"applicationCategory":"DeveloperApplication","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"codeRepository":"https://github.com/SamyRai/go-z-ai","description":"","downloadUrl":"https://github.com/SamyRai/go-z-ai/releases","name":"go-z-ai","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"operatingSystem":"Linux, macOS, Windows","programmingLanguage":"Go","releaseNotes":"https://github.com/SamyRai/go-z-ai/releases","url":"https://SamyRai.github.io/go-z-ai/download.html"}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/en/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">G</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/en/" >Home</a>
+      <a href="/en/getting-started.html" >Docs</a>
+      <a href="/en/cli-reference.html">CLI</a>
+      <a href="/en/library-guide.html">Library</a>
+      <a href="/download.html" aria-current="page">Download</a>
+      <a href="/CHANGELOG.html">Changelog</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>English</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<section class="hero">
+  <h1>Download go-z-ai</h1>
+  <p class="lead"></p>
+</section>
+
+<section class="block">
+  <h2>Install with Go</h2>
+  <p>The recommended path — always the latest, needs Go 1.24+.</p>
+  <pre class="chroma"><code>go install github.com/SamyRai/go-z-ai@latest</code></pre>
+</section>
+
+<section class="block">
+  <h2>Manual install &amp; verification</h2>
+  <h3>From a prebuilt binary</h3>
+  <pre class="chroma"><code>tar xzf &lt;archive&gt;.tar.gz
+sudo mv go-z-ai /usr/local/bin/
+go-z-ai version</code></pre>
+  <p>On macOS, if Gatekeeper blocks the binary: <code>xattr -d com.apple.quarantine go-z-ai</code></p>
+  <h3>Verify what you downloaded</h3>
+  <pre class="chroma"><code><span class="c1"># 1) checksum</span>
+sha256sum -c checksums.txt
+
+<span class="c1"># 2) or the cosign keyless signature</span>
+cosign verify-blob <span class="se">\
+</span>  --certificate &lt;archive&gt;.tar.gz.pem <span class="se">\
+</span>  --signature  &lt;archive&gt;.tar.gz.sig <span class="se">\
+</span>  &lt;archive&gt;.tar.gz</code></pre>
+</section><script>
+  (function() {
+    
+    function detect() {
+      var ua = navigator.userAgent || "";
+      var os = /Mac/i.test(ua) ? "darwin" : /Linux|Android/i.test(ua) ? "linux" : /Win/i.test(ua) ? "windows" : "";
+      var arch = /arm64|aarch64/i.test(ua) ? "arm64" : "amd64";
+      var p = navigator.userAgentData && navigator.userAgentData.platform;
+      if (p) { if (/mac/i.test(p)) os = "darwin"; else if (/linux/i.test(p)) os = "linux"; else if (/win/i.test(p)) os = "windows"; }
+      
+      if (os === "darwin" && navigator.maxTouchPoints > 1) arch = "arm64";
+      return { os: os, arch: arch };
+    }
+    try {
+      var d = detect();
+      var grid = document.querySelector(".dl-grid");
+      if (grid && d.os) {
+        var card = grid.querySelector('.dl-card[data-os="' + d.os + '"][data-arch="' + d.arch + '"]')
+                || grid.querySelector('.dl-card[data-os="' + d.os + '"]');
+        if (card) {
+          card.classList.add("dl-card--rec");
+          var b = card.querySelector(".dl-badge"); if (b) b.hidden = false;
+          grid.insertBefore(card, grid.firstChild);
+        }
+      }
+    } catch (e) {}
+
+    
+    
+    document.querySelectorAll("main pre.chroma").forEach(function(pre) {
+      var wrap = document.createElement("div");
+      wrap.className = "codewrap";
+      pre.parentNode.insertBefore(wrap, pre);
+      wrap.appendChild(pre);
+      var btn = document.createElement("button");
+      btn.type = "button"; btn.className = "code-copy"; btn.textContent = "Copy";
+      btn.setAttribute("aria-label", "Copy to clipboard");
+      btn.addEventListener("click", function() {
+        var text = (pre.querySelector("code") || pre).innerText;
+        navigator.clipboard && navigator.clipboard.writeText(text).then(function() {
+          btn.textContent = "Copied"; setTimeout(function() { btn.textContent = "Copy"; }, 1500);
+        });
+      });
+      wrap.appendChild(btn);
+    });
+  })();
+</script>
+
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — <br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      Built from commit 9c7c610
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Changelog</a> ·
+      <a href="/CONTRIBUTING.html">Contributing</a> ·
+      <a href="/SECURITY.html">Security</a> ·
+      <a href="/sitemap.xml">Sitemap</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Switch to light mode" : "Switch to dark mode");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Switch to dark mode" : "Switch to light mode");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+
+

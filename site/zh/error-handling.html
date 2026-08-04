@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Error handling · go-z-ai</title>
+  <meta name="description" content="">
+  <link rel="canonical" href="/zh/error-handling.html">
+  <link rel="alternate" hreflang="en" href="/en/error-handling.html">
+  <link rel="alternate" hreflang="ru" href="/ru/error-handling.html">
+  <link rel="alternate" hreflang="zh" href="/zh/error-handling.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/error-handling.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Error handling · go-z-ai">
+  <meta property="og:description" content="">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/zh/error-handling.html">
+  <meta property="og:locale" content="zh">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Error handling · go-z-ai">
+  <meta name="twitter:description" content="">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/zh/error-handling.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Error handling","inLanguage":"zh","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Error handling","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/zh/error-handling.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/zh/error-handling.html","name":"Error handling","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">跳到正文</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/zh/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">G</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/zh/" >首页</a>
+      <a href="/zh/getting-started.html" aria-current="page">文档</a>
+      <a href="/zh/cli-reference.html">CLI</a>
+      <a href="/zh/library-guide.html">库</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">更新日志</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>简体中文</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/error-handling.html" >English</a>
+    <a role="menuitem" href="/ru/error-handling.html" >Русский</a>
+    <a role="menuitem" href="/zh/error-handling.html" aria-current="true">简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="切换主题" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="heading">错误处理</h1>
+<p>每个 service 方法都返回一个普通的 <code>error</code>。传输层失败（DNS、连接被拒绝、
+超时）会以 <code>fmt.Errorf</code> 包装后返回；任何被 Z.AI API 自身拒绝的请求会以
+<code>*client.APIError</code> 形式返回，其中带有结构化字段，你可以据此分支处理，而不必
+解析消息字符串。</p>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="nx">resp</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">c</span><span class="p">.</span><span class="nf">Chat</span><span class="p">().</span><span class="nf">Create</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">req</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="nx">apiErr</span><span class="w"> </span><span class="o">*</span><span class="nx">client</span><span class="p">.</span><span class="nx">APIError</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nf">As</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">apiErr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;[%d] %s\n&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">apiErr</span><span class="p">.</span><span class="nx">Code</span><span class="p">,</span><span class="w"> </span><span class="nx">apiErr</span><span class="p">.</span><span class="nx">UserMessage</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">switch</span><span class="w"> </span><span class="nx">apiErr</span><span class="p">.</span><span class="nx">Category</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">ErrorCategoryAuth</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// bad/expired key — don&#39;t retry, tell the user</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">ErrorCategoryQuota</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// out of balance/quota — don&#39;t retry, surface to the user</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">ErrorCategoryRateLimit</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="nx">apiErr</span><span class="p">.</span><span class="nx">IsRetriable</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="c1">// the client already retries this internally up to</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="c1">// Config.MaxRetries — you&#39;ll only see it here if retries</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="c1">// were exhausted or disabled (MaxRetries: -1)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// transport-level failure — network, DNS, timeout</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre><p><code>APIError</code> 字段：</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>HTTPStatus</code></td>
+<td>HTTP 状态码</td>
+</tr>
+<tr>
+<td><code>Code</code></td>
+<td>Z.AI 的业务错误码（int）</td>
+</tr>
+<tr>
+<td><code>Message</code></td>
+<td>API 返回的原始消息</td>
+</tr>
+<tr>
+<td><code>Category</code></td>
+<td>下列分类之一</td>
+</tr>
+<tr>
+<td><code>UserMessage</code></td>
+<td>预先写好的、更友好的描述</td>
+</tr>
+<tr>
+<td><code>IsRetriable</code></td>
+<td>client 自身的重试逻辑是否将其视为瞬时错误</td>
+</tr>
+<tr>
+<td><code>RequestID</code></td>
+<td>用于支持/调试，当 API 返回时携带</td>
+</tr>
+</tbody>
+</table>
+<p>辅助谓词：<code>IsAuthError()</code>、<code>IsRateLimitError()</code>、<code>IsQuotaError()</code>、
+<code>IsParameterError()</code>、<code>IsServerError()</code>——等价于直接检查 <code>.Category</code>，提供
+它们是为了在调用处更易读。</p>
+<h2 id="heading-1">开箱即用的重试行为</h2>
+<p><code>Client.doRequest</code>（被每个 service 使用）已经对 429/5xx/网络错误进行重试，
+支持指数退避、抖动以及 <code>Retry-After</code>，最多重试到 <code>Config.MaxRetries</code>
+（默认为 3；设为 <code>-1</code> 可禁用）。你通常不需要自己写重试循环——
+<code>APIError.IsRetriable</code> 会告诉你某个到达你代码的错误是否已经耗尽了那些重试。</p>
+<h2 id="heading-2">错误码参考</h2>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Constant</th>
+<th>Category</th>
+<th>Retriable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1000</td>
+<td><code>ErrCodeAuthFailed</code></td>
+<td>Auth</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1001</td>
+<td><code>ErrCodeAuthNotFound</code></td>
+<td>Auth</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1003</td>
+<td><code>ErrCodeAuthTokenExpired</code></td>
+<td>Auth</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1005</td>
+<td><code>ErrCodeAuthNeed2FA</code></td>
+<td>Auth</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1113</td>
+<td><code>ErrCodeInsufficientBalance</code></td>
+<td>Quota</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1302</td>
+<td><code>ErrCodeRateLimitReached</code></td>
+<td>RateLimit</td>
+<td>是</td>
+</tr>
+<tr>
+<td>1305</td>
+<td><code>ErrCodeServiceOverloaded</code></td>
+<td>Server</td>
+<td>是</td>
+</tr>
+<tr>
+<td>1308</td>
+<td><code>ErrCodeUsageLimitReached</code></td>
+<td>Quota</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1309</td>
+<td><code>ErrCodeCodingPlanExpired</code></td>
+<td>Quota</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1310</td>
+<td><code>ErrCodeWeeklyMonthlyExhausted</code></td>
+<td>Quota</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1311</td>
+<td><code>ErrCodeModelNotIncluded</code></td>
+<td>Quota</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1313</td>
+<td><code>ErrCodeFairUsageViolation</code></td>
+<td>Quota</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1314</td>
+<td><code>ErrCodeEnterpriseExpired</code></td>
+<td>Quota</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1315</td>
+<td><code>ErrCodeEnterpriseKeyOnly</code></td>
+<td>Quota</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1316–1321</td>
+<td>usage-limit variants</td>
+<td>Quota</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1210</td>
+<td><code>ErrCodeInvalidParameter</code></td>
+<td>Parameter</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1211</td>
+<td><code>ErrCodeUnknownModel</code></td>
+<td>Parameter</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1212</td>
+<td><code>ErrCodeMethodNotSupported</code></td>
+<td>Parameter</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1213</td>
+<td><code>ErrCodeParameterMissing</code></td>
+<td>Parameter</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1214</td>
+<td><code>ErrCodeParameterInvalid</code></td>
+<td>Parameter</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1215</td>
+<td><code>ErrCodeParametersConflict</code></td>
+<td>Parameter</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1221</td>
+<td><code>ErrCodeAPITakenOffline</code></td>
+<td>Parameter</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1222</td>
+<td><code>ErrCodeAPINotExist</code></td>
+<td>Parameter</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1261</td>
+<td><code>ErrCodePromptTooLong</code></td>
+<td>Parameter</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1301</td>
+<td><code>ErrCodeUnsafeContent</code></td>
+<td>Content</td>
+<td>否</td>
+</tr>
+<tr>
+<td>1220</td>
+<td><code>ErrCodeNoPermission</code></td>
+<td>Permission</td>
+<td>否</td>
+</tr>
+<tr>
+<td>-1</td>
+<td><code>ErrCodeInternalError</code></td>
+<td>Server</td>
+<td>是</td>
+</tr>
+<tr>
+<td>1200</td>
+<td><code>ErrCodeAPICallError</code></td>
+<td>Server</td>
+<td>是</td>
+</tr>
+<tr>
+<td>1230</td>
+<td><code>ErrCodeProcessError</code></td>
+<td>Server</td>
+<td>是</td>
+</tr>
+<tr>
+<td>1234</td>
+<td><code>ErrCodeNetworkError</code></td>
+<td>Server</td>
+<td>是</td>
+</tr>
+</tbody>
+</table>
+<p>本 client 未识别的错误码默认归为 <code>ErrorCategoryServer</code> 且
+<code>IsRetriable: true</code>——这是一个合理的默认值（把未知错误当作瞬时服务器问题
+处理），但上表中列出的常量才是具有专门定制的 <code>UserMessage</code> 和重试决策的
+那些。</p>
+<p>事实来源：<a href="/en/errors.go.html" rel="nofollow noreferrer"><code>pkg/client/errors.go</code></a>。</p>
+<h2 id="http-200--">HTTP 200 内嵌失败 的怪异行为</h2>
+<p>少数端点（Agents 的 <code>Invoke</code>/<code>AsyncResult</code>）即使在业务层面调用失败时也会
+返回 HTTP 200——失败信息内嵌在响应体中，而非通过 HTTP 状态码指示。从这些
+方法收到非 nil 的 <code>error</code> 意味着<em>传输层</em>失败；要检测一个成功响应内部的
+业务级失败，请检查 <code>resp.Failed()</code>（或直接查看 <code>resp.Error</code>/<code>resp.Status</code>）。
+两种响应类型都在其 <code>Failed()</code> 方法上对此做了说明——如果你只检查
+<code>err != nil</code>，很容易遗漏这一点。</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — <br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      基于提交 9c7c610 构建
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">更新日志</a> ·
+      <a href="/CONTRIBUTING.html">贡献指南</a> ·
+      <a href="/SECURITY.html">安全</a> ·
+      <a href="/sitemap.xml">站点地图</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "切换到浅色模式" : "切换到深色模式");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "切换到深色模式" : "切换到浅色模式");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

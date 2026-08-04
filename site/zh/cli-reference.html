@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>CLI reference · go-z-ai</title>
+  <meta name="description" content="">
+  <link rel="canonical" href="/zh/cli-reference.html">
+  <link rel="alternate" hreflang="en" href="/en/cli-reference.html">
+  <link rel="alternate" hreflang="ru" href="/ru/cli-reference.html">
+  <link rel="alternate" hreflang="zh" href="/zh/cli-reference.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/cli-reference.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="CLI reference · go-z-ai">
+  <meta property="og:description" content="">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/zh/cli-reference.html">
+  <meta property="og:locale" content="zh">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="CLI reference · go-z-ai">
+  <meta name="twitter:description" content="">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/zh/cli-reference.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"CLI reference","inLanguage":"zh","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"CLI reference","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/zh/cli-reference.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/zh/cli-reference.html","name":"CLI reference","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">跳到正文</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/zh/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">G</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/zh/" >首页</a>
+      <a href="/zh/getting-started.html" aria-current="page">文档</a>
+      <a href="/zh/cli-reference.html">CLI</a>
+      <a href="/zh/library-guide.html">库</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">更新日志</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>简体中文</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/cli-reference.html" >English</a>
+    <a role="menuitem" href="/ru/cli-reference.html" >Русский</a>
+    <a role="menuitem" href="/zh/cli-reference.html" aria-current="true">简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="切换主题" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="cli-">CLI 参考</h1>
+<p>每条命令都支持 <code>--help</code>，其中是权威且始终最新的 flag 列表
+（<code>go-z-ai &lt;command&gt; --help</code>、<code>go-z-ai &lt;command&gt; &lt;subcommand&gt; --help</code>）。
+本页是一次有组织的概览；如果本页与 <code>--help</code> 出现不一致，请以 <code>--help</code>
+为准。</p>
+<h2 id="heading">目录</h2>
+<ul>
+<li><a href="#%E5%85%A8%E5%B1%80-flag" rel="nofollow noreferrer">全局 flag</a></li>
+<li><a href="#%E8%81%8A%E5%A4%A9%E8%A1%A5%E5%85%A8" rel="nofollow noreferrer">聊天补全</a></li>
+<li><a href="#%E6%A8%A1%E5%9E%8B" rel="nofollow noreferrer">模型</a></li>
+<li><a href="#%E8%B4%A6%E6%88%B7%E7%94%A8%E9%87%8F%E4%B8%8E%E9%85%8D%E9%A2%9D" rel="nofollow noreferrer">账户、用量与配额</a></li>
+<li><a href="#%E7%BC%96%E7%A0%81%E5%B7%A5%E5%85%B7glm-coding-plan" rel="nofollow noreferrer">编码工具（GLM Coding Plan）</a></li>
+<li><a href="#%E6%96%87%E4%BB%B6%E4%B8%8E%E6%89%B9%E9%87%8F%E4%BB%BB%E5%8A%A1" rel="nofollow noreferrer">文件与批量任务</a></li>
+<li><a href="#%E5%AA%92%E4%BD%93%E7%94%9F%E6%88%90" rel="nofollow noreferrer">媒体生成</a></li>
+<li><a href="#%E6%96%87%E6%A1%A3%E8%A7%A3%E6%9E%90%E4%B8%8E-ocr" rel="nofollow noreferrer">文档解析与 OCR</a></li>
+<li><a href="#%E6%A3%80%E7%B4%A2%E8%BE%85%E5%8A%A9" rel="nofollow noreferrer">检索辅助</a></li>
+<li><a href="#%E5%86%85%E5%AE%B9%E5%AE%A1%E6%A0%B8" rel="nofollow noreferrer">内容审核</a></li>
+<li><a href="#agents" rel="nofollow noreferrer">Agents</a></li>
+<li><a href="#%E5%B7%A5%E5%85%B7%E7%BD%91%E9%A1%B5%E6%90%9C%E7%B4%A2readertokenizer" rel="nofollow noreferrer">工具（网页搜索、reader、tokenizer）</a></li>
+<li><a href="#anthropic-%E5%85%BC%E5%AE%B9%E7%AB%AF%E7%82%B9" rel="nofollow noreferrer">Anthropic 兼容端点</a></li>
+<li><a href="#%E7%BB%88%E7%AB%AF-ui" rel="nofollow noreferrer">终端 UI</a></li>
+</ul>
+<h2 id="-flag">全局 flag</h2>
+<p>以下 flag 适用于每条命令：</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--api-key string</code></td>
+<td>Z.AI API Key（或 <code>ZAI_API_KEY</code> 环境变量）</td>
+</tr>
+<tr>
+<td><code>--base-url string</code></td>
+<td>API base URL（默认：<code>https://api.z.ai/api/paas/v4</code>）</td>
+</tr>
+<tr>
+<td><code>--account string</code></td>
+<td>按名称为本次命令指定一个已存储的账户（见 <a href="accounts-and-quota.html" rel="nofollow noreferrer">账户与配额</a>）</td>
+</tr>
+<tr>
+<td><code>--china-api-key string</code></td>
+<td>用于 embeddings/moderations 的 open.bigmodel.cn key（或 <code>ZAI_CHINA_API_KEY</code>；未设置时回退到 <code>--api-key</code>）</td>
+</tr>
+<tr>
+<td><code>--region string</code></td>
+<td>用于 monitor/biz/agents/detection 的区域网关：<code>global</code>（api.z.ai，默认）或 <code>china</code>（open.bigmodel.cn）。别名 <code>cn</code>、<code>bigmodel</code>、<code>west</code>。或使用 <code>ZAI_REGION</code> 环境变量。不会覆盖 <code>--base-url</code>。未知值回退到 global。</td>
+</tr>
+<tr>
+<td><code>--config string</code></td>
+<td>配置文件（默认：<code>.env</code>）</td>
+</tr>
+<tr>
+<td><code>--version</code></td>
+<td>打印版本（标签、提交、构建日期）并退出。在发布版本中由 GoReleaser ldflags 填充；否则为 <code>dev</code>。</td>
+</tr>
+</tbody>
+</table>
+<p>每条会产生结果的命令都接受 <code>--format text\|json</code>（少数命令在 payload
+面向机器时默认使用 <code>json</code>——例如 <code>embeddings</code>、<code>moderations</code>）。在
+<code>json</code> 模式下，进度/状态信息会输出到 stderr，因此 stdout 始终是有效的
+JSON，可以直接管道给 <code>jq</code>。</p>
+<p>当你的 key 是在 <code>open.bigmodel.cn</code> 上签发时，请设置 <code>--region china</code>
+（或 <code>ZAI_REGION=china</code>），这样配额/用量、账户信息、agents 以及账户类型
+检测才会落到对应的主机上。它<strong>不会</strong>改变聊天补全的 base URL（那需要用
+<code>--base-url</code>），也不会改变 embeddings/moderations 的主机（始终是 China
+平台）。参见 <a href="accounts-and-quota.html#regional-gateways-apiza--openbigmodelcn" rel="nofollow noreferrer">账户与配额 § 区域网关</a>。</p>
+<h2 id="heading-1">聊天补全</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai chat create <span class="o">[</span>message<span class="o">]</span> <span class="o">[</span>flags<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai chat simple <span class="o">[</span>model<span class="o">]</span> <span class="o">[</span>message<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai chat async-result <span class="o">[</span>task-id<span class="o">]</span>
+</span></span></code></pre><p><code>chat create</code> 是主要入口：</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--model string</code></td>
+<td>默认 <code>glm-5.2</code></td>
+</tr>
+<tr>
+<td><code>--stream</code></td>
+<td>逐 token 的流式输出</td>
+</tr>
+<tr>
+<td><code>--async</code></td>
+<td>提交后不等结果；用 <code>chat async-result &lt;task-id&gt;</code> 轮询</td>
+</tr>
+<tr>
+<td><code>--temperature float</code>, <code>--top-p float</code>, <code>--max-tokens int</code></td>
+<td>采样控制</td>
+</tr>
+<tr>
+<td><code>--system string</code></td>
+<td>系统消息</td>
+</tr>
+<tr>
+<td><code>--thinking string</code>, <code>--effort string</code></td>
+<td>深度思考模式与努力等级（<code>max|xhigh|high|medium|low|minimal|none</code>；<code>xhigh</code>→<code>max</code> 仅 GLM-5.2 支持）</td>
+</tr>
+<tr>
+<td><code>--show-reasoning</code></td>
+<td>将 <code>reasoning_content</code> 打印到 stderr</td>
+</tr>
+<tr>
+<td><code>--json-schema string</code></td>
+<td>结构化输出：<code>@file.json</code> 或内联 JSON</td>
+</tr>
+<tr>
+<td><code>--tool string</code></td>
+<td>函数调用工具声明：<code>@tools.json</code> 或内联 JSON 数组</td>
+</tr>
+<tr>
+<td><code>--image string</code>（可重复）</td>
+<td>附加一张图片：一个 URL，或 <code>@path</code> 指向本地文件（base64 编码）。需要视觉模型（<code>glm-4.6v</code>/<code>glm-4.5v</code>）</td>
+</tr>
+<tr>
+<td><code>--stop strings</code></td>
+<td>停止序列（可重复，最多 4 个）</td>
+</tr>
+<tr>
+<td><code>--format text|json</code></td>
+<td>输出格式</td>
+</tr>
+</tbody>
+</table>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai chat create <span class="s2">&#34;Summarize this in 3 bullets&#34;</span> --model glm-5.2 --stream
+</span></span><span class="line"><span class="cl">go-z-ai chat create <span class="s2">&#34;Describe this&#34;</span> --image @photo.jpg --model glm-4.6v
+</span></span><span class="line"><span class="cl">go-z-ai chat create <span class="s2">&#34;Extract fields&#34;</span> --json-schema @schema.json
+</span></span></code></pre><p>工具调用只会被打印，不会被 CLI 执行——关于 Go 端 <code>RunWithTools</code>
+自动执行循环，见 <a href="library-guide.html#function-calling" rel="nofollow noreferrer">库使用指南 § 函数调用</a>。</p>
+<blockquote>
+<p><strong>视觉 + 工具调用可能返回 HTTP 401。</strong> 社区反馈（例如
+<a href="https://github.com/musistudio/claude-code-router/issues/1491" rel="nofollow noreferrer noopener" target="_blank">claude-code-router#1491</a>）
+表明，在某些 GLM 配置下，把视觉模型（在 <code>glm-4.6v</code>/<code>glm-4.5v</code> 上使用
+<code>--image</code>）与函数调用工具（<code>--tool</code>）放在同一请求里会被以 401 拒绝——
+一个已鉴权的 key 也只是在这种组合下失败。如果你遇到这种情况，请拆分
+工作：用视觉模型处理图片轮次，用文本模型（<code>glm-5.2</code>）处理工具调用轮次，
+而不是把图片和工具一起发送。此处尚未在真实账户上实测复现——见
+<a href="roadmap.html" rel="nofollow noreferrer">路线图</a>。</p>
+</blockquote>
+<h2 id="heading-2">模型</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai models list <span class="o">[</span>--pricing<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai models get <span class="o">[</span>model-id<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai models text <span class="p">|</span> vision <span class="p">|</span> free
+</span></span></code></pre><h2 id="heading-3">账户、用量与配额</h2>
+<p>详细说明见 <a href="accounts-and-quota.html" rel="nofollow noreferrer">账户与配额</a>。快速参考：</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai accounts add &lt;name&gt; --api-key &lt;key&gt; <span class="o">[</span>--type coding_plan<span class="p">|</span>pay_as_you_go<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts list <span class="o">[</span>--format json<span class="o">]</span> <span class="o">[</span>--reveal<span class="o">]</span>   <span class="c1"># keys masked by default; --reveal for export</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts use &lt;name&gt;
+</span></span><span class="line"><span class="cl">go-z-ai accounts show <span class="o">[</span>name<span class="o">]</span> <span class="o">[</span>--format json<span class="o">]</span> <span class="o">[</span>--reveal<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts current                            <span class="c1"># &#39;accounts show&#39; 的简写（当前激活账户）</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts quota <span class="o">[</span>--only name...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts usage <span class="o">[</span>--days N<span class="o">]</span> <span class="o">[</span>--today<span class="o">]</span> <span class="o">[</span>--metric model<span class="p">|</span>tool<span class="p">|</span>both<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts remove &lt;name&gt; <span class="o">[</span>--yes<span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">go-z-ai usage quota <span class="p">|</span> summary <span class="p">|</span> account <span class="p">|</span> billing <span class="p">|</span> check <span class="o">[</span>--watch<span class="o">]</span> <span class="p">|</span> detect
+</span></span><span class="line"><span class="cl">go-z-ai account info <span class="p">|</span> status
+</span></span><span class="line"><span class="cl">go-z-ai validate
+</span></span></code></pre><h2 id="glm-coding-plan">编码工具（GLM Coding Plan）</h2>
+<p>把 Claude Code、OpenCode、Crush、Factory Droid 或 Cursor 接到你的 GLM
+Coding Plan。完整流程见 <a href="coding-tools.html" rel="nofollow noreferrer">编码工具</a>。</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai coding auth &lt;plan&gt; &lt;key&gt;      <span class="c1"># validate + store a credential</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding auth revoke
+</span></span><span class="line"><span class="cl">go-z-ai coding auth reload &lt;tool&gt;     <span class="c1"># 重新把已存储的凭据推送到工具配置</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding load &lt;tool&gt;            <span class="c1"># write it into a tool&#39;s config</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding unload &lt;tool&gt;
+</span></span><span class="line"><span class="cl">go-z-ai coding status
+</span></span><span class="line"><span class="cl">go-z-ai coding tools                  <span class="c1"># list supported tools + install status</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding doctor                 <span class="c1"># health check</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp add &lt;tool&gt;         <span class="c1"># register Z.AI&#39;s Vision MCP server</span>
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp status
+</span></span><span class="line"><span class="cl">go-z-ai coding mcp remove &lt;tool&gt;
+</span></span></code></pre><h2 id="heading-4">文件与批量任务</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai files upload &lt;file&gt; <span class="o">[</span>--purpose batch<span class="p">|</span>code-interpreter<span class="p">|</span>agent<span class="p">|</span>voice-clone-input<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai files list <span class="o">[</span>--purpose ...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai files delete &lt;file-id&gt;
+</span></span><span class="line"><span class="cl">go-z-ai files download &lt;file-id&gt; &lt;output-path&gt;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">go-z-ai batch create &lt;input-file-id&gt; <span class="o">[</span>--endpoint ...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai batch status &lt;batch-id&gt;
+</span></span><span class="line"><span class="cl">go-z-ai batch list <span class="o">[</span>--after ...<span class="o">]</span> <span class="o">[</span>--limit N<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai batch cancel &lt;batch-id&gt;
+</span></span></code></pre><p>批量任务会异步处理来自一个 JSONL 文件的大量聊天补全请求——先上传文件，
+再用返回的 file ID 创建批量任务。</p>
+<h2 id="heading-5">媒体生成</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="c1"># 图像——默认模型 glm-image（也支持 cogview-4-250304）</span>
+</span></span><span class="line"><span class="cl">go-z-ai image generate &lt;prompt&gt; <span class="o">[</span>--model glm-image<span class="p">|</span>cogview-4-250304<span class="o">]</span> <span class="o">[</span>--size ...<span class="o">]</span> <span class="o">[</span>--quality hd<span class="p">|</span>standard<span class="o">]</span> <span class="o">[</span>--async<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai image status &lt;id&gt;
+</span></span><span class="line"><span class="cl"><span class="c1"># --quality：默认为 hd（约 20 秒）；standard 更快（约 5-10 秒）。</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Video — always async (cogvideox-3 | viduq1-text | viduq1-image | vidu2-image | ...)</span>
+</span></span><span class="line"><span class="cl">go-z-ai video generate --prompt <span class="s2">&#34;...&#34;</span> <span class="o">[</span>--model ...<span class="o">]</span> <span class="o">[</span>--duration N<span class="o">]</span> <span class="o">[</span>--aspect-ratio ...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai video status &lt;id&gt;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Audio</span>
+</span></span><span class="line"><span class="cl">go-z-ai audio transcribe &lt;file&gt;                       <span class="c1"># glm-asr, .wav/.mp3, &lt;=25MB, &lt;=30s</span>
+</span></span><span class="line"><span class="cl">go-z-ai audio speech &lt;text&gt; &lt;output-path&gt; <span class="o">[</span>--voice ...<span class="o">]</span> <span class="o">[</span>--speed N<span class="o">]</span> <span class="o">[</span>--format wav<span class="p">|</span>pcm<span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Voice cloning (pairs with audio speech --voice)</span>
+</span></span><span class="line"><span class="cl">go-z-ai voice clone &lt;voice-name&gt; &lt;sample-file-id&gt; &lt;preview-text&gt;
+</span></span><span class="line"><span class="cl">go-z-ai voice list <span class="o">[</span>--name ...<span class="o">]</span> <span class="o">[</span>--type OFFICIAL<span class="p">|</span>PRIVATE<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai voice delete &lt;voice-id&gt;
+</span></span></code></pre><h2 id="-ocr">文档解析与 OCR</h2>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="c1"># Layout OCR — image/PDF into Markdown</span>
+</span></span><span class="line"><span class="cl">go-z-ai ocr parse &lt;file-or-url&gt; <span class="o">[</span>--start-page N<span class="o">]</span> <span class="o">[</span>--end-page N<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai ocr handwriting &lt;file&gt; <span class="o">[</span>--probability<span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Document parser (RAG/retrieval preprocessing) — a separate product from OCR</span>
+</span></span><span class="line"><span class="cl">go-z-ai parser parse &lt;file&gt; &lt;file-type&gt;              <span class="c1"># synchronous</span>
+</span></span><span class="line"><span class="cl">go-z-ai parser create &lt;file&gt; &lt;tool-type&gt; &lt;file-type&gt; <span class="c1"># async: lite|expert|prime</span>
+</span></span><span class="line"><span class="cl">go-z-ai parser result &lt;task-id&gt; &lt;format&gt;              <span class="c1"># text|download_link</span>
+</span></span></code></pre><p><code>parser</code> 与 <code>ocr</code> 解决的是不同问题：OCR 从图片中提取版式/文本；而
+parser 专为把文档转成可供 RAG 使用的文本而设计，并支持更多工具档位。</p>
+<h2 id="heading-6">检索辅助</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai embeddings create &lt;text&gt; <span class="o">[</span>--model embedding-3<span class="p">|</span>embedding-2<span class="o">]</span> <span class="o">[</span>--dimensions N<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai rerank &lt;query&gt; &lt;documents...&gt; <span class="o">[</span>--top-n N<span class="o">]</span>
+</span></span></code></pre><p>embeddings 会路由到 <code>open.bigmodel.cn</code>——关于原因以及对鉴权的影响，见
+<a href="accounts-and-quota.html#regional-gateways-apiza--openbigmodelcn" rel="nofollow noreferrer">账户与配额 § 区域网关</a>。
+Rerank 使用默认的 <code>--base-url</code>（并不固定指向中国平台主机）。</p>
+<h2 id="heading-7">内容审核</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai moderations check &lt;text&gt;
+</span></span></code></pre><p>同样会路由到 <code>open.bigmodel.cn</code>——注意事项同上面的 embeddings。</p>
+<h2 id="agents">Agents</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai agents invoke &lt;agent-id&gt; &lt;message&gt; <span class="o">[</span>--source-lang ...<span class="o">]</span> <span class="o">[</span>--target-lang ...<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai agents async-result &lt;agent-id&gt; &lt;async-id&gt;
+</span></span></code></pre><p>调用 Z.AI 的专用 agents（翻译、幻灯片/海报生成、视频特效模板）。注意：
+即便调用在业务层面失败（例如余额不足），Agents API 也会返回 HTTP 200——
+CLI 会从响应体中报告该失败，而不是作为命令错误抛出。</p>
+<h2 id="readertokenizer">工具（网页搜索、reader、tokenizer）</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai tools web-search &lt;query&gt; <span class="o">[</span>--engine ...<span class="o">]</span> <span class="o">[</span>--count N<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai tools web-reader &lt;url&gt; <span class="o">[</span>--no-images<span class="o">]</span>
+</span></span><span class="line"><span class="cl">go-z-ai tools tokenizer &lt;text&gt; <span class="o">[</span>--model ...<span class="o">]</span>
+</span></span></code></pre><h2 id="anthropic-">Anthropic 兼容端点</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai anthropic messages &lt;prompt&gt; <span class="o">[</span>--model glm-4.6<span class="o">]</span> <span class="o">[</span>--max-tokens 1024<span class="o">]</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl">    <span class="o">[</span>--system ...<span class="o">]</span> <span class="o">[</span>--temperature ...<span class="o">]</span> <span class="o">[</span>--thinking-budget N<span class="o">]</span> <span class="o">[</span>--stream<span class="o">]</span>
+</span></span></code></pre><p>调用 Z.AI 的 Anthropic 协议端点（<code>/api/anthropic/v1/messages</code>）——即
+GLM Coding Plan 让 Claude Code 指向的同一个端点——而不是 OpenAI 风格的
+<code>chat create</code>。打印消息文本（或用 <code>--stream</code> 流式输出文本增量）；
+<code>--thinking-budget N</code> 启用扩展思考并把推理过程打印到 stderr。Go API 见
+<a href="library-guide.html#anthropic-compatible-messages-api" rel="nofollow noreferrer">库使用指南</a>。</p>
+<h2 id="-ui">终端 UI</h2>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai tui
+</span></span></code></pre><p>启动一个全屏终端 UI，包含 Chat、Models、Usage、Accounts、Coding、Media、
+Tools 等标签页——在同一个交互会话里提供与上面 CLI 命令相同的功能。</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — <br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      基于提交 9c7c610 构建
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">更新日志</a> ·
+      <a href="/CONTRIBUTING.html">贡献指南</a> ·
+      <a href="/SECURITY.html">安全</a> ·
+      <a href="/sitemap.xml">站点地图</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "切换到浅色模式" : "切换到深色模式");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "切换到深色模式" : "切换到浅色模式");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e1e2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
+  <title>Accounts and quota · go-z-ai</title>
+  <meta name="description" content="">
+  <link rel="canonical" href="/en/accounts-and-quota.html">
+  <link rel="alternate" hreflang="en" href="/en/accounts-and-quota.html">
+  <link rel="alternate" hreflang="ru" href="/ru/accounts-and-quota.html">
+  <link rel="alternate" hreflang="zh" href="/zh/accounts-and-quota.html">
+  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="alternate" hreflang="tt" href="/tt/">
+  <link rel="alternate" hreflang="tr" href="/tr/">
+  <link rel="alternate" hreflang="x-default" href="/en/accounts-and-quota.html">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
+  <meta property="og:site_name" content="go-z-ai">
+  <meta property="og:title" content="Accounts and quota · go-z-ai">
+  <meta property="og:description" content="">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://SamyRai.github.io/go-z-ai/en/accounts-and-quota.html">
+  <meta property="og:locale" content="en">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Accounts and quota · go-z-ai">
+  <meta name="twitter:description" content="">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://SamyRai.github.io/go-z-ai/en/accounts-and-quota.html#article","@type":"TechArticle","author":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"headline":"Accounts and quota","inLanguage":"en","isPartOf":{"@id":"https://SamyRai.github.io/go-z-ai/#website"},"name":"Accounts and quota","publisher":{"@id":"https://SamyRai.github.io/go-z-ai/#org"},"url":"https://SamyRai.github.io/go-z-ai/en/accounts-and-quota.html"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/","name":"go-z-ai","position":1},{"@type":"ListItem","item":"https://SamyRai.github.io/go-z-ai/en/accounts-and-quota.html","name":"Accounts and quota","position":2}]}]}</script>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site" role="banner">
+  <div class="container">
+    <a class="brand" href="/en/" aria-label="go-z-ai">
+      <span class="brand-mark" aria-hidden="true">G</span>
+      <span>go-z-ai</span>
+    </a>
+    <nav class="site" aria-label="Primary">
+      <a href="/en/" >Home</a>
+      <a href="/en/getting-started.html" aria-current="page">Docs</a>
+      <a href="/en/cli-reference.html">CLI</a>
+      <a href="/en/library-guide.html">Library</a>
+      <a href="/download.html" >Download</a>
+      <a href="/CHANGELOG.html">Changelog</a>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
+  <summary aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>English</span>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="menu" role="menu" id="lang-menu">
+    <a role="menuitem" href="/en/accounts-and-quota.html" aria-current="true">English</a>
+    <a role="menuitem" href="/ru/accounts-and-quota.html" >Русский</a>
+    <a role="menuitem" href="/zh/accounts-and-quota.html" >简体中文</a>
+    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/tt/" >Татарча</a>
+    <a role="menuitem" href="/tr/" >Türkçe</a>
+  </div>
+</details>
+<script>
+  
+  (function() {
+    var d = document.currentScript.previousElementSibling;
+    while (d && d.tagName !== "DETAILS") d = d.previousElementSibling;
+    if (!d) return;
+    var sync = function() { d.querySelector("summary").setAttribute("aria-expanded", d.open ? "true" : "false"); };
+    d.addEventListener("toggle", sync); sync();
+  })();
+</script>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false" data-theme-toggle>
+        <span aria-hidden="true">◐</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+<article class="prose">
+<h1 id="accounts--quota">Accounts &amp; Quota</h1>
+<h2 id="multiple-accounts">Multiple accounts</h2>
+<p>Instead of hand-editing <code>.env</code> every time you switch keys, register named
+accounts once and switch between them:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai accounts add personal --api-key sk-...          <span class="c1"># type auto-detected</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts add work --api-key sk-... --type coding_plan
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">go-z-ai accounts list
+</span></span><span class="line"><span class="cl">go-z-ai accounts use personal        <span class="c1"># sets the default for future commands</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts show                <span class="c1"># shows the active account</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts remove work --yes
+</span></span></code></pre><p>Accounts are stored at <code>$XDG_CONFIG_HOME/zai-client/accounts.json</code> (or
+<code>~/.config/zai-client/accounts.json</code>), written atomically with <code>0600</code>
+permissions. (The directory is intentionally <code>zai-client</code>, not <code>go-z-ai</code>, so
+existing installs keep their <code>accounts.json</code> on upgrade from the pre-rename
+name.)</p>
+<p><strong>Type auto-detection:</strong> <code>accounts add</code> probes the coding-plan-only
+monitor/quota endpoint with a single free (no token cost) call. A successful,
+well-formed response means <code>coding_plan</code>; anything else falls back to
+<code>pay_as_you_go</code> — this is an inference by elimination, not a positive
+confirmation, since no endpoint is known to exist that&#39;s specific to
+pay-as-you-go keys. Pass <code>--type</code> explicitly to skip the probe. The probe
+respects <code>--region</code>: a <code>glm_coding_plan_china</code> key probes
+<code>open.bigmodel.cn</code>&#39;s coding endpoint instead of <code>api.z.ai</code>&#39;s, so it classifies
+against the right platform (see <a href="#regional-gateways-apiza--openbigmodelcn" rel="nofollow noreferrer">Regional gateways</a>
+below).</p>
+<p><strong>Resolution order</strong> — see <a href="getting-started.html#2-authenticate" rel="nofollow noreferrer">Getting Started</a>
+for the full priority list across <code>--api-key</code>, <code>--account</code>, env vars, and the
+active stored account.</p>
+<h2 id="quota-and-usage-monitoring">Quota and usage monitoring</h2>
+<p>GLM Coding Plan accounts have three independent quota windows:</p>
+<table>
+<thead>
+<tr>
+<th>Window</th>
+<th>Tracks</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5-hour rolling</td>
+<td>API request tokens</td>
+<td>Rolling — usage in the last 5 hours, not a fixed period</td>
+</tr>
+<tr>
+<td>Weekly rolling</td>
+<td>API request tokens</td>
+<td>Rolling — usage in the last 7 days</td>
+</tr>
+<tr>
+<td>Monthly</td>
+<td>MCP tool calls (web search, web-reader, zread)</td>
+<td>Fixed calendar-month reset</td>
+</tr>
+</tbody>
+</table>
+<pre class="chroma"><code><span class="line"><span class="cl">go-z-ai accounts quota                    <span class="c1"># across all stored accounts</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts usage --days <span class="m">14</span>          <span class="c1"># token/tool usage heat map</span>
+</span></span><span class="line"><span class="cl">go-z-ai accounts usage --today            <span class="c1"># shorthand for --days 1</span>
+</span></span><span class="line"><span class="cl">go-z-ai usage quota                       <span class="c1"># single active account</span>
+</span></span><span class="line"><span class="cl">go-z-ai usage check --watch               <span class="c1"># alert when usage crosses 80%</span>
+</span></span></code></pre><p>Example <code>accounts quota</code> output:</p>
+<pre class="chroma"><code><span class="line"><span class="cl">📊 GLM Coding Plan Usage (PRO tier)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">• 5-hour rolling token window
+</span></span><span class="line"><span class="cl">  Usage: 62%
+</span></span><span class="line"><span class="cl">  Resets: 2026-07-11 09:30:00 CEST (in 2h 14m)
+</span></span><span class="line"><span class="cl">  Server: 2026-07-11 15:30:00 CST
+</span></span><span class="line"><span class="cl">  Pace: 62% used at 55% of window elapsed — on pace to run out ~24m before reset
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">• weekly token window
+</span></span><span class="line"><span class="cl">  Usage: 41%
+</span></span><span class="line"><span class="cl">  Resets: 2026-07-17 09:17:18 CEST (in 5d 22h)
+</span></span><span class="line"><span class="cl">  Server: 2026-07-17 15:17:18 CST
+</span></span><span class="line"><span class="cl">  Pace: 41% used at 15% of window elapsed — on pace to run out ~4d before reset
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">• monthly MCP tools quota
+</span></span><span class="line"><span class="cl">  Usage: 574/1000 (57%) — 426 remaining
+</span></span><span class="line"><span class="cl">  Resets: 2026-07-26 09:17:18 CEST (in 18d 6h)
+</span></span><span class="line"><span class="cl">  Server: 2026-07-26 15:17:18 CST
+</span></span><span class="line"><span class="cl">  By tool:
+</span></span><span class="line"><span class="cl">    - search-prime: 470
+</span></span><span class="line"><span class="cl">    - web-reader: 97
+</span></span><span class="line"><span class="cl">    - zread: 7
+</span></span></code></pre><p>The <strong>Pace</strong> line (token windows only) answers &#34;am I burning too fast?&#34; — it
+extrapolates the window&#39;s <em>own</em> reported usage against how much of the window
+has elapsed, so you find out you&#39;re on track to run out early <em>before</em> you
+actually hit the wall. It&#39;s straight-line math on the numbers the API returns
+(no assumption about peak/off-peak pricing).</p>
+<h4 id="timezones">Timezones</h4>
+<p>All times render in <strong>your local timezone</strong>. The monitor API operates in
+<strong>CST (UTC+8)</strong> — the server reads and emits the zoneless time strings it
+exchanges as its own wall-clock — so when your local zone differs from CST,
+two things happen so the numbers stay trustworthy:</p>
+<ul>
+<li><strong>Reset times</strong> show a second <code>Server:</code> line with the same instant in the
+server&#39;s zone (that&#39;s the boundary that actually clears a limit). When your
+zone already matches CST, the line is omitted.</li>
+<li><strong>Usage heat-map</strong> (<code>accounts usage</code>) windows and bucket spans are converted
+to your local time, with a one-line note naming the server zone when it
+differs. The requested range is also framed in the server&#39;s zone before
+sending, so <code>--today</code> fetches <em>your</em> today, not a slice shifted by the zone
+difference.</li>
+</ul>
+<p>If a live capture ever shows a different server zone for your account, override
+the assumption with <code>--monitor-timezone</code> or <code>ZAI_MONITOR_TIMEZONE</code> (accepts IANA
+names like <code>Asia/Shanghai</code>, <code>UTC</code>, or offsets like <code>+8</code>).</p>
+<p>Not every account shows every window — plan tier and account type both affect
+which windows apply (<code>accounts show &lt;name&gt;</code> reports the account&#39;s type;
+<code>pay_as_you_go</code> accounts are skipped by <code>accounts quota</code>/<code>accounts usage</code>
+entirely, since the coding-plan monitor endpoint doesn&#39;t apply to them).</p>
+<h3 id="why-usage-doesnt-exist-is-wrong">Why &#34;usage doesn&#39;t exist&#34; is wrong</h3>
+<p>If you find older notes online (or in this repo&#39;s git history) claiming Z.AI
+has no usage/quota API — that was true only of the general
+<code>/api/paas/v4</code> surface tested in isolation. The coding-plan monitor endpoints
+(<code>/monitor/usage/quota/limit</code>, <code>/monitor/usage/model-usage</code>,
+<code>/monitor/usage/tool-usage</code>) are real, documented, and what <code>pkg/client</code>&#39;s
+<code>QuotaService</code>/<code>UsageService</code> are built on. If <code>accounts quota</code> returns
+nothing for an account, check its type first (<code>pay_as_you_go</code> accounts
+genuinely don&#39;t have this data) before assuming the API is broken.</p>
+<h2 id="regional-gateways-apizai--openbigmodelcn">Regional gateways (api.z.ai / open.bigmodel.cn)</h2>
+<p>Z.AI serves the same GLM model family from two regional gateways: the
+international host <code>api.z.ai</code> (the default) and the China-mainland mirror
+<code>open.bigmodel.cn</code>. Two separate concerns decide which host a given call
+lands on:</p>
+<p><strong>1. Embeddings and Moderations always route to <code>open.bigmodel.cn</code></strong> —
+they&#39;re the only services pinned to the China host in code
+(<code>pkg/client/embeddings.go</code>, <code>pkg/client/moderations.go</code> both call
+<code>doRequestBaseKey(BigModelBaseURL, …)</code>). <code>--china-api-key</code> /
+<code>ZAI_CHINA_API_KEY</code> is the credential knob here; it&#39;s optional because a
+regular <code>ZAI_API_KEY</code> authenticates identically on both platforms (same
+<code>/models</code> catalog, same billing-level errors — live-verified), so the
+fallback is the common case. Set a separate China key only if you hold a
+distinct bigmodel.cn-only credential. Rerank and Voice use the default
+<code>--base-url</code> (<code>api.z.ai</code> by default) — they&#39;re documented only on the
+China platform but the client doesn&#39;t force-route them.</p>
+<p><strong>2. monitor / biz / agents / detection route to <code>open.bigmodel.cn</code> when
+<code>--region china</code> (or <code>ZAI_REGION=china</code>)</strong> is set; otherwise they route to
+<code>api.z.ai</code>. This is the knob a <code>glm_coding_plan_china</code> user needs so quota /
+usage, account info, agents, and account-type detection land on the right
+host — without it, those calls hit <code>api.z.ai</code> and a China-issued key can fail
+auth or get mis-classified. <code>--region</code> does <strong>not</strong> change the chat base URL
+(use <code>--base-url</code> for that) or the Embeddings/Moderations host. Aliases:
+<code>cn</code>, <code>bigmodel</code>, <code>west</code>; an unknown value falls back to global.</p>
+<p>Whether you get real results from the China-documented services (Embeddings,
+Moderations, Rerank, Voice) depends on your account&#39;s <strong>plan entitlement</strong>,
+not which key you use. A GLM Coding Plan account&#39;s model catalog is
+chat-only — calling those with that account returns <code>400 Unknown Model</code>
+(error code 1211) on either platform. That&#39;s expected, not a bug: check
+<code>go-z-ai models list</code> to see what&#39;s actually in your account&#39;s catalog.</p>
+<p>The China mirror hosts for monitor/biz/agents/detection mirror the
+<code>api.z.ai</code> path layout but are <strong>NOT VERIFIED LIVE</strong> here — <code>open.bigmodel.cn</code>
+is live-verified to serve the same OpenAPI surface for <code>/models</code> and
+<code>/chat/completions</code>, but the monitor/biz/agents paths on the China side
+haven&#39;t been captured by a cassette yet. See <a href="roadmap.html" rel="nofollow noreferrer">Roadmap</a>.</p>
+<h2 id="error-codes">Error codes</h2>
+<p><code>APIError</code> (see <a href="error-handling.html" rel="nofollow noreferrer">Error Handling</a>) categorizes every Z.AI
+error code Client code has seen. The two most common ones you&#39;ll hit around
+quota:</p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+<th>Retriable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1113</td>
+<td>Insufficient balance / no resource package</td>
+<td>No — recharge or switch account</td>
+</tr>
+<tr>
+<td>1308</td>
+<td>Usage limit reached for the current window</td>
+<td>No — wait for reset</td>
+</tr>
+<tr>
+<td>1211</td>
+<td>Unknown model</td>
+<td>No — usually an entitlement gate, see above</td>
+</tr>
+<tr>
+<td>1302</td>
+<td>Rate limit reached</td>
+<td>Yes — the client already retries this with backoff</td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="error-handling.html" rel="nofollow noreferrer">Error Handling</a> for the complete table and how to
+branch on <code>APIError.Category</code> in your own code.</p>
+
+</article>
+</main>
+
+<footer class="site" role="contentinfo">
+  <div class="container">
+    <div>
+      <strong>go-z-ai</strong> — <br>
+      <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub</a> ·
+      <a href="https://pkg.go.dev/github.com/SamyRai/go-z-ai" rel="external">Go reference</a> ·
+      Built from commit 9c7c610
+    </div>
+    <div>
+      <a href="/CHANGELOG.html">Changelog</a> ·
+      <a href="/CONTRIBUTING.html">Contributing</a> ·
+      <a href="/SECURITY.html">Security</a> ·
+      <a href="/sitemap.xml">Sitemap</a>
+    </div>
+  </div>
+</footer>
+<script>
+  (function() {
+    
+    
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (btn) {
+      var stored = null;
+      try { stored = localStorage.getItem("theme"); } catch (e) {}
+      var explicitDark = document.documentElement.dataset.theme === "dark";
+      var explicitLight = document.documentElement.dataset.theme === "light";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var currentlyDark = explicitDark || (!explicitLight && prefersDark);
+      btn.setAttribute("aria-pressed", currentlyDark ? "true" : "false");
+      btn.setAttribute("aria-label", currentlyDark ? "Switch to light mode" : "Switch to dark mode");
+      btn.addEventListener("click", function() {
+        var root = document.documentElement;
+        var isLight = root.dataset.theme === "light";
+        var isDarkExplicit = root.dataset.theme === "dark";
+        var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        
+        var nextLight = isDarkExplicit || (!isLight && !prefersLight === false ? false : true);
+        
+        nextLight = (isDarkExplicit || (!isLight && !prefersLight)) ? true : (isLight ? false : true);
+        root.dataset.theme = nextLight ? "light" : "dark";
+        try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", nextLight ? "false" : "true");
+        btn.setAttribute("aria-label", nextLight ? "Switch to dark mode" : "Switch to light mode");
+      });
+    }
+    
+    document.querySelectorAll("details.lang-switch").forEach(function(d) {
+      d.addEventListener("toggle", function() {
+        if (d.open) {
+          
+          document.querySelectorAll("details.lang-switch[open]").forEach(function(other) {
+            if (other !== d) other.open = false;
+          });
+        }
+      });
+    });
+    document.addEventListener("click", function(e) {
+      document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    });
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        document.querySelectorAll("details.lang-switch[open]").forEach(function(d) {
+          d.open = false;
+          d.querySelector("summary").focus();
+        });
+      }
+    });
+    
+    document.querySelectorAll("details.lang-switch .menu a").forEach(function(a) {
+      a.addEventListener("click", function() {
+        var d = a.closest("details.lang-switch");
+        if (d) d.open = false;
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+

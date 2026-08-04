@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#cba6f7"/>
+      <stop offset="100%" stop-color="#74c7ec"/>
+    </linearGradient>
+    <style>
+      /* The glyph adapts to the user's theme — dark on light, light on dark. */
+      :root { color: #11111b; }
+      @media (prefers-color-scheme: dark) { :root { color: #cdd6f4; } }
+    </style>
+  </defs>
+  <!-- Neutral "document" monogram. Replace this file (assets/favicon.svg in
+       your content repo) with your own brand mark. -->
+  <rect width="64" height="64" rx="14" fill="url(#g)"/>
+  <g fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="20" y="16" width="24" height="32" rx="4"/>
+    <path d="M26 25 L38 25 M26 32 L38 32 M26 39 L34 39"/>
+  </g>
+</svg>
