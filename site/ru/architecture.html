@@ -8,19 +8,19 @@
   <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
   <title>Architecture · go-z-ai</title>
   <meta name="description" content="">
-  <link rel="canonical" href="/ru/architecture.html">
-  <link rel="alternate" hreflang="en" href="/en/architecture.html">
-  <link rel="alternate" hreflang="ru" href="/ru/architecture.html">
-  <link rel="alternate" hreflang="zh" href="/zh/architecture.html">
-  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="canonical" href="/go-z-ai/ru/architecture.html">
+  <link rel="alternate" hreflang="en" href="/go-z-ai/en/architecture.html">
+  <link rel="alternate" hreflang="ru" href="/go-z-ai/ru/architecture.html">
+  <link rel="alternate" hreflang="zh" href="/go-z-ai/zh/architecture.html">
+  <link rel="alternate" hreflang="de" href="/go-z-ai/de/">
   <link rel="alternate" hreflang="tt" href="/tt/">
   <link rel="alternate" hreflang="tr" href="/tr/">
-  <link rel="alternate" hreflang="x-default" href="/en/architecture.html">
-  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
-  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
-  <link rel="apple-touch-icon" href="/assets/favicon.svg">
-  <link rel="stylesheet" href="/assets/style.css">
-  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" hreflang="x-default" href="/go-z-ai/en/architecture.html">
+  <link rel="icon" href="/go-z-ai/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/go-z-ai/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/go-z-ai/assets/favicon.svg">
+  <link rel="stylesheet" href="/go-z-ai/assets/style.css">
+  <link rel="stylesheet" href="/go-z-ai/assets/syntax.css">
   <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
   <meta property="og:site_name" content="go-z-ai">
   <meta property="og:title" content="Architecture · go-z-ai">
@@ -48,17 +48,17 @@
 
 <header class="site" role="banner">
   <div class="container">
-    <a class="brand" href="/ru/" aria-label="go-z-ai">
+    <a class="brand" href="/go-z-ai/ru/" aria-label="go-z-ai">
       <span class="brand-mark" aria-hidden="true">G</span>
       <span>go-z-ai</span>
     </a>
     <nav class="site" aria-label="Primary">
-      <a href="/ru/" >Главная</a>
-      <a href="/ru/getting-started.html" aria-current="page">Документация</a>
-      <a href="/ru/cli-reference.html">CLI</a>
-      <a href="/ru/library-guide.html">Библиотека</a>
-      <a href="/download.html" >Download</a>
-      <a href="/CHANGELOG.html">Журнал изменений</a>
+      <a href="/go-z-ai/ru/" >Главная</a>
+      <a href="/go-z-ai/ru/getting-started.html" aria-current="page">Документация</a>
+      <a href="/go-z-ai/ru/cli-reference.html">CLI</a>
+      <a href="/go-z-ai/ru/library-guide.html">Библиотека</a>
+      <a href="/go-z-ai/download.html" >Download</a>
+      <a href="/go-z-ai/CHANGELOG.html">Журнал изменений</a>
       <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
   <summary aria-haspopup="menu" aria-expanded="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -66,10 +66,10 @@
     <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </summary>
   <div class="menu" role="menu" id="lang-menu">
-    <a role="menuitem" href="/en/architecture.html" >English</a>
-    <a role="menuitem" href="/ru/architecture.html" aria-current="true">Русский</a>
-    <a role="menuitem" href="/zh/architecture.html" >简体中文</a>
-    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/go-z-ai/en/architecture.html" >English</a>
+    <a role="menuitem" href="/go-z-ai/ru/architecture.html" aria-current="true">Русский</a>
+    <a role="menuitem" href="/go-z-ai/zh/architecture.html" >简体中文</a>
+    <a role="menuitem" href="/go-z-ai/de/" >Deutsch</a>
     <a role="menuitem" href="/tt/" >Татарча</a>
     <a role="menuitem" href="/tr/" >Türkçe</a>
   </div>
@@ -244,7 +244,7 @@ API, а взаимодействие записывается как cassette
 через <code>ZAI_RECORD=1</code>, после чего её проигрывает; это список дел для форм,
 ожидающих реального захвата.</p>
 <p>Если вы расширяете сервис, см.
-<a href="/CONTRIBUTING.html" rel="nofollow noreferrer">Contributing § the live-verification convention</a>
+<a href="/go-z-ai/CONTRIBUTING.html" rel="nofollow noreferrer">Contributing § the live-verification convention</a>
 прежде чем добавлять новую cassette.</p>
 <h2 id="----1">Расширение таблицы структурированного поиска</h2>
 <p>Несколько типов в этой кодовой базе сопоставляют небольшое замкнутое
@@ -301,9 +301,9 @@ Droid, Cursor) пишут через атомарную запись во вре
       Собрано из коммита 9c7c610
     </div>
     <div>
-      <a href="/CHANGELOG.html">Журнал изменений</a> ·
-      <a href="/CONTRIBUTING.html">Участие в проекте</a> ·
-      <a href="/SECURITY.html">Безопасность</a> ·
+      <a href="/go-z-ai/CHANGELOG.html">Журнал изменений</a> ·
+      <a href="/go-z-ai/CONTRIBUTING.html">Участие в проекте</a> ·
+      <a href="/go-z-ai/SECURITY.html">Безопасность</a> ·
       <a href="/sitemap.xml">Карта сайта</a>
     </div>
   </div>

@@ -8,19 +8,19 @@
   <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
   <title>Library guide · go-z-ai</title>
   <meta name="description" content="">
-  <link rel="canonical" href="/en/library-guide.html">
-  <link rel="alternate" hreflang="en" href="/en/library-guide.html">
-  <link rel="alternate" hreflang="ru" href="/ru/library-guide.html">
-  <link rel="alternate" hreflang="zh" href="/zh/library-guide.html">
-  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="canonical" href="/go-z-ai/en/library-guide.html">
+  <link rel="alternate" hreflang="en" href="/go-z-ai/en/library-guide.html">
+  <link rel="alternate" hreflang="ru" href="/go-z-ai/ru/library-guide.html">
+  <link rel="alternate" hreflang="zh" href="/go-z-ai/zh/library-guide.html">
+  <link rel="alternate" hreflang="de" href="/go-z-ai/de/">
   <link rel="alternate" hreflang="tt" href="/tt/">
   <link rel="alternate" hreflang="tr" href="/tr/">
-  <link rel="alternate" hreflang="x-default" href="/en/library-guide.html">
-  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
-  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
-  <link rel="apple-touch-icon" href="/assets/favicon.svg">
-  <link rel="stylesheet" href="/assets/style.css">
-  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" hreflang="x-default" href="/go-z-ai/en/library-guide.html">
+  <link rel="icon" href="/go-z-ai/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/go-z-ai/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/go-z-ai/assets/favicon.svg">
+  <link rel="stylesheet" href="/go-z-ai/assets/style.css">
+  <link rel="stylesheet" href="/go-z-ai/assets/syntax.css">
   <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
   <meta property="og:site_name" content="go-z-ai">
   <meta property="og:title" content="Library guide · go-z-ai">
@@ -48,17 +48,17 @@
 
 <header class="site" role="banner">
   <div class="container">
-    <a class="brand" href="/en/" aria-label="go-z-ai">
+    <a class="brand" href="/go-z-ai/en/" aria-label="go-z-ai">
       <span class="brand-mark" aria-hidden="true">G</span>
       <span>go-z-ai</span>
     </a>
     <nav class="site" aria-label="Primary">
-      <a href="/en/" >Home</a>
-      <a href="/en/getting-started.html" aria-current="page">Docs</a>
-      <a href="/en/cli-reference.html">CLI</a>
-      <a href="/en/library-guide.html">Library</a>
-      <a href="/download.html" >Download</a>
-      <a href="/CHANGELOG.html">Changelog</a>
+      <a href="/go-z-ai/en/" >Home</a>
+      <a href="/go-z-ai/en/getting-started.html" aria-current="page">Docs</a>
+      <a href="/go-z-ai/en/cli-reference.html">CLI</a>
+      <a href="/go-z-ai/en/library-guide.html">Library</a>
+      <a href="/go-z-ai/download.html" >Download</a>
+      <a href="/go-z-ai/CHANGELOG.html">Changelog</a>
       <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
   <summary aria-haspopup="menu" aria-expanded="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -66,10 +66,10 @@
     <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </summary>
   <div class="menu" role="menu" id="lang-menu">
-    <a role="menuitem" href="/en/library-guide.html" aria-current="true">English</a>
-    <a role="menuitem" href="/ru/library-guide.html" >Русский</a>
-    <a role="menuitem" href="/zh/library-guide.html" >简体中文</a>
-    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/go-z-ai/en/library-guide.html" aria-current="true">English</a>
+    <a role="menuitem" href="/go-z-ai/ru/library-guide.html" >Русский</a>
+    <a role="menuitem" href="/go-z-ai/zh/library-guide.html" >简体中文</a>
+    <a role="menuitem" href="/go-z-ai/de/" >Deutsch</a>
     <a role="menuitem" href="/tt/" >Татарча</a>
     <a role="menuitem" href="/tr/" >Türkçe</a>
   </div>
@@ -489,7 +489,7 @@ to this module — not part of the importable public API — so they can evolve
 without semver constraints. <code>pkg/client</code> is the only supported public package;
 the <code>accounts</code> and <code>coding</code> CLI commands are the stable way to drive that
 functionality. (These packages lived under <code>pkg/</code> before and were importable;
-see the <a href="/CHANGELOG.html" rel="nofollow noreferrer">CHANGELOG</a> for the move.)</p>
+see the <a href="/go-z-ai/CHANGELOG.html" rel="nofollow noreferrer">CHANGELOG</a> for the move.)</p>
 <h2 id="testing-your-own-code-against-this-client">Testing your own code against this client</h2>
 <p>Every service method is a plain function on an interface-free concrete type,
 so the usual Go approach is to point <code>Config.BaseURL</code> at an <code>httptest.Server</code>
@@ -497,7 +497,7 @@ you control. If you want to replay <em>real</em> recorded Z.AI traffic instead o
 hand-written stub, see how this repo&#39;s own tests do it with
 <a href="https://github.com/dnaeon/go-vcr" rel="nofollow noreferrer noopener" target="_blank">go-vcr</a> — <code>pkg/client/*_test.go</code> and
 <code>pkg/client/testdata/cassettes/</code> — and read
-<a href="/CONTRIBUTING.html" rel="nofollow noreferrer">Contributing § the live-verification convention</a> for why.</p>
+<a href="/go-z-ai/CONTRIBUTING.html" rel="nofollow noreferrer">Contributing § the live-verification convention</a> for why.</p>
 <h2 id="architecture-notes">Architecture notes</h2>
 <p>For how the services are structured internally (the <code>doRequest</code> facade,
 retry/backoff design, why some services authenticate against a different base
@@ -515,9 +515,9 @@ URL) see <a href="architecture.html" rel="nofollow noreferrer">Architecture</a>.
       Built from commit 9c7c610
     </div>
     <div>
-      <a href="/CHANGELOG.html">Changelog</a> ·
-      <a href="/CONTRIBUTING.html">Contributing</a> ·
-      <a href="/SECURITY.html">Security</a> ·
+      <a href="/go-z-ai/CHANGELOG.html">Changelog</a> ·
+      <a href="/go-z-ai/CONTRIBUTING.html">Contributing</a> ·
+      <a href="/go-z-ai/SECURITY.html">Security</a> ·
       <a href="/sitemap.xml">Sitemap</a>
     </div>
   </div>

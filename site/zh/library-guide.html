@@ -8,19 +8,19 @@
   <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
   <title>Library guide · go-z-ai</title>
   <meta name="description" content="">
-  <link rel="canonical" href="/zh/library-guide.html">
-  <link rel="alternate" hreflang="en" href="/en/library-guide.html">
-  <link rel="alternate" hreflang="ru" href="/ru/library-guide.html">
-  <link rel="alternate" hreflang="zh" href="/zh/library-guide.html">
-  <link rel="alternate" hreflang="de" href="/de/">
+  <link rel="canonical" href="/go-z-ai/zh/library-guide.html">
+  <link rel="alternate" hreflang="en" href="/go-z-ai/en/library-guide.html">
+  <link rel="alternate" hreflang="ru" href="/go-z-ai/ru/library-guide.html">
+  <link rel="alternate" hreflang="zh" href="/go-z-ai/zh/library-guide.html">
+  <link rel="alternate" hreflang="de" href="/go-z-ai/de/">
   <link rel="alternate" hreflang="tt" href="/tt/">
   <link rel="alternate" hreflang="tr" href="/tr/">
-  <link rel="alternate" hreflang="x-default" href="/en/library-guide.html">
-  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
-  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
-  <link rel="apple-touch-icon" href="/assets/favicon.svg">
-  <link rel="stylesheet" href="/assets/style.css">
-  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="alternate" hreflang="x-default" href="/go-z-ai/en/library-guide.html">
+  <link rel="icon" href="/go-z-ai/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/go-z-ai/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/go-z-ai/assets/favicon.svg">
+  <link rel="stylesheet" href="/go-z-ai/assets/style.css">
+  <link rel="stylesheet" href="/go-z-ai/assets/syntax.css">
   <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
   <meta property="og:site_name" content="go-z-ai">
   <meta property="og:title" content="Library guide · go-z-ai">
@@ -48,17 +48,17 @@
 
 <header class="site" role="banner">
   <div class="container">
-    <a class="brand" href="/zh/" aria-label="go-z-ai">
+    <a class="brand" href="/go-z-ai/zh/" aria-label="go-z-ai">
       <span class="brand-mark" aria-hidden="true">G</span>
       <span>go-z-ai</span>
     </a>
     <nav class="site" aria-label="Primary">
-      <a href="/zh/" >首页</a>
-      <a href="/zh/getting-started.html" aria-current="page">文档</a>
-      <a href="/zh/cli-reference.html">CLI</a>
-      <a href="/zh/library-guide.html">库</a>
-      <a href="/download.html" >Download</a>
-      <a href="/CHANGELOG.html">更新日志</a>
+      <a href="/go-z-ai/zh/" >首页</a>
+      <a href="/go-z-ai/zh/getting-started.html" aria-current="page">文档</a>
+      <a href="/go-z-ai/zh/cli-reference.html">CLI</a>
+      <a href="/go-z-ai/zh/library-guide.html">库</a>
+      <a href="/go-z-ai/download.html" >Download</a>
+      <a href="/go-z-ai/CHANGELOG.html">更新日志</a>
       <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
   <summary aria-haspopup="menu" aria-expanded="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -66,10 +66,10 @@
     <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </summary>
   <div class="menu" role="menu" id="lang-menu">
-    <a role="menuitem" href="/en/library-guide.html" >English</a>
-    <a role="menuitem" href="/ru/library-guide.html" >Русский</a>
-    <a role="menuitem" href="/zh/library-guide.html" aria-current="true">简体中文</a>
-    <a role="menuitem" href="/de/" >Deutsch</a>
+    <a role="menuitem" href="/go-z-ai/en/library-guide.html" >English</a>
+    <a role="menuitem" href="/go-z-ai/ru/library-guide.html" >Русский</a>
+    <a role="menuitem" href="/go-z-ai/zh/library-guide.html" aria-current="true">简体中文</a>
+    <a role="menuitem" href="/go-z-ai/de/" >Deutsch</a>
     <a role="menuitem" href="/tt/" >Татарча</a>
     <a role="menuitem" href="/tr/" >Türkçe</a>
   </div>
@@ -416,14 +416,14 @@ schema 规范化（见上文）。<code>Config.DisableToolSchemaCompat</code> �
 可导入的公开 API——因此可以不受 semver 约束地演进。<code>pkg/client</code> 是唯一
 受支持的公开 package；<code>accounts</code> 和 <code>coding</code> CLI 命令是驱动这些功能的
 稳定入口。（这些 package 之前位于 <code>pkg/</code> 下且可导入；迁移说明见
-<a href="/CHANGELOG.html" rel="nofollow noreferrer">CHANGELOG</a>。）</p>
+<a href="/go-z-ai/CHANGELOG.html" rel="nofollow noreferrer">CHANGELOG</a>。）</p>
 <h2 id="heading-14">用本客户端测试你自己的代码</h2>
 <p>每个服务方法都是无接口的具体类型上的普通函数，因此常规的 Go 做法是把
 <code>Config.BaseURL</code> 指向你控制的 <code>httptest.Server</code>。如果你想回放<strong>真实</strong>录制
 的 Z.AI 流量而不是手写 stub，可以参考本仓库自身的测试是如何用
 <a href="https://github.com/dnaeon/go-vcr" rel="nofollow noreferrer noopener" target="_blank">go-vcr</a> 做的——<code>pkg/client/*_test.go</code>
 和 <code>pkg/client/testdata/cassettes/</code>——并阅读
-<a href="/CONTRIBUTING.html" rel="nofollow noreferrer">贡献指南 § 实测验证约定</a> 了解背后原因。</p>
+<a href="/go-z-ai/CONTRIBUTING.html" rel="nofollow noreferrer">贡献指南 § 实测验证约定</a> 了解背后原因。</p>
 <h2 id="heading-15">架构说明</h2>
 <p>关于服务在内部是如何组织的（<code>doRequest</code> 门面、重试/退避设计、为何有些服务
 针对不同的 base URL 鉴权），请见 <a href="architecture.html" rel="nofollow noreferrer">架构</a>。</p>
@@ -440,9 +440,9 @@ schema 规范化（见上文）。<code>Config.DisableToolSchemaCompat</code> �
       基于提交 9c7c610 构建
     </div>
     <div>
-      <a href="/CHANGELOG.html">更新日志</a> ·
-      <a href="/CONTRIBUTING.html">贡献指南</a> ·
-      <a href="/SECURITY.html">安全</a> ·
+      <a href="/go-z-ai/CHANGELOG.html">更新日志</a> ·
+      <a href="/go-z-ai/CONTRIBUTING.html">贡献指南</a> ·
+      <a href="/go-z-ai/SECURITY.html">安全</a> ·
       <a href="/sitemap.xml">站点地图</a>
     </div>
   </div>

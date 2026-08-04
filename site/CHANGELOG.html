@@ -8,12 +8,12 @@
   <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)">
   <title>Changelog · go-z-ai</title>
   <meta name="description" content="">
-  <link rel="canonical" href="/CHANGELOG.html">
-  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
-  <link rel="mask-icon" href="/assets/favicon.svg" color="#cba6f7">
-  <link rel="apple-touch-icon" href="/assets/favicon.svg">
-  <link rel="stylesheet" href="/assets/style.css">
-  <link rel="stylesheet" href="/assets/syntax.css">
+  <link rel="canonical" href="/go-z-ai/CHANGELOG.html">
+  <link rel="icon" href="/go-z-ai/assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="mask-icon" href="/go-z-ai/assets/favicon.svg" color="#cba6f7">
+  <link rel="apple-touch-icon" href="/go-z-ai/assets/favicon.svg">
+  <link rel="stylesheet" href="/go-z-ai/assets/style.css">
+  <link rel="stylesheet" href="/go-z-ai/assets/syntax.css">
   <link rel="alternate" type="application/atom+xml" title="go-z-ai releases" href="/feed.xml">
   <meta property="og:site_name" content="go-z-ai">
   <meta property="og:title" content="Changelog · go-z-ai">
@@ -41,17 +41,17 @@
 
 <header class="site" role="banner">
   <div class="container">
-    <a class="brand" href="/en/" aria-label="go-z-ai">
+    <a class="brand" href="/go-z-ai/en/" aria-label="go-z-ai">
       <span class="brand-mark" aria-hidden="true">G</span>
       <span>go-z-ai</span>
     </a>
     <nav class="site" aria-label="Primary">
-      <a href="/en/" >Home</a>
-      <a href="/en/getting-started.html" >Docs</a>
-      <a href="/en/cli-reference.html">CLI</a>
-      <a href="/en/library-guide.html">Library</a>
-      <a href="/download.html" >Download</a>
-      <a href="/CHANGELOG.html">Changelog</a>
+      <a href="/go-z-ai/en/" >Home</a>
+      <a href="/go-z-ai/en/getting-started.html" >Docs</a>
+      <a href="/go-z-ai/en/cli-reference.html">CLI</a>
+      <a href="/go-z-ai/en/library-guide.html">Library</a>
+      <a href="/go-z-ai/download.html" >Download</a>
+      <a href="/go-z-ai/CHANGELOG.html">Changelog</a>
       <a href="https://github.com/SamyRai/go-z-ai" rel="external">GitHub ↗</a><details class="lang-switch">
   <summary aria-haspopup="menu" aria-expanded="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0c2.5 3 4 6.5 4 10s-1.5 7-4 10m0-20C9.5 5 8 8.5 8 12s1.5 7 4 10M2 12h20" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -485,7 +485,7 @@ Anthropic SSE events), text/image/tool_use/tool_result content blocks, tools
 header. New CLI: <code>anthropic messages &lt;prompt&gt; [--stream ...]</code>. Routing/auth
 are confirmed reaching the live endpoint (bogus key → clean HTTP 401); the
 success-path body shape is documented, not yet live-verified (see
-<a href="/en/roadmap.html" rel="nofollow noreferrer">Roadmap</a>).
+<a href="/go-z-ai/en/roadmap.html" rel="nofollow noreferrer">Roadmap</a>).
 <ul>
 <li>Extended thinking: <code>AnthropicThinking</code> request config, <code>thinking</code>/
 <code>redacted_thinking</code> response blocks, and <code>resp.Thinking()</code> — which falls
@@ -503,9 +503,9 @@ unions collapse to their underlying type, <code>allOf</code> merges, and local <
 inline (with cycle protection). Exposed as <code>client.SanitizeToolSchemas</code> for
 explicit use, applied automatically before every chat request, and disablable
 via <code>Config.DisableToolSchemaCompat</code>. See <code>pkg/client/toolschema.go</code> and
-<a href="/en/library-guide.html#tool-schema-compatibility" rel="nofollow noreferrer">Library Guide</a>. The exact
+<a href="/go-z-ai/en/library-guide.html#tool-schema-compatibility" rel="nofollow noreferrer">Library Guide</a>. The exact
 set of server-rejected constructs is drawn from community reports, not yet
-reproduced live here (see <a href="/en/roadmap.html" rel="nofollow noreferrer">Roadmap</a>).</li>
+reproduced live here (see <a href="/go-z-ai/en/roadmap.html" rel="nofollow noreferrer">Roadmap</a>).</li>
 <li><code>coding mcp add/remove/status</code>: registers Z.AI&#39;s official Vision MCP Server
 (<code>@z_ai/mcp-server</code> — screenshot OCR, error-screenshot diagnosis,
 diagram/chart understanding, image/video analysis via GLM-4.6V) into any of
@@ -637,9 +637,9 @@ retriable flags.</li>
       Built from commit 9c7c610
     </div>
     <div>
-      <a href="/CHANGELOG.html">Changelog</a> ·
-      <a href="/CONTRIBUTING.html">Contributing</a> ·
-      <a href="/SECURITY.html">Security</a> ·
+      <a href="/go-z-ai/CHANGELOG.html">Changelog</a> ·
+      <a href="/go-z-ai/CONTRIBUTING.html">Contributing</a> ·
+      <a href="/go-z-ai/SECURITY.html">Security</a> ·
       <a href="/sitemap.xml">Sitemap</a>
     </div>
   </div>
