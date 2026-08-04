@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '17 5 * * *'   # nightly fuzz ~05:17 UTC (offset to avoid the pile-up)
+  workflow_dispatch: {}    # manual trigger for the fuzz job
 
 permissions:
   contents: read
@@ -153,3 +156,25 @@ jobs:
           fail: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  fuzz:
+    name: Fuzz (nightly)
+    # Coverage-guided fuzzing of the untrusted-input parsers (tool-schema
+    # rewriter + SSE reader). Runs nightly so it doesn't gate PRs; a crash
+    # found here is filed as a failing run for triage, not a merge block.
+    # Discoveries land in testdata/fuzz/ as committed regression cases.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Fuzz the tool-schema rewriter (2 min)
+        run: go test -run=^$ -fuzz=FuzzSanitizeToolSchemas -fuzztime=120s ./pkg/client/
+
+      - name: Fuzz the SSE stream parser (2 min)
+        run: go test -run=^$ -fuzz=FuzzReadSSE -fuzztime=120s ./pkg/client/

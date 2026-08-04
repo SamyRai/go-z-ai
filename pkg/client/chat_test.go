@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -420,4 +421,69 @@ func TestValidateChatRequestUnknownToolType(t *testing.T) {
 	if err := validateChatRequest(&req); err == nil {
 		t.Fatal("expected error for unknown tool type, got nil")
 	}
+}
+
+// FuzzReadSSE feeds arbitrary bytes through the SSE line parser that reads a
+// server streaming response. The contract: readSSE must never panic, never
+// hang, and never allocate without bound — for any byte sequence a (buggy or
+// malicious) server might emit. The scanner's 1MB buffer cap bounds memory; the
+// harness asserts the parse terminates with an error or nil, not a panic. Run:
+//
+//	go test -run=^$ -fuzz=FuzzReadSSE ./pkg/client/
+func FuzzReadSSE(f *testing.F) {
+	// Seed corpus: each is a raw SSE stream the server might emit.
+	seeds := []string{
+		// Valid stream: two chunks then [DONE].
+		"data: {\"id\":\"1\",\"model\":\"m\",\"choices\":[]}\n\ndata: {\"id\":\"1\",\"model\":\"m\",\"choices\":[]}\n\ndata: [DONE]\n\n",
+		// Malformed JSON payload after data:.
+		"data: {not valid json\n\n",
+		// Missing data: prefix (control/event lines).
+		"event: ping\nid: 1\nretry: 1000\n\n",
+		// Comment / keep-alive lines.
+		": keep-alive\n: another\n\n",
+		// [DONE] embedded in a non-data line (must be ignored).
+		"event: [DONE]\n\n",
+		// Empty data: line.
+		"data:\n\ndata: \n\n",
+		// A single oversized line (exercises the buffer cap).
+		"data: " + strings.Repeat("x", 2*1024*1024) + "\n\n",
+		// Truncated mid-line (no terminating newline).
+		"data: {\"id\":\"1\",\"model\":\"m\",\"choices\":[",
+		// Binary garbage.
+		"\x00\x01\x02\xff\xfe",
+		// Bare bytes, no structure.
+		"hello world",
+	}
+	for _, s := range seeds {
+		f.Add(s)
+	}
+
+	f.Fuzz(func(t *testing.T, stream string) {
+		// Wrap the fuzzed bytes as an SSE response body. readSSE owns no
+		// connection — it only reads resp.Body and parses data: lines — so a
+		// bare io.Reader is a faithful stand-in for a server stream.
+		resp := &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{"Content-Type": []string{"text/event-stream"}},
+			Body:       io.NopCloser(strings.NewReader(stream)),
+		}
+		// Build a minimal ChatService directly — newTestClient takes a *testing.T
+		// but here we have *testing.F, and readSSE needs no live HTTP anyway.
+		c, err := NewClient(Config{APIKey: "fuzz", BaseURL: "http://unused", MaxRetries: -1})
+		if err != nil {
+			t.Fatalf("NewClient: %v", err)
+		}
+		svc := c.Chat()
+		// A no-op callback: we only care that the parser itself terminates
+		// without panicking. An error return is fine (malformed JSON, oversized
+		// line) — it's a panic or a hang that's the bug.
+		var got int
+		_ = svc.readSSE(context.Background(), resp, func(StreamChunk) error {
+			got++
+			return nil
+		})
+		// No assertion on got — the number of chunks varies with input. The
+		// contract is "no panic, terminates". Reaching here is the pass.
+		_ = got
+	})
 }
