@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '17 5 * * *'   # nightly fuzz ~05:17 UTC (offset to avoid the pile-up)
+  workflow_dispatch: {}    # manual trigger for the fuzz job
 
 permissions:
   contents: read
@@ -54,12 +57,12 @@ jobs:
       - name: Enforce coverage floor
         # Ratchet-only floor: prevents coverage from regressing without
         # forcing a specific target. Bump MIN when the actual rises and stays.
-        # Today's floor (47%) sits just under the current ~49% to avoid
-        # flapping on minor shifts; new packages (e.g. pkg/observe) must
-        # not depress this.
+        # Current actual is ~51%; floor sits at 49% (2-pt buffer against
+        # per-OS matrix flake). New packages (e.g. pkg/observe) must not
+        # depress this.
         run: |
           set -euo pipefail
-          MIN=47
+          MIN=49
           total=$(go tool cover -func=cover.out | tail -1 | awk '{print $NF}' | tr -d '%')
           echo "Total coverage: ${total}% (floor: ${MIN}%)"
           awk -v t="$total" -v m="$MIN" 'BEGIN { if (t+0 < m+0) exit 1 }'
@@ -153,3 +156,25 @@ jobs:
           fail: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  fuzz:
+    name: Fuzz (nightly)
+    # Coverage-guided fuzzing of the untrusted-input parsers (tool-schema
+    # rewriter + SSE reader). Runs nightly so it doesn't gate PRs; a crash
+    # found here is filed as a failing run for triage, not a merge block.
+    # Discoveries land in testdata/fuzz/ as committed regression cases.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Fuzz the tool-schema rewriter (2 min)
+        run: go test -run=^$ -fuzz=FuzzSanitizeToolSchemas -fuzztime=120s ./pkg/client/
+
+      - name: Fuzz the SSE stream parser (2 min)
+        run: go test -run=^$ -fuzz=FuzzReadSSE -fuzztime=120s ./pkg/client/

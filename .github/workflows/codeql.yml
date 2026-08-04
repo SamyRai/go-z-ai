@@ -12,10 +12,11 @@ on:
   schedule:
     - cron: '33 4 * * 1'   # weekly, Monday ~04:33 UTC (offset to avoid the pile-up)
 
+# Least-privilege top-level default; the analyze job escalates only what it
+# needs (Scorecard Token-Permissions expects write scopes to be job-scoped,
+# never granted broadly at the top level).
 permissions:
   contents: read
-  security-events: write   # upload SARIF to the Security tab
-  packages: read           # fetch internal/private CodeQL packs if any
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -25,6 +26,10 @@ jobs:
   analyze:
     name: Analyze Go
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write   # upload SARIF to the Security tab
+      packages: read           # fetch internal/private CodeQL packs if any
     steps:
       - name: Checkout repository
         # actions/checkout@v7.0.0

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -335,4 +336,80 @@ func TestChatCreateFlattensToolSchemasOnWire(t *testing.T) {
 	if _, ok := raw["anyOf"]; !ok {
 		t.Error("DisableToolSchemaCompat should send the raw anyOf schema")
 	}
+}
+
+// FuzzSanitizeToolSchemas feeds arbitrary bytes as a JSON Schema into the
+// recursive schema rewriter. The contract: SanitizeToolSchemas must never
+// panic, never recurse infinitely, and never allocate without bound — for any
+// input, including adversarial schemas (deeply nested, cyclic $ref, malformed
+// JSON Pointers, exponential allOf merges). Run with:
+//
+//	go test -run=^$ -fuzz=FuzzSanitizeToolSchemas ./pkg/client/
+func FuzzSanitizeToolSchemas(f *testing.F) {
+	// Seed corpus: each is a raw JSON-Schema body for a tool's "parameters".
+	seeds := []string{
+		// Already-flat schema (the common, no-op case).
+		`{"type":"object","properties":{"city":{"type":"string"}}}`,
+		// Local $ref (the rewrite inlines it).
+		`{"type":"object","properties":{"a":{"$ref":"#/definitions/X"}},"definitions":{"X":{"type":"string"}}}`,
+		// anyOf with a null branch (collapses to the non-null member).
+		`{"anyOf":[{"type":"null"},{"type":"string"}]}`,
+		// oneOf / allOf (merged).
+		`{"allOf":[{"type":"object"},{"properties":{"x":{"type":"number"}}}]}`,
+		// Cyclic $ref (a -> b -> a) — must not infinite-loop.
+		`{"properties":{"a":{"$ref":"#/properties/b"}},"properties":{"b":{"$ref":"#/properties/a"}}}`,
+		// JSON Pointer with escaping (~0 = ~, ~1 = /).
+		`{"$ref":"#/definitions/a~1b~0c","definitions":{"a/b~c":{"type":"integer"}}}`,
+		// Deeply nested (a stack-pressure stressor).
+		strings.Repeat(`{"properties":{"x":`, 50) + `{"type":"string"}` + strings.Repeat(`}}`, 50),
+		// Empty / minimal.
+		`{}`,
+		// Malformed (not a schema object at all).
+		`not json`,
+		`42`,
+		`null`,
+	}
+	for _, s := range seeds {
+		f.Add(s)
+	}
+
+	f.Fuzz(func(t *testing.T, schemaJSON string) {
+		// Unmarshal the fuzzed bytes into a parameter map. If it's not valid
+		// JSON, there's nothing to sanitize — SanitizeToolSchemas only runs on
+		// already-decoded maps. Skip those inputs (they can't reach the target
+		// via the real call path either).
+		var params map[string]any
+		if err := json.Unmarshal([]byte(schemaJSON), &params); err != nil {
+			t.Skip("not valid JSON; cannot reach SanitizeToolSchemas")
+		}
+
+		// The real call path: Tool.Function.Parameters is a map[string]any,
+		// and SanitizeToolSchemas processes it recursively.
+		tool := Tool{
+			Type: "function",
+			Function: &FunctionDef{
+				Name:       "fuzzed",
+				Parameters: params,
+			},
+		}
+
+		// This must not panic, hang, or exhaust memory. The cycle protection
+		// (active map) guards $ref recursion; a panic here is the bug we're
+		// hunting.
+		out := SanitizeToolSchemas([]Tool{tool})
+		if len(out) != 1 {
+			t.Fatalf("expected 1 tool out, got %d", len(out))
+		}
+		// The output must itself be a valid map (never nil/non-map) so the
+		// downstream JSON marshal doesn't panic.
+		if out[0].Function == nil {
+			t.Fatal("function nil after sanitize")
+		}
+		// Parameters survives as a map[string]any (or nil when the input was
+		// nil — a valid JSON null). The downstream marshal handles both via
+		// omitempty; we only assert the value is marshallable, which it is by
+		// virtue of its declared type. Reaching this line without panicking is
+		// the real contract: no infinite recursion, no nil-map deref.
+		_ = out[0].Function.Parameters
+	})
 }
