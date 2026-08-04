@@ -98,10 +98,16 @@ but NOT VERIFIED LIVE until a cassette pins the exact wire shape. Each has a
 
 ## Not implemented
 
-- **Request/response logging and metrics collection** — no built-in
-  instrumentation hooks yet.
 - **Performance benchmarks** — deferred until a real bottleneck is measured;
   no known hot path currently justifies one (profile before optimizing).
+
+## Shipped (kept for orientation)
+
+- **Request/response observability hooks** — landed in v0.2.0. The `Hook`
+  seam in `pkg/client` (`OnRequest`/`OnResponse`/`OnError`/`OnStreamChunk`)
+  fires on every request lifecycle event; the first concrete implementation
+  is `OTelHook` in `pkg/observe` (OpenTelemetry spans + metrics). See
+  [Library Guide → Observability hooks](library-guide.md#observability-hooks).
 
 ## Deliberately not implemented
 
