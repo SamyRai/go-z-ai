@@ -79,6 +79,13 @@ func New(c *client.Client, selfTab int) Model {
 
 func (m Model) Init() tea.Cmd { return nil }
 
+// Streaming reports whether a long-running operation (e.g. a video
+// generation polling WaitForResult for minutes) is in flight. The root model
+// reads this via the streamer interface to block tab navigation, the model
+// picker, and quit while an operation runs — so a ctrl+c/quit doesn't abandon
+// an in-flight HTTP/poll with no cleanup. Mirrors chat.Model.Streaming().
+func (m Model) Streaming() bool { return m.busy }
+
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:

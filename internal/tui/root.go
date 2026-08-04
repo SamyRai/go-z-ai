@@ -642,6 +642,14 @@ func (m *rootModel) runPaletteAction(res palette.Result) tea.Cmd {
 		}
 		return func() tea.Msg { return uimsg.OpenModelPicker{} }
 	case palette.ActionQuit:
+		// Respect the active screen's streaming guard, mirroring the keybinding
+		// path: a quit while a chat stream or a long-running media operation is
+		// in flight would abandon it with no cleanup. The keybinding guard
+		// (above) blocks ctrl+c during streaming; the palette must too, or it's
+		// a back-door past the guard.
+		if sc, ok := m.screens[m.active].(streamer); ok && sc.Streaming() {
+			return nil
+		}
 		return tea.Quit
 	}
 	return nil

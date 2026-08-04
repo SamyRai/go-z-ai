@@ -370,10 +370,13 @@ type spanPropHook struct {
 	// recorded marks whether OnStreamChunk/OnResponse saw the hook-attached ctx.
 	chunkCtxSeen  any
 	respCtxSeen   any
+	errCtxSeen    any
 	chunkMetas    []RequestMeta
 	respMeta      *ResponseMeta
+	errMetas      []RequestMeta
 	chunkCount    int
 	respCount     int
+	errCount      int
 	onRequestReqs []RequestMeta
 }
 
@@ -386,7 +389,11 @@ func (h *spanPropHook) OnResponse(ctx context.Context, meta ResponseMeta) {
 	h.respMeta = &meta
 	h.respCount++
 }
-func (h *spanPropHook) OnError(context.Context, RequestMeta, error) {}
+func (h *spanPropHook) OnError(ctx context.Context, meta RequestMeta, _ error) {
+	h.errCtxSeen = ctx.Value(h.markKey)
+	h.errMetas = append(h.errMetas, meta)
+	h.errCount++
+}
 func (h *spanPropHook) OnStreamChunk(ctx context.Context, meta RequestMeta, _ any) {
 	h.chunkCtxSeen = ctx.Value(h.markKey)
 	h.chunkMetas = append(h.chunkMetas, meta)
@@ -523,5 +530,64 @@ func TestStreamSpanLifecycleMidStreamError(t *testing.T) {
 	// The one chunk delivered before the error still saw the hook-attached ctx.
 	if h.chunkCtxSeen != "hook-attached" {
 		t.Errorf("OnStreamChunk did not receive hook-attached ctx: got %v", h.chunkCtxSeen)
+	}
+}
+
+// TestStreamSpanLifecycleEarlyBreak is the regression test for the early-break
+// span leak. A caller that stops ranging mid-stream without an error (the
+// common abort path — e.g. a TUI user cancels, or a timeout wrapper breaks)
+// must still end the attempt's span. Before the fix: neither OnResponse nor
+// OnError fired on this path, so the span started by OnRequest leaked.
+//
+// The fix adds a defer that fires OnError(context.Canceled) when the wrapper
+// returns via early-break (yield returned false) without a terminal hook
+// having fired.
+func TestStreamSpanLifecycleEarlyBreak(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sseHandler(
+			`{"id":"1","model":"m","choices":[{"index":0,"delta":{"content":"a"}}]}`,
+			`{"id":"1","model":"m","choices":[{"index":0,"delta":{"content":"b"}}]}`,
+			`{"id":"1","model":"m","choices":[{"index":0,"delta":{"content":"c"}}]}`,
+			`[DONE]`,
+		).ServeHTTP(w, r)
+	}))
+	defer srv.Close()
+
+	type key int
+	const mark key = 1
+	h := &spanPropHook{markKey: mark}
+	c := newTestClient(t, srv.URL, Config{MaxRetries: 0, Hooks: []Hook{h}})
+	req := ChatRequest{Model: "glm-test", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95}
+
+	chunks := 0
+	for chunk, err := range c.Chat().Stream(context.Background(), req) {
+		if err != nil {
+			t.Fatalf("unexpected err: %v", err)
+		}
+		_ = chunk
+		chunks++
+		if chunks == 1 {
+			break // caller aborts mid-stream — the early-break path
+		}
+	}
+	if chunks != 1 {
+		t.Fatalf("expected exactly 1 chunk before break, got %d", chunks)
+	}
+	// Neither OnResponse (clean end) nor OnError (stream error) ran before the
+	// break — the defer must fire one of them so the span ends. Before the
+	// fix both counts were 0 and the span leaked.
+	if h.respCount != 0 && h.errCount != 0 {
+		t.Fatalf("expected exactly one terminal hook, got resp=%d err=%d", h.respCount, h.errCount)
+	}
+	if h.respCount == 0 && h.errCount == 0 {
+		t.Fatal("early-break leaked the span: neither OnResponse nor OnError fired (both 0)")
+	}
+	if h.errCount > 0 {
+		// The defer fires OnError(context.Canceled) — it must see the
+		// hook-attached ctx (span present), proving the captured attempt
+		// context reached it.
+		if h.errCtxSeen != "hook-attached" {
+			t.Errorf("OnError on early-break did not receive hook-attached ctx: got %v", h.errCtxSeen)
+		}
 	}
 }

@@ -75,6 +75,9 @@ func init() {
 
 	modelsVisionCmd.Flags().StringVar(&outputFormat, "format", "table", "Output format (table, json)")
 	modelsVisionCmd.Flags().BoolVar(&showPricing, "pricing", false, "Show pricing information")
+
+	modelsFreeCmd.Flags().StringVar(&outputFormat, "format", "table", "Output format (table, json)")
+	modelsFreeCmd.Flags().BoolVar(&showPricing, "pricing", false, "Show pricing information")
 }
 
 func runModelsList(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -121,7 +124,7 @@ func runModelsFree(cmd *cobra.Command, args []string, apiClient *client.Client) 
 	}
 
 	fmt.Printf("Found %d free models:\n\n", len(models))
-	return outputModels(models, outputFormat, false)
+	return outputModels(models, outputFormat, showPricing)
 }
 
 func outputModels(models []client.ModelDetails, format string, showPrice bool) error {

@@ -136,3 +136,22 @@ func TestSubmitResultIsRoutedToSelfTab(t *testing.T) {
 		t.Errorf("expected wrapped resultMsg, got %T", routed.Msg)
 	}
 }
+
+// Streaming() reports the busy flag so the root model's streamer guard blocks
+// tab navigation, the model picker, and quit while a long-running operation
+// (video generation polls for minutes) is in flight. Without it, ctrl+c quit
+// abandoned the in-flight HTTP/poll with no cleanup.
+func TestStreamingReflectsBusy(t *testing.T) {
+	m := New(nil, 5)
+	if m.Streaming() {
+		t.Error("fresh model should not be streaming")
+	}
+	m.busy = true
+	if !m.Streaming() {
+		t.Error("busy model should report Streaming() = true")
+	}
+	m.busy = false
+	if m.Streaming() {
+		t.Error("non-busy model should report Streaming() = false")
+	}
+}

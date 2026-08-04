@@ -239,8 +239,18 @@ func LoadOpenCode(home, plan, key string) error {
 	}
 	m["$schema"] = "https://opencode.ai/config.json"
 	m["provider"] = providers
-	m["model"] = name + "/glm-4.6"
-	m["small_model"] = name + "/glm-4.5-air"
+	// Only set the global model/small_model if they're absent or already point
+	// at a Z.AI coding-plan provider — preserve a user's own model choice.
+	// Previously these were overwritten unconditionally, silently dropping a
+	// different default the user had set.
+	setIfZaiOrAbsent := func(key, want string) {
+		cur, _ := m[key].(string)
+		if cur == "" || strings.HasPrefix(cur, "zai-coding-plan/") || strings.HasPrefix(cur, "zhipuai-coding-plan/") {
+			m[key] = want
+		}
+	}
+	setIfZaiOrAbsent("model", name+"/glm-4.6")
+	setIfZaiOrAbsent("small_model", name+"/glm-4.5-air")
 	return writeJSONMap(path, m)
 }
 

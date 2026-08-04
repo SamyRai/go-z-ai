@@ -208,6 +208,24 @@ func NewClient(config Config) (*Client, error) {
 				ExpectContinueTimeout: 1 * time.Second,
 				ResponseHeaderTimeout: config.Timeout,
 			},
+			// Strip the Authorization header on any cross-host redirect so a
+			// compromised/misconfigured upstream or a transparent proxy
+			// (ProxyFromEnvironment above) can't capture the bearer token by
+			// returning a 3xx to an attacker-controlled host. net/http's
+			// default only strips it on a scheme change, not a host change.
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				if len(via) >= 10 {
+					return fmt.Errorf("stopped after 10 redirects")
+				}
+				// Compare the full host:port. A redirect to a different port
+				// can be a different service on the same machine, so strip the
+				// credential on any host:port change — stricter than net/http's
+				// default, which is the right posture for an API bearer token.
+				if req.URL.Host != via[0].URL.Host {
+					req.Header.Del("Authorization")
+				}
+				return nil
+			},
 		}
 	}
 
@@ -479,6 +497,9 @@ func (c *Client) doRequestBaseKeyHeaders(ctx context.Context, baseURL, apiKey, m
 			// request is safe to retry (the server never answered).
 			lastErr = fmt.Errorf("failed to execute request: %w", err)
 			if attempt < maxRetries {
+				// End this attempt's span before retrying: OnRequest already
+				// fired above, so without OnError the span leaks.
+				c.callHooksError(hookCtx, reqMeta, lastErr)
 				c.backoff(hookCtx, "", attempt)
 				continue
 			}
@@ -515,6 +536,8 @@ func (c *Client) doRequestBaseKeyHeaders(ctx context.Context, baseURL, apiKey, m
 
 		lastErr = apiErr
 		if attempt < maxRetries && retriable {
+			// End this attempt's span before retrying (see transport branch).
+			c.callHooksError(hookCtx, reqMeta, apiErr)
 			c.backoff(hookCtx, retryAfter, attempt)
 			continue
 		}

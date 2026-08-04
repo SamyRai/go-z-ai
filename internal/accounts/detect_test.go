@@ -77,3 +77,69 @@ func TestProbeTypeFallsBackToPayAsYouGo(t *testing.T) {
 		})
 	}
 }
+
+// regionTransport returns different responses based on the request's monitor
+// host, so a test can simulate a key that is valid on only one gateway.
+type regionTransport struct {
+	// respond maps a request URL host to (status, body). A host absent from
+	// the map gets a transport error (so the probe falls through to the next
+	// region rather than silently succeeding).
+	respond map[string]stubTransport
+}
+
+func (r regionTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if s, ok := r.respond[req.URL.Host]; ok {
+		return s.RoundTrip(req)
+	}
+	return nil, io.ErrUnexpectedEOF
+}
+
+// A key issued on the China gateway (open.bigmodel.cn) returns a coding-plan
+// success ONLY there; the global host rejects it. Before the both-regions fix,
+// ProbeType probed only the global host, so this key was misclassified as
+// pay_as_you_go (unconfirmed), routing every subsequent call to the wrong
+// endpoint and disabling quota/usage monitoring.
+func TestProbeTypeChinaCodingPlanConfirmed(t *testing.T) {
+	codingPlanOK := stubTransport{
+		status: http.StatusOK,
+		body:   `{"success":true,"data":{"level":"pro","limits":[]}}`,
+	}
+	globalReject := stubTransport{
+		status: http.StatusForbidden,
+		body:   `{"error":{"code":"1002","message":"invalid key on global host"}}`,
+	}
+	// ProbeType builds real clients (one per region); wire the transport
+	// through both by patching the default... instead, exercise probeType
+	// directly against two clients sharing one region-aware transport.
+	tr := regionTransport{respond: map[string]stubTransport{
+		"api.z.ai":         globalReject, // global host rejects the China key
+		"open.bigmodel.cn": codingPlanOK, // China host confirms coding_plan
+	}}
+	globalC := clientWith(t, tr)
+	chinaC := clientWithRegion(t, tr, client.RegionChina)
+
+	// Global alone: pay_as_you_go (the old buggy behavior).
+	if at, ok := probeType(context.Background(), globalC); ok || at != client.AccountTypePayAsYouGo {
+		t.Fatalf("global probe should fall through for a China key; got %q/confirmed=%v", at, ok)
+	}
+	// China: coding_plan confirmed.
+	if at, ok := probeType(context.Background(), chinaC); !ok || at != client.AccountTypeCodingPlan {
+		t.Fatalf("china probe should confirm coding_plan; got %q/confirmed=%v", at, ok)
+	}
+}
+
+// clientWithRegion is clientWith but with an explicit Region (so the client's
+// monitor calls land on the China host for the region-aware test transport).
+func clientWithRegion(t *testing.T, tr http.RoundTripper, region client.Region) *client.Client {
+	t.Helper()
+	c, err := client.NewClient(client.Config{
+		APIKey:     "test-key",
+		Region:     region,
+		HTTPClient: &http.Client{Transport: tr},
+		MaxRetries: -1,
+	})
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	return c
+}

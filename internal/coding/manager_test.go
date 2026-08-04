@@ -121,6 +121,71 @@ func TestOpenCodeChinaUsesZhipuProvider(t *testing.T) {
 	}
 }
 
+// LoadOpenCode must NOT clobber a user's own global model choice. Previously
+// it overwrote model/small_model unconditionally; now it only sets them when
+// absent or already pointing at a Z.AI provider.
+func TestOpenCodePreservesUserModel(t *testing.T) {
+	home := t.TempDir()
+	path := filepath.Join(home, ".config", "opencode", "opencode.json")
+	// Seed an existing config with the user's own non-Z.AI model choice.
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	existing := `{"model":"anthropic/claude-sonnet-4","small_model":"openai/gpt-4o-mini"}`
+	if err := os.WriteFile(path, []byte(existing), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Load(home, "opencode", PlanGlobal, "oc-key"); err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	m := readJSON(t, path)
+	if m["model"] != "anthropic/claude-sonnet-4" {
+		t.Errorf("user model clobbered: got %v, want anthropic/claude-sonnet-4", m["model"])
+	}
+	if m["small_model"] != "openai/gpt-4o-mini" {
+		t.Errorf("user small_model clobbered: got %v, want openai/gpt-4o-mini", m["small_model"])
+	}
+	// The provider is still wired.
+	if prov, ok := m["provider"].(map[string]any); !ok || prov["zai-coding-plan"] == nil {
+		t.Error("zai-coding-plan provider not wired")
+	}
+}
+
+// Every coding-tool writer backs up the existing config to .zai.bak before
+// overwriting it, so a field the merge doesn't know about can be recovered.
+func TestAtomicWriteCreatesBackup(t *testing.T) {
+	home := t.TempDir()
+	path := filepath.Join(home, "settings.json")
+	original := []byte(`{"my-custom-key":"don't-lose-me"}`)
+	if err := os.WriteFile(path, original, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := atomicWriteFile(path, []byte(`{"new":"content"}`), 0o600); err != nil {
+		t.Fatalf("atomicWriteFile: %v", err)
+	}
+	bak, err := os.ReadFile(path + ".zai.bak")
+	if err != nil {
+		t.Fatalf("expected .zai.bak to exist: %v", err)
+	}
+	if string(bak) != string(original) {
+		t.Errorf("backup content mismatch: got %q, want %q", bak, original)
+	}
+}
+
+// First write (no existing file) must NOT create a .bak — a missing file is
+// the normal first-write case.
+func TestAtomicWriteNoBackupOnFirstWrite(t *testing.T) {
+	home := t.TempDir()
+	path := filepath.Join(home, "newfile.json")
+	if err := atomicWriteFile(path, []byte(`{"x":1}`), 0o600); err != nil {
+		t.Fatalf("atomicWriteFile: %v", err)
+	}
+	if _, err := os.Stat(path + ".zai.bak"); !os.IsNotExist(err) {
+		t.Errorf("expected no .zai.bak on first write; stat err = %v", err)
+	}
+}
+
 func TestCrushLoadDetectUnload(t *testing.T) {
 	home := t.TempDir()
 	if err := Load(home, "crush", PlanGlobal, "c-key"); err != nil {

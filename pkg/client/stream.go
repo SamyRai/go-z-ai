@@ -323,6 +323,18 @@ func (s *ChatService) Stream(ctx context.Context, req ChatRequest) iter.Seq2[Str
 	// completes cleanly (ending the span). Terminal errors fire OnError
 	// against the same captured context.
 	return func(yield func(StreamChunk, error) bool) {
+		// ended tracks whether a terminal hook (OnResponse or OnError) has
+		// fired for the captured attempt. The clean-end and error paths set
+		// it; the defer covers the early-break path (caller stops ranging
+		// mid-stream without an error), which would otherwise leak the span
+		// started by OnRequest in connectChatStream.
+		ended := false
+		defer func() {
+			if !ended {
+				hookCtx, meta := info.forError(streamCtx, "POST", "/chat/completions")
+				s.client.callHooksError(hookCtx, meta, context.Canceled)
+			}
+		}()
 		for chunk, err := range inner {
 			if err != nil {
 				// Stream failed (connect error, mid-stream read error, or ctx
@@ -331,6 +343,7 @@ func (s *ChatService) Stream(ctx context.Context, req ChatRequest) iter.Seq2[Str
 				// with attempt 0 (e.g. a connect-phase failure).
 				hookCtx, meta := info.forError(streamCtx, "POST", "/chat/completions")
 				s.client.callHooksError(hookCtx, meta, err)
+				ended = true
 				if !yield(chunk, err) {
 					return
 				}
@@ -343,6 +356,7 @@ func (s *ChatService) Stream(ctx context.Context, req ChatRequest) iter.Seq2[Str
 		}
 		// Clean stream end ([DONE] / EOF): fire OnResponse to end the span.
 		info.onCleanEnd()
+		ended = true
 	}
 }
 
@@ -428,10 +442,20 @@ func (s *AnthropicService) Stream(ctx context.Context, req AnthropicMessageReque
 	)
 
 	return func(yield func(AnthropicStreamEvent, error) bool) {
+		// ended tracks whether a terminal hook has fired; the defer covers the
+		// early-break path (see ChatService.Stream above for the full rationale).
+		ended := false
+		defer func() {
+			if !ended {
+				hookCtx, meta := info.forError(streamCtx, "POST", anthropicMessagesEndpoint)
+				s.client.callHooksError(hookCtx, meta, context.Canceled)
+			}
+		}()
 		for ev, err := range inner {
 			if err != nil {
 				hookCtx, meta := info.forError(streamCtx, "POST", anthropicMessagesEndpoint)
 				s.client.callHooksError(hookCtx, meta, err)
+				ended = true
 				if !yield(ev, err) {
 					return
 				}
@@ -444,6 +468,7 @@ func (s *AnthropicService) Stream(ctx context.Context, req AnthropicMessageReque
 		}
 		// Clean stream end: fire OnResponse to end the span.
 		info.onCleanEnd()
+		ended = true
 	}
 }
 

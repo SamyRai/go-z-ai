@@ -78,8 +78,10 @@ changelog:
 release:
   draft: false
   prerelease: auto
-  # Post a linked discussion in the "Announcements" category (created by GitHub
-  # when Discussions is enabled). Use an existing category name verbatim or the
-  # release publish step fails with 404.
-  discussion_category_name: Announcements
+  # NOTE: discussion_category_name was removed. GoReleaser posts a linked
+  # Discussion on release, but GitHub intermittently returns 404 on the
+  # category lookup even when the category exists, which fails the release
+  # job *after* the release + assets are already published — leaving a red
+  # workflow for a successful release. Post release announcements manually
+  # in Discussions → Announcements instead.
   name_template: '{{.Tag}}'

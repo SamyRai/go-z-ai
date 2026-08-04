@@ -62,9 +62,6 @@ func resolveConfig() (client.Config, error) {
 		}
 	default:
 		apiKey = os.Getenv("ZAI_API_KEY")
-		if apiKey == "" {
-			apiKey = os.Getenv("KEY") // Support KEY variable name
-		}
 	}
 
 	if baseURL == "" {
@@ -84,7 +81,7 @@ func resolveConfig() (client.Config, error) {
 	}
 
 	if apiKey == "" {
-		return client.Config{}, fmt.Errorf("API key is required. Set it via --api-key flag, ZAI_API_KEY environment variable, KEY environment variable, 'go-z-ai accounts use <name>', or --account <name>")
+		return client.Config{}, fmt.Errorf("API key is required. Set it via --api-key flag, ZAI_API_KEY environment variable, 'go-z-ai accounts use <name>', or --account <name>")
 	}
 
 	chinaAPIKey := viper.GetString("china-api-key")

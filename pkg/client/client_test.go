@@ -188,3 +188,83 @@ func TestMaxRetriesNegativeDisablesRetry(t *testing.T) {
 		t.Fatalf("MaxRetries=-1 should disable retries; expected 1 call, got %d", calls)
 	}
 }
+
+// The Authorization header must be stripped when a redirect crosses to a
+// different host, so a compromised/misconfigured upstream or transparent proxy
+// can't capture the bearer token. Go's net/http default only strips it on a
+// scheme change, not a host change.
+func TestRedirectStripsAuthCrossHost(t *testing.T) {
+	var leakedAuth string
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		leakedAuth = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer target.Close()
+
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Different host (the target's 127.0.0.1:<port>) → triggers the
+		// cross-host CheckRedirect branch.
+		http.Redirect(w, r, target.URL+"/sink", http.StatusFound)
+	}))
+	defer origin.Close()
+
+	c, err := NewClient(Config{APIKey: "secret-key-xyz", BaseURL: origin.URL})
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	// Hit the origin directly so the client follows the 302 to the target.
+	// Use a raw http.Get-style call through the client's configured transport
+	// by issuing a real request via doRequest against the origin's base URL.
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, origin.URL+"/start", strings.NewReader("{}"))
+	req.Header.Set("Authorization", "Bearer secret-key-xyz")
+	resp, err := c.config.HTTPClient.Do(req)
+	if err != nil {
+		t.Fatalf("client.Do: %v", err)
+	}
+	defer resp.Body.Close()
+	resp.Body.Close() // drain promptly
+
+	if leakedAuth != "" {
+		t.Fatalf("Authorization header leaked to cross-host redirect target: %q", leakedAuth)
+	}
+}
+
+// Same-host redirects must keep the Authorization header (the token is still
+// valid for the original host).
+func TestRedirectKeepsAuthSameHost(t *testing.T) {
+	var seenAuth string
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenAuth = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer target.Close()
+
+	// Re-route /redirect to the same target via a handler on the same server
+	// so host doesn't change.
+	mux := http.NewServeMux()
+	mux.HandleFunc("/redirect", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/sink", http.StatusFound)
+	})
+	mux.HandleFunc("/sink", func(w http.ResponseWriter, r *http.Request) {
+		seenAuth = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusOK)
+	})
+	origin := httptest.NewServer(mux)
+	defer origin.Close()
+
+	c, err := NewClient(Config{APIKey: "secret-key-xyz", BaseURL: origin.URL})
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, origin.URL+"/redirect", strings.NewReader("{}"))
+	req.Header.Set("Authorization", "Bearer secret-key-xyz")
+	resp, err := c.config.HTTPClient.Do(req)
+	if err != nil {
+		t.Fatalf("client.Do: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if seenAuth != "Bearer secret-key-xyz" {
+		t.Fatalf("Authorization header should be preserved on same-host redirect; got %q", seenAuth)
+	}
+}

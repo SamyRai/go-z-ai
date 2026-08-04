@@ -168,6 +168,50 @@ func TestHookFiresOnRetry(t *testing.T) {
 	}
 }
 
+// TestRetryAttemptEndsSpan is the regression test for the retry-path span leak.
+// Before the fix: a failed attempt that was retried skipped OnError, so the
+// OTel span started by OnRequest for that attempt was never ended (leaked to
+// the exporter). With the fix, OnError fires once for the retried attempt 0
+// (the 429) AND OnResponse fires once for the successful attempt 1 — 2 spans
+// started, 2 ended.
+func TestRetryAttemptEndsSpan(t *testing.T) {
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if calls == 1 {
+			writeJSON(w, http.StatusTooManyRequests, `{"error":{"code":"1302","message":"rate limit"}}`)
+			return
+		}
+		writeJSON(w, http.StatusOK, `{"id":"x","model":"m","choices":[]}`)
+	}))
+	defer srv.Close()
+
+	h := &recordingHook{}
+	c := newTestClient(t, srv.URL, Config{MaxRetries: 3, Hooks: []Hook{h}})
+
+	var resp ChatResponse
+	if err := c.doRequest(context.Background(), "POST", "/chat/completions", map[string]string{"q": "hi"}, &resp); err != nil {
+		t.Fatalf("doRequest: %v", err)
+	}
+	// 2 OnRequest (one per attempt = 2 spans started).
+	if got := len(h.requests); got != 2 {
+		t.Fatalf("expected 2 OnRequest (1 per attempt), got %d", got)
+	}
+	// 1 OnResponse (the success) + 1 OnError (the retried 429) = 2 terminal
+	// hooks = 2 spans ended. Before the fix, errors was empty (the retry
+	// continue skipped OnError) so only 1 of 2 spans ended.
+	if got := len(h.errors); got != 1 {
+		t.Fatalf("expected 1 OnError for the retried attempt (span-end); got %d — retry-path span leak", got)
+	}
+	if got := len(h.responses); got != 1 {
+		t.Fatalf("expected 1 OnResponse (success), got %d", got)
+	}
+	// Total terminal hooks must equal total OnRequest (every started span ends).
+	if len(h.errors)+len(h.responses) != len(h.requests) {
+		t.Fatalf("span leak: %d started, %d ended (errors+responses)", len(h.requests), len(h.errors)+len(h.responses))
+	}
+}
+
 // TestHookFiresOnStreamChunk verifies the streaming path fires OnRequest and
 // OnStreamChunk for each chunk delivered to the caller, and OnError on
 // terminal failure.

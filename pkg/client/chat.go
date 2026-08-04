@@ -180,9 +180,11 @@ func validateChatRequest(req *ChatRequest) error {
 		return fmt.Errorf("temperature must be between 0 and 1")
 	}
 
-	// Validate top_p range
-	if req.TopP < 0.01 || req.TopP > 1 {
-		return fmt.Errorf("top_p must be between 0.01 and 1")
+	// Validate top_p range. TopP == 0 means "unset" (omitempty drops it on the
+	// wire → server default); allow it like Temperature rather than rejecting
+	// the natural zero-value struct literal.
+	if req.TopP < 0 || req.TopP > 1 {
+		return fmt.Errorf("top_p must be between 0 and 1")
 	}
 
 	// Validate Thinking.Effort (when set) against the documented enum so the

@@ -158,8 +158,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			if m.streaming {
+				// Cancel the in-flight stream, then re-arm the chunk pump so
+				// the producer's channel-close drains into a streamDoneMsg —
+				// the only path that clears m.streaming. Returning nil here
+				// (as a prior version did) strands the streaming flag true
+				// forever, wedging the tab (can't send again, can't tab away).
 				m.handle.cancel()
-				return m, nil
+				return m, waitForChunk(m.handle)
 			}
 		case "ctrl+s":
 			if !m.streaming && m.input.Value() != "" {

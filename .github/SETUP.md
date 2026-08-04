@@ -80,8 +80,9 @@ Settings → Advanced Security:
 - Consider enabling **squash merge only** (Settings → General → Pull
   Requests) to keep `main`'s history linear given the ruleset above.
 - **Homepage** points at the docs index.
-- **Discussions** are enabled; the `Announcements` category is used by
-  GoReleaser to announce new versions.
+- **Discussions** are enabled; the `Announcements` category is where new
+  versions are announced manually (GoReleaser no longer auto-posts, see
+  `.goreleaser.yml` for why).
 
 ## 6. Releases ✅
 

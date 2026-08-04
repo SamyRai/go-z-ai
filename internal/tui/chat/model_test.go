@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
@@ -59,14 +60,41 @@ func TestStreamCancelIsNotAnError(t *testing.T) {
 }
 
 // ctrl+c while streaming cancels the in-flight stream instead of quitting.
+// It must also re-arm the chunk pump so the producer's channel-close drains
+// into a streamDoneMsg — otherwise m.streaming stays true forever and the tab
+// is wedged (can't send again, can't tab away).
 func TestCtrlCCancelsStream(t *testing.T) {
 	m := New(nil)
 	cancelled := false
 	m.streaming = true
-	m.handle = streamHandle{cancel: func() { cancelled = true }}
+	// Simulate the post-cancel pump state: the producer goroutine has broken
+	// out of its range on ctx cancel, sent ctx.Err() on done, and closed ch.
+	ch := make(chan client.StreamChunk)
+	close(ch)
+	done := make(chan error, 1)
+	done <- context.Canceled
+	m.handle = streamHandle{
+		ch:     ch,
+		done:   done,
+		cancel: func() { cancelled = true },
+	}
 
-	m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl, Text: ""})
+	_, cmd := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl, Text: ""})
 	if !cancelled {
-		t.Error("expected ctrl+c to call the stream's cancel func")
+		t.Fatal("expected ctrl+c to call the stream's cancel func")
+	}
+	if cmd == nil {
+		t.Fatal("expected ctrl+c to re-arm the chunk pump (non-nil cmd); nil cmd wedges m.streaming=true forever")
+	}
+	// Executing the re-armed cmd must drain the closed channel into a
+	// streamDoneMsg carrying context.Canceled — the only path that clears
+	// m.streaming.
+	msg := cmd()
+	ds, ok := msg.(streamDoneMsg)
+	if !ok {
+		t.Fatalf("expected streamDoneMsg from re-armed pump, got %T", msg)
+	}
+	if !errors.Is(ds.err, context.Canceled) {
+		t.Fatalf("expected streamDoneMsg.err = context.Canceled, got %v", ds.err)
 	}
 }

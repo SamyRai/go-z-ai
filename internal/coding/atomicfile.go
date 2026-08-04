@@ -37,6 +37,15 @@ func atomicWriteFile(path string, data []byte, perm os.FileMode) error {
 		os.Remove(tmpPath)
 		return fmt.Errorf("failed to set permissions on %s: %w", path, err)
 	}
+	// Back up the existing file before overwriting it. These paths are the
+	// user's real config files for other tools (Claude Code, Cursor, OpenCode,
+	// …); atomicWriteFile already prevents corruption, but a field-preserving
+	// merge can still drop a setting the merge doesn't know about. The .zai.bak
+	// gives the user a recovery path. Best-effort: a missing file is normal
+	// (first write); any other error is non-fatal (the rename still proceeds).
+	if existing, rerr := os.ReadFile(path); rerr == nil {
+		_ = os.WriteFile(path+".zai.bak", existing, perm)
+	}
 	if err := os.Rename(tmpPath, path); err != nil {
 		os.Remove(tmpPath)
 		return fmt.Errorf("failed to save %s: %w", path, err)

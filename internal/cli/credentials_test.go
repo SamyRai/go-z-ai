@@ -25,7 +25,7 @@ func isolateCreds(t *testing.T) string {
 		t.Cleanup(func() { viper.Set(key, prev) })
 	}
 
-	for _, env := range []string{"ZAI_API_KEY", "KEY", "ZAI_API_BASE_URL", "ZAI_CHINA_API_KEY", "ZAI_REGION", "REGION"} {
+	for _, env := range []string{"ZAI_API_KEY", "ZAI_API_BASE_URL", "ZAI_CHINA_API_KEY", "ZAI_REGION", "REGION"} {
 		t.Setenv(env, "")
 	}
 
@@ -110,33 +110,6 @@ func TestResolveConfigUnknownAccountFailsLoud(t *testing.T) {
 
 	if _, err := resolveConfig(); err == nil {
 		t.Fatal("expected an error for an unknown --account, got nil")
-	}
-}
-
-func TestResolveConfigEnvKeyBeatsKEY(t *testing.T) {
-	isolateCreds(t)
-	t.Setenv("ZAI_API_KEY", "primary")
-	t.Setenv("KEY", "fallback")
-
-	cfg, err := resolveConfig()
-	if err != nil {
-		t.Fatalf("resolveConfig: %v", err)
-	}
-	if cfg.APIKey != "primary" {
-		t.Errorf("expected ZAI_API_KEY to win over KEY, got %q", cfg.APIKey)
-	}
-}
-
-func TestResolveConfigKEYFallback(t *testing.T) {
-	isolateCreds(t)
-	t.Setenv("KEY", "fallback-key")
-
-	cfg, err := resolveConfig()
-	if err != nil {
-		t.Fatalf("resolveConfig: %v", err)
-	}
-	if cfg.APIKey != "fallback-key" {
-		t.Errorf("expected KEY fallback, got %q", cfg.APIKey)
 	}
 }
 
