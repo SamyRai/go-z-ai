@@ -148,6 +148,12 @@ func outputQuotaLimit(quota *client.QuotaLimitResponse, serverTZ *time.Location)
 					fmt.Printf("  Pace: %s\n", usageview.FormatPace(pace))
 				}
 			}
+			// Peak-hours notice: Z.AI counts high-tier tokens at 3× against
+			// the quota during weekday 14:00–18:00 server time (CST), so the
+			// window burns faster than the linear Pace projection suggests.
+			if warn := usageview.FormatPeakWarning(now, serverTZ); warn != "" {
+				fmt.Printf("  %s\n", warn)
+			}
 		}
 
 		// Display tool-specific breakdown for MCP tools usage (TIME_LIMIT)

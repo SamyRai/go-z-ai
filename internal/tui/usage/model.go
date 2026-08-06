@@ -201,6 +201,11 @@ func (m Model) renderQuotaPanel() string {
 					body += uistyle.Subtle.Render(usageview.FormatPace(pace)) + "\n"
 				}
 			}
+			// Peak-hours notice: tokens count 3× during weekday 14:00–18:00
+			// server time (CST), so the window burns faster than Pace projects.
+			if warn := usageview.FormatPeakWarning(time.Now(), m.client.MonitorTimezone()); warn != "" {
+				body += uistyle.ToastWarn.Render(warn) + "\n"
+			}
 		}
 		body += "\n"
 	}
