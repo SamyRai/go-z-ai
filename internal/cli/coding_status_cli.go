@@ -97,10 +97,11 @@ func (v codingToolView) configSummary() string {
 	return s
 }
 
-// codingCredentialView is the stored credential with the key masked.
+// codingCredentialView describes the stored credential without any key
+// material: whether a key is stored is all status and doctor need.
 type codingCredentialView struct {
-	Plan   string `json:"plan,omitempty"`
-	APIKey string `json:"api_key,omitempty"`
+	Plan      string `json:"plan,omitempty"`
+	KeyStored bool   `json:"key_stored"`
 }
 
 func storedCodingCredentials() (codingCredentialView, error) {
@@ -112,11 +113,7 @@ func storedCodingCredentials() (codingCredentialView, error) {
 	if err != nil {
 		return codingCredentialView{}, err
 	}
-	v := codingCredentialView{Plan: c.Plan}
-	if c.APIKey != "" {
-		v.APIKey = maskAPIKey(c.APIKey)
-	}
-	return v, nil
+	return codingCredentialView{Plan: c.Plan, KeyStored: c.APIKey != ""}, nil
 }
 
 func runCodingStatus(cmd *cobra.Command, _ []string) error {
@@ -138,7 +135,7 @@ func runCodingStatus(cmd *cobra.Command, _ []string) error {
 		fmt.Println("Stored credentials")
 		fmt.Println("==================")
 		fmt.Printf("  Plan: %s\n", orNone(creds.Plan, coding.DisplayName))
-		fmt.Printf("  Key:  %s\n", orNone(creds.APIKey, func(k string) string { return k }))
+		fmt.Printf("  Key:  %s\n", keyState(creds.KeyStored))
 		fmt.Println("\nCoding tools")
 		fmt.Println("============")
 		for _, t := range tools {
@@ -183,10 +180,10 @@ func runCodingDoctor(cmd *cobra.Command, _ []string) error {
 		fmt.Printf("⚠  "+format+"\n", a...)
 	}
 
-	if creds.Plan == "" || creds.APIKey == "" {
+	if creds.Plan == "" || !creds.KeyStored {
 		warn("No credentials stored (run 'go-z-ai coding auth <plan> <key>')")
 	} else {
-		fmt.Printf("✓ Credentials: %s / %s\n", coding.DisplayName(creds.Plan), creds.APIKey)
+		fmt.Printf("✓ Credentials: %s, key stored\n", coding.DisplayName(creds.Plan))
 	}
 
 	installed := 0
@@ -211,6 +208,14 @@ func runCodingDoctor(cmd *cobra.Command, _ []string) error {
 	}
 	fmt.Println("\nAll good.")
 	return nil
+}
+
+// keyState renders whether a key is stored.
+func keyState(stored bool) string {
+	if stored {
+		return "stored"
+	}
+	return "(none)"
 }
 
 // orNone formats v with format, or "(none)" when v is empty.

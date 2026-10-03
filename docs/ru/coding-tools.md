@@ -301,7 +301,7 @@ Search, Web Reader и Zread стоят 1,2 кредита за вызов
 ## Статус и вывод JSON
 
 ```bash
-go-z-ai coding status          # stored credentials (key masked) + every tool
+go-z-ai coding status          # stored plan, whether a key is stored, every tool
 go-z-ai coding tools           # IDs, commands, install status, config paths
 go-z-ai coding mcp status      # official MCP servers per tool
 go-z-ai coding status --format json
@@ -309,8 +309,9 @@ go-z-ai coding status --format json
 
 `status`, `tools` и `mcp status` принимают `--format json` (по умолчанию
 `text`). `tools` и `mcp status` печатают массив с одним объектом на
-инструмент; `status` печатает `{"credentials": {...}, "tools": [...]}` с
-замаскированным ключом. У каждого объекта инструмента есть `id`, `name`,
+инструмент; `status` печатает
+`{"credentials": {"plan": ..., "key_stored": true}, "tools": [...]}` — ни одна
+часть ключа не выводится ни здесь, ни в `doctor`. У каждого объекта инструмента есть `id`, `name`,
 `command`, `installed`, `config_path`, `configured` и, если присутствуют,
 `plan`, `model_map` (сопоставление уровней Claude Code), `mcp_servers` и
 `error` (конфиг, который не удалось прочитать, например некорректный JSON;
@@ -320,7 +321,7 @@ go-z-ai coding status --format json
 Stored credentials
 ==================
   Plan: GLM Coding Plan (Global)
-  Key:  sk-t****abcd
+  Key:  stored
 
 Coding tools
 ============

@@ -113,6 +113,13 @@ library and the CLI; see *Removed* and *Changed*.
   what `coding load claude-code` writes. `ZAI_ENV`, which nothing read, is
   gone.
 
+### Security
+- Build with Go 1.26.8 (`toolchain` in `go.mod`), fixing the standard-library
+  vulnerabilities `govulncheck` reports for go1.26.5 (GO-2026-6218, -6090,
+  -6088, -5972, -5026), and OpenTelemetry v1.45.0, fixing GO-2026-6505.
+- `coding status` and `coding doctor` no longer print any part of the stored
+  key; they report only whether one is stored (`key_stored` in JSON).
+
 ### Removed
 - **Library:** `ChatService.CreateStream`, `CreateSimple`,
   `AnthropicService.CreateStream` (use `Stream`); `NewJSONSchemaFormat` and

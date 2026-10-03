@@ -269,7 +269,7 @@ Vision 服务器，`coding mcp add` 会发出警告（不会中断），`coding 
 ## 状态与 JSON 输出
 
 ```bash
-go-z-ai coding status          # stored credentials (key masked) + every tool
+go-z-ai coding status          # stored plan, whether a key is stored, every tool
 go-z-ai coding tools           # IDs, commands, install status, config paths
 go-z-ai coding mcp status      # official MCP servers per tool
 go-z-ai coding status --format json
@@ -277,7 +277,8 @@ go-z-ai coding status --format json
 
 `status`、`tools` 和 `mcp status` 接受 `--format json`（默认 `text`）。`tools` 和
 `mcp status` 会打印一个数组，每个工具一个对象；`status` 会打印
-`{"credentials": {...}, "tools": [...]}`，其中 key 已被掩码。每个工具对象都有
+`{"credentials": {"plan": ..., "key_stored": true}, "tools": [...]}`——无论这里还是
+`doctor`，都不会输出 key 的任何部分。每个工具对象都有
 `id`、`name`、`command`、`installed`、`config_path`、`configured`，以及（存在时）
 `plan`、`model_map`（Claude Code 的层级映射）、`mcp_servers` 和 `error`（无法读取
 的配置，例如格式错误的 JSON；一个工具读取失败不会妨碍其他工具被报告）。
@@ -286,7 +287,7 @@ go-z-ai coding status --format json
 Stored credentials
 ==================
   Plan: GLM Coding Plan (Global)
-  Key:  sk-t****abcd
+  Key:  stored
 
 Coding tools
 ============

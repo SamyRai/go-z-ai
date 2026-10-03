@@ -301,8 +301,7 @@ process environment (it does not load `.env`).
 ## How it relates to the official SDKs
 
 Z.AI / Zhipu publish official SDKs for **Python**
-([zai-org/z-ai-sdk-python](https://github.com/zai-org/z-ai-sdk-python), PyPI
-`zai-sdk`), **Node** ([MetaGLM/zhipuai-sdk-nodejs-v4](https://github.com/MetaGLM/zhipuai-sdk-nodejs-v4)),
+([PyPI `zai-sdk`](https://pypi.org/project/zai-sdk/)), **Node** ([MetaGLM/zhipuai-sdk-nodejs-v4](https://github.com/MetaGLM/zhipuai-sdk-nodejs-v4)),
 and **Java** ([MetaGLM/zhipuai-sdk-java-v4](https://github.com/MetaGLM/zhipuai-sdk-java-v4)).
 There is **no official Go SDK** — `go-z-ai` fills that gap, and layers a CLI,
 a TUI, regional gateway switching (`api.z.ai` ↔ `open.bigmodel.cn`), and GLM

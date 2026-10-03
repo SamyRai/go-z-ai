@@ -309,8 +309,7 @@ ZAI_API_KEY=your_api_key_here
 ## Связь с официальными SDK
 
 Z.AI / Zhipu выпускают официальные SDK для **Python**
-([zai-org/z-ai-sdk-python](https://github.com/zai-org/z-ai-sdk-python), PyPI
-`zai-sdk`), **Node** ([MetaGLM/zhipuai-sdk-nodejs-v4](https://github.com/MetaGLM/zhipuai-sdk-nodejs-v4))
+([PyPI `zai-sdk`](https://pypi.org/project/zai-sdk/)), **Node** ([MetaGLM/zhipuai-sdk-nodejs-v4](https://github.com/MetaGLM/zhipuai-sdk-nodejs-v4))
 и **Java** ([MetaGLM/zhipuai-sdk-java-v4](https://github.com/MetaGLM/zhipuai-sdk-java-v4)).
 Официального SDK для Go **нет** — `go-z-ai` заполняет этот пробел и поверх того
 же API добавляет CLI, TUI, переключение региональных шлюзов

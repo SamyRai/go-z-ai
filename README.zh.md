@@ -281,8 +281,7 @@ ZAI_API_KEY=your_api_key_here
 
 ## 与官方 SDK 的对比
 
-Z.AI / 智谱为 **Python**（[zai-org/z-ai-sdk-python](https://github.com/zai-org/z-ai-sdk-python)，
-PyPI 包名 `zai-sdk`）、**Node**（[MetaGLM/zhipuai-sdk-nodejs-v4](https://github.com/MetaGLM/zhipuai-sdk-nodejs-v4)）
+Z.AI / 智谱为 **Python**（[PyPI 包名 `zai-sdk`](https://pypi.org/project/zai-sdk/)）、**Node**（[MetaGLM/zhipuai-sdk-nodejs-v4](https://github.com/MetaGLM/zhipuai-sdk-nodejs-v4)）
 和 **Java**（[MetaGLM/zhipuai-sdk-java-v4](https://github.com/MetaGLM/zhipuai-sdk-java-v4)）
 提供了官方 SDK。目前**没有官方 Go SDK**——`go-z-ai` 填补了这一空白，并在同一套
 API 之上叠加了 CLI、TUI、区域网关切换（`api.z.ai` ↔ `open.bigmodel.cn`）以及 GLM

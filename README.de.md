@@ -309,8 +309,7 @@ Prozessumgebung (es lädt keine `.env`-Datei).
 ## Verhältnis zu den offiziellen SDKs
 
 Z.AI / Zhipu bieten offizielle SDKs für **Python**
-([zai-org/z-ai-sdk-python](https://github.com/zai-org/z-ai-sdk-python), PyPI
-`zai-sdk`), **Node** ([MetaGLM/zhipuai-sdk-nodejs-v4](https://github.com/MetaGLM/zhipuai-sdk-nodejs-v4))
+([PyPI `zai-sdk`](https://pypi.org/project/zai-sdk/)), **Node** ([MetaGLM/zhipuai-sdk-nodejs-v4](https://github.com/MetaGLM/zhipuai-sdk-nodejs-v4))
 und **Java** ([MetaGLM/zhipuai-sdk-java-v4](https://github.com/MetaGLM/zhipuai-sdk-java-v4)).
 Es gibt **kein offizielles Go-SDK** — `go-z-ai` schließt diese Lücke und schichtet
 eine CLI, eine TUI, das Umschalten regionaler Gateways

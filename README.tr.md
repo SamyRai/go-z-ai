@@ -305,8 +305,7 @@ ortamından okur (`.env` dosyasını yüklemez).
 ## Resmî SDK'lar ile ilişkisi
 
 Z.AI / Zhipu, **Python**
-([zai-org/z-ai-sdk-python](https://github.com/zai-org/z-ai-sdk-python), PyPI
-`zai-sdk`), **Node** ([MetaGLM/zhipuai-sdk-nodejs-v4](https://github.com/MetaGLM/zhipuai-sdk-nodejs-v4))
+([PyPI `zai-sdk`](https://pypi.org/project/zai-sdk/)), **Node** ([MetaGLM/zhipuai-sdk-nodejs-v4](https://github.com/MetaGLM/zhipuai-sdk-nodejs-v4))
 ve **Java** ([MetaGLM/zhipuai-sdk-java-v4](https://github.com/MetaGLM/zhipuai-sdk-java-v4))
 için resmî SDK'lar yayımlar. Resmî bir Go SDK'sı **yoktur** — `go-z-ai` bu
 boşluğu doldurur ve aynı API yüzeyi üzerine bir CLI, bir TUI, bölgesel ağ

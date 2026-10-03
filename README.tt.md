@@ -307,8 +307,7 @@ ZAI_API_KEY=your_api_key_here
 ## Рәсми SDK’лар белән бәйләнеш
 
 Z.AI / Zhipu **Python**
-([zai-org/z-ai-sdk-python](https://github.com/zai-org/z-ai-sdk-python), PyPI
-`zai-sdk`), **Node** ([MetaGLM/zhipuai-sdk-nodejs-v4](https://github.com/MetaGLM/zhipuai-sdk-nodejs-v4))
+([PyPI `zai-sdk`](https://pypi.org/project/zai-sdk/)), **Node** ([MetaGLM/zhipuai-sdk-nodejs-v4](https://github.com/MetaGLM/zhipuai-sdk-nodejs-v4))
 һәм **Java** ([MetaGLM/zhipuai-sdk-java-v4](https://github.com/MetaGLM/zhipuai-sdk-java-v4))
 өчен рәсми SDK’лар чыгара. Рәсми Go SDK **юк** — `go-z-ai` бу бушлыкны
 тулдыра һәм шундый ук API өстендә CLI, TUI, төбәк шлюзларын алмаштыруны

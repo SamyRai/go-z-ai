@@ -290,7 +290,7 @@ settings, and each tool has its own entry shape:
 ## Status and JSON output
 
 ```bash
-go-z-ai coding status          # stored credentials (key masked) + every tool
+go-z-ai coding status          # stored plan, whether a key is stored, every tool
 go-z-ai coding tools           # IDs, commands, install status, config paths
 go-z-ai coding mcp status      # official MCP servers per tool
 go-z-ai coding status --format json
@@ -298,7 +298,8 @@ go-z-ai coding status --format json
 
 `status`, `tools` and `mcp status` take `--format json` (default `text`).
 `tools` and `mcp status` print an array with one object per tool; `status`
-prints `{"credentials": {...}, "tools": [...]}` with the key masked. Each tool
+prints `{"credentials": {"plan": ..., "key_stored": true}, "tools": [...]}` —
+no part of the key is ever printed, here or by `doctor`. Each tool
 object has `id`, `name`, `command`, `installed`, `config_path`, `configured`,
 and, when present, `plan`, `model_map` (Claude Code's tier mapping),
 `mcp_servers`, and `error` (a config that couldn't be read, e.g. malformed
@@ -308,7 +309,7 @@ JSON; one unreadable tool doesn't stop the others from being reported).
 Stored credentials
 ==================
   Plan: GLM Coding Plan (Global)
-  Key:  sk-t****abcd
+  Key:  stored
 
 Coding tools
 ============
