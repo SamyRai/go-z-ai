@@ -25,7 +25,7 @@ func TestToolsWebSearch(t *testing.T) {
 	c := newTestClient(t, srv.URL, Config{MaxRetries: 0})
 	resp, err := c.Tools().WebSearch(context.Background(), WebSearchRequest{
 		SearchQuery:  "golang",
-		SearchEngine: SearchEnginePro,
+		SearchEngine: SearchEnginePrime,
 	})
 	if err != nil {
 		t.Fatalf("WebSearch: %v", err)
@@ -33,8 +33,8 @@ func TestToolsWebSearch(t *testing.T) {
 	if gotPath != "/web_search" {
 		t.Errorf("expected path /web_search, got %q", gotPath)
 	}
-	if !strings.Contains(gotBody, `"search_intent":false`) {
-		t.Errorf("expected search_intent explicitly present (required field), got: %s", gotBody)
+	if !strings.Contains(gotBody, `"search_engine":"search-prime"`) || strings.Contains(gotBody, "search_intent") {
+		t.Errorf("expected search-prime engine and no unset search_intent, got: %s", gotBody)
 	}
 	if len(resp.SearchResult) != 1 || resp.SearchResult[0].Link != "https://example.com" {
 		t.Fatalf("unexpected response: %+v", resp)

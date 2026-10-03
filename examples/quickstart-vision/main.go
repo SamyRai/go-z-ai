@@ -1,5 +1,5 @@
-// Command quickstart-vision sends an image to a vision-capable GLM model
-// (glm-4.6v) and prints the model's description. Pass an image URL — the
+// Command quickstart-vision sends an image to a multimodal GLM model
+// (client.DefaultVisionModel) and prints the model's description. Pass an image URL — the
 // client passes image URLs through verbatim. To use a local file, base64-encode
 // it into a "data:image/...;base64,..." URI yourself and pass that string.
 //
@@ -35,7 +35,7 @@ func main() {
 	}
 
 	resp, err := c.Chat().Create(context.Background(), client.ChatRequest{
-		Model: "glm-4.6v",
+		Model: client.DefaultVisionModel,
 		Messages: []client.Message{{
 			Role:    "user",
 			Content: prompt,

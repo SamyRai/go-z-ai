@@ -5,60 +5,67 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/SamyRai/go-z-ai/pkg/client"
 )
 
-// A bare http(s):// URL passes through unchanged.
-func TestResolveImageArgURL(t *testing.T) {
-	got, err := resolveImageArg("https://example.com/cat.png")
+func TestChatRequestBase(t *testing.T) {
+	req, err := chatOptions{model: client.DefaultModel}.request("hello")
 	if err != nil {
-		t.Fatalf("resolveImageArg: %v", err)
+		t.Fatalf("request: %v", err)
 	}
-	if got != "https://example.com/cat.png" {
-		t.Errorf("expected URL to pass through unchanged, got %q", got)
+	if len(req.Messages) != 1 || req.Messages[0].Content != "hello" {
+		t.Errorf("unexpected messages: %+v", req.Messages)
+	}
+	if req.Thinking != nil || req.DoSample != nil || req.Temperature != 0 || req.MaxTokens != 0 {
+		t.Errorf("unset flags must leave the model defaults alone: %+v", req)
 	}
 }
 
-// An @path argument reads the local file and base64-encodes it as a data:
-// URI, guessing the MIME type from the extension.
-func TestResolveImageArgLocalFile(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "photo.png")
-	if err := os.WriteFile(path, []byte("fake-png-bytes"), 0o600); err != nil {
-		t.Fatalf("write test file: %v", err)
-	}
-
-	got, err := resolveImageArg("@" + path)
+func TestChatRequestReasoning(t *testing.T) {
+	req, err := chatOptions{model: client.DefaultModel, thinking: client.ThinkingEnabled, effort: client.EffortHigh}.request("hi")
 	if err != nil {
-		t.Fatalf("resolveImageArg: %v", err)
+		t.Fatalf("request: %v", err)
 	}
-	if !strings.HasPrefix(got, "data:image/png;base64,") {
-		t.Errorf("expected a data:image/png;base64 URI, got %q", got)
-	}
-	if strings.Contains(got, "fake-png-bytes") {
-		t.Error("expected the bytes to be base64-encoded, not embedded raw")
+	if req.Thinking == nil || req.Thinking.Type != "enabled" || req.ReasoningEffort != "high" {
+		t.Errorf("thinking/effort not applied: %+v %q", req.Thinking, req.ReasoningEffort)
 	}
 }
 
-// An unrecognized extension falls back to image/jpeg (the API's default).
-func TestResolveImageArgUnknownExtensionFallsBackToJPEG(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "photo.unknownext")
+// --json-schema switches to JSON-object mode and describes the schema in the
+// system message (the API has no json_schema response format).
+func TestChatRequestJSONSchema(t *testing.T) {
+	req, err := chatOptions{system: "be terse", schema: `{"type":"object"}`}.request("hi")
+	if err != nil {
+		t.Fatalf("request: %v", err)
+	}
+	if req.ResponseFormat == nil || req.ResponseFormat.Type != client.ResponseFormatJSONObject {
+		t.Errorf("response format = %+v", req.ResponseFormat)
+	}
+	sys := req.Messages[0]
+	if sys.Role != "system" || !strings.Contains(sys.Content, "be terse") || !strings.Contains(sys.Content, `{"type":"object"}`) {
+		t.Errorf("system message = %+v", sys)
+	}
+	if _, err := (chatOptions{schema: "{nope"}).request("hi"); err == nil {
+		t.Error("invalid schema JSON must fail")
+	}
+}
+
+// Attachments resolve URLs and @files into the user message.
+func TestChatRequestAttachments(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "clip.mp4")
 	if err := os.WriteFile(path, []byte("x"), 0o600); err != nil {
-		t.Fatalf("write test file: %v", err)
+		t.Fatal(err)
 	}
-
-	got, err := resolveImageArg("@" + path)
+	req, err := chatOptions{images: []string{"https://x/a.png"}, videos: []string{"@" + path}}.request("describe")
 	if err != nil {
-		t.Fatalf("resolveImageArg: %v", err)
+		t.Fatalf("request: %v", err)
 	}
-	if !strings.HasPrefix(got, "data:image/jpeg;base64,") {
-		t.Errorf("expected fallback to image/jpeg, got %q", got)
+	user := req.Messages[len(req.Messages)-1]
+	if len(user.Images) != 1 || len(user.Videos) != 1 || !strings.HasPrefix(user.Videos[0], "data:video/mp4;base64,") {
+		t.Errorf("attachments = %+v / %+v", user.Images, user.Videos)
 	}
-}
-
-// A missing local file must error, not silently produce an empty image.
-func TestResolveImageArgMissingFile(t *testing.T) {
-	if _, err := resolveImageArg("@/nonexistent/path/photo.png"); err == nil {
-		t.Fatal("expected an error for a missing file")
+	if _, err := (chatOptions{images: []string{"@/nonexistent/x.png"}}).request("x"); err == nil {
+		t.Error("a missing attachment must fail")
 	}
 }

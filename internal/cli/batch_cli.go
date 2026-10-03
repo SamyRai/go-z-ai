@@ -49,6 +49,8 @@ func init() {
 	batchCmd.AddCommand(batchCreateCmd, batchStatusCmd, batchListCmd, batchCancelCmd)
 
 	batchCreateCmd.Flags().String("endpoint", string(client.BatchEndpointChatCompletions), "Target endpoint (currently the API's only supported value)")
+	batchCreateCmd.Flags().Bool("auto-delete-input", false, "Delete the input file once the batch finishes")
+	batchCreateCmd.Flags().StringToString("metadata", nil, "Batch metadata key=value (repeatable)")
 	batchListCmd.Flags().String("after", "", "Cursor: list batches after this batch ID")
 	batchListCmd.Flags().Int("limit", 0, "Max batches to return (0 = server default)")
 	addFormatFlag("text", batchCreateCmd, batchStatusCmd, batchListCmd, batchCancelCmd)
@@ -56,11 +58,18 @@ func init() {
 
 func runBatchCreate(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	endpoint, _ := cmd.Flags().GetString("endpoint")
-
-	b, err := apiClient.Batch().Create(cmd.Context(), client.BatchCreateRequest{
+	metadata, _ := cmd.Flags().GetStringToString("metadata")
+	req := client.BatchCreateRequest{
 		InputFileID: args[0],
 		Endpoint:    client.BatchEndpoint(endpoint),
-	})
+		Metadata:    metadata,
+	}
+	if cmd.Flags().Changed("auto-delete-input") {
+		autoDelete, _ := cmd.Flags().GetBool("auto-delete-input")
+		req.AutoDeleteInputFile = &autoDelete
+	}
+
+	b, err := apiClient.Batch().Create(cmd.Context(), req)
 	if err != nil {
 		return fmt.Errorf("failed to create batch: %w", err)
 	}

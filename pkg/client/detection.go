@@ -2,187 +2,118 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"strings"
 	"sync"
 )
 
-// AccountType represents different Z.AI account types
+// AccountType classifies a Z.AI API key.
 type AccountType string
 
 const (
 	AccountTypePayAsYouGo AccountType = "pay_as_you_go"
 	AccountTypeCodingPlan AccountType = "coding_plan"
-	AccountTypeUnknown    AccountType = "unknown"
 )
 
-// AccountInfo represents detected account information
+// DetectedAccount is the result of classifying an API key.
 type DetectedAccount struct {
-	Type        AccountType  `json:"type"`
-	BaseURL     string       `json:"base_url"`
-	Working     bool         `json:"working"`
-	Models      []string     `json:"available_models"`
-	UsageLimits *UsageLimits `json:"usage_limits,omitempty"`
+	Type   AccountType `json:"type"`
+	Region Region      `json:"region"`
+	// BaseURL is the chat API root this key should use (Region.BaseURLFor).
+	BaseURL string `json:"base_url"`
+	// Confirmed is true when the coding-plan quota endpoint positively
+	// identified a subscription. No endpoint positively identifies a
+	// pay-as-you-go key, so that result is an inference by elimination and
+	// is never confirmed.
+	Confirmed bool `json:"confirmed"`
+	// Level is the coding-plan tier the quota endpoint reports (e.g. "lite",
+	// "pro", "max"); empty for pay-as-you-go keys.
+	Level string `json:"level,omitempty"`
 }
 
-// UsageLimits represents subscription usage limits
-type UsageLimits struct {
-	HourlyPromptLimit int    `json:"hourly_prompt_limit"`
-	WeeklyPromptLimit int    `json:"weekly_prompt_limit"`
-	HourlyWindowReset string `json:"hourly_window_reset"`
-	WeeklyReset       string `json:"weekly_reset"`
-	CurrentUsage      int    `json:"current_usage"`
-	RemainingQuota    int    `json:"remaining_quota"`
-}
-
-// DetectionService handles account type detection
+// DetectionService classifies the client's API key — account type and the
+// regional gateway it belongs to. It is the single owner of that logic; the
+// CLI and TUI both call it.
 type DetectionService struct {
 	client *Client
-	mu     sync.RWMutex
+	mu     sync.Mutex
 	cache  *DetectedAccount
 }
 
-// NewDetectionService creates a new detection service
-func NewDetectionService(client *Client) *DetectionService {
-	return &DetectionService{
-		client: client,
-	}
-}
-
-// DetectAccountType detects the account type by testing different endpoints.
-// The probe hosts follow Config.Region: a RegionChina client tests the
-// open.bigmodel.cn coding/paas endpoints, RegionGlobal (the default) tests
-// api.z.ai — so a China-issued key is classified against its own platform
-// rather than mis-failing auth on the global host.
+// DetectAccountType classifies the client's key with a free call to the
+// coding-plan-only quota endpoint — no tokens are spent and no quota is
+// consumed. It probes the client's configured region first, then the other
+// gateway, since a China-issued coding-plan key only answers on
+// open.bigmodel.cn. A successful, well-formed quota response from either
+// gateway confirms a coding plan; an API error from both means pay-as-you-go
+// (unconfirmed). If neither gateway could be reached at all, the transport
+// error is returned rather than guessing. The result is cached per client.
 func (s *DetectionService) DetectAccountType(ctx context.Context) (*DetectedAccount, error) {
-	// Try to use cached result
-	s.mu.RLock()
-	if s.cache != nil {
-		defer s.mu.RUnlock()
-		return s.cache, nil
-	}
-	s.mu.RUnlock()
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.cache != nil {
+		return s.cache, nil
+	}
 
-	codingURL, paasURL := s.probeURLs()
-	// Test Coding Plan endpoint
-	codingResult := s.testEndpoint(ctx, codingURL)
-	if codingResult.Working {
-		account := &DetectedAccount{
-			Type:        AccountTypeCodingPlan,
-			BaseURL:     codingURL,
-			Working:     true,
-			Models:      []string{"glm-5.2", "glm-5-turbo", "glm-4.7"},
-			UsageLimits: s.detectCodingPlanLimits(),
+	home := ParseRegion(string(s.client.config.Region))
+	answered := false
+	var lastErr error
+	for _, region := range []Region{home, otherRegion(home)} {
+		level, err := s.probe(ctx, region)
+		if err == nil {
+			s.cache = &DetectedAccount{
+				Type:      AccountTypeCodingPlan,
+				Region:    region,
+				BaseURL:   region.BaseURLFor(AccountTypeCodingPlan),
+				Confirmed: true,
+				Level:     level,
+			}
+			return s.cache, nil
 		}
-		s.cache = account
-		return account, nil
-	}
-
-	// Test Pay-as-you-go endpoint
-	paasResult := s.testEndpoint(ctx, paasURL)
-	if paasResult.Working {
-		account := &DetectedAccount{
-			Type:        AccountTypePayAsYouGo,
-			BaseURL:     paasURL,
-			Working:     true,
-			Models:      []string{}, // Will be populated
-			UsageLimits: nil,
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return nil, ctxErr
 		}
-		s.cache = account
-		return account, nil
-	}
-
-	return nil, fmt.Errorf("unable to detect account type - both endpoints failed")
-}
-
-// probeURLs returns the coding-plan and pay-as-you-go base URLs to probe,
-// selected by Config.Region. The China mirror paths mirror api.z.ai's layout
-// (live-verified for /models and /chat/completions — see BigModelBaseURL).
-func (s *DetectionService) probeURLs() (coding, paas string) {
-	if s.client.config.Region == RegionChina {
-		return ChinaCodingBaseURL, ChinaProdBaseURL
-	}
-	return CodingBaseURL, ProdBaseURL
-}
-
-func (s *DetectionService) testEndpoint(ctx context.Context, baseURL string) *EndpointTest {
-	result := &EndpointTest{
-		BaseURL: baseURL,
-	}
-
-	// Create a temporary client pointed at the probe URL. It inherits the
-	// parent's HTTPClient so a test (or a caller supplying a custom transport)
-	// can intercept the probe instead of hitting the real network; only the
-	// BaseURL is overridden. MaxRetries=-1 disables retries — a probe that
-	// fails shouldn't burn 3 backoff rounds before detection falls through to
-	// the next endpoint. ChinaAPIKey/Region/etc. are irrelevant for this
-	// one-shot probe against an explicit URL.
-	tempClient, err := NewClient(Config{
-		APIKey:     s.client.config.APIKey,
-		BaseURL:    baseURL,
-		HTTPClient: s.client.httpClient,
-		MaxRetries: -1,
-	})
-	if err != nil {
-		result.Error = err
-		return result
-	}
-
-	// Try to make a request
-	_, err = tempClient.Chat().Create(ctx, ChatRequest{
-		Model:       "glm-4.7",
-		Messages:    []Message{{Role: "user", Content: "test"}},
-		MaxTokens:   1,
-		Temperature: 0.7,
-		TopP:        0.95,
-	})
-
-	if err != nil {
-		// Check if error indicates API is working but has other issues
-		errMsg := err.Error()
-		if strings.Contains(errMsg, "429") || strings.Contains(errMsg, "1113") || strings.Contains(errMsg, "rate limit") {
-			// 429 rate limit means API is accessible
-			result.Working = true
-			result.Error = err
-			return result
+		lastErr = err
+		if _, isAPIErr := errors.AsType[*APIError](err); isAPIErr || errors.Is(err, errNotCodingPlan) {
+			answered = true
 		}
-		result.Error = err
-		return result
 	}
-
-	result.Working = true
-	return result
+	if !answered {
+		return nil, fmt.Errorf("account detection: no gateway reachable: %w", lastErr)
+	}
+	s.cache = &DetectedAccount{
+		Type:    AccountTypePayAsYouGo,
+		Region:  home,
+		BaseURL: home.BaseURLFor(AccountTypePayAsYouGo),
+	}
+	return s.cache, nil
 }
 
-type EndpointTest struct {
-	BaseURL    string
-	Working    bool
-	StatusCode int
-	Error      error
+// errNotCodingPlan reports a quota response that answered but did not
+// identify a subscription.
+var errNotCodingPlan = errors.New("quota endpoint did not identify a coding plan")
+
+// probe asks region's quota endpoint about the key and returns the plan tier
+// when it identifies a coding-plan subscription.
+func (s *DetectionService) probe(ctx context.Context, region Region) (string, error) {
+	var res QuotaLimitResponse
+	r := apiRequest{method: "GET", baseURL: region.MonitorBaseURL(), path: QuotaLimitEndpoint, service: "detection"}
+	if err := s.client.do(ctx, r, &res); err != nil {
+		if _, decodeErr := errors.AsType[*decodeError](err); decodeErr {
+			return "", errNotCodingPlan
+		}
+		return "", err
+	}
+	if !res.OK() || res.Data.Level == "" {
+		return "", errNotCodingPlan
+	}
+	return res.Data.Level, nil
 }
 
-func (s *DetectionService) detectCodingPlanLimits() *UsageLimits {
-	// Z.AI doesn't provide API endpoints to get actual usage limits
-	// These are general reference values from documentation
-	// Your actual limits may vary based on your specific plan
-	return &UsageLimits{
-		HourlyPromptLimit: 0, // Unknown - would need API endpoint
-		WeeklyPromptLimit: 0, // Unknown - would need API endpoint
-		HourlyWindowReset: "5-hours (rolling window)",
-		WeeklyReset:       "7-days (estimated)",
-		CurrentUsage:      0,
-		RemainingQuota:    0,
+// otherRegion returns the gateway that is not r.
+func otherRegion(r Region) Region {
+	if r == RegionChina {
+		return RegionGlobal
 	}
-}
-
-// GetAccountInfo returns detected account information
-func (s *DetectionService) GetAccountInfo(ctx context.Context) (*DetectedAccount, error) {
-	account, err := s.DetectAccountType(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return account, nil
+	return RegionChina
 }

@@ -2,8 +2,9 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"io"
+	"iter"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,6 +14,21 @@ import (
 
 // sseHandler writes the given SSE frames (each becomes a `data:` line), with a
 // final `data: [DONE]`, flushing between frames so it behaves like a real stream.
+// drainStream ranges over seq, calling fn for each value, and returns the
+// iterator's terminal error or fn's first error — the callback shape the
+// streaming tests assert against.
+func drainStream[T any](seq iter.Seq2[T, error], fn func(T) error) error {
+	for v, err := range seq {
+		if err != nil {
+			return err
+		}
+		if err := fn(v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func sseHandler(frames ...string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -42,7 +58,7 @@ func TestCreateStreamContent(t *testing.T) {
 
 	var got strings.Builder
 	var chunks int
-	err := c.Chat().CreateStream(context.Background(), req, func(ch StreamChunk) error {
+	err := drainStream(c.Chat().Stream(context.Background(), req), func(ch StreamChunk) error {
 		chunks++
 		if len(ch.Choices) > 0 {
 			got.WriteString(ch.Choices[0].Delta.Content)
@@ -75,7 +91,7 @@ func TestCreateStreamIgnoresControlLines(t *testing.T) {
 	req := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95}
 
 	var got strings.Builder
-	err := c.Chat().CreateStream(context.Background(), req, func(ch StreamChunk) error {
+	err := drainStream(c.Chat().Stream(context.Background(), req), func(ch StreamChunk) error {
 		if len(ch.Choices) > 0 {
 			got.WriteString(ch.Choices[0].Delta.Content)
 		}
@@ -106,7 +122,7 @@ func TestCreateStreamRetriableThenStream(t *testing.T) {
 	req := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95}
 
 	var got strings.Builder
-	if err := c.Chat().CreateStream(context.Background(), req, func(ch StreamChunk) error {
+	if err := drainStream(c.Chat().Stream(context.Background(), req), func(ch StreamChunk) error {
 		if len(ch.Choices) > 0 {
 			got.WriteString(ch.Choices[0].Delta.Content)
 		}
@@ -136,7 +152,7 @@ func TestCreateStreamAbortOnError(t *testing.T) {
 
 	stop := fmt.Errorf("stop requested")
 	var count int
-	err := c.Chat().CreateStream(context.Background(), req, func(ch StreamChunk) error {
+	err := drainStream(c.Chat().Stream(context.Background(), req), func(ch StreamChunk) error {
 		count++
 		if count == 1 {
 			return stop
@@ -162,7 +178,7 @@ func TestCreateStreamNonRetriable(t *testing.T) {
 
 	c := newTestClient(t, srv.URL, Config{MaxRetries: 3})
 	req := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95}
-	err := c.Chat().CreateStream(context.Background(), req, func(ch StreamChunk) error { return nil })
+	err := drainStream(c.Chat().Stream(context.Background(), req), func(ch StreamChunk) error { return nil })
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -200,7 +216,7 @@ func TestCreateStreamSurvivesPastConfigTimeout(t *testing.T) {
 	req := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95}
 
 	var chunks int
-	err := c.Chat().CreateStream(context.Background(), req, func(ch StreamChunk) error {
+	err := drainStream(c.Chat().Stream(context.Background(), req), func(ch StreamChunk) error {
 		chunks++
 		return nil
 	})
@@ -233,7 +249,7 @@ func TestCreateStreamContextCancel(t *testing.T) {
 	defer cancel()
 
 	req := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95}
-	err := c.Chat().CreateStream(ctx, req, func(ch StreamChunk) error { return nil })
+	err := drainStream(c.Chat().Stream(ctx, req), func(ch StreamChunk) error { return nil })
 	if err == nil {
 		t.Fatal("expected cancellation error")
 	}
@@ -338,28 +354,27 @@ func TestValidateChatRequestFunctionCap(t *testing.T) {
 	}
 }
 
-func TestValidateChatRequestInvalidEffort(t *testing.T) {
-	req := ChatRequest{
-		Model:    "m",
-		Messages: []Message{{Role: "user", Content: "hi"}},
-		TopP:     0.95,
-		Thinking: &ThinkingConfig{Type: "enabled", Effort: "ultra"},
+// reasoning_effort is validated against the model's catalog entry: GLM-5.3
+// takes only low/high/max, GLM-5.2 every level, a cataloged model without the
+// parameter none, and an uncataloged model any documented level.
+func TestValidateChatRequestEffort(t *testing.T) {
+	cases := []struct {
+		model, effort string
+		ok            bool
+	}{
+		{"glm-5.3", EffortHigh, true},
+		{"glm-5.3", EffortMedium, false},
+		{"glm-5.3-flash", EffortMax, true},
+		{"glm-5.2", EffortMinimal, true},
+		{"glm-4.7", EffortHigh, false},
+		{"some-future-model", EffortXhigh, true},
+		{"some-future-model", "ultra", false},
+		{"glm-5.3", "", true},
 	}
-	if err := validateChatRequest(&req); err == nil {
-		t.Fatal("expected error for unknown effort 'ultra', got nil")
-	}
-}
-
-func TestValidateChatRequestValidEffort(t *testing.T) {
-	for _, e := range []string{EffortMax, EffortXhigh, EffortHigh, EffortMedium, EffortLow, EffortMinimal, EffortNone} {
-		req := ChatRequest{
-			Model:    "m",
-			Messages: []Message{{Role: "user", Content: "hi"}},
-			TopP:     0.95,
-			Thinking: &ThinkingConfig{Type: "enabled", Effort: e},
-		}
-		if err := validateChatRequest(&req); err != nil {
-			t.Errorf("effort %q rejected: %v", e, err)
+	for _, c := range cases {
+		req := ChatRequest{Model: c.model, Messages: []Message{{Role: "user", Content: "hi"}}, ReasoningEffort: c.effort}
+		if err := validateChatRequest(&req); (err == nil) != c.ok {
+			t.Errorf("model %q effort %q: err = %v, want ok=%v", c.model, c.effort, err, c.ok)
 		}
 	}
 }
@@ -423,11 +438,10 @@ func TestValidateChatRequestUnknownToolType(t *testing.T) {
 	}
 }
 
-// FuzzReadSSE feeds arbitrary bytes through the SSE line parser that reads a
-// server streaming response. The contract: readSSE must never panic, never
-// hang, and never allocate without bound — for any byte sequence a (buggy or
-// malicious) server might emit. The scanner's 1MB buffer cap bounds memory; the
-// harness asserts the parse terminates with an error or nil, not a panic. Run:
+// FuzzReadSSE feeds arbitrary bytes through the chat SSE decoder (scanSSE +
+// chunk parsing). The contract: it must never panic, never hang, and never
+// allocate without bound — for any byte sequence a (buggy or malicious)
+// server might emit. The scanner's line cap (maxSSELine) bounds memory. Run:
 //
 //	go test -run=^$ -fuzz=FuzzReadSSE ./pkg/client/
 func FuzzReadSSE(f *testing.F) {
@@ -459,31 +473,44 @@ func FuzzReadSSE(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, stream string) {
-		// Wrap the fuzzed bytes as an SSE response body. readSSE owns no
-		// connection — it only reads resp.Body and parses data: lines — so a
-		// bare io.Reader is a faithful stand-in for a server stream.
-		resp := &http.Response{
-			StatusCode: http.StatusOK,
-			Header:     http.Header{"Content-Type": []string{"text/event-stream"}},
-			Body:       io.NopCloser(strings.NewReader(stream)),
-		}
-		// Build a minimal ChatService directly — newTestClient takes a *testing.T
-		// but here we have *testing.F, and readSSE needs no live HTTP anyway.
-		c, err := NewClient(Config{APIKey: "fuzz", BaseURL: "http://unused", MaxRetries: -1})
-		if err != nil {
-			t.Fatalf("NewClient: %v", err)
-		}
-		svc := c.Chat()
-		// A no-op callback: we only care that the parser itself terminates
-		// without panicking. An error return is fine (malformed JSON, oversized
-		// line) — it's a panic or a hang that's the bug.
-		var got int
-		_ = svc.readSSE(context.Background(), resp, func(StreamChunk) error {
-			got++
+		// The decoder reads only the body, so a bare reader is a faithful
+		// stand-in for a server stream. An error return is fine (malformed
+		// JSON, oversized line) — a panic or a hang is the bug.
+		_ = decodeChatStream(context.Background(), strings.NewReader(stream), func(StreamChunk) error {
 			return nil
 		})
-		// No assertion on got — the number of chunks varies with input. The
-		// contract is "no panic, terminates". Reaching here is the pass.
-		_ = got
 	})
+}
+
+// A mid-stream {"error":{…}} chunk ends the stream with an *APIError rather
+// than decoding as an empty chunk.
+func TestDecodeChatStreamInBandError(t *testing.T) {
+	body := "data: {\"id\":\"1\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"a\"}}]}\n\n" +
+		"data: {\"error\":{\"code\":\"1301\",\"message\":\"unsafe content\"}}\n\n" +
+		"data: [DONE]\n\n"
+	var chunks int
+	err := decodeChatStream(context.Background(), strings.NewReader(body), func(StreamChunk) error {
+		chunks++
+		return nil
+	})
+	apiErr, ok := errors.AsType[*APIError](err)
+	if !ok {
+		t.Fatalf("want *APIError, got %v", err)
+	}
+	if apiErr.Code != 1301 || chunks != 1 {
+		t.Errorf("code=%d chunks=%d; want 1301 after 1 chunk", apiErr.Code, chunks)
+	}
+}
+
+// Content that merely mentions "error" is not mistaken for an error chunk.
+func TestDecodeChatStreamErrorWordInContent(t *testing.T) {
+	body := "data: {\"id\":\"1\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\\\"error\\\" handling\"}}]}\n\ndata: [DONE]\n\n"
+	var got string
+	err := decodeChatStream(context.Background(), strings.NewReader(body), func(c StreamChunk) error {
+		got += c.Choices[0].Delta.Content
+		return nil
+	})
+	if err != nil || got != `"error" handling` {
+		t.Errorf("got %q, %v", got, err)
+	}
 }

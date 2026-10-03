@@ -1,12 +1,14 @@
 package client
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"net/http"
+	"io"
+	"iter"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -26,127 +28,105 @@ func (s *ChatService) compatTools(tools []Tool) []Tool {
 	return SanitizeToolSchemas(tools)
 }
 
-// Create creates a chat completion
+// Create creates a chat completion.
 func (s *ChatService) Create(ctx context.Context, req ChatRequest) (*ChatResponse, error) {
-	if err := validateChatRequest(&req); err != nil {
-		return nil, fmt.Errorf("invalid chat request: %w", err)
-	}
-	req.Tools = s.compatTools(req.Tools)
-
-	var response ChatResponse
-	err := s.client.doRequest(ctx, "POST", "/chat/completions", req, &response)
+	r, err := s.prepare(req, "/chat/completions")
 	if err != nil {
+		return nil, err
+	}
+	var response ChatResponse
+	if err := s.client.do(ctx, r, &response); err != nil {
 		return nil, fmt.Errorf("failed to create chat completion: %w", err)
 	}
-
 	return &response, nil
 }
 
-// CreateAsync submits a chat completion request and returns immediately
-// with a task to poll via Client.GetAsyncResult/WaitForResult — useful for
+// CreateAsync submits a chat completion request and returns immediately with
+// a task to poll via Client.GetAsyncResult/WaitForResult — useful for
 // long-running generations where you don't want to hold a connection open.
 // The request shape is identical to Create; only the endpoint and response
-// differ (confirmed against docs.bigmodel.cn's live OpenAPI spec,
-// POST /paas/v4/async/chat/completions -> AsyncResponse). Poll the
-// returned ID with GetAsyncResult, whose AsyncResultResponse now also
-// carries Choices/Usage for a completed chat task (see async.go).
+// differ (POST /async/chat/completions -> AsyncTaskResponse). A completed
+// task's AsyncResultResponse carries Choices/Usage (see async.go).
 func (s *ChatService) CreateAsync(ctx context.Context, req ChatRequest) (*AsyncTaskResponse, error) {
-	if err := validateChatRequest(&req); err != nil {
-		return nil, fmt.Errorf("invalid chat request: %w", err)
-	}
 	if req.Stream {
 		return nil, fmt.Errorf("stream is not supported for async chat completions")
 	}
-	req.Tools = s.compatTools(req.Tools)
-
+	r, err := s.prepare(req, "/async/chat/completions")
+	if err != nil {
+		return nil, err
+	}
 	var response AsyncTaskResponse
-	if err := s.client.doRequest(ctx, "POST", "/async/chat/completions", req, &response); err != nil {
+	if err := s.client.do(ctx, r, &response); err != nil {
 		return nil, fmt.Errorf("failed to submit async chat completion: %w", err)
 	}
 	return &response, nil
 }
 
-// CreateSimple creates a simple chat completion with basic parameters
-func (s *ChatService) CreateSimple(ctx context.Context, model, userMessage string, messages []Message) (*ChatResponse, error) {
-	if len(messages) == 0 {
-		messages = []Message{
-			{Role: "user", Content: userMessage},
-		}
+// Stream sends a streaming chat completion and returns an iterator over its
+// chunks (Go 1.23+ range-over-func):
+//
+//	for chunk, err := range c.Chat().Stream(ctx, req) {
+//	    if err != nil { /* terminal — the loop ends */ break }
+//	    if len(chunk.Choices) > 0 {
+//	        fmt.Print(chunk.Choices[0].Delta.Content)
+//	    }
+//	}
+//
+// The request is sent with stream=true. Connect-level transient failures are
+// retried like Create; a mid-stream failure is the iterator's terminal error.
+// Breaking out of the loop or cancelling ctx stops the stream and releases
+// the connection.
+func (s *ChatService) Stream(ctx context.Context, req ChatRequest) iter.Seq2[StreamChunk, error] {
+	req.Stream = true
+	r, err := s.prepare(req, "/chat/completions")
+	if err != nil {
+		return errorIter[StreamChunk](err)
 	}
-
-	req := ChatRequest{
-		Model:       model,
-		Messages:    messages,
-		Temperature: 0.7,
-		TopP:        0.95, // Set default top_p value
-		MaxTokens:   4096,
-	}
-
-	return s.Create(ctx, req)
+	return streamSSE(ctx, s.client, r, decodeChatStream)
 }
 
-// sseDone is the sentinel the server sends to terminate an SSE stream.
+// prepare validates req, applies the tool-schema compatibility rewrite, and
+// wraps it as an apiRequest for path.
+func (s *ChatService) prepare(req ChatRequest, path string) (apiRequest, error) {
+	if err := validateChatRequest(&req); err != nil {
+		return apiRequest{}, fmt.Errorf("invalid chat request: %w", err)
+	}
+	req.Tools = s.compatTools(req.Tools)
+	return apiRequest{method: "POST", path: path, body: req, service: "chat", model: req.Model}, nil
+}
+
+// sseDone is the sentinel data payload that terminates an OpenAI-style stream.
 const sseDone = "[DONE]"
 
-// CreateStream sends a streaming chat completion. onChunk is invoked once per
-// SSE event (one delta at a time); returning a non-nil error aborts the stream.
-// The request is sent with stream=true. Connect-level transient failures (429,
-// 5xx, network errors) are retried up to Config.MaxRetries exactly like Create;
-// once the stream has begun, mid-stream failures are surfaced, not retried.
-//
-// Deprecated: use Stream, which returns an iter.Seq2[StreamChunk, error]
-// compatible with Go 1.23+'s range-over-func. CreateStream delegates to Stream
-// and will be removed in v1.0.
-func (s *ChatService) CreateStream(ctx context.Context, req ChatRequest, onChunk func(StreamChunk) error) error {
-	for chunk, err := range s.Stream(ctx, req) {
-		if err != nil {
-			return err
-		}
-		if err := onChunk(chunk); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// readSSE parses a Server-Sent-Events stream, invoking onChunk for each
-// `data:` payload and returning on `[DONE]` or stream end.
-func (s *ChatService) readSSE(ctx context.Context, resp *http.Response, onChunk func(StreamChunk) error) error {
-	scanner := bufio.NewScanner(resp.Body)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-
-	for scanner.Scan() {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		line := scanner.Text()
-		if len(line) == 0 || line[0] == ':' {
-			continue // event separator or SSE comment / keep-alive
-		}
-		const prefix = "data:"
-		if !strings.HasPrefix(line, prefix) {
-			continue // ignore event:, id:, retry: control lines
-		}
-		payload := strings.TrimSpace(line[len(prefix):])
-		if payload == "" {
-			continue
-		}
-		if payload == sseDone {
+// decodeChatStream decodes an OpenAI-style chat SSE body — one JSON
+// StreamChunk per data payload, terminated by [DONE] or end of stream.
+func decodeChatStream(ctx context.Context, body io.Reader, emit func(StreamChunk) error) error {
+	err := scanSSE(ctx, body, func(_, data string) error {
+		switch data {
+		case "":
 			return nil
+		case sseDone:
+			return errStreamDone
+		}
+		if strings.Contains(data, `"error"`) {
+			if err := streamError([]byte(data)); err != nil {
+				return err
+			}
 		}
 		var chunk StreamChunk
-		if err := json.Unmarshal([]byte(payload), &chunk); err != nil {
+		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
 			return fmt.Errorf("failed to parse stream chunk: %w", err)
 		}
-		if err := onChunk(chunk); err != nil {
-			return err
-		}
+		return emit(chunk)
+	})
+	if errors.Is(err, errStreamDone) {
+		return nil
 	}
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("stream read error: %w", err)
-	}
-	return nil
+	return err
 }
+
+// errStreamDone ends scanning at the [DONE] sentinel; never surfaced.
+var errStreamDone = errors.New("stream done")
 
 // toolNamePattern matches Z.AI's documented constraint on tools[].function.name:
 // ASCII letters, digits, underscore, hyphen; 1–64 chars. Applied in
@@ -187,18 +167,13 @@ func validateChatRequest(req *ChatRequest) error {
 		return fmt.Errorf("top_p must be between 0 and 1")
 	}
 
-	// Validate Thinking.Effort (when set) against the documented enum so the
-	// caller gets a clear error rather than the server's 400.
-	if req.Thinking != nil && req.Thinking.Effort != "" {
-		if !validEffort[req.Thinking.Effort] {
-			return fmt.Errorf("thinking.effort %q is not one of %v", req.Thinking.Effort, effortValues())
-		}
+	if err := validateEffort(req.Model, req.ReasoningEffort); err != nil {
+		return err
 	}
 
 	// Enforce the documented 128-function cap and the tool-name pattern
-	// (^[A-Za-z0-9_-]{1,64}$) client-side. Each tool type must also carry its
-	// matching payload (Function/Retrieval/WebSearch) — a bare {"type":...}
-	// would otherwise serialize and likely 400 at the server.
+	// client-side. Each tool type must carry its matching payload — a bare
+	// {"type":...} would serialize and be rejected by the server.
 	funcCount := 0
 	for i, t := range req.Tools {
 		switch t.Type {
@@ -208,15 +183,19 @@ func validateChatRequest(req *ChatRequest) error {
 			}
 			funcCount++
 			if !toolNamePattern.MatchString(t.Function.Name) {
-				return fmt.Errorf("tools[%d].function.name %q must match ^[A-Za-z0-9_-]{1,64}$", i, t.Function.Name)
-			}
-		case ToolTypeRetrieval:
-			if t.Retrieval == nil {
-				return fmt.Errorf("tools[%d]: type %q requires a retrieval payload", i, t.Type)
+				return fmt.Errorf("tools[%d].function.name %q must match %s", i, t.Function.Name, toolNamePattern)
 			}
 		case ToolTypeWebSearch:
 			if t.WebSearch == nil {
 				return fmt.Errorf("tools[%d]: type %q requires a web_search payload", i, t.Type)
+			}
+		case ToolTypeRetrieval:
+			if t.Retrieval == nil || t.Retrieval.KnowledgeID == "" {
+				return fmt.Errorf("tools[%d]: type %q requires a retrieval payload with a knowledge_id", i, t.Type)
+			}
+		case ToolTypeMCP:
+			if t.MCP == nil || t.MCP.ServerLabel == "" {
+				return fmt.Errorf("tools[%d]: type %q requires an mcp payload with a server_label", i, t.Type)
 			}
 		default:
 			return fmt.Errorf("tools[%d]: unknown tool type %q", i, t.Type)
@@ -229,15 +208,23 @@ func validateChatRequest(req *ChatRequest) error {
 	return nil
 }
 
-// validEffort is the set of ThinkingConfig.Effort values docs.z.ai documents.
-var validEffort = map[string]bool{
-	EffortMax: true, EffortXhigh: true, EffortHigh: true, EffortMedium: true,
-	EffortLow: true, EffortMinimal: true, EffortNone: true,
-}
-
-func effortValues() []string {
-	return []string{
-		EffortMax, EffortXhigh, EffortHigh, EffortMedium,
-		EffortLow, EffortMinimal, EffortNone,
+// validateEffort checks a reasoning_effort value against the levels model
+// accepts: its catalog entry's list when the model is cataloged (an empty
+// list means the model does not take the parameter), otherwise every
+// documented level.
+func validateEffort(model, effort string) error {
+	if effort == "" {
+		return nil
 	}
+	allowed := AllEfforts
+	if entry := findCatalogEntry(model); entry != nil {
+		allowed = entry.ReasoningEfforts
+	}
+	switch {
+	case len(allowed) == 0:
+		return fmt.Errorf("%s does not accept reasoning_effort", model)
+	case !slices.Contains(allowed, effort):
+		return fmt.Errorf("reasoning_effort %q is not supported by %s (allowed: %s)", effort, model, strings.Join(allowed, ", "))
+	}
+	return nil
 }

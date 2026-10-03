@@ -96,8 +96,8 @@ func TestResolveConfigAccountBeatsAmbientEnv(t *testing.T) {
 		t.Errorf("expected --account key to win over env, got %q", cfg.APIKey)
 	}
 	// The account's type resolves its base URL when --base-url is unset.
-	if cfg.BaseURL != client.ProdBaseURL {
-		t.Errorf("expected account base URL %q, got %q", client.ProdBaseURL, cfg.BaseURL)
+	if cfg.BaseURL != client.DefaultBaseURL {
+		t.Errorf("expected account base URL %q, got %q", client.DefaultBaseURL, cfg.BaseURL)
 	}
 }
 
@@ -189,11 +189,9 @@ func TestResolveConfigRegionDefaultsGlobal(t *testing.T) {
 	}
 }
 
-// --region china selects the China gateway for the region-scoped services,
-// while leaving the chat BaseURL alone. resolveConfig returns BaseURL empty
-// when no --base-url/account/explicit value set it; NewClient then defaults it
-// to DefaultBaseURL — so here we only assert that --region does NOT inject a
-// base URL (empty, not the China coding/anthropic host).
+// --region china selects the China gateway. resolveConfig leaves BaseURL
+// empty when nothing set it explicitly, so NewClient derives it from the
+// region (Region.PaaSBaseURL) rather than a hard-coded host.
 func TestResolveConfigRegionChina(t *testing.T) {
 	isolateCreds(t)
 	t.Setenv("ZAI_API_KEY", "k")
@@ -207,7 +205,7 @@ func TestResolveConfigRegionChina(t *testing.T) {
 		t.Errorf("expected RegionChina, got %q", cfg.Region)
 	}
 	if cfg.BaseURL != "" {
-		t.Errorf("--region must not touch chat BaseURL; expected empty (NewClient defaults it), got %q", cfg.BaseURL)
+		t.Errorf("--region must leave BaseURL to the region default; got %q", cfg.BaseURL)
 	}
 }
 

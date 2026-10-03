@@ -1,15 +1,12 @@
 package cli
 
 import (
-	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"mime"
 	"os"
-	"path/filepath"
 	"strings"
 
+	"github.com/SamyRai/go-z-ai/internal/fileinput"
 	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
 )
@@ -17,331 +14,235 @@ import (
 var chatCmd = &cobra.Command{
 	Use:   "chat",
 	Short: "Chat completion operations",
-	Long:  `Create and manage chat completions using Z.AI models.`,
+	Long:  `Create chat completions with Z.AI models.`,
 }
 
-var (
-	chatModel       string
-	chatTemperature float64
-	chatMaxTokens   int
-	chatSystemMsg   string
-	chatStream      bool
-	chatAsync       bool
-	chatFormat      string
-
-	// Advanced completion controls (structured output, thinking, tools).
-	chatTopP         float64
-	chatDoSample     bool
-	chatStop         []string
-	chatThinking     string
-	chatEffort       string
-	chatShowReason   bool
-	chatSchemaFile   string
-	chatSchemaName   string
-	chatSchemaStrict bool
-	chatToolFile     string
-	chatImages       []string
-)
-
 var chatCreateCmd = &cobra.Command{
-	Use:   "create [message]",
+	Use:   "create <message>",
 	Short: "Create a chat completion",
-	Long: `Create a chat completion with the given message and optional parameters.
+	Long: `Create a chat completion.
 
-Supports streaming (--stream), deep thinking (--thinking/--effort), structured
-output (--json-schema), stop sequences (--stop), and function-calling tool
-declarations (--tool). Tool calls in the response are printed but not executed
-by the CLI; use the Go RunWithTools helper for an auto-executing loop.`,
-	Args: cobra.MaximumNArgs(1),
+Supports streaming (--stream), reasoning control (--thinking, --effort),
+JSON output (--json, or --json-schema to also describe the expected shape),
+function-calling tool declarations (--tool, streamed with --tool-stream),
+and image/video/file attachments for multimodal models. Tool calls in the
+response are printed, not executed; use the Go RunWithTools helper for an
+executing loop. Sampling settings default to the model's own.`,
+	Args: cobra.ExactArgs(1),
 	RunE: runWithClient(runChatCreate),
 }
 
-var chatSimpleCmd = &cobra.Command{
-	Use:   "simple [model] [message]",
-	Short: "Create a simple chat completion",
-	Long:  `Create a simple chat completion with basic parameters.`,
-	Args:  cobra.ExactArgs(2),
-	RunE:  runWithClient(runChatSimple),
+var chatAsyncResultCmd = &cobra.Command{
+	Use:   "async-result <task-id>",
+	Short: "Get the result of an async chat completion",
+	Long:  `Get the result of a task submitted with "chat create --async".`,
+	Args:  cobra.ExactArgs(1),
+	RunE:  runWithClient(runAsyncStatus),
 }
 
-var chatAsyncResultCmd = &cobra.Command{
-	Use:   "async-result [task-id]",
-	Short: "Poll the result of an async chat completion",
-	Long:  `Poll the result of a task submitted via "chat create --async".`,
-	Args:  cobra.ExactArgs(1),
-	RunE:  runWithClient(runChatAsyncResult),
+// chatOptions holds the "chat create" flags; request turns them into a
+// ChatRequest without touching package state.
+type chatOptions struct {
+	model, system         string
+	temperature, topP     float64
+	maxTokens             int
+	doSample              *bool // nil unless --do-sample was given
+	stop                  []string
+	stream, async         bool
+	toolStream            bool
+	thinking, effort      string
+	showReasoning         bool
+	jsonObject            bool
+	schema, tools         string // @file or inline JSON
+	images, videos, files []string
 }
+
+var chatOpts chatOptions
 
 func init() {
 	rootCmd.AddCommand(chatCmd)
-	chatCmd.AddCommand(chatCreateCmd)
-	chatCmd.AddCommand(chatSimpleCmd)
-	chatCmd.AddCommand(chatAsyncResultCmd)
+	chatCmd.AddCommand(chatCreateCmd, chatAsyncResultCmd)
+	addFormatFlag("text", chatCreateCmd, chatAsyncResultCmd)
 
-	chatCreateCmd.Flags().StringVar(&chatModel, "model", "glm-5.2", "Model to use")
-	chatCreateCmd.Flags().Float64Var(&chatTemperature, "temperature", 0.7, "Sampling temperature (0.0-1.0)")
-	chatCreateCmd.Flags().IntVar(&chatMaxTokens, "max-tokens", 4096, "Maximum tokens to generate")
-	chatCreateCmd.Flags().StringVar(&chatSystemMsg, "system", "You are a helpful AI assistant.", "System message")
-	chatCreateCmd.Flags().BoolVar(&chatStream, "stream", false, "Stream the response token-by-token")
-	chatCreateCmd.Flags().BoolVar(&chatAsync, "async", false, "Submit without waiting; prints a task ID to poll with 'chat async-result'")
-	chatCreateCmd.Flags().StringVar(&chatFormat, "format", "text", "Output format (text, json)")
-
-	chatCreateCmd.Flags().Float64Var(&chatTopP, "top-p", 0.95, "Nucleus sampling probability (0.01-1.0)")
-	chatCreateCmd.Flags().BoolVar(&chatDoSample, "do-sample", false, "Enable the sampling strategy")
-	chatCreateCmd.Flags().StringSliceVar(&chatStop, "stop", nil, "Stop sequences (repeatable, max 4)")
-	chatCreateCmd.Flags().StringVar(&chatThinking, "thinking", "", "Deep thinking: enabled or disabled")
-	chatCreateCmd.Flags().StringVar(&chatEffort, "effort", "", "Thinking effort: max, xhigh, high, medium, low, minimal, none (xhigh→max is GLM-5.2 only)")
-	chatCreateCmd.Flags().BoolVar(&chatShowReason, "show-reasoning", false, "Print reasoning_content (to stderr in text mode)")
-	chatCreateCmd.Flags().StringVar(&chatSchemaFile, "json-schema", "", "Structured output schema: @file.json or inline JSON")
-	chatCreateCmd.Flags().StringVar(&chatSchemaName, "schema-name", "output", "Name for the json_schema response format")
-	chatCreateCmd.Flags().BoolVar(&chatSchemaStrict, "schema-strict", false, "Require strict schema adherence")
-	chatCreateCmd.Flags().StringVar(&chatToolFile, "tool", "", "Function-calling tool definitions: @tools.json or inline JSON array")
-	chatCreateCmd.Flags().StringArrayVar(&chatImages, "image", nil, "Attach an image (repeatable): a URL, or @path to a local file (base64-encoded). Requires a vision model (glm-4.6v/4.5v).")
-
-	chatSimpleCmd.Flags().StringVar(&chatFormat, "format", "text", "Output format (text, json)")
+	f := chatCreateCmd.Flags()
+	f.StringVar(&chatOpts.model, "model", client.DefaultModel, "Model to use")
+	f.StringVar(&chatOpts.system, "system", "", "System message")
+	f.Float64Var(&chatOpts.temperature, "temperature", 0, "Sampling temperature in (0, 1]; 0 uses the model default")
+	f.Float64Var(&chatOpts.topP, "top-p", 0, "Nucleus sampling in (0, 1]; 0 uses the model default")
+	f.IntVar(&chatOpts.maxTokens, "max-tokens", 0, "Maximum tokens to generate; 0 uses the model default")
+	f.Bool("do-sample", true, "Sample (false = greedy decoding)")
+	f.StringSliceVar(&chatOpts.stop, "stop", nil, "Stop sequence (the API honors one)")
+	f.BoolVar(&chatOpts.stream, "stream", false, "Stream the response token by token")
+	f.BoolVar(&chatOpts.async, "async", false, "Submit without waiting; poll with 'chat async-result'")
+	f.BoolVar(&chatOpts.toolStream, "tool-stream", false, "Stream tool-call arguments incrementally (GLM-4.6+)")
+	f.StringVar(&chatOpts.thinking, "thinking", "", "Reasoning: enabled or disabled (GLM-5.3 models always reason)")
+	f.StringVar(&chatOpts.effort, "effort", "", "Reasoning effort: "+strings.Join(client.AllEfforts, ", ")+" (GLM-5.3: low, high, max)")
+	f.BoolVar(&chatOpts.showReasoning, "show-reasoning", false, "Print the reasoning (to stderr in text mode)")
+	f.BoolVar(&chatOpts.jsonObject, "json", false, "Ask for a JSON object response")
+	f.StringVar(&chatOpts.schema, "json-schema", "", "JSON object response matching this schema (@file.json or inline JSON); the schema is added to the system message")
+	f.StringVar(&chatOpts.tools, "tool", "", "Tool definitions: @tools.json or an inline JSON array")
+	f.StringArrayVar(&chatOpts.images, "image", nil, "Attach an image (repeatable): a URL or @path")
+	f.StringArrayVar(&chatOpts.videos, "video", nil, "Attach a video (repeatable): a URL or @path")
+	f.StringArrayVar(&chatOpts.files, "file", nil, "Attach a document (repeatable): a URL or @path")
 }
 
 func runChatCreate(cmd *cobra.Command, args []string, apiClient *client.Client) error {
-	userMessage := ""
-	if len(args) > 0 {
-		userMessage = args[0]
+	opts := chatOpts
+	if cmd.Flags().Changed("do-sample") {
+		v, _ := cmd.Flags().GetBool("do-sample")
+		opts.doSample = &v
 	}
-	if userMessage == "" {
-		return fmt.Errorf("please provide a message")
-	}
-
-	req, err := buildChatRequest(userMessage)
+	req, err := opts.request(args[0])
 	if err != nil {
 		return err
 	}
 
-	if chatStream {
-		return runChatStream(apiClient, cmd.Context(), req)
-	}
-
-	if chatAsync {
-		task, err := apiClient.Chat().CreateAsync(cmd.Context(), *req)
+	switch {
+	case opts.stream:
+		return streamChat(cmd, apiClient, req, opts.showReasoning)
+	case opts.async:
+		task, err := apiClient.Chat().CreateAsync(cmd.Context(), req)
 		if err != nil {
-			return fmt.Errorf("failed to submit async chat completion: %w", err)
+			return err
 		}
-		fmt.Printf("Task submitted: %s (poll with 'go-z-ai chat async-result %s')\n", task.ID, task.ID)
-		return nil
+		return emit(cmd, task, func() error {
+			fmt.Printf("Task submitted: %s (poll with 'go-z-ai chat async-result %s')\n", task.ID, task.ID)
+			return nil
+		})
 	}
-
-	resp, err := apiClient.Chat().Create(cmd.Context(), *req)
+	resp, err := apiClient.Chat().Create(cmd.Context(), req)
 	if err != nil {
-		return fmt.Errorf("failed to create chat completion: %w", err)
+		return err
 	}
-	return outputChatResponse(resp, chatFormat)
+	return emit(cmd, resp, func() error {
+		if len(resp.Choices) > 0 {
+			printReply(resp.Choices[0].Message, opts.showReasoning)
+		}
+		return nil
+	})
 }
 
-// buildChatRequest assembles a ChatRequest from the chat create flags, loading
-// any structured-output schema and tool definitions from file or inline JSON.
-func buildChatRequest(userMessage string) (*client.ChatRequest, error) {
-	req := &client.ChatRequest{
-		Model:       chatModel,
-		Temperature: chatTemperature,
-		TopP:        chatTopP,
-		MaxTokens:   chatMaxTokens,
-		DoSample:    chatDoSample,
-		Stop:        chatStop,
-		Messages: []client.Message{
-			{Role: "system", Content: chatSystemMsg},
-			{Role: "user", Content: userMessage},
-		},
+// request builds the ChatRequest for message.
+func (o chatOptions) request(message string) (client.ChatRequest, error) {
+	req := client.ChatRequest{
+		Model:           o.model,
+		Temperature:     o.temperature,
+		TopP:            o.topP,
+		MaxTokens:       o.maxTokens,
+		DoSample:        o.doSample,
+		Stop:            o.stop,
+		ToolStream:      o.toolStream,
+		ReasoningEffort: o.effort,
+	}
+	if o.thinking != "" {
+		req.Thinking = &client.ThinkingConfig{Type: o.thinking}
 	}
 
-	req.Thinking = buildThinkingConfig()
+	system := o.system
+	if o.jsonObject || o.schema != "" {
+		req.ResponseFormat = client.JSONObjectFormat()
+	}
+	if o.schema != "" {
+		schema, err := loadJSONArg(o.schema)
+		if err != nil {
+			return req, fmt.Errorf("read --json-schema: %w", err)
+		}
+		instruction, err := client.JSONSchemaPrompt(schema)
+		if err != nil {
+			return req, fmt.Errorf("--json-schema: %w", err)
+		}
+		system = strings.TrimSpace(system + "\n\n" + instruction)
+	}
+	if system != "" {
+		req.Messages = append(req.Messages, client.Message{Role: "system", Content: system})
+	}
 
-	for _, apply := range []func(*client.ChatRequest) error{
-		applyResponseFormat,
-		applyTools,
-		applyImages,
+	user := client.Message{Role: "user", Content: message}
+	for _, a := range []struct {
+		flag, fallback string
+		args           []string
+		dst            *[]string
+	}{
+		{"--image", "image/jpeg", o.images, &user.Images},
+		{"--video", "video/mp4", o.videos, &user.Videos},
+		{"--file", "application/pdf", o.files, &user.Files},
 	} {
-		if err := apply(req); err != nil {
-			return nil, err
+		for _, arg := range a.args {
+			ref, err := fileinput.URLOrDataURI(arg, a.fallback)
+			if err != nil {
+				return req, fmt.Errorf("%s %q: %w", a.flag, arg, err)
+			}
+			*a.dst = append(*a.dst, ref)
 		}
 	}
+	req.Messages = append(req.Messages, user)
 
+	if o.tools != "" {
+		raw, err := loadJSONArg(o.tools)
+		if err != nil {
+			return req, fmt.Errorf("read --tool: %w", err)
+		}
+		if err := json.Unmarshal(raw, &req.Tools); err != nil {
+			return req, fmt.Errorf("parse --tool JSON: %w", err)
+		}
+	}
 	return req, nil
 }
 
-// buildThinkingConfig assembles the deep-thinking config from --thinking and
-// --effort, or nil when neither is set.
-func buildThinkingConfig() *client.ThinkingConfig {
-	if chatThinking == "" && chatEffort == "" {
-		return nil
-	}
-	return &client.ThinkingConfig{Type: chatThinking, Effort: chatEffort}
-}
-
-// applyResponseFormat sets a JSON-schema response format from --json-schema.
-func applyResponseFormat(req *client.ChatRequest) error {
-	if chatSchemaFile == "" {
-		return nil
-	}
-	raw, err := loadJSONArg(chatSchemaFile)
-	if err != nil {
-		return fmt.Errorf("read --json-schema: %w", err)
-	}
-	req.ResponseFormat = client.NewJSONSchemaFormat(chatSchemaName, raw, chatSchemaStrict)
-	return nil
-}
-
-// applyTools loads function-calling tool definitions from --tool.
-func applyTools(req *client.ChatRequest) error {
-	if chatToolFile == "" {
-		return nil
-	}
-	raw, err := loadJSONArg(chatToolFile)
-	if err != nil {
-		return fmt.Errorf("read --tool: %w", err)
-	}
-	var tools []client.Tool
-	if err := json.Unmarshal(raw, &tools); err != nil {
-		return fmt.Errorf("parse --tool JSON: %w", err)
-	}
-	req.Tools = tools
-	return nil
-}
-
-// applyImages resolves each --image argument (URL or @file) and attaches them
-// to the user message.
-func applyImages(req *client.ChatRequest) error {
-	if len(chatImages) == 0 {
-		return nil
-	}
-	images := make([]string, len(chatImages))
-	for i, arg := range chatImages {
-		resolved, err := resolveImageArg(arg)
-		if err != nil {
-			return fmt.Errorf("read --image %q: %w", arg, err)
-		}
-		images[i] = resolved
-	}
-	// The user message is always the last one buildChatRequest set up.
-	req.Messages[len(req.Messages)-1].Images = images
-	return nil
-}
-
-// resolveImageArg turns a --image argument into the URL/data-URI form the
-// API expects: a bare http(s):// URL passes through unchanged; an "@path"
-// (matching --tool/--json-schema's @file convention) reads the local file
-// and base64-encodes it as a data: URI, guessing the MIME type from the
-// extension (falling back to image/jpeg, the API's documented default).
-func resolveImageArg(arg string) (string, error) {
-	if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
-		return arg, nil
-	}
-	path := strings.TrimPrefix(arg, "@")
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return "", err
-	}
-	mimeType := mime.TypeByExtension(filepath.Ext(path))
-	if mimeType == "" {
-		mimeType = "image/jpeg"
-	}
-	return fmt.Sprintf("data:%s;base64,%s", mimeType, base64.StdEncoding.EncodeToString(data)), nil
-}
-
-// loadJSONArg resolves a "@path" file reference or returns the literal bytes.
+// loadJSONArg resolves an "@path" file reference or returns the literal bytes.
 func loadJSONArg(arg string) ([]byte, error) {
-	if strings.HasPrefix(arg, "@") {
-		return os.ReadFile(arg[1:])
+	if path, ok := strings.CutPrefix(arg, "@"); ok {
+		return os.ReadFile(path)
 	}
 	return []byte(arg), nil
 }
 
-// runChatStream drives a streaming completion, printing content deltas to stdout
-// (or JSONL chunks in json mode) and reasoning to stderr when requested.
-func runChatStream(apiClient *client.Client, ctx context.Context, req *client.ChatRequest) error {
-	jsonEnc := json.NewEncoder(os.Stdout)
-
-	for ch, err := range apiClient.Chat().Stream(ctx, *req) {
+// streamChat prints content deltas to stdout (JSON lines with --format json)
+// and, when asked, reasoning to stderr.
+func streamChat(cmd *cobra.Command, apiClient *client.Client, req client.ChatRequest, showReasoning bool) error {
+	asJSON := isJSONFormat(cmd)
+	enc := json.NewEncoder(os.Stdout)
+	for chunk, err := range apiClient.Chat().Stream(cmd.Context(), req) {
 		if err != nil {
-			return fmt.Errorf("failed to stream chat completion: %w", err)
+			return err
 		}
-		if chatFormat == "json" {
-			if err := jsonEnc.Encode(ch); err != nil {
-				return fmt.Errorf("failed to encode stream chunk: %w", err)
+		if asJSON {
+			if err := enc.Encode(chunk); err != nil {
+				return err
 			}
 			continue
 		}
-		if len(ch.Choices) == 0 {
-			continue
-		}
-		d := ch.Choices[0].Delta
-		if d.Content != "" {
-			fmt.Print(d.Content)
-		}
-		if chatShowReason && d.ReasoningContent != "" {
-			fmt.Fprint(os.Stderr, d.ReasoningContent)
+		for _, c := range chunk.Choices {
+			if showReasoning && c.Delta.ReasoningContent != "" {
+				fmt.Fprint(os.Stderr, c.Delta.ReasoningContent)
+			}
+			fmt.Print(c.Delta.Content)
 		}
 	}
-	if chatFormat != "json" {
+	if !asJSON {
 		fmt.Println()
 	}
 	return nil
 }
 
-func runChatSimple(cmd *cobra.Command, args []string, apiClient *client.Client) error {
-	model := args[0]
-	message := args[1]
-
-	messages := []client.Message{
-		{Role: "user", Content: message},
+// printReply prints an assistant message: reasoning (when asked) and tool
+// calls go to stderr so stdout carries only the content.
+func printReply(msg client.ResponseMsg, showReasoning bool) {
+	if showReasoning {
+		printReasoning(msg.ReasoningContent)
 	}
-
-	response, err := apiClient.Chat().CreateSimple(cmd.Context(), model, message, messages)
-	if err != nil {
-		return fmt.Errorf("failed to create simple chat: %w", err)
+	fmt.Println(msg.Content)
+	for _, tc := range msg.ToolCalls {
+		if tc.Function != nil {
+			fmt.Fprintf(os.Stderr, "tool call: %s(%s)\n", tc.Function.Name, tc.Function.Arguments)
+		}
 	}
-
-	return outputChatResponse(response, chatFormat)
 }
 
-func runChatAsyncResult(cmd *cobra.Command, args []string, apiClient *client.Client) error {
-	resp, err := apiClient.GetAsyncResult(cmd.Context(), args[0])
-	if err != nil {
-		return fmt.Errorf("failed to get async result: %w", err)
-	}
-
-	if resp.TaskStatus == client.TaskStatusProcessing {
-		fmt.Println("⏳ Still processing, try again shortly")
-		return nil
-	}
-	if len(resp.Choices) == 0 {
-		fmt.Printf("status: %s\n", resp.TaskStatus)
-		return nil
-	}
-	fmt.Println(resp.Choices[0].Message.Content)
-	return nil
-}
-
-func outputChatResponse(response *client.ChatResponse, format string) error {
-	switch format {
-	case "json":
-		return outputJSON(response)
-	default:
-		if len(response.Choices) == 0 {
-			return nil
-		}
-		msg := response.Choices[0].Message
-		if chatShowReason && msg.ReasoningContent != "" {
-			fmt.Fprintln(os.Stderr, "--- reasoning ---")
-			fmt.Fprintln(os.Stderr, msg.ReasoningContent)
-			fmt.Fprintln(os.Stderr, "------------------")
-		}
-		fmt.Println(msg.Content)
-		if len(msg.ToolCalls) > 0 {
-			fmt.Fprintln(os.Stderr, "--- tool calls ---")
-			for _, tc := range msg.ToolCalls {
-				if tc.Function != nil {
-					fmt.Fprintf(os.Stderr, "%s(%s)\n", tc.Function.Name, tc.Function.Arguments)
-				}
-			}
-		}
-		return nil
+// printReasoning prints a model's reasoning to stderr, framed, so stdout
+// carries only the answer.
+func printReasoning(reasoning string) {
+	if reasoning != "" {
+		fmt.Fprintf(os.Stderr, "--- reasoning ---\n%s\n-----------------\n", reasoning)
 	}
 }

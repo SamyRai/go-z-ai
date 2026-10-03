@@ -1,6 +1,9 @@
 package client
 
 import (
+	"context"
+	"errors"
+	"net/http"
 	"testing"
 	"time"
 )
@@ -12,10 +15,11 @@ func TestQuotaLimitWindowDuration(t *testing.T) {
 		num  int
 		want time.Duration
 	}{
-		{"5-hour", UnitCodeHourly, 5, 5 * time.Hour},
-		{"weekly", UnitCodeWeekly, 1, 7 * 24 * time.Hour},
-		{"monthly", UnitCodeMonthly, 1, 30 * 24 * time.Hour},
-		{"number defaults to 1", UnitCodeHourly, 0, time.Hour},
+		{"5-hour", UnitCodeHour, 5, 5 * time.Hour},
+		{"weekly", UnitCodeWeek, 1, 7 * 24 * time.Hour},
+		{"weekly reported as 7 units is still one week", UnitCodeWeek, 7, 7 * 24 * time.Hour},
+		{"monthly", UnitCodeMonth, 1, 30 * 24 * time.Hour},
+		{"number defaults to 1", UnitCodeHour, 0, time.Hour},
 		{"unknown unit", 99, 5, 0},
 	}
 	for _, c := range cases {
@@ -30,13 +34,13 @@ func TestQuotaLimitWindowStart(t *testing.T) {
 	reset := time.Date(2026, 7, 13, 10, 0, 0, 0, time.UTC)
 
 	// Known 5-hour window: start is reset minus 5h.
-	q := QuotaLimit{Unit: UnitCodeHourly, Number: 5, NextResetTime: reset.UnixMilli()}
+	q := QuotaLimit{Unit: UnitCodeHour, Number: 5, NextResetTime: reset.UnixMilli()}
 	if got := q.WindowStart(); !got.Equal(reset.Add(-5 * time.Hour)) {
 		t.Errorf("WindowStart() = %s, want %s", got, reset.Add(-5*time.Hour))
 	}
 
 	// No reset time → zero.
-	noReset := QuotaLimit{Unit: UnitCodeHourly, Number: 5}
+	noReset := QuotaLimit{Unit: UnitCodeHour, Number: 5}
 	if got := noReset.WindowStart(); !got.IsZero() {
 		t.Errorf("WindowStart() with no reset = %s, want zero", got)
 	}
@@ -82,5 +86,43 @@ func TestMonitorTimezoneOverride(t *testing.T) {
 	c2 := newTestClient(t, "http://example.test", Config{})
 	if got := c2.MonitorTimezone(); got.String() != MonitorServerTZ.String() {
 		t.Errorf("default MonitorTimezone() = %v, want %v", got, MonitorServerTZ)
+	}
+}
+
+// Credit-plan windows (CREDIT_LIMIT) count as model-usage windows, carry exact
+// counts, and get descriptive names; the legacy MCP lane does not count.
+func TestQuotaLimitCreditWindows(t *testing.T) {
+	credit := QuotaLimit{Type: QuotaTypeCreditLimit, Unit: UnitCodeHour, Number: 5, Usage: 2000, CurrentValue: 2000, Percentage: 99}
+	if !credit.IsModelLimit() {
+		t.Error("CREDIT_LIMIT should be a model-usage window")
+	}
+	if got := credit.UsedFraction(); got != 1 {
+		t.Errorf("UsedFraction() = %v, want 1 (exact counts beat the rounded percentage)", got)
+	}
+	if got := credit.WindowDescription(); got != "5-hour credit window" {
+		t.Errorf("WindowDescription() = %q", got)
+	}
+	mcp := QuotaLimit{Type: QuotaTypeTimeLimit, Unit: UnitCodeMonth, Number: 1}
+	if mcp.IsModelLimit() || mcp.WindowDescription() != "monthly MCP tool quota" {
+		t.Errorf("TIME_LIMIT: IsModelLimit=%v desc=%q", mcp.IsModelLimit(), mcp.WindowDescription())
+	}
+	data := QuotaData{Limits: []QuotaLimit{mcp, credit}}
+	if !data.Exhausted() {
+		t.Error("a full credit window should make the plan exhausted")
+	}
+}
+
+// The monitor API reports business failures in HTTP 200 envelopes; the
+// service must surface them as *APIError instead of returning the envelope.
+func TestQuotaEnvelopeFailureIsError(t *testing.T) {
+	tr := &hostRoutes{routes: map[string]stubReply{"api.z.ai": {status: 200, body: `{"code":500,"msg":"no coding plan","success":false}`}}}
+	c, err := NewClient(Config{APIKey: "k", MaxRetries: -1, HTTPClient: &http.Client{Transport: tr}})
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	_, err = c.Quota().GetQuotaLimit(context.Background())
+	apiErr, ok := errors.AsType[*APIError](err)
+	if !ok || apiErr.Code != 500 || apiErr.HTTPStatus != 200 {
+		t.Fatalf("expected *APIError code 500 on HTTP 200, got %v", err)
 	}
 }

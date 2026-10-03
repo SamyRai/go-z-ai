@@ -1,10 +1,14 @@
 package client
 
 import (
+	"cmp"
 	"context"
 	"errors"
+	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 
 	"gopkg.in/dnaeon/go-vcr.v4/pkg/cassette"
@@ -18,18 +22,24 @@ import (
 //
 //	ZAI_RECORD=1 ZAI_API_KEY=<real-key> go test -run TestVerifyAnthropicMessages ./pkg/client
 //
-// The API key is redacted out of the cassette at save time (redactAuth below),
-// so a recorded cassette never contains a real credential — confirm with
+// The API key (and any account identifier in a response) is redacted out of
+// the cassette at save time (redactAuth below), so a recorded cassette never
+// contains a real credential — confirm with
 // `grep -n "Bearer " pkg/client/testdata/cassettes/<name>.yaml` before
 // committing (it must read `Bearer REDACTED`). Until a cassette exists, its
 // test skips, so CI stays green. A recording that captures a business error
 // (e.g. an account not entitled to embeddings) is NOT a verification — don't
 // commit it; leave that test skipped.
 
-// redactAuth strips credentials from a recorded request before the cassette is
-// written to disk. Runs as a BeforeSaveHook so a real key never reaches the
-// committed YAML.
+// accountFields matches response fields that identify the account (biz
+// routes return them), so a cassette never carries them.
+var accountFields = regexp.MustCompile(`"(customerId|userId|user_id|email|phone|mobile|accountId)"\s*:\s*("[^"]*"|\d+)`)
+
+// redactAuth strips credentials from a recorded request, and account
+// identifiers from its response, before the cassette is written to disk.
+// Runs as a BeforeSaveHook so neither reaches the committed YAML.
 func redactAuth(i *cassette.Interaction) error {
+	i.Response.Body = accountFields.ReplaceAllString(i.Response.Body, `"$1":"REDACTED"`)
 	if i.Request.Headers.Get("Authorization") != "" {
 		i.Request.Headers.Set("Authorization", "Bearer REDACTED")
 	}
@@ -42,12 +52,16 @@ func redactAuth(i *cassette.Interaction) error {
 }
 
 // newRecordClient builds a *Client that records live interactions once into the
-// named cassette, redacting the credential at save time. Requires ZAI_API_KEY.
-func newRecordClient(t *testing.T, cassetteName, baseURL string) *Client {
+// named cassette, redacting the credential at save time. Requires ZAI_API_KEY;
+// for RegionChina, ZAI_CHINA_API_KEY takes precedence when set.
+func newRecordClient(t *testing.T, cassetteName string, region Region) *Client {
 	t.Helper()
 	apiKey := os.Getenv("ZAI_API_KEY")
+	if region == RegionChina {
+		apiKey = cmp.Or(os.Getenv("ZAI_CHINA_API_KEY"), apiKey)
+	}
 	if apiKey == "" {
-		t.Skip("ZAI_RECORD=1 requires ZAI_API_KEY to record a live cassette")
+		t.Skip("ZAI_RECORD=1 requires ZAI_API_KEY (or ZAI_CHINA_API_KEY for China) to record a live cassette")
 	}
 	r, err := recorder.New(
 		filepath.Join("testdata", "cassettes", cassetteName),
@@ -63,7 +77,7 @@ func newRecordClient(t *testing.T, cassetteName, baseURL string) *Client {
 
 	c, err := NewClient(Config{
 		APIKey:     apiKey,
-		BaseURL:    baseURL,
+		Region:     region,
 		HTTPClient: r.GetDefaultClient(),
 		MaxRetries: -1,
 	})
@@ -76,16 +90,16 @@ func newRecordClient(t *testing.T, cassetteName, baseURL string) *Client {
 // newVerifyClient records when ZAI_RECORD=1, otherwise replays. When replaying
 // and the cassette hasn't been recorded yet, the test is skipped so CI stays
 // green until an entitled account captures it.
-func newVerifyClient(t *testing.T, cassetteName, baseURL string) *Client {
+func newVerifyClient(t *testing.T, cassetteName string, region Region) *Client {
 	t.Helper()
 	if os.Getenv("ZAI_RECORD") == "1" {
-		return newRecordClient(t, cassetteName, baseURL)
+		return newRecordClient(t, cassetteName, region)
 	}
 	path := filepath.Join("testdata", "cassettes", cassetteName+".yaml")
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		t.Skipf("cassette %s.yaml not recorded yet — run: ZAI_RECORD=1 ZAI_API_KEY=… go test -run %s ./pkg/client", cassetteName, t.Name())
 	}
-	return newReplayClient(t, cassetteName, baseURL)
+	return newReplayClient(t, cassetteName, region)
 }
 
 // TestVerifyAnthropicMessages confirms the Anthropic-compatible Messages
@@ -93,10 +107,10 @@ func newVerifyClient(t *testing.T, cassetteName, baseURL string) *Client {
 // question of whether GLM surfaces reasoning as `thinking` blocks or the
 // OpenAI-style `reasoning_content` field — recorded with thinking enabled.
 func TestVerifyAnthropicMessages(t *testing.T) {
-	c := newVerifyClient(t, "anthropic_messages", AnthropicBaseURL)
+	c := newVerifyClient(t, "anthropic_messages", RegionGlobal)
 
 	resp, err := c.Anthropic().Create(context.Background(), AnthropicMessageRequest{
-		Model:     "glm-4.6",
+		Model:     DefaultModel,
 		MaxTokens: 128,
 		Messages:  []AnthropicMessage{AnthropicTextMessage("user", "Reply with the single word: hello")},
 		Thinking:  &AnthropicThinking{Type: "enabled", BudgetTokens: 64},
@@ -129,7 +143,7 @@ func TestVerifyAnthropicMessages(t *testing.T) {
 
 // TestVerifyEmbeddings confirms a real embedding vector parses.
 func TestVerifyEmbeddings(t *testing.T) {
-	c := newVerifyClient(t, "embeddings_success", BigModelBaseURL)
+	c := newVerifyClient(t, "embeddings_success", RegionChina)
 
 	resp, err := c.Embeddings().Create(context.Background(), EmbeddingsRequest{
 		Model: EmbeddingModel3,
@@ -145,7 +159,7 @@ func TestVerifyEmbeddings(t *testing.T) {
 
 // TestVerifyModerations confirms a real moderation verdict parses.
 func TestVerifyModerations(t *testing.T) {
-	c := newVerifyClient(t, "moderations_success", BigModelBaseURL)
+	c := newVerifyClient(t, "moderations_success", RegionChina)
 
 	resp, err := c.Moderations().Create(context.Background(), ModerationRequest{
 		Input: "hello world",
@@ -162,7 +176,7 @@ func TestVerifyModerations(t *testing.T) {
 // (Choices/Usage). AgentID is account-specific — set ZAI_AGENT_ID when
 // recording.
 func TestVerifyAgentsInvoke(t *testing.T) {
-	c := newVerifyClient(t, "agents_invoke_success", AgentsBaseURL)
+	c := newVerifyClient(t, "agents_invoke_success", RegionGlobal)
 
 	agentID := os.Getenv("ZAI_AGENT_ID")
 	if os.Getenv("ZAI_RECORD") == "1" && agentID == "" {
@@ -193,7 +207,7 @@ func TestVerifyAgentsInvoke(t *testing.T) {
 // with purpose voice-clone-input) and ZAI_VOICE_NAME (a unique name to assign
 // the clone). Skips offline until a cassette exists.
 func TestVerifyVoiceClone(t *testing.T) {
-	c := newVerifyClient(t, "voice_clone", DefaultBaseURL)
+	c := newVerifyClient(t, "voice_clone", RegionGlobal)
 
 	fileID := os.Getenv("ZAI_VOICE_SAMPLE_FILE_ID")
 	voiceName := os.Getenv("ZAI_VOICE_NAME")
@@ -224,7 +238,7 @@ func TestVerifyVoiceClone(t *testing.T) {
 // and an update timestamp. Recording requires ZAI_VOICE_ID (a voice ID
 // returned by a prior Clone); offline, it skips until a cassette exists.
 func TestVerifyVoiceDelete(t *testing.T) {
-	c := newVerifyClient(t, "voice_delete", DefaultBaseURL)
+	c := newVerifyClient(t, "voice_delete", RegionGlobal)
 
 	voiceID := os.Getenv("ZAI_VOICE_ID")
 	if os.Getenv("ZAI_RECORD") == "1" && voiceID == "" {
@@ -250,7 +264,7 @@ func TestVerifyVoiceDelete(t *testing.T) {
 // docs.z.ai's chat-completion spec; record a cassette to pin the exact SSE
 // chunk shape.
 func TestVerifyChatStreamToolCall(t *testing.T) {
-	c := newVerifyClient(t, "chat_stream_tool_call", DefaultBaseURL)
+	c := newVerifyClient(t, "chat_stream_tool_call", RegionGlobal)
 
 	tool := NewFunctionTool("get_weather", "weather lookup", map[string]any{
 		"type":       "object",
@@ -259,22 +273,22 @@ func TestVerifyChatStreamToolCall(t *testing.T) {
 	})
 
 	var toolCallChunks int
-	err := c.Chat().CreateStream(context.Background(), ChatRequest{
-		Model:          "glm-4.6",
-		Messages:       []Message{{Role: "user", Content: "What's the weather in Tokyo?"}},
-		Tools:          []Tool{tool},
-		StreamToolCall: true,
-	}, func(ch StreamChunk) error {
+	err := drainStream(c.Chat().Stream(context.Background(), ChatRequest{
+		Model:      DefaultModel,
+		Messages:   []Message{{Role: "user", Content: "What's the weather in Tokyo?"}},
+		Tools:      []Tool{tool},
+		ToolStream: true,
+	}), func(ch StreamChunk) error {
 		if len(ch.Choices) > 0 && len(ch.Choices[0].Delta.ToolCalls) > 0 {
 			toolCallChunks++
 		}
 		return nil
 	})
 	if err != nil {
-		t.Fatalf("CreateStream: %v", err)
+		t.Fatalf("Stream: %v", err)
 	}
 	if toolCallChunks == 0 {
-		t.Error("expected at least one chunk carrying a tool-call delta under StreamToolCall=true")
+		t.Error("expected at least one chunk carrying a tool-call delta under ToolStream=true")
 	}
 }
 
@@ -282,7 +296,7 @@ func TestVerifyChatStreamToolCall(t *testing.T) {
 // chat completion returns when a web_search tool fires, and pins the entry
 // shape. NOT VERIFIED LIVE — the field placement is modeled from the docs.
 func TestVerifyChatWebSearchResponse(t *testing.T) {
-	c := newVerifyClient(t, "chat_web_search", DefaultBaseURL)
+	c := newVerifyClient(t, "chat_web_search", RegionGlobal)
 
 	resp, err := c.Chat().Create(context.Background(), ChatRequest{
 		Model:    "glm-4.6",
@@ -298,5 +312,90 @@ func TestVerifyChatWebSearchResponse(t *testing.T) {
 	w := resp.WebSearch[0]
 	if w.Link == "" {
 		t.Error("expected a non-empty link in the first web_search entry")
+	}
+}
+
+// TestVerifyAccountBalance pins the pay-as-you-go wallet shape (biz route).
+// A coding-plan-only account may answer with a business error; per the
+// convention above, such a recording is not a verification — don't commit it.
+func TestVerifyAccountBalance(t *testing.T) {
+	c := newVerifyClient(t, "account_balance", RegionGlobal)
+	b, err := c.Account().Balance(context.Background())
+	if err != nil {
+		t.Fatalf("Balance: %v", err)
+	}
+	t.Logf("balance=%v available=%v spent=%v", b.Balance, b.AvailableBalance, b.TotalSpendAmount)
+}
+
+// TestVerifyAccountSubscriptions pins the coding-plan subscription list shape
+// (biz route). An empty list is a valid answer for a key without a plan.
+func TestVerifyAccountSubscriptions(t *testing.T) {
+	c := newVerifyClient(t, "account_subscriptions", RegionGlobal)
+	subs, err := c.Account().Subscriptions(context.Background())
+	if err != nil {
+		t.Fatalf("Subscriptions: %v", err)
+	}
+	for _, s := range subs {
+		if s.ProductName == "" || s.Status == "" {
+			t.Errorf("subscription missing product or status: %+v", s)
+		}
+	}
+	t.Logf("%d subscription(s)", len(subs))
+}
+
+// TestVerifyQuotaLimit and TestVerifyQuotaLimitChina pin the credit-based
+// quota shape on each gateway; recording needs a GLM Coding Plan key issued
+// on that gateway.
+func TestVerifyQuotaLimit(t *testing.T)      { verifyQuotaLimit(t, "quota_limit", RegionGlobal) }
+func TestVerifyQuotaLimitChina(t *testing.T) { verifyQuotaLimit(t, "quota_limit_china", RegionChina) }
+
+func verifyQuotaLimit(t *testing.T, cassetteName string, region Region) {
+	t.Helper()
+	c := newVerifyClient(t, cassetteName, region)
+	q, err := c.Quota().GetQuotaLimit(context.Background())
+	if err != nil {
+		t.Fatalf("GetQuotaLimit: %v", err)
+	}
+	if q.Data.Level == "" || len(q.Data.Limits) == 0 {
+		t.Fatalf("expected a plan level and quota windows, got %+v", q.Data)
+	}
+	for _, l := range q.Data.Limits {
+		t.Logf("%s: %s used %.0f%%", l.Type, l.WindowDescription(), l.Percentage)
+	}
+}
+
+// TestVerifyResponses pins the Responses-protocol success shape (the
+// endpoint Codex uses); recording needs a GLM Coding Plan key.
+func TestVerifyResponses(t *testing.T) {
+	c := newVerifyClient(t, "responses_create", RegionGlobal)
+	resp, err := c.Responses().Create(context.Background(), ResponsesRequest{
+		Model:     DefaultModel,
+		Input:     []ResponsesItem{ResponsesMessage("user", "Reply with the single word: hello")},
+		Reasoning: &ResponsesReasoning{Effort: EffortLow},
+	})
+	if err != nil {
+		t.Fatalf("Responses Create: %v", err)
+	}
+	if resp.Status != ResponsesStatusCompleted || resp.OutputText() == "" {
+		t.Errorf("expected a completed response with text, got status %q text %q", resp.Status, resp.OutputText())
+	}
+	if resp.Usage == nil || resp.Usage.OutputTokens <= 0 {
+		t.Error("expected output token accounting")
+	}
+	t.Logf("text=%q reasoning=%q", resp.OutputText(), resp.ReasoningText())
+}
+
+func TestRedactAuthScrubsAccountFields(t *testing.T) {
+	i := &cassette.Interaction{}
+	i.Request.Headers = http.Header{"Authorization": {"Bearer real"}}
+	i.Response.Body = `{"data":[{"customerId":"c-123","productName":"GLM Coding Pro","userId": 42}]}`
+	if err := redactAuth(i); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(i.Response.Body, "c-123") || strings.Contains(i.Response.Body, "42") || !strings.Contains(i.Response.Body, "GLM Coding Pro") {
+		t.Errorf("body = %s", i.Response.Body)
+	}
+	if i.Request.Headers.Get("Authorization") != "Bearer REDACTED" {
+		t.Errorf("auth = %q", i.Request.Headers.Get("Authorization"))
 	}
 }

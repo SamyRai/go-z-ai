@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
@@ -11,7 +10,7 @@ import (
 var imageCmd = &cobra.Command{
 	Use:   "image",
 	Short: "Image generation",
-	Long:  `Generate images with Z.AI's glm-image / cogview-4 models.`,
+	Long:  "Generate images with Z.AI's " + client.ModelGLMImage + " / " + client.ModelCogView4 + " models.",
 }
 
 var imageGenerateCmd = &cobra.Command{
@@ -25,14 +24,14 @@ var imageStatusCmd = &cobra.Command{
 	Use:   "status [id]",
 	Short: "Check an async image generation task",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runWithClient(runImageStatus),
+	RunE:  runWithClient(runAsyncStatus),
 }
 
 func init() {
 	rootCmd.AddCommand(imageCmd)
 	imageCmd.AddCommand(imageGenerateCmd, imageStatusCmd)
 
-	imageGenerateCmd.Flags().String("model", "glm-image", "Model: glm-image or cogview-4-250304")
+	imageGenerateCmd.Flags().String("model", client.ModelGLMImage, "Model: "+client.ModelGLMImage+" or "+client.ModelCogView4)
 	imageGenerateCmd.Flags().String("size", "", "Image size, e.g. 1280x1280 (default 1280x1280)")
 	imageGenerateCmd.Flags().String("quality", "", "Quality: hd (default, ~20s) or standard (~5-10s)")
 	imageGenerateCmd.Flags().Bool("async", false, "Submit as an async task instead of waiting (use 'image status' to poll)")
@@ -64,7 +63,7 @@ func runImageGenerate(cmd *cobra.Command, args []string, apiClient *client.Clien
 		})
 	}
 
-	fmt.Fprintln(os.Stderr, "🎨 Generating image...")
+	progressf("🎨 Generating image...\n")
 	resp, err := apiClient.Images().Generate(cmd.Context(), req)
 	if err != nil {
 		return fmt.Errorf("image generation failed: %w", err)
@@ -78,21 +77,6 @@ func runImageGenerate(cmd *cobra.Command, args []string, apiClient *client.Clien
 			fmt.Printf("✅ Image %d: %s\n", i+1, d.URL)
 		}
 		fmt.Println("   (URL expires after 30 days)")
-		return nil
-	})
-}
-
-func runImageStatus(cmd *cobra.Command, args []string, apiClient *client.Client) error {
-	result, err := apiClient.GetAsyncResult(cmd.Context(), args[0])
-	if err != nil {
-		return fmt.Errorf("failed to check status: %w", err)
-	}
-
-	return emit(cmd, result, func() error {
-		fmt.Printf("Status: %s\n", result.TaskStatus)
-		for i, d := range result.Data {
-			fmt.Printf("Image %d: %s\n", i+1, d.URL)
-		}
 		return nil
 	})
 }

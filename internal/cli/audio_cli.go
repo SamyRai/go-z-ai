@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
@@ -12,7 +13,7 @@ import (
 var audioCmd = &cobra.Command{
 	Use:   "audio",
 	Short: "Audio transcription and text-to-speech",
-	Long:  `Transcribe audio with Z.AI's glm-asr model, or synthesize speech with GLM-TTS.`,
+	Long:  "Transcribe audio with Z.AI's " + client.DefaultASRModel + " model, or synthesize speech with " + client.DefaultTTSModel + ".",
 }
 
 var audioTranscribeCmd = &cobra.Command{
@@ -36,8 +37,11 @@ func init() {
 	audioTranscribeCmd.Flags().String("prompt", "", "Previous transcription context (recommended <8000 chars)")
 	audioTranscribeCmd.Flags().StringArray("hotword", nil, "Domain-specific vocabulary word (repeatable, max 100)")
 
-	audioSpeechCmd.Flags().String("voice", client.VoiceTongtong, "Voice: tongtong, chuichui, xiaochen, jam, kazi, douji, luodo, or a cloned voice ID")
-	audioSpeechCmd.Flags().String("format", "", "Output format: wav or pcm (API default: pcm)")
+	audioTranscribeCmd.Flags().String("model", client.DefaultASRModel, "Transcription model")
+	addFormatFlag("text", audioTranscribeCmd)
+
+	audioSpeechCmd.Flags().String("voice", client.VoiceTongtong, "Voice: "+strings.Join(client.SystemVoices, ", ")+", or a cloned voice ID")
+	audioSpeechCmd.Flags().String("audio-format", "", "Audio format: wav or pcm (API default: pcm)")
 	audioSpeechCmd.Flags().Float64("speed", 0, "Speed 0.5-2 (API default 1.0)")
 }
 
@@ -48,31 +52,34 @@ func runAudioTranscribe(cmd *cobra.Command, args []string, apiClient *client.Cli
 		return fmt.Errorf("failed to read %s: %w", path, err)
 	}
 
+	model, _ := cmd.Flags().GetString("model")
 	prompt, _ := cmd.Flags().GetString("prompt")
 	hotwords, _ := cmd.Flags().GetStringArray("hotword")
 
-	fmt.Printf("🎙️  Transcribing %s...\n", filepath.Base(path))
+	progressf("🎙️  Transcribing %s...\n", filepath.Base(path))
 	resp, err := apiClient.Audio().Transcribe(cmd.Context(), client.AudioTranscriptionRequest{
 		FileName: filepath.Base(path),
 		FileData: data,
+		Model:    model,
 		Prompt:   prompt,
 		Hotwords: hotwords,
 	})
 	if err != nil {
 		return fmt.Errorf("transcription failed: %w", err)
 	}
-
-	fmt.Printf("✅ %s\n", resp.Text)
-	return nil
+	return emit(cmd, resp, func() error {
+		fmt.Println(resp.Text)
+		return nil
+	})
 }
 
 func runAudioSpeech(cmd *cobra.Command, args []string, apiClient *client.Client) error {
 	text, outPath := args[0], args[1]
 	voice, _ := cmd.Flags().GetString("voice")
-	format, _ := cmd.Flags().GetString("format")
+	format, _ := cmd.Flags().GetString("audio-format")
 	speed, _ := cmd.Flags().GetFloat64("speed")
 
-	fmt.Printf("🔊 Synthesizing speech for: %s\n", text)
+	progressf("🔊 Synthesizing speech...\n")
 	data, err := apiClient.Audio().Speech(cmd.Context(), client.AudioSpeechRequest{
 		Input:          text,
 		Voice:          voice,

@@ -1,11 +1,8 @@
 package client
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"mime/multipart"
-	"net/http"
 	"net/url"
 )
 
@@ -77,59 +74,35 @@ type FileParseResultResponse struct {
 	ParsingResultURL string `json:"parsing_result_url,omitempty"` // populated when queried with FileParserFormatDownloadLink
 }
 
-// buildParseMultipart is shared by Create and Sync — both take the same
-// multipart shape (file + tool_type + optional file_type), differing only
-// in endpoint and response shape.
-func buildParseMultipart(req FileParserRequest) (*bytes.Buffer, string, error) {
+// parseRequest validates req and encodes the multipart body shared by Create
+// and Sync (file + tool_type + optional file_type) for path.
+func parseRequest(req FileParserRequest, path string) (apiRequest, error) {
 	if len(req.FileData) == 0 {
-		return nil, "", fmt.Errorf("file data is required")
+		return apiRequest{}, fmt.Errorf("file data is required")
 	}
 	if req.ToolType == "" {
-		return nil, "", fmt.Errorf("tool_type is required")
+		return apiRequest{}, fmt.Errorf("tool_type is required")
 	}
-
-	var buf bytes.Buffer
-	w := multipart.NewWriter(&buf)
-
-	fw, err := w.CreateFormFile("file", req.FileName)
+	form, err := newMultipartBody(&formFile{field: "file", name: req.FileName, data: req.FileData},
+		"tool_type", req.ToolType,
+		"file_type", req.FileType,
+	)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to build multipart file field: %w", err)
+		return apiRequest{}, err
 	}
-	if _, err := fw.Write(req.FileData); err != nil {
-		return nil, "", fmt.Errorf("failed to write file data: %w", err)
-	}
-
-	_ = w.WriteField("tool_type", req.ToolType)
-	if req.FileType != "" {
-		_ = w.WriteField("file_type", req.FileType)
-	}
-	if err := w.Close(); err != nil {
-		return nil, "", fmt.Errorf("failed to finalize multipart body: %w", err)
-	}
-	return &buf, w.FormDataContentType(), nil
+	return apiRequest{method: "POST", path: path, form: form, service: "file_parser"}, nil
 }
 
 // Create submits an async file parse task (req.ToolType one of
 // FileParserToolLite/Expert/Prime); poll the result with Result.
 func (s *FileParserService) Create(ctx context.Context, req FileParserRequest) (*FileParserCreateResponse, error) {
-	buf, contentType, err := buildParseMultipart(req)
+	r, err := parseRequest(req, "/files/parser/create")
 	if err != nil {
 		return nil, err
 	}
-
-	resp, err := s.client.sendMultipart(ctx, "/files/parser/create", contentType, buf.Bytes())
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, parseAPIError(resp)
-	}
-
 	var result FileParserCreateResponse
-	if err := s.client.decodeBody(resp, &result); err != nil {
-		return nil, err
+	if err := s.client.do(ctx, r, &result); err != nil {
+		return nil, fmt.Errorf("failed to create parse task: %w", err)
 	}
 	return &result, nil
 }
@@ -144,7 +117,7 @@ func (s *FileParserService) Create(ctx context.Context, req FileParserRequest) (
 // "code":500} — not the {"error":{"code","message"}} envelope every other
 // endpoint uses, and not FileParseResultResponse's shape either). Because
 // the status was 200, this doesn't reach parseAPIError; because the body
-// doesn't match FileParseResultResponse, decodeBody succeeds but silently
+// doesn't match FileParseResultResponse, decoding succeeds but silently
 // produces an empty, useless result with no error — this validation exists
 // specifically to never let that scenario happen. Create's schema shares
 // the same "FileType optional" claim and is unverified; pass it there too.
@@ -152,25 +125,13 @@ func (s *FileParserService) Sync(ctx context.Context, req FileParserRequest) (*F
 	if req.FileType == "" {
 		return nil, fmt.Errorf("file_type is required (the documented API optional-ness does not hold in practice — see this method's doc comment)")
 	}
-
-	buf, contentType, err := buildParseMultipart(req)
+	r, err := parseRequest(req, "/files/parser/sync")
 	if err != nil {
 		return nil, err
 	}
-
-	resp, err := s.client.sendMultipart(ctx, "/files/parser/sync", contentType, buf.Bytes())
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, parseAPIError(resp)
-	}
-
 	var result FileParseResultResponse
-	if err := s.client.decodeBody(resp, &result); err != nil {
-		return nil, err
+	if err := s.client.do(ctx, r, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse file: %w", err)
 	}
 	return &result, nil
 }

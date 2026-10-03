@@ -28,7 +28,7 @@ func main() {
 	}
 
 	req := client.ChatRequest{
-		Model:    "glm-5.2",
+		Model:    client.DefaultModel,
 		Messages: []client.Message{{Role: "user", Content: prompt}},
 		TopP:     0.95,
 	}

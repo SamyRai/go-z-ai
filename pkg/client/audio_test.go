@@ -56,8 +56,8 @@ func TestAudioTranscribeMultipartWireFormat(t *testing.T) {
 	if gotFileName != "clip.wav" {
 		t.Fatalf("expected filename clip.wav, got %q", gotFileName)
 	}
-	if gotModel != audioTranscriptionModel {
-		t.Fatalf("expected default model %q, got %q", audioTranscriptionModel, gotModel)
+	if gotModel != DefaultASRModel {
+		t.Fatalf("expected default model %q, got %q", DefaultASRModel, gotModel)
 	}
 	if gotPrompt != "domain context" {
 		t.Fatalf("expected prompt to be sent, got %q", gotPrompt)

@@ -34,13 +34,13 @@ func TestSetDarkFlipsResolvedColors(t *testing.T) {
 	t.Cleanup(func() { SetDark(original) })
 
 	SetDark(true)
-	darkAccent := ColorAccent
+	darkAccent := colorAccent
 
 	SetDark(false)
-	lightAccent := ColorAccent
+	lightAccent := colorAccent
 
 	if darkAccent == lightAccent {
-		t.Fatalf("expected ColorAccent to differ between dark and light themes, both were %v", darkAccent)
+		t.Fatalf("expected colorAccent to differ between dark and light themes, both were %v", darkAccent)
 	}
 }
 
@@ -51,12 +51,12 @@ func TestSetDarkNoOpWhenUnchanged(t *testing.T) {
 	t.Cleanup(func() { SetDark(original) })
 
 	SetDark(true)
-	before := ColorAccent
+	before := colorAccent
 	SetDark(true) // same value — should not rebuild
-	after := ColorAccent
+	after := colorAccent
 
 	if before != after {
-		t.Fatalf("expected ColorAccent unchanged on a no-op SetDark, got %v -> %v", before, after)
+		t.Fatalf("expected colorAccent unchanged on a no-op SetDark, got %v -> %v", before, after)
 	}
 }
 

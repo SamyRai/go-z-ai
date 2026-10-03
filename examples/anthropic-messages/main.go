@@ -30,7 +30,7 @@ func main() {
 
 	temp := 0.5
 	resp, err := c.Anthropic().Create(context.Background(), client.AnthropicMessageRequest{
-		Model:       "glm-4.6",
+		Model:       client.DefaultModel,
 		MaxTokens:   512, // required by the Anthropic surface; must be > 0
 		System:      "be concise",
 		Temperature: &temp, // pointer: omit entirely to leave it unset

@@ -58,15 +58,18 @@ func (s *ChatService) RunWithToolsLimit(ctx context.Context, req ChatRequest, ex
 			return r, nil
 		}
 		choice := r.Choices[0]
-		if choice.FinishReason != "tool_calls" || len(choice.Message.ToolCalls) == 0 {
+		if choice.FinishReason != FinishReasonToolCalls || len(choice.Message.ToolCalls) == 0 {
 			return r, nil
 		}
 
-		// Echo the assistant's tool-call message, then append each tool result.
+		// Echo the assistant's tool-call message — reasoning included, which
+		// interleaved and preserved thinking require — then append each tool
+		// result.
 		messages = append(messages, Message{
-			Role:      "assistant",
-			Content:   choice.Message.Content,
-			ToolCalls: choice.Message.ToolCalls,
+			Role:             "assistant",
+			Content:          choice.Message.Content,
+			ReasoningContent: choice.Message.ReasoningContent,
+			ToolCalls:        choice.Message.ToolCalls,
 		})
 		for _, call := range choice.Message.ToolCalls {
 			name, args := "", ""

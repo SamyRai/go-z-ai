@@ -1,125 +1,161 @@
 package cli
 
 import (
+	"context"
 	"fmt"
+	"time"
 
+	"github.com/SamyRai/go-z-ai/internal/usageview"
 	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
 )
 
 var accountCmd = &cobra.Command{
 	Use:   "account",
-	Short: "Account and profile operations",
-	Long:  `Manage your Z.AI account information and profile details.`,
+	Short: "Inspect the current API key's account",
+	Long:  `Inspect the account behind the current API key: type and region, health, balance, and coding-plan subscriptions.`,
 }
 
-var accountInfoCmd = &cobra.Command{
-	Use:   "info",
-	Short: "Get account information",
-	Long:  `Get detailed account information including email, status, and balance.`,
-	RunE:  runWithClient(runAccountInfo),
+var accountDetectCmd = &cobra.Command{
+	Use:   "detect",
+	Short: "Detect the key's account type and region",
+	Long:  `Detect whether the key belongs to a GLM Coding Plan or pay-as-you-go account, and on which gateway (api.z.ai or open.bigmodel.cn). Free: no tokens are spent.`,
+	RunE:  runWithClient(runAccountDetect),
 }
 
 var accountStatusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Get account status",
-	Long:  `Get current account status and subscription details.`,
-	RunE:  runWithClient(runAccountStatus),
+	Short: "Check that the key works and can spend",
+	Long: `Check that the key authenticates and can currently spend. Coding-plan keys are
+checked for free through the quota endpoint; pay-as-you-go keys need one
+minimal billed request (Z.AI has no balance-check API for them).`,
+	RunE: runWithClient(runAccountStatus),
+}
+
+var accountBalanceCmd = &cobra.Command{
+	Use:   "balance",
+	Short: "Show the pay-as-you-go wallet balance",
+	RunE:  runWithClient(runAccountBalance),
+}
+
+var accountSubscriptionsCmd = &cobra.Command{
+	Use:   "subscriptions",
+	Short: "List GLM Coding Plan subscriptions",
+	RunE:  runWithClient(runAccountSubscriptions),
 }
 
 func init() {
 	rootCmd.AddCommand(accountCmd)
-	accountCmd.AddCommand(accountInfoCmd)
-	accountCmd.AddCommand(accountStatusCmd)
-
-	accountInfoCmd.Flags().String("format", "table", "Output format (table, json)")
-	accountStatusCmd.Flags().String("format", "table", "Output format (table, json)")
+	accountCmd.AddCommand(accountDetectCmd, accountStatusCmd, accountBalanceCmd, accountSubscriptionsCmd)
+	addFormatFlag("text", accountDetectCmd, accountStatusCmd, accountBalanceCmd, accountSubscriptionsCmd)
+	accountStatusCmd.Flags().Duration("watch", 0, "Re-check at this interval (e.g. 5m) until interrupted; pay-as-you-go checks are billed each time")
 }
 
-func runAccountInfo(cmd *cobra.Command, args []string, apiClient *client.Client) error {
-	fmt.Println("👤 Getting Account Information...")
-	fmt.Print("Contacting Z.AI Account API...\n\n")
-
-	info, err := apiClient.Account().GetAccountInfo(cmd.Context())
+func runAccountDetect(cmd *cobra.Command, _ []string, apiClient *client.Client) error {
+	det, err := apiClient.Detection().DetectAccountType(cmd.Context())
 	if err != nil {
-		return fmt.Errorf("failed to get account info: %w", err)
+		return err
 	}
-
-	if !info.Success {
-		return fmt.Errorf("API returned error: %s (code: %d)", info.Msg, info.Code)
-	}
-
-	format, _ := cmd.Flags().GetString("format")
-	if format == "json" {
-		return outputJSON(info)
-	}
-
-	fmt.Println("📊 Account Information")
-	fmt.Println("====================")
-
-	if info.Data != nil {
-		fmt.Printf("User ID: %s\n", info.Data.UserID)
-		fmt.Printf("Email: %s\n", info.Data.Email)
-		fmt.Printf("Account Type: %s\n", info.Data.AccountType)
-		fmt.Printf("Status: %s\n", info.Data.Status)
-		fmt.Printf("Verified: %t\n", info.Data.Verified)
-
-		if info.Data.Balance > 0 || info.Data.Credit > 0 {
-			fmt.Println("\n💰 Balance Information:")
-			if info.Data.Balance > 0 {
-				fmt.Printf("  Cash Balance: %.2f %s\n", info.Data.Balance, info.Data.Currency)
-			}
-			if info.Data.Credit > 0 {
-				fmt.Printf("  Credit Balance: %.2f %s\n", info.Data.Credit, info.Data.Currency)
-			}
-		}
-
-		if !info.Data.CreatedAt.IsZero() {
-			fmt.Printf("Created: %s\n", info.Data.CreatedAt.Format("2006-01-02 15:04:05"))
-		}
-	} else {
-		fmt.Println("No account data available")
-		fmt.Println("💡 This endpoint may require different permissions or account type")
-	}
-
-	return nil
+	return emit(cmd, det, func() error {
+		printDetected(det)
+		return nil
+	})
 }
 
-func runAccountStatus(cmd *cobra.Command, args []string, apiClient *client.Client) error {
-	fmt.Println("🔍 Getting Account Status...")
-	fmt.Print("Contacting Z.AI Account API...\n\n")
-
-	status, err := apiClient.Account().GetAccountStatus(cmd.Context())
-	if err != nil {
-		return fmt.Errorf("failed to get account status: %w", err)
+func printDetected(det *client.DetectedAccount) {
+	fmt.Printf("Type:     %s", det.Type)
+	if det.Level != "" {
+		fmt.Printf(" (%s)", det.Level)
 	}
-
-	if !status.Success {
-		return fmt.Errorf("API returned error: %s (code: %d)", status.Msg, status.Code)
+	if !det.Confirmed {
+		fmt.Print(" — inferred: the coding-plan quota endpoint did not recognize the key")
 	}
+	fmt.Printf("\nRegion:   %s\nEndpoint: %s\n", det.Region, det.BaseURL)
+}
 
-	format, _ := cmd.Flags().GetString("format")
-	if format == "json" {
-		return outputJSON(status)
-	}
-
-	fmt.Println("📊 Account Status")
-	fmt.Println("================")
-
-	if status.Data != nil {
-		fmt.Printf("Account ID: %s\n", status.Data.AccountID)
-		fmt.Printf("Status: %s\n", status.Data.Status)
-		fmt.Printf("Plan: %s\n", status.Data.Plan)
-		fmt.Printf("Quota Status: %s\n", status.Data.QuotaStatus)
-		fmt.Printf("Has Balance: %t\n", status.Data.HasBalance)
-
-		if !status.Data.ExpiresAt.IsZero() {
-			fmt.Printf("Expires: %s\n", status.Data.ExpiresAt.Format("2006-01-02 15:04:05"))
+func runAccountStatus(cmd *cobra.Command, _ []string, apiClient *client.Client) error {
+	every, _ := cmd.Flags().GetDuration("watch")
+	check := func(ctx context.Context) error {
+		status, err := apiClient.Detection().CheckAccountStatus(ctx)
+		if err != nil {
+			return err
 		}
-	} else {
-		fmt.Println("No status data available")
-		fmt.Println("💡 This endpoint may require different permissions or account type")
+		return emit(cmd, status, func() error {
+			mark := "✅"
+			if !status.APIAccessible || !status.HasBalance {
+				mark = "⚠️ "
+			}
+			fmt.Printf("[%s] %s %s\n", status.LastChecked.Format(time.TimeOnly), mark, status.Message)
+			return nil
+		})
 	}
+	if err := check(cmd.Context()); err != nil || every <= 0 {
+		return err
+	}
+	ticker := time.NewTicker(every)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-cmd.Context().Done():
+			return nil
+		case <-ticker.C:
+			if err := check(cmd.Context()); err != nil {
+				progressf("check failed: %v\n", err)
+			}
+		}
+	}
+}
 
-	return nil
+func runAccountBalance(cmd *cobra.Command, _ []string, apiClient *client.Client) error {
+	b, err := apiClient.Account().Balance(cmd.Context())
+	if err != nil {
+		return err
+	}
+	return emit(cmd, b, func() error {
+		fmt.Printf("Available: %.2f\nBalance:   %.2f (frozen %.2f)\nRecharged: %.2f, granted %.2f, spent %.2f\n",
+			b.AvailableBalance, b.Balance, b.FrozenBalance, b.RechargeAmount, b.GiveAmount, b.TotalSpendAmount)
+		fmt.Printf("(%s; USD on api.z.ai, CNY on open.bigmodel.cn)\n", apiClient.Region().ConsoleURL())
+		return nil
+	})
+}
+
+func runAccountSubscriptions(cmd *cobra.Command, _ []string, apiClient *client.Client) error {
+	subs, err := apiClient.Account().Subscriptions(cmd.Context())
+	if err != nil {
+		return err
+	}
+	return emit(cmd, subs, func() error {
+		if len(subs) == 0 {
+			fmt.Println("No GLM Coding Plan subscription.")
+			return nil
+		}
+		for _, s := range subs {
+			renew := "off"
+			if s.AutoRenew == 1 {
+				renew = "on, next " + s.NextRenewTime
+			}
+			fmt.Printf("%s — %s, %s billing, valid %s, auto-renew %s\n", s.ProductName, s.Status, s.BillingCycle, s.Valid, renew)
+		}
+		return nil
+	})
+}
+
+// printQuota renders a coding plan's quota windows through usageview's
+// shared summaries (the TUI's Usage tab uses the same ones).
+func printQuota(q *client.QuotaData, now time.Time) {
+	fmt.Printf("📊 GLM Coding Plan (%s)\n\n", q.Level)
+	mode := usageview.BillingModeOf(q.Limits)
+	for _, l := range q.Limits {
+		s := usageview.SummarizeLimit(l, mode, now, time.Local)
+		fmt.Printf("• %s — %.0f%% used\n", s.Title, s.Used*100)
+		for _, line := range []string{s.Counts, s.Reset, s.Pace, s.Peak} {
+			if line != "" {
+				fmt.Printf("  %s\n", line)
+			}
+		}
+		for _, tool := range s.Tools {
+			fmt.Printf("    %s\n", tool)
+		}
+		fmt.Println()
+	}
 }

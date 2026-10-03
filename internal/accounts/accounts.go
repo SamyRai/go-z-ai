@@ -11,34 +11,46 @@ import (
 	"sort"
 	"time"
 
+	"github.com/SamyRai/go-z-ai/internal/atomicfile"
 	"github.com/SamyRai/go-z-ai/pkg/client"
 )
 
 // Account is one named Z.AI credential.
 type Account struct {
-	Name            string             `json:"name"`
-	APIKey          string             `json:"api_key"`
-	Type            client.AccountType `json:"type"`
-	BaseURLOverride string             `json:"base_url_override,omitempty"`
-	CreatedAt       time.Time          `json:"created_at"`
-	LastUsedAt      time.Time          `json:"last_used_at"` // zero value means never used
+	Name   string             `json:"name"`
+	APIKey string             `json:"api_key"`
+	Type   client.AccountType `json:"type"`
+	// Region is the gateway the key was issued on; empty (accounts saved
+	// before regions were recorded) means global.
+	Region          client.Region `json:"region,omitempty"`
+	BaseURLOverride string        `json:"base_url_override,omitempty"`
+	CreatedAt       time.Time     `json:"created_at"`
+	LastUsedAt      time.Time     `json:"last_used_at"` // zero value means never used
 }
 
-// ResolvedBaseURL returns the base URL to use for this account. If
-// BaseURLOverride is set it always wins; otherwise the URL is derived from
-// Type so a stored account can never point a key at the wrong endpoint.
+// ResolvedBaseURL returns the chat API root for this account: the override
+// when set, otherwise the one its type uses in its region — so a stored
+// account can never point a key at the wrong endpoint.
 func (a Account) ResolvedBaseURL() (string, error) {
 	if a.BaseURLOverride != "" {
 		return a.BaseURLOverride, nil
 	}
 	switch a.Type {
-	case client.AccountTypeCodingPlan:
-		return client.CodingBaseURL, nil
-	case client.AccountTypePayAsYouGo:
-		return client.ProdBaseURL, nil
+	case client.AccountTypeCodingPlan, client.AccountTypePayAsYouGo:
+		return a.Region.BaseURLFor(a.Type), nil
 	default:
 		return "", fmt.Errorf("account %q has unrecognized type %q; set --base-url-override or re-add with --type", a.Name, a.Type)
 	}
+}
+
+// ClientConfig returns the client configuration for this account — the one
+// place an account's key, endpoint, and region become a client.Config.
+func (a Account) ClientConfig() (client.Config, error) {
+	baseURL, err := a.ResolvedBaseURL()
+	if err != nil {
+		return client.Config{}, err
+	}
+	return client.Config{APIKey: a.APIKey, BaseURL: baseURL, Region: a.Region}, nil
 }
 
 // SupportsMonitorEndpoints reports whether the coding-plan monitor endpoints
@@ -113,40 +125,14 @@ func (s *Store) Save() error {
 		return err
 	}
 
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return fmt.Errorf("failed to create config directory %s: %w", dir, err)
-	}
-
 	data, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to encode accounts file: %w", err)
 	}
 
-	tmp, err := os.CreateTemp(dir, ".accounts-*.json.tmp")
-	if err != nil {
-		return fmt.Errorf("failed to create temp accounts file: %w", err)
-	}
-	tmpPath := tmp.Name()
-
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmpPath)
-		return fmt.Errorf("failed to write accounts file: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmpPath)
-		return fmt.Errorf("failed to close temp accounts file: %w", err)
-	}
-	if err := os.Chmod(tmpPath, 0o600); err != nil {
-		os.Remove(tmpPath)
-		return fmt.Errorf("failed to set accounts file permissions: %w", err)
-	}
-	if err := os.Rename(tmpPath, path); err != nil {
-		os.Remove(tmpPath)
+	if err := atomicfile.Write(path, data, 0o600); err != nil {
 		return fmt.Errorf("failed to save accounts file: %w", err)
 	}
-
 	return nil
 }
 

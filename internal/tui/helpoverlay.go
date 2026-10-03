@@ -7,6 +7,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
+	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
 )
 
 // helpOverlay is a modal that lists every keybinding available in the current
@@ -60,7 +61,7 @@ func (h *helpOverlay) View() tea.View {
 		if len(sec.bindings) == 0 {
 			continue
 		}
-		// Section header (the card title is added by renderOverlayCard; here
+		// Section header (the card title is added by uistyle.RenderOverlayCard; here
 		// we render the per-section subtitle in plain text to keep widths
 		// predictable).
 		if sec.title != "" {
@@ -87,5 +88,5 @@ func (h *helpOverlay) View() tea.View {
 		b.WriteByte('\n')
 	}
 	body := strings.TrimRight(b.String(), "\n")
-	return tea.NewView(renderOverlayCard("Keybindings", body))
+	return tea.NewView(uistyle.RenderOverlayCard("Keybindings", body))
 }

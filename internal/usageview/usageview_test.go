@@ -122,8 +122,8 @@ func TestCompactDuration(t *testing.T) {
 		2*24*time.Hour + 5*time.Hour: "2d",
 	}
 	for d, want := range cases {
-		if got := compactDuration(d); got != want {
-			t.Errorf("compactDuration(%s) = %q, want %q", d, got, want)
+		if got := FormatDuration(d); got != want {
+			t.Errorf("FormatDuration(%s) = %q, want %q", d, got, want)
 		}
 	}
 }

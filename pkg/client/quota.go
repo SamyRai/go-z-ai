@@ -7,148 +7,89 @@ import (
 	"time"
 )
 
-// Quota limit type constants
+// Quota limit types (QuotaLimit.Type). Credit-based plans (sold since
+// 2026-07-30) meter the 5-hour and weekly windows in credits, with MCP tool
+// calls billed from the same credits; legacy plans meter tokens and keep a
+// separate monthly MCP-call lane. Treat Type as an open set.
 const (
-	QuotaTypeTokensLimit = "TOKENS_LIMIT" // API request token limits
-	QuotaTypeTimeLimit   = "TIME_LIMIT"   // MCP tools usage limits
+	QuotaTypeCreditLimit = "CREDIT_LIMIT" // credits (credit-based plans)
+	QuotaTypeTokensLimit = "TOKENS_LIMIT" // tokens, percentage only (legacy plans)
+	QuotaTypeTimeLimit   = "TIME_LIMIT"   // MCP tool calls (legacy plans)
 )
 
-// Time unit code constants from Z.ai API
+// Window unit codes (QuotaLimit.Unit).
 const (
-	UnitCodeHourly  = 3 // 5-hour rolling window (for TOKENS_LIMIT)
-	UnitCodeWeekly  = 6 // Weekly rolling window (for TOKENS_LIMIT)
-	UnitCodeMonthly = 5 // Monthly quota (for TIME_LIMIT - MCP tools)
+	UnitCodeHour  = 3
+	UnitCodeMonth = 5
+	UnitCodeWeek  = 6
 )
 
-// QuotaWindowConfig defines a quota window configuration with human-readable metadata
-type QuotaWindowConfig struct {
-	Type        string // Limit type (TOKENS_LIMIT, TIME_LIMIT)
-	UnitCode    int    // API unit code
-	Number      int    // Number of units
-	Description string // Human-readable description
-}
-
-// Known quota window configurations
-// These map the cryptic API unit/number codes to understandable window descriptions
-// When adding support for new quota window types, add them here and update the guide
-var quotaWindowConfigs = []QuotaWindowConfig{
-	// Token limit windows (API request quotas)
-	{Type: QuotaTypeTokensLimit, UnitCode: UnitCodeHourly, Number: 5, Description: "5-hour rolling token window"},
-	{Type: QuotaTypeTokensLimit, UnitCode: UnitCodeWeekly, Number: 1, Description: "weekly token window"},
-
-	// MCP tools limit windows (external tool usage quotas)
-	{Type: QuotaTypeTimeLimit, UnitCode: UnitCodeMonthly, Number: 1, Description: "monthly MCP tools quota"},
-}
-
-// findWindowConfig looks up a quota window configuration by type, unit code, and number
-// Returns the matching config or a generic fallback if no match is found
-// This provides a centralized mapping for all known quota window types
-func findWindowConfig(limitType string, unitCode, number int) QuotaWindowConfig {
-	for _, config := range quotaWindowConfigs {
-		if config.Type == limitType && config.UnitCode == unitCode && config.Number == number {
-			return config
-		}
-	}
-
-	// Return a generic fallback config for unknown window types
-	// This ensures we always return some description even for new/unknown quota types
-	return QuotaWindowConfig{
-		Type:        limitType,
-		UnitCode:    unitCode,
-		Number:      number,
-		Description: fmt.Sprintf("unknown %s window (unit %d × %d)", limitType, unitCode, number),
-	}
-}
-
-// QuotaService handles quota and usage monitoring
+// QuotaService reads GLM Coding Plan quota and usage from the monitor API.
+// The endpoints are not in the public API reference but are the ones Z.AI's
+// own usage plugin calls.
 type QuotaService struct {
 	client *Client
 }
 
-// QuotaLimitResponse represents the full quota limit API response
-type QuotaLimitResponse struct {
-	Code    int       `json:"code"`
-	Msg     string    `json:"msg"`
-	Data    QuotaData `json:"data"`
-	Success bool      `json:"success"`
-}
+// QuotaLimitResponse is the GET /usage/quota/limit response.
+type QuotaLimitResponse = Envelope[QuotaData]
 
-// QuotaData contains the quota data
+// QuotaData is the plan tier and its quota windows.
 type QuotaData struct {
 	Limits []QuotaLimit `json:"limits"`
-	Level  string       `json:"level"` // pro, lite, max
+	Level  string       `json:"level"` // lite, pro, max
 }
 
-// QuotaLimit represents individual quota limits from the Z.ai API
-//
-// The Z.ai API returns quota limits with cryptic unit/number codes that need
-// to be mapped to human-readable window descriptions. Use WindowDescription()
-// to get clear descriptions like "5-hour rolling token window" instead of
-// raw codes like "TOKENS_LIMIT (unit 3 × 5)".
-//
-// Field meanings:
-// - Type: QuotaTypeTokensLimit (API calls) or QuotaTypeTimeLimit (MCP tools)
-// - Unit: Time unit code (UnitCodeHourly=3, UnitCodeWeekly=6, UnitCodeMonthly=5)
-// - Number: Number of time units (e.g., 5 for 5-hour, 1 for weekly/monthly)
-// - Usage: Total limit (0 = no limit provided by API)
-// - CurrentValue: Current usage count
-// - Remaining: Remaining quota
-// - Percentage: Usage percentage (0-100)
-// - NextResetTime: Next reset timestamp (milliseconds since epoch)
-// - UsageDetails: Tool-specific breakdown for TIME_LIMIT quotas
+// Exhausted reports whether any model-usage window has hit its limit, i.e.
+// the plan cannot serve requests until that window resets.
+func (d QuotaData) Exhausted() bool {
+	for _, l := range d.Limits {
+		if l.IsModelLimit() && l.UsedFraction() >= 1 {
+			return true
+		}
+	}
+	return false
+}
+
+// QuotaLimit is one quota window. On credit plans Usage is the allowance,
+// CurrentValue the amount used, and Remaining what is left; legacy token
+// windows report Percentage only.
 type QuotaLimit struct {
-	Type          string            `json:"type"`                   // Quota type: TOKENS_LIMIT or TIME_LIMIT
-	Unit          int               `json:"unit"`                   // Time unit code: 3, 5, or 6
-	Number        int               `json:"number"`                 // Number of time units
-	Usage         int               `json:"usage"`                  // Total usage limit (0 = no limit provided)
-	CurrentValue  int               `json:"currentValue"`           // Current usage count
-	Remaining     int               `json:"remaining"`              // Remaining quota
-	Percentage    float64           `json:"percentage"`             // Usage percentage (0-100)
-	NextResetTime int64             `json:"nextResetTime"`          // Next reset timestamp (milliseconds since epoch)
-	UsageDetails  []ToolUsageDetail `json:"usageDetails,omitempty"` // Tool-specific breakdown for TIME_LIMIT
+	Type          string            `json:"type"`                   // QuotaType* constant
+	Unit          int               `json:"unit"`                   // UnitCode* constant
+	Number        int               `json:"number"`                 // units per window (5 for the 5-hour window)
+	Usage         int               `json:"usage"`                  // allowance; 0 when not reported
+	CurrentValue  int               `json:"currentValue"`           // used so far
+	Remaining     int               `json:"remaining"`              // allowance left
+	Percentage    float64           `json:"percentage"`             // server-rounded 0-100 (may overshoot)
+	NextResetTime int64             `json:"nextResetTime"`          // epoch ms; 0 while an idle window hasn't started
+	UsageDetails  []ToolUsageDetail `json:"usageDetails,omitempty"` // per-tool breakdown (TIME_LIMIT)
 }
 
 // ToolUsageDetail represents tool usage breakdown for TIME_LIMIT quotas
 // ModelCode identifies which tool: "search-prime", "web-reader", "zread"
 type ToolUsageDetail struct {
-	ModelCode string `json:"modelCode"`
-	Usage     int    `json:"usage"`
+	ModelCode   string `json:"modelCode"`
+	DisplayName string `json:"displayName,omitempty"`
+	Usage       int    `json:"usage"`
 }
 
-// WindowDescription returns a human-readable description of the quota window
-// by looking up the configuration in the known quota windows mapping.
-// This provides clear descriptions like "5-hour rolling token window" instead
-// of cryptic API codes like "TOKENS_LIMIT (unit 3 × 5)".
-//
-// Example usage:
-//
-//	limit.WindowDescription() // "5-hour rolling token window"
-func (q *QuotaLimit) WindowDescription() string {
-	config := findWindowConfig(q.Type, q.Unit, q.Number)
-	return config.Description
+// IsModelLimit reports whether the window meters model usage (credits or
+// tokens), as opposed to the legacy MCP-call lane.
+func (q *QuotaLimit) IsModelLimit() bool {
+	return q.Type == QuotaTypeCreditLimit || q.Type == QuotaTypeTokensLimit
 }
 
-// IsTokenLimit reports whether this is a TOKENS_LIMIT (API request quota)
-func (q *QuotaLimit) IsTokenLimit() bool {
-	return q.Type == QuotaTypeTokensLimit
+// UsedFraction is the share of the window consumed (0..1+), from the exact
+// counts when the server reports an allowance, else from Percentage.
+func (q *QuotaLimit) UsedFraction() float64 {
+	if q.Usage > 0 {
+		return float64(q.CurrentValue) / float64(q.Usage)
+	}
+	return q.Percentage / 100
 }
 
-// IsToolsLimit reports whether this is a TIME_LIMIT (MCP tools quota)
-func (q *QuotaLimit) IsToolsLimit() bool {
-	return q.Type == QuotaTypeTimeLimit
-}
-
-// IsExhausted reports whether the quota window is at or near 100% usage
-func (q *QuotaLimit) IsExhausted() bool {
-	return q.Percentage >= 99.0
-}
-
-// IsLow reports whether the quota window is below 20% remaining
-func (q *QuotaLimit) IsLow() bool {
-	return q.Remaining > 0 && q.Percentage >= 80.0
-}
-
-// ResetTime returns the next reset time as a time.Time
+// ResetTime returns the next reset time, or the zero time when unknown.
 func (q *QuotaLimit) ResetTime() time.Time {
 	if q.NextResetTime == 0 {
 		return time.Time{}
@@ -156,50 +97,62 @@ func (q *QuotaLimit) ResetTime() time.Time {
 	return time.UnixMilli(q.NextResetTime)
 }
 
-// WindowDuration returns the length of this quota's rolling window (5 hours,
-// one week, ...), derived from the Unit/Number codes. Returns 0 for an unknown
-// unit code, in which case the window start can't be computed.
+// WindowDuration returns the window length: Number hours for the hourly
+// unit, and one week / one month for those units regardless of Number (the
+// server has been seen reporting a week as both (6,1) and (6,7)). Zero for
+// an unknown unit.
 func (q *QuotaLimit) WindowDuration() time.Duration {
-	var unit time.Duration
 	switch q.Unit {
-	case UnitCodeHourly:
-		unit = time.Hour
-	case UnitCodeWeekly:
-		unit = 7 * 24 * time.Hour
-	case UnitCodeMonthly:
-		unit = 30 * 24 * time.Hour
-	default:
-		return 0
+	case UnitCodeHour:
+		return time.Duration(max(q.Number, 1)) * time.Hour
+	case UnitCodeWeek:
+		return 7 * 24 * time.Hour
+	case UnitCodeMonth:
+		return 30 * 24 * time.Hour
 	}
-	n := q.Number
-	if n <= 0 {
-		n = 1
-	}
-	return time.Duration(n) * unit
+	return 0
 }
 
-// WindowStart returns when the current rolling window began, i.e. the reset
-// time minus the window duration. Returns the zero time when either the reset
-// time or the window duration is unknown.
+// WindowStart returns when the current window began (reset time minus window
+// duration), or the zero time when either is unknown.
 func (q *QuotaLimit) WindowStart() time.Time {
-	reset := q.ResetTime()
-	d := q.WindowDuration()
+	reset, d := q.ResetTime(), q.WindowDuration()
 	if reset.IsZero() || d == 0 {
 		return time.Time{}
 	}
 	return reset.Add(-d)
 }
 
+// WindowDescription is a human-readable name for the window, such as
+// "5-hour credit window" or "monthly MCP tool quota".
+func (q *QuotaLimit) WindowDescription() string {
+	var span string
+	switch q.Unit {
+	case UnitCodeHour:
+		span = fmt.Sprintf("%d-hour", max(q.Number, 1))
+	case UnitCodeWeek:
+		span = "weekly"
+	case UnitCodeMonth:
+		span = "monthly"
+	default:
+		span = fmt.Sprintf("unit-%d×%d", q.Unit, q.Number)
+	}
+	switch q.Type {
+	case QuotaTypeCreditLimit:
+		return span + " credit window"
+	case QuotaTypeTokensLimit:
+		return span + " token window"
+	case QuotaTypeTimeLimit:
+		return span + " MCP tool quota"
+	}
+	return fmt.Sprintf("%s %s window", span, q.Type)
+}
+
 // ModelUsageResponse represents model usage statistics for a time window,
 // bucketed daily or hourly depending on the requested range (see
 // ModelUsageData.Granularity). Verified against the live API — the response
 // is a time-series object, not a flat list.
-type ModelUsageResponse struct {
-	Code    int            `json:"code"`
-	Msg     string         `json:"msg"`
-	Data    ModelUsageData `json:"data"`
-	Success bool           `json:"success"`
-}
+type ModelUsageResponse = Envelope[ModelUsageData]
 
 // ModelUsageData holds parallel time-series arrays (one entry per XTime
 // bucket) plus a per-model breakdown and totals for the requested window.
@@ -238,12 +191,7 @@ type ModelUsageSeries struct {
 // ToolUsageResponse represents MCP tool (web search/reader/zread) usage
 // statistics for a time window, same bucketed time-series shape as
 // ModelUsageResponse.
-type ToolUsageResponse struct {
-	Code    int           `json:"code"`
-	Msg     string        `json:"msg"`
-	Data    ToolUsageData `json:"data"`
-	Success bool          `json:"success"`
-}
+type ToolUsageResponse = Envelope[ToolUsageData]
 
 // ToolUsageData holds parallel time-series arrays plus a per-tool breakdown
 // and totals for the requested window.
@@ -285,19 +233,17 @@ type ToolUsageSeries struct {
 	TotalUsageCount int64   `json:"totalUsageCount"`
 }
 
-// NewQuotaService creates a new quota service
-func NewQuotaService(client *Client) *QuotaService {
-	return &QuotaService{client: client}
+// GetQuotaLimit returns the plan tier and its quota windows.
+func (s *QuotaService) GetQuotaLimit(ctx context.Context) (*QuotaLimitResponse, error) {
+	return fetchEnvelope[QuotaData](ctx, s.client, s.request(QuotaLimitEndpoint), "quota limit")
 }
 
-// GetQuotaLimit retrieves the current quota limit status
-func (s *QuotaService) GetQuotaLimit(ctx context.Context) (*QuotaLimitResponse, error) {
-	var result QuotaLimitResponse
-	if err := s.client.doRequestBase(ctx, s.client.config.Region.monitorBaseURL(), "GET", QuotaLimitEndpoint, nil, &result); err != nil {
-		return nil, fmt.Errorf("failed to get quota limit: %w", err)
-	}
-	return &result, nil
-}
+// Monitor (quota/usage) endpoint paths under Region.MonitorBaseURL.
+const (
+	QuotaLimitEndpoint = "/usage/quota/limit"
+	ModelUsageEndpoint = "/usage/model-usage"
+	ToolUsageEndpoint  = "/usage/tool-usage"
+)
 
 // monitorUsageTimeFormat is the format the monitor API expects startTime/
 // endTime query params in.
@@ -320,22 +266,19 @@ func monitorUsagePath(endpoint string, startTime, endTime time.Time, serverTZ *t
 	return endpoint + "?" + q.Encode()
 }
 
-// GetModelUsage retrieves model usage statistics for a time window
+// GetModelUsage returns per-model token usage between startTime and endTime.
 func (s *QuotaService) GetModelUsage(ctx context.Context, startTime, endTime time.Time) (*ModelUsageResponse, error) {
-	var result ModelUsageResponse
-	path := monitorUsagePath(ModelUsageEndpoint, startTime, endTime, s.client.monitorTimezone())
-	if err := s.client.doRequestBase(ctx, s.client.config.Region.monitorBaseURL(), "GET", path, nil, &result); err != nil {
-		return nil, fmt.Errorf("failed to get model usage: %w", err)
-	}
-	return &result, nil
+	path := monitorUsagePath(ModelUsageEndpoint, startTime, endTime, s.client.MonitorTimezone())
+	return fetchEnvelope[ModelUsageData](ctx, s.client, s.request(path), "model usage")
 }
 
-// GetToolUsage retrieves MCP tool usage statistics for a time window
+// GetToolUsage returns MCP tool usage between startTime and endTime.
 func (s *QuotaService) GetToolUsage(ctx context.Context, startTime, endTime time.Time) (*ToolUsageResponse, error) {
-	var result ToolUsageResponse
-	path := monitorUsagePath(ToolUsageEndpoint, startTime, endTime, s.client.monitorTimezone())
-	if err := s.client.doRequestBase(ctx, s.client.config.Region.monitorBaseURL(), "GET", path, nil, &result); err != nil {
-		return nil, fmt.Errorf("failed to get tool usage: %w", err)
-	}
-	return &result, nil
+	path := monitorUsagePath(ToolUsageEndpoint, startTime, endTime, s.client.MonitorTimezone())
+	return fetchEnvelope[ToolUsageData](ctx, s.client, s.request(path), "tool usage")
+}
+
+// request builds a GET against the region's monitor root.
+func (s *QuotaService) request(path string) apiRequest {
+	return apiRequest{method: "GET", baseURL: s.client.config.Region.MonitorBaseURL(), path: path, service: "quota"}
 }

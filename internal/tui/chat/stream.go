@@ -2,66 +2,57 @@ package chat
 
 import (
 	"context"
+	"iter"
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
 	"github.com/SamyRai/go-z-ai/pkg/client"
 )
 
 // chunkMsg carries one streamed delta.
 type chunkMsg client.StreamChunk
 
-// streamDoneMsg signals the stream ended (err is nil on a clean finish, or
-// context.Canceled when the user aborted mid-stream via ctrl+c).
+// streamDoneMsg ends a stream: err is nil on a clean finish and
+// context.Canceled when the user aborted it.
 type streamDoneMsg struct{ err error }
 
-// streamHandle bridges ChatService.Stream's iterator (run on a goroutine)
-// into Bubble Tea's message loop via channels — the standard Bubble Tea
-// idiom for wrapping an external streaming source.
-type streamHandle struct {
-	ch     chan client.StreamChunk
-	done   chan error
+// stream adapts ChatService.Stream's iterator to Bubble Tea's message loop:
+// each wait command pulls exactly one value, and the next wait is issued only
+// after its message is handled, so pulls never overlap and there is no
+// goroutine or channel to leak.
+type stream struct {
+	next   func() (client.StreamChunk, error, bool)
+	stop   func()
 	cancel context.CancelFunc
+	tab    int // results are routed to the chat tab, whichever tab is active
 }
 
-// startStream launches req on a goroutine and returns the tea.Cmd that
-// begins draining it, plus the handle needed to cancel it mid-stream.
-func startStream(c *client.Client, req client.ChatRequest) (tea.Cmd, streamHandle) {
+func startStream(c *client.Client, req client.ChatRequest, tab int) (*stream, tea.Cmd) {
 	ctx, cancel := context.WithCancel(context.Background())
-	ch := make(chan client.StreamChunk, 16)
-	done := make(chan error, 1)
-	h := streamHandle{ch: ch, done: done, cancel: cancel}
-
-	go func() {
-		var streamErr error
-		for chunk, err := range c.Chat().Stream(ctx, req) {
-			if err != nil {
-				streamErr = err
-				break
-			}
-			select {
-			case ch <- chunk:
-			case <-ctx.Done():
-				streamErr = ctx.Err()
-				goto drain
-			}
-		}
-	drain:
-		done <- streamErr
-		close(ch)
-	}()
-
-	return waitForChunk(h), h
+	next, stop := iter.Pull2(c.Chat().Stream(ctx, req))
+	s := &stream{next: next, stop: stop, cancel: cancel, tab: tab}
+	return s, s.wait()
 }
 
-// waitForChunk drains one event off the stream and must be re-issued after
-// every chunkMsg until a streamDoneMsg arrives.
-func waitForChunk(h streamHandle) tea.Cmd {
-	return func() tea.Msg {
-		chunk, ok := <-h.ch
-		if !ok {
-			return streamDoneMsg{err: <-h.done}
+// wait pulls the next chunk (or the end of the stream).
+func (s *stream) wait() tea.Cmd {
+	return uimsg.Route(s.tab, func() tea.Msg {
+		chunk, err, ok := s.next()
+		switch {
+		case !ok:
+			s.release()
+			return streamDoneMsg{}
+		case err != nil:
+			s.release()
+			return streamDoneMsg{err: err}
 		}
 		return chunkMsg(chunk)
-	}
+	})
+}
+
+// release frees the iterator and the request context.
+func (s *stream) release() {
+	s.stop()
+	s.cancel()
 }

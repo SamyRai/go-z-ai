@@ -26,7 +26,7 @@ var fileParserSyncCmd = &cobra.Command{
 var fileParserCreateCmd = &cobra.Command{
 	Use:   "create [file] [tool-type] [file-type]",
 	Short: "Submit an async document parse task",
-	Long:  `Submit an async document parse task (tool-type: lite, expert, or prime). Poll the result with "fileparser result".`,
+	Long:  `Submit an async document parse task (tool-type: lite, expert, or prime). Poll the result with "parser result".`,
 	Args:  cobra.ExactArgs(3),
 	RunE:  runWithClient(runFileParserCreate),
 }
@@ -34,7 +34,7 @@ var fileParserCreateCmd = &cobra.Command{
 var fileParserResultCmd = &cobra.Command{
 	Use:   "result [task-id] [format]",
 	Short: "Fetch the result of an async parse task",
-	Long:  `Fetch the result of an async parse task submitted via "fileparser create". format is "text" or "download_link".`,
+	Long:  `Fetch the result of an async parse task submitted via "parser create". format is "text" or "download_link".`,
 	Args:  cobra.ExactArgs(2),
 	RunE:  runWithClient(runFileParserResult),
 }
@@ -42,6 +42,7 @@ var fileParserResultCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(fileParserCmd)
 	fileParserCmd.AddCommand(fileParserSyncCmd, fileParserCreateCmd, fileParserResultCmd)
+	addFormatFlag("text", fileParserSyncCmd, fileParserCreateCmd, fileParserResultCmd)
 }
 
 func runFileParserSync(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -51,7 +52,7 @@ func runFileParserSync(cmd *cobra.Command, args []string, apiClient *client.Clie
 		return fmt.Errorf("failed to read %s: %w", path, err)
 	}
 
-	fmt.Printf("📄 Parsing %s...\n", filepath.Base(path))
+	progressf("📄 Parsing %s...\n", filepath.Base(path))
 	resp, err := apiClient.FileParser().Sync(cmd.Context(), client.FileParserRequest{
 		FileName: filepath.Base(path),
 		FileData: data,
@@ -62,8 +63,10 @@ func runFileParserSync(cmd *cobra.Command, args []string, apiClient *client.Clie
 		return fmt.Errorf("file parse failed: %w", err)
 	}
 
-	fmt.Println(resp.Content)
-	return nil
+	return emit(cmd, resp, func() error {
+		fmt.Println(resp.Content)
+		return nil
+	})
 }
 
 func runFileParserCreate(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -83,8 +86,11 @@ func runFileParserCreate(cmd *cobra.Command, args []string, apiClient *client.Cl
 		return fmt.Errorf("failed to submit parse task: %w", err)
 	}
 
-	fmt.Printf("✅ Task submitted: %s\n", resp.TaskID)
-	return nil
+	return emit(cmd, resp, func() error {
+		fmt.Printf("✅ Task submitted: %s\n", resp.TaskID)
+		fmt.Printf("   Check with: go-z-ai parser result %s <text|download_link>\n", resp.TaskID)
+		return nil
+	})
 }
 
 func runFileParserResult(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -93,18 +99,19 @@ func runFileParserResult(cmd *cobra.Command, args []string, apiClient *client.Cl
 		return fmt.Errorf("failed to get parse result: %w", err)
 	}
 
-	switch resp.Status {
-	case client.FileParserStatusProcessing:
-		fmt.Println("⏳ Still processing, try again shortly")
-	case client.FileParserStatusFailed:
-		fmt.Printf("❌ Failed: %s\n", resp.Message)
-	default:
-		if resp.Content != "" {
-			fmt.Println(resp.Content)
-		}
-		if resp.ParsingResultURL != "" {
-			fmt.Println(resp.ParsingResultURL)
-		}
+	if resp.Status == client.FileParserStatusFailed {
+		return fmt.Errorf("parse task %s failed: %s", args[0], resp.Message)
 	}
-	return nil
+	return emit(cmd, resp, func() error {
+		if resp.Status == client.FileParserStatusProcessing {
+			progressf("status: %s (try again shortly)\n", resp.Status)
+			return nil
+		}
+		for _, out := range []string{resp.Content, resp.ParsingResultURL} {
+			if out != "" {
+				fmt.Println(out)
+			}
+		}
+		return nil
+	})
 }

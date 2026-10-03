@@ -3,6 +3,7 @@ package usage
 import (
 	"errors"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -12,12 +13,11 @@ import (
 
 // A successful fetch stores the data and grows one progress bar per quota limit.
 func TestUsageFetchedSyncsBars(t *testing.T) {
-	m := New(nil, nil, 5)
+	m := New(nil, 5)
 	m.loading = true
 
 	next, _ := m.Update(fetchedMsg{quota: &client.QuotaLimitResponse{
-		Success: true,
-		Data:    client.QuotaData{Level: "pro", Limits: []client.QuotaLimit{{}, {}}},
+		Data: client.QuotaData{Level: "pro", Limits: []client.QuotaLimit{{}, {}}},
 	}})
 	got := next.(Model)
 	if got.loading {
@@ -31,36 +31,33 @@ func TestUsageFetchedSyncsBars(t *testing.T) {
 	}
 }
 
-func TestUsageFetchedErrorRaisesToast(t *testing.T) {
-	m := New(nil, nil, 5)
-	_, cmd := m.Update(fetchedMsg{err: errors.New("boom")})
-	if cmd == nil {
-		t.Fatal("expected a uimsg.Err command")
+// A failed fetch is shown in the tab (no toast every refresh), e.g. for a
+// pay-as-you-go key that has no coding-plan quota.
+func TestUsageFetchedErrorShownInline(t *testing.T) {
+	m := New(nil, 5)
+	next, cmd := m.Update(fetchedMsg{err: errors.New("boom")})
+	if cmd != nil {
+		t.Error("a fetch error must not raise a toast")
 	}
-	if _, ok := cmd().(uimsg.Err); !ok {
-		t.Error("expected uimsg.Err")
+	if next.(Model).err == nil {
+		t.Error("expected the error kept for display")
 	}
 }
 
-// route addresses the fetch result to this tab so it survives a tab switch.
-func TestUsageRouteWrapsToSelfTab(t *testing.T) {
-	m := New(nil, nil, 3)
-	msg := m.route(func() tea.Msg { return fetchedMsg{} })()
-	routed, ok := msg.(uimsg.Routed)
-	if !ok {
-		t.Fatalf("expected uimsg.Routed, got %T", msg)
-	}
-	if routed.Tab != 3 {
-		t.Errorf("expected fetch result routed to tab 3, got %d", routed.Tab)
-	}
-	if _, ok := routed.Msg.(fetchedMsg); !ok {
-		t.Errorf("expected wrapped fetchedMsg, got %T", routed.Msg)
+// The refresh tick is routed to this tab, so auto-refresh survives a tab
+// switch.
+func TestUsageTickIsRouted(t *testing.T) {
+	m := New(nil, 3)
+	m.every = time.Millisecond
+	routed, ok := m.tick()().(uimsg.Routed)
+	if !ok || routed.Tab != 3 {
+		t.Fatalf("tick not routed to tab 3: %#v", routed)
 	}
 }
 
 // 'r' refreshes (loading + fetch); a tick schedules another fetch+tick.
 func TestUsageRefreshAndTick(t *testing.T) {
-	m := New(nil, nil, 5)
+	m := New(func() *client.Client { return nil }, 5)
 	next, cmd := m.Update(tea.KeyPressMsg{Code: 'r', Text: "r"})
 	if !next.(Model).loading || cmd == nil {
 		t.Error("expected 'r' to set loading and return a fetch command")

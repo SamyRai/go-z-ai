@@ -1,10 +1,13 @@
 package client
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 // API error code constants from Z.ai API
@@ -85,13 +88,18 @@ func (e *APIError) Error() string {
 	if e.Err != nil {
 		return fmt.Sprintf("%s: %v", e.Message, e.Err)
 	}
-	if e.UserMessage != "" {
-		return fmt.Sprintf("[%d] %s (HTTP %d)", e.Code, e.UserMessage, e.HTTPStatus)
+	msg := e.Message
+	switch {
+	case e.UserMessage == "":
+	case msg == "" || msg == e.UserMessage:
+		msg = e.UserMessage
+	default:
+		msg = e.UserMessage + " (" + msg + ")"
 	}
-	if e.Code > 0 {
-		return fmt.Sprintf("[%d] %s (HTTP %d)", e.Code, e.Message, e.HTTPStatus)
+	if e.Code != 0 {
+		return fmt.Sprintf("[%d] %s (HTTP %d)", e.Code, msg, e.HTTPStatus)
 	}
-	return e.Message
+	return fmt.Sprintf("%s (HTTP %d)", msg, e.HTTPStatus)
 }
 
 // IsAuthError reports whether this is an authentication error
@@ -119,15 +127,15 @@ func (e *APIError) IsServerError() bool {
 	return e.Category == ErrorCategoryServer
 }
 
-// ErrorResponse represents the error response structure from Z.ai API
-type ErrorResponse struct {
-	Error APIErrorDetail `json:"error"`
-}
-
-// APIErrorDetail represents the error detail structure
-type APIErrorDetail struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
+// IsBalanceError reports whether the key authenticated but has nothing to
+// spend: no pay-as-you-go balance, or an exhausted coding-plan window with no
+// balance to cover extra usage.
+func (e *APIError) IsBalanceError() bool {
+	switch e.Code {
+	case ErrCodeInsufficientBalance, ErrCodeHourlyLimitNoBalance, ErrCodeWeeklyLimitNoBalance:
+		return true
+	}
+	return false
 }
 
 // errorConfig provides metadata for each error code
@@ -185,18 +193,15 @@ var errorMapping = map[int]errorConfig{
 	ErrCodeNetworkError:  {ErrorCategoryServer, "Network error. Please check your connection and try again.", true},
 }
 
-// createAPIError creates a structured APIError from an error code and HTTP status
+// createAPIError creates a structured APIError from a business code, HTTP
+// status, and server message. Codes missing from errorMapping (including 0,
+// "no code in the body") are classified by HTTP status, so only throttling
+// and server-side failures are ever retried.
 func createAPIError(code int, httpStatus int, message string) *APIError {
 	config, exists := errorMapping[code]
 	if !exists {
-		// Unknown error code - use server error as default
-		config = errorConfig{
-			category:    ErrorCategoryServer,
-			userMessage: "Unexpected error occurred. Please try again later.",
-			retriable:   true,
-		}
+		config = errorConfigForStatus(httpStatus)
 	}
-
 	return &APIError{
 		HTTPStatus:  httpStatus,
 		Code:        code,
@@ -207,24 +212,83 @@ func createAPIError(code int, httpStatus int, message string) *APIError {
 	}
 }
 
-// parseAPIError parses an error response from the Z.ai API
+// errorConfigForStatus classifies an error the code table doesn't know by its
+// HTTP status alone.
+func errorConfigForStatus(status int) errorConfig {
+	switch {
+	case status == http.StatusUnauthorized:
+		return errorConfig{ErrorCategoryAuth, "Authentication failed. Please check your API key.", false}
+	case status == http.StatusForbidden:
+		return errorConfig{ErrorCategoryPermission, "You don't have permission to access this resource.", false}
+	case status == http.StatusTooManyRequests:
+		return errorConfig{ErrorCategoryRateLimit, "Rate limit reached. Please slow down your requests.", true}
+	case status >= 500:
+		return errorConfig{ErrorCategoryServer, "Unexpected server error. Please try again later.", true}
+	default:
+		return errorConfig{ErrorCategoryParameter, "The request was rejected. Please check the API documentation.", false}
+	}
+}
+
+// errorEnvelope covers the error body shapes Z.AI's surfaces return: the
+// OpenAI-style {"error":{"code":"1211","message":…}}, the Anthropic-style
+// {"type":"error","error":{"type":…,"message":…}}, and the monitor/biz
+// {"code":500,"msg":…} envelope. Codes arrive as strings or numbers.
+type errorEnvelope struct {
+	Error *struct {
+		Code    json.RawMessage `json:"code"`
+		Message string          `json:"message"`
+		Type    string          `json:"type"`
+	} `json:"error"`
+	Code    json.RawMessage `json:"code"`
+	Msg     string          `json:"msg"`
+	Message string          `json:"message"`
+}
+
+// parseAPIError builds an *APIError from a non-2xx response.
 func parseAPIError(resp *http.Response) error {
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
-		return createAPIError(ErrCodeNetworkError, resp.StatusCode, "Failed to read error response")
+		return createAPIError(0, resp.StatusCode, "failed to read error response")
 	}
+	apiErr := errorFromBody(resp.StatusCode, body)
+	apiErr.RequestID = cmp.Or(resp.Header.Get("X-Request-Id"), resp.Header.Get("Request-Id"))
+	return apiErr
+}
 
-	var errorResp ErrorResponse
-	if err := json.Unmarshal(body, &errorResp); err != nil {
-		// If we can't parse the error response, return a generic error
-		return createAPIError(ErrCodeInternalError, resp.StatusCode, fmt.Sprintf("HTTP %d: %s", resp.StatusCode, string(body)))
+// errorFromBody decodes an error body in any errorEnvelope shape; a body
+// that isn't one becomes the message verbatim.
+func errorFromBody(status int, body []byte) *APIError {
+	var env errorEnvelope
+	code, message := 0, strings.TrimSpace(string(body))
+	if json.Unmarshal(body, &env) == nil {
+		switch {
+		case env.Error != nil:
+			code, message = parseErrorCode(env.Error.Code), cmp.Or(env.Error.Message, env.Error.Type)
+		case env.Msg != "" || env.Message != "":
+			code, message = parseErrorCode(env.Code), cmp.Or(env.Msg, env.Message)
+		}
 	}
+	return createAPIError(code, status, cmp.Or(message, http.StatusText(status)))
+}
 
-	// Parse the error code from string to int
-	var code int
-	if _, err := fmt.Sscanf(errorResp.Error.Code, "%d", &code); err != nil {
-		code = ErrCodeInternalError
+// streamError returns the error an in-band stream payload carries — an
+// OpenAI-style {"error":{…}} chunk or an Anthropic error event — or nil. The
+// response itself succeeded, so the error is classified as HTTP 200.
+func streamError(data []byte) error {
+	var env errorEnvelope
+	if json.Unmarshal(data, &env) != nil || env.Error == nil {
+		return nil
 	}
+	return errorFromBody(http.StatusOK, data)
+}
 
-	return createAPIError(code, resp.StatusCode, errorResp.Error.Message)
+// parseErrorCode decodes a business code sent as a JSON string or number; 0
+// when absent or not numeric.
+func parseErrorCode(raw json.RawMessage) int {
+	s := strings.Trim(strings.TrimSpace(string(raw)), `"`)
+	code, err := strconv.Atoi(s)
+	if err != nil {
+		return 0
+	}
+	return code
 }

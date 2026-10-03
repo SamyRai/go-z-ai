@@ -17,7 +17,7 @@ import (
 // the Python and Java SDKs' test suites (live-integration-only, gated on a
 // real API key, no stubs) and GitHub code search broadly, nothing found.
 // Both embedding-2 and embedding-3 currently return 400 "Unknown Model"
-// (code 1211) on ProdBaseURL AND on BigModelBaseURL for at least one
+// (code 1211) on DefaultBaseURL AND on BigModelBaseURL for at least one
 // GLM-Coding-Plan account, live-verified 2026-07-11 to be an
 // account/plan-entitlement gate rather than a platform-routing issue (that
 // account's key authenticates fine on both platforms — same /models
@@ -83,8 +83,8 @@ func (s *EmbeddingsService) Create(ctx context.Context, req EmbeddingsRequest) (
 	}
 
 	var resp EmbeddingsResponse
-	apiKey := s.client.chinaAPIKey()
-	if err := s.client.doRequestBaseKey(ctx, BigModelBaseURL, apiKey, "POST", "/embeddings", req, &resp); err != nil {
+	r := apiRequest{method: "POST", baseURL: BigModelBaseURL, apiKey: s.client.chinaAPIKey(), path: "/embeddings", body: req, service: "embeddings", model: req.Model}
+	if err := s.client.do(ctx, r, &resp); err != nil {
 		return nil, fmt.Errorf("failed to create embeddings: %w", err)
 	}
 	return &resp, nil

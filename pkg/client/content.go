@@ -2,101 +2,117 @@ package client
 
 import "encoding/json"
 
-// ContentPart is one part of a multimodal message's content array — the
-// OpenAI-compatible shape Z.AI's vision models (GLM-4.6V/4.5V) expect once a
-// message carries more than plain text.
+// Content-part types of a multimodal message.
+const (
+	PartText     = "text"
+	PartImageURL = "image_url"
+	PartVideoURL = "video_url"
+	PartFileURL  = "file_url"
+)
+
+// ContentPart is one element of a multimodal message's content array.
 type ContentPart struct {
-	Type     string        `json:"type"` // "text" or "image_url"
-	Text     string        `json:"text,omitempty"`
-	ImageURL *ImageURLPart `json:"image_url,omitempty"`
+	Type     string   `json:"type"` // one of the Part* constants
+	Text     string   `json:"text,omitempty"`
+	ImageURL *URLPart `json:"image_url,omitempty"`
+	VideoURL *URLPart `json:"video_url,omitempty"`
+	FileURL  *URLPart `json:"file_url,omitempty"`
 }
 
-// ImageURLPart is the image reference inside a ContentPart of type
-// "image_url". URL may be an https:// link or a data: URI (base64).
-type ImageURLPart struct {
+// URLPart references media inside a ContentPart. URL may be an https:// link
+// or a data: URI (base64).
+type URLPart struct {
 	URL string `json:"url"`
 }
 
-// messageWire mirrors Message's JSON shape but types Content as any, so
-// MarshalJSON/UnmarshalJSON can switch between a plain string and a
-// content-parts array without touching every other field.
-type messageWire struct {
-	Role       string     `json:"role"`
-	Content    any        `json:"content"`
-	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
-	ToolCallID string     `json:"tool_call_id,omitempty"`
-	Name       string     `json:"name,omitempty"`
+// mediaKinds maps each media part type to the Message field holding its
+// URLs and the ContentPart field carrying it on the wire — the one place the
+// two shapes are related, used by both MarshalJSON and UnmarshalJSON.
+var mediaKinds = []struct {
+	partType string
+	urls     func(*Message) *[]string
+	slot     func(*ContentPart) **URLPart
+}{
+	{PartImageURL, func(m *Message) *[]string { return &m.Images }, func(p *ContentPart) **URLPart { return &p.ImageURL }},
+	{PartVideoURL, func(m *Message) *[]string { return &m.Videos }, func(p *ContentPart) **URLPart { return &p.VideoURL }},
+	{PartFileURL, func(m *Message) *[]string { return &m.Files }, func(p *ContentPart) **URLPart { return &p.FileURL }},
 }
 
-// MarshalJSON emits the plain-string wire shape Message has always used,
-// unless Images is set, in which case Content becomes a content-parts array
-// (text part first, then one image_url part per entry in Images) — the
-// shape GLM-4.6V/4.5V expect for multimodal input.
+// messageWire is Message's JSON shape with Content typed as any, so it can
+// be either a plain string or a content-parts array.
+type messageWire struct {
+	Role             string     `json:"role"`
+	Content          any        `json:"content"`
+	ReasoningContent string     `json:"reasoning_content,omitempty"`
+	ToolCalls        []ToolCall `json:"tool_calls,omitempty"`
+	ToolCallID       string     `json:"tool_call_id,omitempty"`
+	Name             string     `json:"name,omitempty"`
+}
+
+// MarshalJSON emits Content as a plain string, or — when the message carries
+// media — as a content-parts array: the text part first, then one part per
+// image, video, and file URL.
 func (m Message) MarshalJSON() ([]byte, error) {
 	wire := messageWire{
-		Role:       m.Role,
-		ToolCalls:  m.ToolCalls,
-		ToolCallID: m.ToolCallID,
-		Name:       m.Name,
+		Role:             m.Role,
+		Content:          m.Content,
+		ReasoningContent: m.ReasoningContent,
+		ToolCalls:        m.ToolCalls,
+		ToolCallID:       m.ToolCallID,
+		Name:             m.Name,
 	}
-	if len(m.Images) == 0 {
-		wire.Content = m.Content
-		return json.Marshal(wire)
+	var parts []ContentPart
+	for _, k := range mediaKinds {
+		for _, url := range *k.urls(&m) {
+			p := ContentPart{Type: k.partType}
+			*k.slot(&p) = &URLPart{URL: url}
+			parts = append(parts, p)
+		}
 	}
-
-	parts := make([]ContentPart, 0, len(m.Images)+1)
-	if m.Content != "" {
-		parts = append(parts, ContentPart{Type: "text", Text: m.Content})
+	if len(parts) > 0 {
+		if m.Content != "" {
+			parts = append([]ContentPart{{Type: PartText, Text: m.Content}}, parts...)
+		}
+		wire.Content = parts
 	}
-	for _, url := range m.Images {
-		parts = append(parts, ContentPart{Type: "image_url", ImageURL: &ImageURLPart{URL: url}})
-	}
-	wire.Content = parts
 	return json.Marshal(wire)
 }
 
-// UnmarshalJSON accepts either wire shape Content can take: a plain string,
-// or a content-parts array (text + image_url parts), reconstituting Images
-// from any image_url parts found.
+// UnmarshalJSON accepts either wire shape of Content — a plain string or a
+// content-parts array — reconstituting Images/Videos/Files from media parts.
 func (m *Message) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		Role       string          `json:"role"`
-		Content    json.RawMessage `json:"content"`
-		ToolCalls  []ToolCall      `json:"tool_calls,omitempty"`
-		ToolCallID string          `json:"tool_call_id,omitempty"`
-		Name       string          `json:"name,omitempty"`
+		messageWire
+		Content json.RawMessage `json:"content"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
-	m.Role = raw.Role
-	m.ToolCalls = raw.ToolCalls
-	m.ToolCallID = raw.ToolCallID
-	m.Name = raw.Name
-	m.Content = ""
-	m.Images = nil
-
-	if len(raw.Content) == 0 {
+	*m = Message{
+		Role:             raw.Role,
+		ReasoningContent: raw.ReasoningContent,
+		ToolCalls:        raw.ToolCalls,
+		ToolCallID:       raw.ToolCallID,
+		Name:             raw.Name,
+	}
+	if len(raw.Content) == 0 || string(raw.Content) == "null" {
 		return nil
 	}
-
-	var asString string
-	if err := json.Unmarshal(raw.Content, &asString); err == nil {
-		m.Content = asString
+	if err := json.Unmarshal(raw.Content, &m.Content); err == nil {
 		return nil
 	}
-
 	var parts []ContentPart
 	if err := json.Unmarshal(raw.Content, &parts); err != nil {
 		return err
 	}
 	for _, p := range parts {
-		switch p.Type {
-		case "text":
+		if p.Type == PartText {
 			m.Content += p.Text
-		case "image_url":
-			if p.ImageURL != nil {
-				m.Images = append(m.Images, p.ImageURL.URL)
+			continue
+		}
+		for _, k := range mediaKinds {
+			if u := *k.slot(&p); p.Type == k.partType && u != nil {
+				*k.urls(m) = append(*k.urls(m), u.URL)
 			}
 		}
 	}

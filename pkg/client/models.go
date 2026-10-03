@@ -6,6 +6,55 @@ import (
 	"sync"
 )
 
+// ModelsInfo represents available models information
+type ModelsInfo struct {
+	Models []ModelDetails `json:"data"`
+}
+
+// ModelDetails describes one model. The /models endpoint returns only the
+// OpenAI-bare {id, object, created, owned_by} shape; ModelsService.List
+// fills the remaining fields from the curated catalog (models_catalog.go),
+// with live API values always winning when the API does send them.
+type ModelDetails struct {
+	ID          string   `json:"id"`
+	Name        string   `json:"name,omitempty"`
+	Description string   `json:"description,omitempty"`
+	OwnedBy     string   `json:"owned_by,omitempty"`
+	Created     int64    `json:"created,omitempty"` // release time, Unix seconds
+	ContextSize int      `json:"max_context,omitempty"`
+	MaxOutput   int      `json:"max_output,omitempty"`
+	Pricing     *Pricing `json:"pricing,omitempty"`
+	// Family groups related variants ("GLM-5", "GLM-4"); Tier is a short
+	// label ("flagship", "flash", "vision", ...).
+	Family string `json:"family,omitempty"`
+	Tier   string `json:"tier,omitempty"`
+	// Capabilities is the set of Cap* codes the model supports; empty means
+	// unknown.
+	Capabilities []string `json:"capabilities,omitempty"`
+	// ReasoningEfforts lists the ChatRequest.ReasoningEffort levels the
+	// model accepts; empty means none or unknown.
+	ReasoningEfforts []string `json:"reasoning_efforts,omitempty"`
+}
+
+// Pricing is a model's token pricing (Unit is "USD/1M" for catalog values).
+type Pricing struct {
+	Input  float64 `json:"prompt"`
+	Output float64 `json:"completion"`
+	Cached float64 `json:"cached_prompt,omitempty"` // cached-input rate
+	Unit   string  `json:"unit,omitempty"`
+}
+
+// Cost returns the cost of usage at these rates (Unit "USD/1M"), billing
+// cached prompt tokens at the cached rate when one is known.
+func (p Pricing) Cost(u Usage) float64 {
+	prompt, cached := float64(u.PromptTokens), 0.0
+	if u.PromptTokensDetails != nil && p.Cached > 0 {
+		cached = float64(u.PromptTokensDetails.CachedTokens)
+		prompt -= cached
+	}
+	return (prompt*p.Input + cached*p.Cached + float64(u.CompletionTokens)*p.Output) / 1_000_000
+}
+
 // ModelsService handles model-related operations
 type ModelsService struct {
 	client  *Client

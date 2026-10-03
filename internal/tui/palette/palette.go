@@ -23,8 +23,8 @@ import (
 type Action int
 
 const (
-	ActionNone Action = iota
-	ActionSwitchTab
+	ActionSwitchTab Action = iota + 1 // zero is "no action"
+
 	ActionRefresh
 	ActionToggleHelp
 	ActionOpenModelPicker
@@ -42,7 +42,6 @@ type Result struct {
 type Command struct {
 	Name  string // shown as the primary text
 	Desc  string // shown muted, right of the name
-	Hint  string // optional grouping label ("Navigation", "Actions")
 	Do    Action
 	DoArg int
 }

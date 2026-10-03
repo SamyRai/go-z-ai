@@ -6,22 +6,46 @@ import (
 	"testing"
 )
 
-// NewJSONSchemaFormat must marshal to the Z.AI structured-output wire shape.
-func TestResponseFormatJSONSchemaMarshal(t *testing.T) {
-	rf := NewJSONSchemaFormat("cities", json.RawMessage(`{"type":"object","properties":{"name":{"type":"string"}}}`), true)
-	out, err := json.Marshal(rf)
+// ChatRequest must use the wire names of the official SDKs: tool_stream,
+// top-level reasoning_effort, thinking.clear_thinking (sent even when false),
+// do_sample (sent even when false), user_id, and request_id.
+func TestChatRequestWireNames(t *testing.T) {
+	no := false
+	req := ChatRequest{
+		Model:           DefaultModel,
+		Messages:        []Message{{Role: "user", Content: "hi"}},
+		RequestID:       "req-1",
+		UserID:          "user-123",
+		DoSample:        &no,
+		ToolStream:      true,
+		ReasoningEffort: EffortHigh,
+		Thinking:        &ThinkingConfig{Type: ThinkingEnabled, ClearThinking: &no},
+		ResponseFormat:  &ResponseFormat{Type: ResponseFormatJSONObject},
+	}
+	out, err := json.Marshal(req)
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
 	s := string(out)
 	for _, want := range []string{
-		`"type":"json_schema"`,
-		`"name":"cities"`,
-		`"strict":true`,
-		`"schema":{"type":"object"`,
+		`"tool_stream":true`, `"reasoning_effort":"high"`, `"clear_thinking":false`,
+		`"do_sample":false`, `"user_id":"user-123"`, `"request_id":"req-1"`,
+		`"response_format":{"type":"json_object"}`,
 	} {
 		if !strings.Contains(s, want) {
-			t.Errorf("expected %q in %s", want, s)
+			t.Errorf("expected %s in %s", want, s)
+		}
+	}
+	for _, legacy := range []string{"stream_tool_call", `"preserved"`, `"effort"`, `"user":`, `"metadata"`} {
+		if strings.Contains(s, legacy) {
+			t.Errorf("legacy field %s must not be sent: %s", legacy, s)
+		}
+	}
+
+	bare, _ := json.Marshal(ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}})
+	for _, unset := range []string{"tool_stream", "reasoning_effort", "do_sample", "thinking"} {
+		if strings.Contains(string(bare), unset) {
+			t.Errorf("unset %s should be omitted: %s", unset, bare)
 		}
 	}
 }
@@ -167,39 +191,30 @@ func TestFunctionToolMarshal(t *testing.T) {
 	}
 }
 
-// NewRetrievalTool / NewWebSearchTool must emit their respective shapes. NOT
-// VERIFIED LIVE — these pin the modeled shape, not a confirmed wire contract.
-func TestRetrievalAndWebSearchToolMarshal(t *testing.T) {
-	ret := NewRetrievalTool("kb-1", "find docs")
-	out, err := json.Marshal(ret)
-	if err != nil {
-		t.Fatalf("marshal retrieval: %v", err)
+// The built-in tool payloads must match the SDK shapes: retrieval uses
+// prompt_template, web_search is an enabled tool with an engine (search_query
+// is a single optional string), and mcp carries the server label/URL.
+func TestBuiltinToolMarshal(t *testing.T) {
+	cases := []struct {
+		tool Tool
+		want []string
+	}{
+		{NewRetrievalTool("kb-1", "{{knowledge}} {{question}}"), []string{`"type":"retrieval"`, `"knowledge_id":"kb-1"`, `"prompt_template":"{{knowledge}} {{question}}"`}},
+		{NewWebSearchTool(SearchEnginePrime), []string{`"type":"web_search"`, `"enable":true`, `"search_engine":"search-prime"`, `"search_result":true`}},
+		{NewMCPTool("zread", "", "search_doc"), []string{`"type":"mcp"`, `"server_label":"zread"`, `"allowed_tools":["search_doc"]`}},
 	}
-	s := string(out)
-	for _, want := range []string{`"type":"retrieval"`, `"retrieval":{`, `"knowledge_id":"kb-1"`, `"prompt":"find docs"`} {
-		if !strings.Contains(s, want) {
-			t.Errorf("expected %q in %s", want, s)
+	for _, c := range cases {
+		out, err := json.Marshal(c.tool)
+		if err != nil {
+			t.Fatalf("marshal %s: %v", c.tool.Type, err)
 		}
-	}
-	if strings.Contains(s, `"function":`) {
-		t.Errorf("retrieval tool leaked function payload: %s", s)
-	}
-
-	ws := NewWebSearchTool("golang generics", "go modules")
-	out, err = json.Marshal(ws)
-	if err != nil {
-		t.Fatalf("marshal web_search: %v", err)
-	}
-	s = string(out)
-	for _, want := range []string{`"type":"web_search"`, `"web_search":{`, `"search_query":["golang generics","go modules"]`} {
-		if !strings.Contains(s, want) {
-			t.Errorf("expected %q in %s", want, s)
+		for _, want := range c.want {
+			if !strings.Contains(string(out), want) {
+				t.Errorf("%s: expected %s in %s", c.tool.Type, want, out)
+			}
 		}
-	}
-	// No speculative enable/search_result fields should leak.
-	for _, unwanted := range []string{`"enable"`, `"search_result"`, `"enable_search"`} {
-		if strings.Contains(s, unwanted) {
-			t.Errorf("web_search tool leaked %q: %s", unwanted, s)
+		if strings.Contains(string(out), `"function":`) {
+			t.Errorf("%s tool leaked a function payload: %s", c.tool.Type, out)
 		}
 	}
 }
@@ -212,7 +227,8 @@ func TestToolUnmarshalRoundTrip(t *testing.T) {
 	}{
 		{"function", NewFunctionTool("f", "d", map[string]any{"type": "object"})},
 		{"retrieval", NewRetrievalTool("kb", "p")},
-		{"web_search", NewWebSearchTool("q")},
+		{"web_search", NewWebSearchTool(SearchEnginePrime)},
+		{"mcp", NewMCPTool("srv", "https://mcp.example/mcp")},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -237,33 +253,63 @@ func TestToolUnmarshalRoundTrip(t *testing.T) {
 					t.Errorf("Retrieval not round-tripped: %+v vs %+v", got.Retrieval, tc.tool.Retrieval)
 				}
 			case "web_search":
-				if got.WebSearch == nil || len(got.WebSearch.SearchQuery) != 1 {
+				if got.WebSearch == nil || got.WebSearch.SearchEngine != SearchEnginePrime || !got.WebSearch.Enable {
 					t.Errorf("WebSearch not round-tripped: %+v vs %+v", got.WebSearch, tc.tool.WebSearch)
+				}
+			case "mcp":
+				if got.MCP == nil || got.MCP.ServerURL != tc.tool.MCP.ServerURL {
+					t.Errorf("MCP not round-tripped: %+v vs %+v", got.MCP, tc.tool.MCP)
 				}
 			}
 		})
 	}
 }
 
-// StreamToolCall must serialize to the stream_tool_call field when true, and
-// be omitted when false (the default).
-func TestStreamToolCallSerialization(t *testing.T) {
-	with := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95, StreamToolCall: true}
-	out, err := json.Marshal(with)
+// Video and file attachments become video_url / file_url parts after the
+// text part, and reasoning_content round-trips for preserved thinking.
+func TestMessageMediaAndReasoningRoundTrip(t *testing.T) {
+	in := Message{
+		Role:             "user",
+		Content:          "describe",
+		Images:           []string{"https://x/a.png"},
+		Videos:           []string{"https://x/v.mp4"},
+		Files:            []string{"https://x/d.pdf"},
+		ReasoningContent: "thought",
+	}
+	out, err := json.Marshal(in)
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	if !strings.Contains(string(out), `"stream_tool_call":true`) {
-		t.Errorf("expected stream_tool_call:true in %s", out)
+	s := string(out)
+	for _, want := range []string{
+		`{"type":"text","text":"describe"}`,
+		`{"type":"image_url","image_url":{"url":"https://x/a.png"}}`,
+		`{"type":"video_url","video_url":{"url":"https://x/v.mp4"}}`,
+		`{"type":"file_url","file_url":{"url":"https://x/d.pdf"}}`,
+		`"reasoning_content":"thought"`,
+	} {
+		if !strings.Contains(s, want) {
+			t.Errorf("expected %s in %s", want, s)
+		}
 	}
+	var got Message
+	if err := json.Unmarshal(out, &got); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if got.Content != "describe" || len(got.Images) != 1 || len(got.Videos) != 1 || len(got.Files) != 1 || got.ReasoningContent != "thought" {
+		t.Errorf("round trip lost data: %+v", got)
+	}
+}
 
-	without := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95}
-	out, err = json.Marshal(without)
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
+// Streamed tool-call deltas carry an index that ties fragments together.
+func TestStreamToolCallIndexUnmarshal(t *testing.T) {
+	body := `{"id":"1","model":"m","choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":"{\"a\""}}]}}]}`
+	var chunk StreamChunk
+	if err := json.Unmarshal([]byte(body), &chunk); err != nil {
+		t.Fatalf("unmarshal: %v", err)
 	}
-	if strings.Contains(string(out), "stream_tool_call") {
-		t.Errorf("stream_tool_call should be omitted when false: %s", out)
+	if got := chunk.Choices[0].Delta.ToolCalls[0].Index; got != 1 {
+		t.Errorf("tool call index = %d, want 1", got)
 	}
 }
 

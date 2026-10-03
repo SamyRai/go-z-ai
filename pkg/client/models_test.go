@@ -13,14 +13,14 @@ import (
 // that used to drift apart. This test pins the catalog's capability claims so
 // a future catalog edit that drops CapVision from a vision model fails loudly.
 func TestCatalogCapabilities(t *testing.T) {
-	vision := []string{"glm-5v", "glm-4.6v", "glm-4.5v", "glm-ocr"}
+	vision := []string{"glm-5.3-flash", "glm-5.3-flashx", "glm-5v-turbo", "glm-4.6v", "glm-4.6v-flash", "glm-4.5v", "glm-ocr"}
 	for _, id := range vision {
 		m := enrichModel(ModelDetails{ID: id})
 		if !m.HasCapability(CapVision) {
 			t.Errorf("expected %q to be vision-capable after enrichment, capabilities=%v", id, m.Capabilities)
 		}
 	}
-	text := []string{"glm-4.6", "glm-4.5-air", "glm-5", "glm-5-turbo", "glm-5.2"}
+	text := []string{"glm-5.3", "glm-5.2", "glm-5", "glm-5-turbo", "glm-4.7-flash", "glm-4.6", "glm-4.5-air"}
 	for _, id := range text {
 		m := enrichModel(ModelDetails{ID: id})
 		if !m.HasCapability(CapText) {

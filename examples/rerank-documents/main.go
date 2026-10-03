@@ -38,7 +38,7 @@ func main() {
 	}
 
 	resp, err := c.Rerank().Create(context.Background(), client.RerankRequest{
-		Model:           "rerank",
+		Model:           client.RerankModel,
 		Query:           query,
 		Documents:       candidates,
 		ReturnDocuments: true,

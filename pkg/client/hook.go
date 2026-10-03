@@ -16,10 +16,17 @@ import (
 //   - pkg/observe — OpenTelemetry hooks (depend on the otel SDK)
 //   - user-provided — slog-based loggers, metrics counters, anything
 //
-// All methods must be safe for concurrent use. Methods are invoked from the
-// doRequest/send/sendMultipart facade (single goroutine per request) and
-// from the SSE reader goroutine for OnStreamChunk. A nil/empty Config.Hooks
-// slice skips all invocation — the no-hook path is zero-allocation.
+// All methods must be safe for concurrent use. They are invoked from the
+// request transport (Client.open and its callers) on the calling goroutine;
+// OnStreamChunk fires on the goroutine ranging over a Stream iterator. A
+// nil/empty Config.Hooks slice skips all invocation — the no-hook path is
+// zero-allocation.
+//
+// Pairing contract: every OnRequest is followed by exactly one terminal call
+// for the same attempt — OnResponse on success, OnError otherwise (including
+// a failed attempt that is about to be retried, and a stream the caller
+// stops ranging over early). A span started in OnRequest can therefore
+// always be ended in the terminal call.
 //
 // Error semantics: a Hook must not panic. A panicking Hook aborts the request
 // just like any other panic would; guard accordingly in production hooks.
@@ -30,16 +37,16 @@ type Hook interface {
 	// request-scoped state. Return ctx unchanged if you have nothing to add.
 	OnRequest(ctx context.Context, meta RequestMeta) context.Context
 
-	// OnResponse is invoked after a non-streaming response is received and
-	// parsed successfully (HTTP 2xx). Not invoked for streaming responses
-	// (use OnStreamChunk) or errors (use OnError). meta.Attempt identifies
-	// which retry attempt succeeded.
+	// OnResponse is invoked when an attempt succeeds: a response was received
+	// and parsed (HTTP 2xx), or a stream ended cleanly. meta.Attempt
+	// identifies which retry attempt succeeded.
 	OnResponse(ctx context.Context, meta ResponseMeta)
 
-	// OnError is invoked when a request ultimately fails — either all
-	// retries were exhausted or the error was non-retriable. Not invoked
-	// for successful responses. The err is the final error the caller will
-	// see (typically a *APIError). meta.Attempt is the last attempt index.
+	// OnError is invoked when an attempt fails — a transport error, a
+	// non-2xx response (retried or not), a body that fails to decode, a
+	// mid-stream failure, or a stream abandoned early (context.Canceled).
+	// meta.Attempt identifies the failed attempt; when it is the last one,
+	// err is the error the caller sees (typically a *APIError).
 	OnError(ctx context.Context, meta RequestMeta, err error)
 
 	// OnStreamChunk is invoked for each chunk parsed from a streaming
@@ -59,18 +66,18 @@ type Hook interface {
 
 // RequestMeta describes an in-flight request for hook invocation.
 type RequestMeta struct {
-	// Service is a short label identifying the calling service
-	// ("chat", "anthropic", "embeddings", "models", etc.). Stamped into the
-	// context by each service via WithService before doRequest; defaults to
-	// "" when a service doesn't bother (the hook still gets Method/Endpoint).
+	// Service is a short label identifying the calling service ("chat",
+	// "anthropic", "embeddings", ...). Set by the service issuing the
+	// request; a WithService context value overrides it. Empty for
+	// endpoints without a natural label (the hook still gets Endpoint).
 	Service string
 	// Method is the HTTP method ("GET", "POST", ...).
 	Method string
 	// Endpoint is the URL path (without the base URL), e.g. "/chat/completions".
 	Endpoint string
 	// Model is the model ID for requests that carry one (chat, embeddings,
-	// rerank, anthropic). Empty for endpoints that don't take a model.
-	// Stamped via WithModel.
+	// rerank, anthropic, ...). Empty for endpoints that don't take a model.
+	// A WithModel context value overrides it.
 	Model string
 	// Attempt is the 0-indexed retry attempt for this request. 0 on the
 	// first try; incremented on each retry.
@@ -98,25 +105,20 @@ const (
 	ctxKeyModel
 )
 
-// WithService stamps a service label into the context for hook extraction.
-// Services call this (or WithModel for the model ID) before doRequest; the
-// facade reads it back when building RequestMeta. Callers who don't care
-// about per-service hook attributes can skip this — RequestMeta.Service will
-// be "".
+// WithService stamps a service label into the context, overriding the label
+// the issuing service sets on RequestMeta.Service — e.g. to attribute calls
+// to an application feature instead.
 func WithService(ctx context.Context, service string) context.Context {
 	return context.WithValue(ctx, ctxKeyService, service)
 }
 
-// WithModel stamps a model ID into the context for hook extraction. Same
-// pattern as WithService. ChatService, AnthropicService, EmbeddingsService,
-// RerankService should stamp the model they're sending so hooks can report
-// per-model metrics without re-parsing the request body.
+// WithModel stamps a model ID into the context, overriding the model the
+// issuing service sets on RequestMeta.Model. Same pattern as WithService.
 func WithModel(ctx context.Context, model string) context.Context {
 	return context.WithValue(ctx, ctxKeyModel, model)
 }
 
 // ServiceFromContext returns the service label stamped by WithService, or "".
-// Used by the doRequest facade when building RequestMeta for hook invocation.
 func ServiceFromContext(ctx context.Context) string {
 	if v, ok := ctx.Value(ctxKeyService).(string); ok {
 		return v
@@ -160,14 +162,21 @@ func (c *Client) callHooksStreamChunk(ctx context.Context, meta RequestMeta, chu
 	}
 }
 
-// buildRequestMeta constructs RequestMeta from the facade's known inputs +
-// the context-stamped service/model. attempt is the current retry index.
-func (c *Client) buildRequestMeta(ctx context.Context, method, endpoint string, attempt int) RequestMeta {
-	return RequestMeta{
-		Service:  ServiceFromContext(ctx),
-		Method:   method,
-		Endpoint: endpoint,
-		Model:    ModelFromContext(ctx),
-		Attempt:  attempt,
+// requestMeta builds the RequestMeta for attempt n of r. Context stamps
+// (WithService/WithModel) override the labels the issuing service set.
+func (c *Client) requestMeta(ctx context.Context, r apiRequest, n int) RequestMeta {
+	meta := RequestMeta{
+		Service:  r.service,
+		Method:   r.method,
+		Endpoint: r.path,
+		Model:    r.model,
+		Attempt:  n,
 	}
+	if s := ServiceFromContext(ctx); s != "" {
+		meta.Service = s
+	}
+	if m := ModelFromContext(ctx); m != "" {
+		meta.Model = m
+	}
+	return meta
 }

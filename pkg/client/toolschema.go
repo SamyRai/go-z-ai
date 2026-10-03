@@ -1,5 +1,7 @@
 package client
 
+import "slices"
+
 // Tool (function) parameter schemas are passed to GLM as JSON Schema, but the
 // endpoint's schema parser is strict: a node containing `anyOf`, `oneOf`,
 // `allOf`, or a `$ref`/`$defs` reference makes chat/completions return HTTP 500
@@ -31,16 +33,28 @@ package client
 // input — the returned tools are a fresh slice with freshly built parameter
 // maps.
 func SanitizeToolSchemas(tools []Tool) []Tool {
+	return sanitizeTools(tools, func(t *Tool) *map[string]any {
+		if t.Function == nil || len(t.Function.Parameters) == 0 {
+			return nil
+		}
+		fn := *t.Function // copy, so the caller's FunctionDef is untouched
+		t.Function = &fn
+		return &fn.Parameters
+	})
+}
+
+// sanitizeTools returns a copy of tools with every non-empty schema rewritten
+// by sanitizeParameters — shared by the chat, Anthropic, and Responses tool
+// shapes. schema points at a tool's schema field within the copy (nil when it
+// has none); the caller's tools are never mutated.
+func sanitizeTools[T any](tools []T, schema func(*T) *map[string]any) []T {
 	if len(tools) == 0 {
 		return tools
 	}
-	out := make([]Tool, len(tools))
-	for i, t := range tools {
-		out[i] = t
-		if t.Function != nil && len(t.Function.Parameters) > 0 {
-			fn := *t.Function
-			fn.Parameters = sanitizeParameters(t.Function.Parameters)
-			out[i].Function = &fn
+	out := slices.Clone(tools)
+	for i := range out {
+		if p := schema(&out[i]); p != nil && len(*p) > 0 {
+			*p = sanitizeParameters(*p)
 		}
 	}
 	return out

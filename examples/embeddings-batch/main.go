@@ -42,7 +42,7 @@ func main() {
 	// Embed query + candidates in one call (the API accepts a list of inputs).
 	all := append([]string{query}, candidates...)
 	resp, err := c.Embeddings().Create(context.Background(), client.EmbeddingsRequest{
-		Model: "embedding-3",
+		Model: client.EmbeddingModel3,
 		Input: all,
 	})
 	if err != nil {

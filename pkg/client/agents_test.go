@@ -38,7 +38,7 @@ func matchMethodAndURL(r *http.Request, i cassette.Request) bool {
 // / bigmodel_same_key.yaml), name the cassette after the claim instead of
 // splitting it — but that should be the exception, not the default excuse
 // for bundling unrelated calls recorded in the same session.
-func newReplayClient(t *testing.T, cassetteName, baseURL string) *Client {
+func newReplayClient(t *testing.T, cassetteName string, region Region) *Client {
 	t.Helper()
 	r, err := recorder.New(
 		filepath.Join("testdata", "cassettes", cassetteName),
@@ -53,7 +53,7 @@ func newReplayClient(t *testing.T, cassetteName, baseURL string) *Client {
 
 	c, err := NewClient(Config{
 		APIKey:     "replayed-from-cassette", // never the real key; cassette has it redacted
-		BaseURL:    baseURL,
+		Region:     region,
 		HTTPClient: r.GetDefaultClient(),
 		MaxRetries: -1, // a replayed error must not trigger a real retry/backoff wait
 	})
@@ -71,7 +71,7 @@ func newReplayClient(t *testing.T, cassetteName, baseURL string) *Client {
 // the real response proves our types parse Z.AI's actual wire format, not
 // just a hand-written fixture.
 func TestAgentsInvokeInsufficientBalance(t *testing.T) {
-	c := newReplayClient(t, "agents_invoke", AgentsBaseURL)
+	c := newReplayClient(t, "agents_invoke", RegionGlobal)
 
 	resp, err := c.Agents().Invoke(context.Background(), AgentInvokeRequest{
 		AgentID:  "general_translation",
@@ -162,5 +162,21 @@ func TestAgentsAsyncResultValidation(t *testing.T) {
 	}
 	if _, err := c.Agents().AsyncResult(context.Background(), AgentAsyncResultRequest{AgentID: "a"}); err == nil {
 		t.Error("expected error for missing async_id")
+	}
+}
+
+func TestAgentErrorMessage(t *testing.T) {
+	for _, tc := range []struct {
+		err  *AgentError
+		want string
+	}{
+		{nil, "agent failed (no error details)"},
+		{&AgentError{}, "agent failed (no error details)"},
+		{&AgentError{Message: "no balance"}, "no balance"},
+		{&AgentError{Code: "1113", Message: "no balance"}, "1113: no balance"},
+	} {
+		if got := tc.err.Error(); got != tc.want {
+			t.Errorf("%+v: got %q, want %q", tc.err, got, tc.want)
+		}
 	}
 }

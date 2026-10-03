@@ -4,6 +4,137 @@ Notable changes to this project, loosely following
 [Keep a Changelog](https://keepachangelog.com/). Entries before `v0.1.0` are
 grouped by date; from `v0.1.0` on, sections are tagged.
 
+## Unreleased (2026-10-03)
+
+A refresh against Z.AI's current models and APIs (researched 2026-10-02),
+plus a structural cleanup. **This release has breaking changes** to the
+library and the CLI; see *Removed* and *Changed*.
+
+### Added
+- **Current model catalog.** GLM-5.3 (`client.DefaultModel`), GLM-5.3-Flash
+  (`DefaultFastModel`, natively multimodal: image, video, file) and
+  GLM-5.3-FlashX, GLM-5.2/5.1/5, GLM-5-Turbo, GLM-5V-Turbo, the GLM-4.7,
+  GLM-4.6V and GLM-4.5 families, GLM-OCR and GLM-ASR-2512, with prices,
+  context sizes, output caps, and per-model reasoning efforts.
+  `DefaultVisionModel`, `DefaultOCRModel`, `DefaultASRModel`, and
+  `DefaultTTSModel` name the recommended model for each job.
+- **Chat API surface.** `ChatRequest.ReasoningEffort` (validated against the
+  catalog; `AllEfforts`), `ToolStream`, `RequestID`/`UserID`; video and file
+  attachments (`Message.Videos`, `Message.Files`); `reasoning_content` echoed
+  back on later turns; `web_search`, `retrieval`, and `mcp` tools
+  (`WebSearchDef`, `NewMCPTool`, `MCPCall`); `ThinkingConfig.ClearThinking`;
+  reasoning-token usage. `JSONObjectFormat` + `JSONSchemaPrompt` for
+  structured output.
+- **`Region`** owns every endpoint for both gateways (PaaS, coding,
+  Anthropic, monitor, biz, agents, MCP, console). `ParseRegion`,
+  `Client.Region`, and `ZAI_REGION` for `NewClientFromEnv`.
+- **Account APIs.** `AccountService.Balance` and `Subscriptions` (biz routes,
+  not yet verified live); `DetectionService.CheckAccountStatus`;
+  `DetectAccountType` now reports the key's region. Quota helpers for the
+  credit-based Coding Plan (`QuotaData.Exhausted`, `QuotaLimit.UsedFraction`,
+  `IsModelLimit`), and `Pricing.Cost(Usage)`.
+- **Media.** `ModelGLMImage`/`ModelCogView4`, `VideoModels`,
+  `VideoGenerationRequest.OffPeak`, `FilePurposes` (adds `user_data`,
+  `file-extract`), `SearchEngines` (global default `search-prime`),
+  `SystemVoices`.
+- **Responses API** (`client.Responses()`, `Region.ResponsesBaseURL`): Z.AI's
+  OpenAI Responses-protocol endpoint at `/api/v1`, the one Codex uses —
+  `Create`, `Stream` (in-band `error` / `response.failed` become `*APIError`),
+  reasoning effort validated against the catalog, and output helpers
+  (`OutputText`, `ReasoningText`, `FunctionCalls`). CLI: `responses create`.
+  The request shapes follow OpenAI's spec and are not yet verified live.
+- **Codex** in `go-z-ai coding`: writes the ZAI provider (`wire_api =
+  "responses"`) to `~/.codex/config.toml` and the model's metadata to
+  `~/.codex/models.json`, as docs.z.ai and the official helper do. Codex
+  takes only the local Vision MCP server (openai/codex#14793); hosted ones
+  are refused with the reason. Config files are edited as JSON or TOML by
+  extension.
+- **Coding tools.** All four official MCP servers — Vision
+  (`zai-mcp-server`, local) plus hosted `web-search-prime`, `web-reader`, and
+  `zread` — via `coding mcp add|remove <tool> [--server id]` (default: every
+  server the tool supports). Claude Code's
+  tier mapping now targets GLM-5.3 / GLM-5.3-Flash with the `[1m]` context
+  suffix, and the auto-compact window follows the main model's context.
+- **CLI.** `--format json` on models, tools, agents, audio, parser, voice,
+  OCR, Anthropic, and the coding commands; `account detect/status/balance/
+  subscriptions`; `accounts quota/usage` across accounts; `accounts add
+  --region`; `chat create --effort/--video/--file/--tool-stream/--json-schema`;
+  `tools web-search --recency/--domain/--content-size`; `video generate
+  --off-peak`; `batch create --auto-delete-input/--metadata`; `agents --var`
+  and `async-result --conversation-id`; `audio transcribe --model`.
+
+- **Live-verification tests** for the account balance and subscriptions,
+  the coding-plan quota on both gateways, and the Responses API; recorded
+  cassettes now also scrub account identifiers from response bodies.
+  `.env.example` documents how to record them.
+
+### Changed
+- **One transport.** Every service goes through a single request path with
+  retry (honoring `Retry-After`), hooks paired one-to-one per attempt, and the
+  monitor/biz `{code,msg,success,data}` envelope (`Envelope[T]`). Streaming is
+  a synchronous iterator; breaking out of the loop closes the stream.
+- `Config.BaseURL` defaults to the region's PaaS root, so `RegionChina` also
+  moves chat to open.bigmodel.cn; the root `--region` flag now selects every
+  endpoint, and `--base-url` overrides only the chat/PaaS root.
+- CLI defaults come from the catalog (chat, Anthropic, tokenizer:
+  `glm-5.3`); sampling settings default to the server's. Progress output goes
+  to stderr so stdout stays pipeable.
+- `audio speech --format` is now `--audio-format` (the `--format` name is the
+  CLI-wide output selector).
+- `image status`, `video status`, and `chat async-result` share one handler;
+  the task status goes to stderr.
+- Package structure: `pkg/client` split by responsibility (region, config,
+  transport, retry, envelope, chat types); `internal/coding` has one file per
+  tool; the TUI root is split into session, screens, header, toast, tabs, and
+  overlay, with a shared form-tab component; `internal/atomicfile`,
+  `internal/modelview`, and `internal/usageview` hold logic the CLI and TUI
+  share.
+
+### Fixed
+- In-band stream errors (an `{"error":…}` chunk, an Anthropic `event: error`)
+  were dropped or decoded as empty chunks; they now end the stream with an
+  `*APIError`.
+- A pay-as-you-go key with zero balance was detected as a Coding Plan key.
+- China accounts lost their region, and Anthropic calls ignored the region.
+- Unknown 4xx errors were retried; only 429 and 5xx are now.
+- Stream retries leaked observability spans.
+- The TUI usage tab billed a chat probe every 30 seconds; media and tools
+  inputs never received focus.
+- `parser result` exited 0 on a failed task; `models free --format json`
+  printed a header line into the JSON; search previews could split UTF-8
+  characters; enrichment fields were missing from JSON output.
+- `coding unload` on an unconfigured tool now says so instead of failing;
+  `coding doctor` exits non-zero when it finds a problem.
+- CLI errors were printed twice, with the full usage text in between; a
+  runtime failure now prints the error once, and usage appears only for a
+  usage mistake.
+- `.env.example` and `zai-claude-config.json` described old behavior and
+  models; both are current, and a test keeps the Claude example in sync with
+  what `coding load claude-code` writes. `ZAI_ENV`, which nothing read, is
+  gone.
+
+### Security
+- Build with Go 1.26.8 (`toolchain` in `go.mod`), fixing the standard-library
+  vulnerabilities `govulncheck` reports for go1.26.5 (GO-2026-6218, -6090,
+  -6088, -5972, -5026), and OpenTelemetry v1.45.0, fixing GO-2026-6505.
+- `coding status` and `coding doctor` no longer print any part of the stored
+  key; they report only whether one is stored (`key_stored` in JSON).
+
+### Removed
+- **Library:** `ChatService.CreateStream`, `CreateSimple`,
+  `AnthropicService.CreateStream` (use `Stream`); `NewJSONSchemaFormat` and
+  `ResponseFormat.JSONSchema` (Z.AI has no `json_schema` format);
+  `ProdBaseURL`/`ChinaProdBaseURL` (use `DefaultBaseURL`/`BigModelBaseURL` or
+  `Region`); `Client.Usage`, `UsageService`, `UsageTracker`; the legacy
+  account-info types; `ChatRequest.StreamToolCall` (now `ToolStream`), `User`
+  (now `UserID`), `Metadata`; `ThinkingConfig.Effort` (now
+  `ChatRequest.ReasoningEffort`); `AsyncResultResponse.Data` (now
+  `ImageResult`); `UnitCodeHourly/Weekly/Monthly` (now `UnitCodeHour/Week/
+  Month`); `ModelDetails.CatalogName/CatalogDescription`.
+- **CLI:** `chat simple`; the no-op `models --pricing`; Cursor support in
+  `coding`.
+- `pkg/observe` dead code (an unused meter field and error helpers).
+
 ## 2026-08-03 (post-v0.1.0)
 
 ### Fixed

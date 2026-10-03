@@ -24,7 +24,7 @@ import (
 // code search broadly; this client's own bigmodel_same_key.yaml cassette
 // is the only real recorded traffic that exists anywhere for it.
 // "moderation" (the request's only valid model value) currently returns
-// 400 "Unknown Model" (code 1211) on ProdBaseURL AND on BigModelBaseURL for
+// 400 "Unknown Model" (code 1211) on DefaultBaseURL AND on BigModelBaseURL for
 // at least one GLM-Coding-Plan account, live-verified 2026-07-11 to be an
 // account/plan-entitlement gate rather than a platform-routing issue — see
 // EmbeddingsService's doc comment and docs/en/accounts-and-quota.md.
@@ -133,9 +133,9 @@ func (s *ModerationsService) Create(ctx context.Context, req ModerationRequest) 
 	}
 
 	var resp ModerationResponse
-	apiKey := s.client.chinaAPIKey()
-	if err := s.client.doRequestBaseKey(ctx, BigModelBaseURL, apiKey, "POST", "/moderations", req, &resp); err != nil {
-		return nil, err
+	r := apiRequest{method: "POST", baseURL: BigModelBaseURL, apiKey: s.client.chinaAPIKey(), path: "/moderations", body: req, service: "moderations", model: req.Model}
+	if err := s.client.do(ctx, r, &resp); err != nil {
+		return nil, fmt.Errorf("failed to moderate content: %w", err)
 	}
 	return &resp, nil
 }

@@ -24,6 +24,11 @@ var rootCmd = &cobra.Command{
 	Short:   "Z.AI API Client",
 	Long:    `A comprehensive CLI client for the Z.AI (Zhipu AI) API platform.`,
 	Version: "dev",
+	// Execute prints the error once; cobra's own copy would repeat it.
+	SilenceErrors: true,
+	// Args and flags are validated before this hook, so a usage mistake
+	// still prints usage while a runtime failure (an API error) doesn't.
+	PersistentPreRun: func(cmd *cobra.Command, _ []string) { cmd.SilenceUsage = true },
 }
 
 // SetBuildInfo configures the version/commit/date reported by --version.
@@ -42,7 +47,7 @@ func SetBuildInfo(version, commit, date string) {
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
 	}
 }
@@ -52,10 +57,10 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is .env)")
 	rootCmd.PersistentFlags().String("api-key", "", "Z.AI API key (can also set ZAI_API_KEY environment variable)")
-	rootCmd.PersistentFlags().String("base-url", "", "API base URL (default: https://api.z.ai/api/paas/v4)")
+	rootCmd.PersistentFlags().String("base-url", "", "Chat/PaaS API root (default: the region's, e.g. https://api.z.ai/api/paas/v4)")
 	rootCmd.PersistentFlags().String("account", "", "Use a stored account by name for this command (see 'accounts list')")
 	rootCmd.PersistentFlags().String("china-api-key", "", "open.bigmodel.cn API key for embeddings/moderations (can also set ZAI_CHINA_API_KEY environment variable; falls back to --api-key)")
-	rootCmd.PersistentFlags().String("region", "", "Regional gateway for monitor/biz/agents/detection: 'global' (api.z.ai, default) or 'china' (open.bigmodel.cn). Aliases: cn, bigmodel, west. Does not override --base-url.")
+	rootCmd.PersistentFlags().String("region", "", "Regional gateway: 'global' (api.z.ai, default) or 'china' (open.bigmodel.cn); selects every endpoint, with --base-url overriding the chat/PaaS root. Aliases: cn, bigmodel, west. Env: ZAI_REGION")
 	rootCmd.PersistentFlags().String("monitor-timezone", "", "Timezone the monitor (quota/usage) API operates in, used to format queries and relabel buckets (can also set ZAI_MONITOR_TIMEZONE; default: CST/UTC+8). Accepts IANA names, 'UTC', or UTC offsets like '+8'.")
 
 	viper.BindPFlag("api-key", rootCmd.PersistentFlags().Lookup("api-key"))

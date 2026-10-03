@@ -2,8 +2,9 @@
 
 Every service method returns a plain `error`. Transport-level failures (DNS,
 connection refused, timeout) come back wrapped in `fmt.Errorf`; anything the
-Z.AI API itself rejected comes back as `*client.APIError`, with structured
-fields you can branch on instead of parsing message strings.
+Z.AI API itself rejected comes back as `*client.APIError` (usually wrapped, so
+use `errors.As` or `errors.AsType`), with structured fields you can branch on
+instead of parsing message strings.
 
 ```go
 resp, err := c.Chat().Create(ctx, req)
@@ -42,17 +43,26 @@ if err != nil {
 | `IsRetriable` | Whether the client's own retry logic considers this transient |
 | `RequestID` | For support/debugging, when the API returned one |
 
+`Error()` reads `[code] <UserMessage> (<Message>) (HTTP <status>)`, dropping
+the parts that are empty or repeated.
+
 Helper predicates: `IsAuthError()`, `IsRateLimitError()`, `IsQuotaError()`,
 `IsParameterError()`, `IsServerError()` — equivalent to checking `.Category`
-directly, provided for readability at call sites.
+directly, provided for readability at call sites. `IsBalanceError()` is
+narrower: the key authenticated but has nothing to spend (1113, or an
+exhausted coding-plan window with no balance for extra usage, 1316/1317).
 
 ## Retry behavior you get for free
 
-`Client.doRequest` (used by every service) already retries 429/5xx/network
-errors with exponential backoff, jitter, and `Retry-After` support, up to
-`Config.MaxRetries` (default 3; set to `-1` to disable). You generally don't
-need your own retry loop — `APIError.IsRetriable` tells you whether an error
-that reached your code already exhausted those retries.
+Every service goes through one request path that retries 429, 5xx, and
+network errors with exponential backoff and jitter, up to
+`Config.MaxRetries` (`0` means the default of 3; `-1` disables retries). A
+`Retry-After` header, in seconds or as an HTTP date, sets the wait instead;
+any wait is capped at 30 seconds, and cancelling the context aborts it.
+Multipart uploads (audio, files, voice samples) are sent once and never
+retried. You generally don't need your own retry loop —
+`APIError.IsRetriable` tells you whether an error that reached your code was
+a transient one whose retries ran out.
 
 ## Error code reference
 
@@ -72,7 +82,9 @@ that reached your code already exhausted those retries.
 | 1313 | `ErrCodeFairUsageViolation` | Quota | No |
 | 1314 | `ErrCodeEnterpriseExpired` | Quota | No |
 | 1315 | `ErrCodeEnterpriseKeyOnly` | Quota | No |
-| 1316–1321 | usage-limit variants | Quota | No |
+| 1316 / 1317 | `ErrCodeHourlyLimitNoBalance` / `ErrCodeWeeklyLimitNoBalance` — 5-hour / 7-day window used up, no balance for extra usage | Quota | No |
+| 1318 / 1319 | `ErrCodeHourlyLimitNoSpend` / `ErrCodeWeeklyLimitNoSpend` — extra usage unavailable under the monthly spend limit | Quota | No |
+| 1320 / 1321 | `ErrCodeHourlyLimitSpendCap` / `ErrCodeWeeklyLimitSpendCap` — monthly spend cap reached | Quota | No |
 | 1210 | `ErrCodeInvalidParameter` | Parameter | No |
 | 1211 | `ErrCodeUnknownModel` | Parameter | No |
 | 1212 | `ErrCodeMethodNotSupported` | Parameter | No |
@@ -89,19 +101,45 @@ that reached your code already exhausted those retries.
 | 1230 | `ErrCodeProcessError` | Server | Yes |
 | 1234 | `ErrCodeNetworkError` | Server | Yes |
 
-An error code this client hasn't seen before defaults to `ErrorCategoryServer`
-with `IsRetriable: true` — a reasonable default (treat unknowns as transient
-server issues) but the constants above are the ones with a specifically
-tailored `UserMessage` and retry decision.
+A code this table doesn't know (including a body with no code at all) is
+classified by the HTTP status alone: 401 is Auth, 403 Permission, 429
+RateLimit (retriable), 5xx Server (retriable), and anything else Parameter.
+So only throttling and server-side failures are ever retried; an unknown 4xx
+is never retried.
 
 Source of truth: [`pkg/client/errors.go`](../../pkg/client/errors.go).
 
-## The 200-with-embedded-failure quirk
+## Failures inside an HTTP 200
 
-A few endpoints (Agents' `Invoke`/`AsyncResult`) return HTTP 200 even when the
-call fails at the business level — the failure is embedded in the response
-body, not signaled via HTTP status. A non-nil `error` from these methods
-means the *transport* failed; check `resp.Failed()` (or `resp.Error`/
-`resp.Status` directly) for a business-level failure inside a successful
-response. Both response types document this on their `Failed()` method — it's
-easy to miss if you only check `err != nil`.
+Several surfaces report a failure in the body of a successful HTTP response.
+The client turns most of them into an `*APIError` with `HTTPStatus` 200 and
+`IsRetriable` false, so one `errors.As` check covers them:
+
+- **Monitor and biz APIs** (quota, usage, balance, subscriptions) wrap every
+  answer in `{code, msg, success, data}`. A failed envelope becomes an
+  `*APIError` whose `Code` is the envelope's code; when that code looks like
+  an HTTP status (401, 500, …) it also sets the category.
+- **Streams.** After a stream has started, the server can send an
+  OpenAI-style `{"error": {...}}` chunk (chat), an `event: error` (Anthropic),
+  or an `error` / `response.failed` event (Responses). Each ends the stream
+  with an `*APIError` as the iterator's terminal error. It is not retried,
+  because part of the response was already consumed.
+- **Responses `Create`** returns an `*APIError` when the response's status is
+  `failed`.
+
+Agents are the exception: `Agents().Invoke` and `AsyncResult` return the
+response even when the call failed at the business level, because the
+failure envelope carries useful fields. A non-nil `error` from them means the
+*transport* failed; check `resp.Failed()` for a business failure.
+`resp.Error` is an `*AgentError`, which implements `error`, so you can wrap
+it:
+
+```go
+resp, err := c.Agents().Invoke(ctx, req)
+if err != nil {
+    return err
+}
+if resp.Failed() {
+    return fmt.Errorf("agent failed: %w", resp.Error)
+}
+```

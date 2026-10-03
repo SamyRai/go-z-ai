@@ -1,11 +1,11 @@
 // Package coding implements the TUI's Coding tab: install/config status,
-// auth, load, and unload for supported coding-agent tools (Claude Code,
-// OpenCode, Crush, Factory Droid), backed by pkg/coding — the same package
-// the "go-z-ai coding" commands use.
+// auth, load, unload, and MCP setup for the supported coding tools, backed by
+// internal/coding — the same package the "go-z-ai coding" commands use.
 package coding
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -55,7 +55,13 @@ type refreshedMsg struct {
 	err   error
 }
 
-type actionDoneMsg struct{ err error }
+// actionDoneMsg reports a finished action: an error, or an optional status
+// line and (after auth) the newly stored plan.
+type actionDoneMsg struct {
+	err    error
+	status string
+	plan   string
+}
 
 // Model is the Coding tab's screen model.
 type Model struct {
@@ -90,7 +96,7 @@ func refresh() tea.Cmd {
 			installed := t.IsInstalled()
 			var d coding.Detection
 			if installed {
-				d, _ = coding.Detect(home, t.ID)
+				d, _ = t.Detect(home)
 			}
 			items = append(items, item{tool: t, installed: installed, detected: d})
 		}
@@ -113,7 +119,7 @@ func (m *Model) newAuthForm() *huh.Form {
 		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("Plan").
-				Options(huh.NewOption("Global", "global"), huh.NewOption("China", "china")).
+				Options(planOptions()...).
 				Value(&m.formPlan),
 			huh.NewInput().
 				Title("Z.AI API key").
@@ -122,6 +128,16 @@ func (m *Model) newAuthForm() *huh.Form {
 				Validate(huh.ValidateNotEmpty()),
 		),
 	)
+}
+
+// planOptions lists the plans with their real identifiers — the values the
+// credential store and every tool config expect.
+func planOptions() []huh.Option[string] {
+	opts := make([]huh.Option[string], len(coding.Plans))
+	for i, p := range coding.Plans {
+		opts[i] = huh.NewOption(coding.RegionLabel(p), p)
+	}
+	return opts
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -145,11 +161,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			return m, func() tea.Msg { return uimsg.Err{Err: msg.err} }
 		}
-		return m, refresh()
+		cmds := []tea.Cmd{refresh()}
+		if msg.status != "" {
+			cmds = append(cmds, func() tea.Msg { return uimsg.Status{Text: msg.status} })
+		}
+		if msg.plan != "" {
+			plan := msg.plan
+			cmds = append(cmds, func() tea.Msg { return uimsg.PlanChanged{Plan: plan} })
+		}
+		return m, tea.Batch(cmds...)
 
 	case tea.KeyPressMsg:
 		if m.mode == modeAuth {
 			return m.updateAuth(msg)
+		}
+		// While the filter is being typed into, every key belongs to it.
+		if m.list.FilterState() == list.Filtering {
+			break
 		}
 
 		switch msg.String() {
@@ -159,15 +187,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.form.Init()
 		case "l":
 			if it, ok := m.selected(); ok {
-				return m, m.loadTool(it.tool.ID)
+				return m, m.loadTool(it.tool)
 			}
 		case "u":
 			if it, ok := m.selected(); ok {
-				return m, m.unloadTool(it.tool.ID)
+				return m, m.unloadTool(it.tool)
 			}
 		case "m":
 			if it, ok := m.selected(); ok {
-				return m, m.mcpTool(it.tool.ID)
+				return m, m.mcpTool(it.tool)
 			}
 		case "r":
 			return m, refresh()
@@ -218,57 +246,66 @@ func (m Model) submitAuth() tea.Cmd {
 		if err := store.SetAPIKey(key); err != nil {
 			return actionDoneMsg{err: err}
 		}
-		return actionDoneMsg{}
+		return actionDoneMsg{status: "saved " + coding.DisplayName(plan) + " credentials", plan: plan}
 	}
 }
 
-func (m Model) loadTool(toolID string) tea.Cmd {
+// withCredentials runs fn with the home directory and stored credentials,
+// failing early when none are stored.
+func (m Model) withCredentials(fn func(home string, creds *coding.StoredConfig) actionDoneMsg) tea.Cmd {
 	store := m.store
 	return func() tea.Msg {
-		c, err := store.Load()
+		creds, err := store.Load()
 		if err != nil {
 			return actionDoneMsg{err: err}
 		}
-		if c.Plan == "" || c.APIKey == "" {
-			return actionDoneMsg{err: fmt.Errorf("no credentials stored — press 'a' to auth first")}
+		if !coding.IsValidPlan(creds.Plan) || creds.APIKey == "" {
+			return actionDoneMsg{err: errors.New("no valid credentials stored — press 'a' to auth first")}
 		}
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return actionDoneMsg{err: err}
 		}
-		return actionDoneMsg{err: coding.Load(home, toolID, c.Plan, c.APIKey)}
+		return fn(home, creds)
 	}
 }
 
-func (m Model) unloadTool(toolID string) tea.Cmd {
+// loadTool writes the stored plan into the tool with the same defaults the
+// CLI uses.
+func (m Model) loadTool(tool coding.Tool) tea.Cmd {
+	return m.withCredentials(func(home string, creds *coding.StoredConfig) actionDoneMsg {
+		if err := tool.Load(home, coding.NewLoadConfig(creds.Plan, creds.APIKey)); err != nil {
+			return actionDoneMsg{err: err}
+		}
+		return actionDoneMsg{status: "loaded " + coding.DisplayName(creds.Plan) + " into " + tool.DisplayName}
+	})
+}
+
+func (m Model) unloadTool(tool coding.Tool) tea.Cmd {
 	return func() tea.Msg {
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return actionDoneMsg{err: err}
 		}
-		return actionDoneMsg{err: coding.Unload(home, toolID)}
+		switch err := tool.Unload(home); {
+		case errors.Is(err, coding.ErrNotConfigured):
+			return actionDoneMsg{status: tool.DisplayName + " is not configured for a Z.AI plan"}
+		case err != nil:
+			return actionDoneMsg{err: err}
+		}
+		return actionDoneMsg{status: "removed the Z.AI plan from " + tool.DisplayName}
 	}
 }
 
-// mcpTool registers Z.AI's Vision MCP server for toolID, using the stored
-// API key — unlike loadTool this doesn't need a plan, since the MCP server
-// isn't plan-routed.
-func (m Model) mcpTool(toolID string) tea.Cmd {
-	store := m.store
-	return func() tea.Msg {
-		c, err := store.Load()
-		if err != nil {
+// mcpTool registers every official Z.AI MCP server in the tool.
+func (m Model) mcpTool(tool coding.Tool) tea.Cmd {
+	return m.withCredentials(func(home string, creds *coding.StoredConfig) actionDoneMsg {
+		servers := tool.SupportedMCPServers()
+		if err := tool.LoadMCP(home, creds.Plan, creds.APIKey, servers); err != nil {
 			return actionDoneMsg{err: err}
 		}
-		if c.APIKey == "" {
-			return actionDoneMsg{err: fmt.Errorf("no credentials stored — press 'a' to auth first")}
-		}
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return actionDoneMsg{err: err}
-		}
-		return actionDoneMsg{err: coding.LoadMCP(home, toolID, c.APIKey)}
-	}
+		return actionDoneMsg{status: fmt.Sprintf("registered %d Z.AI MCP servers in %s", len(servers), tool.DisplayName)}
+	})
 }
 
 func (m Model) View() tea.View {
@@ -287,13 +324,19 @@ func (m Model) View() tea.View {
 	return tea.NewView(m.list.View())
 }
 
+// CapturesInput reports whether a text field has focus (the auth form or the
+// list filter), so the root leaves printable keys to it.
+func (m Model) CapturesInput() bool {
+	return m.mode == modeAuth || m.list.FilterState() == list.Filtering
+}
+
 // ShortHelp implements the root model's helpProvider interface.
 func (m Model) ShortHelp() []key.Binding {
 	return []key.Binding{
 		key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "auth")),
 		key.NewBinding(key.WithKeys("l"), key.WithHelp("l", "load")),
 		key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "unload")),
-		key.NewBinding(key.WithKeys("m"), key.WithHelp("m", "vision mcp")),
+		key.NewBinding(key.WithKeys("m"), key.WithHelp("m", "add mcp servers")),
 		key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "refresh")),
 		key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "filter")),
 	}

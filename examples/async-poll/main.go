@@ -33,7 +33,7 @@ func main() {
 	// Step 1: submit. Returns immediately with a task id; TaskStatus is
 	// typically "PROCESSING" at this point.
 	task, err := c.Images().GenerateAsync(ctx, client.ImageGenerationRequest{
-		Model:  "cogview-4-250304",
+		Model:  client.ModelCogView4,
 		Prompt: prompt,
 		Size:   "1280x1280",
 	})
@@ -52,7 +52,7 @@ func main() {
 		log.Fatalf("task ended in status %s", result.TaskStatus)
 	}
 
-	for i, img := range result.Data {
+	for i, img := range result.ImageResult {
 		fmt.Printf("image[%d]: %s\n", i, img.URL)
 	}
 }
