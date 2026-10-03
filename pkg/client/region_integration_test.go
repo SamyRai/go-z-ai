@@ -18,8 +18,8 @@ func stubBody(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case strings.Contains(r.URL.Path, "quota") || strings.Contains(r.URL.Path, "usage"):
 		fmt.Fprint(w, `{"code":0,"msg":"ok","data":{}}`)
-	case strings.Contains(r.URL.Path, "account"):
-		fmt.Fprint(w, `{"code":0,"msg":"ok","data":{}}`)
+	case strings.Contains(r.URL.Path, "subscription"):
+		fmt.Fprint(w, `{"code":200,"msg":"ok","success":true,"data":[]}`)
 	case strings.Contains(r.URL.Path, "agents"):
 		fmt.Fprint(w, `{"id":"x","agent_id":"a","status":"SUCCESS"}`)
 	default:
@@ -71,12 +71,11 @@ func TestRegionChinaRoutesToBigModelHost(t *testing.T) {
 		assertChinaHost(t, host)
 	})
 
-	t.Run("account-info", func(t *testing.T) {
+	t.Run("account-subscriptions", func(t *testing.T) {
 		var host string
 		c.httpClient.Transport = &rewrapTransport{base: srv.URL, seen: &host}
-		_, err := c.Account().GetAccountInfo(context.Background())
-		if err != nil {
-			t.Fatalf("GetAccountInfo: %v", err)
+		if _, err := c.Account().Subscriptions(context.Background()); err != nil {
+			t.Fatalf("Subscriptions: %v", err)
 		}
 		assertChinaHost(t, host)
 	})

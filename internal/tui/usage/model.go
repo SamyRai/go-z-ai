@@ -1,8 +1,8 @@
-// Package usage implements the TUI's Usage tab: a live quota + token/tool
-// usage dashboard, backed by the same QuotaService/UsageService the
-// "go-z-ai usage"/"accounts quota"/"accounts usage" commands use. It
-// replaces the CLI's naive time.Sleep polling loop ("usage check --watch")
-// with a non-blocking tea.Tick refresh.
+// Package usage implements the TUI's Usage tab: a live GLM Coding Plan quota
+// and token/tool usage dashboard, backed by the same QuotaService the
+// "go-z-ai usage" and "accounts quota/usage" commands use, and rendered
+// through usageview's shared summaries. It refreshes with a routed tea.Tick
+// and only ever calls the free monitor endpoints.
 package usage
 
 import (
@@ -15,7 +15,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
-	"github.com/SamyRai/go-z-ai/internal/accounts"
 	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
 	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
 	"github.com/SamyRai/go-z-ai/internal/usageview"
@@ -37,7 +36,6 @@ type tickMsg time.Time
 
 type fetchedMsg struct {
 	quota  *client.QuotaLimitResponse
-	status *client.AccountStatus
 	models *client.ModelUsageResponse
 	tools  *client.ToolUsageResponse
 	err    error
@@ -45,52 +43,45 @@ type fetchedMsg struct {
 
 // Model is the Usage tab's screen model.
 type Model struct {
-	client   *client.Client
-	selfTab  int // this screen's tab index, used to route the fetch result back
-	accounts *accounts.Store
+	client  func() *client.Client
+	selfTab int           // this screen's tab index, used to route results back
+	every   time.Duration // auto-refresh interval
 
 	quota  *client.QuotaLimitResponse
-	status *client.AccountStatus
 	models *client.ModelUsageResponse
 	tools  *client.ToolUsageResponse
 	bars   []progress.Model // one per m.quota.Data.Limits entry
+	err    error
 
 	loading bool
 	width   int
 }
 
-// New builds the Usage screen. c must be non-nil; store may be nil if no
-// account store is available. selfTab is this screen's tab index in the root
-// model, so a fetch result routes back here even if the user switched away.
-func New(c *client.Client, store *accounts.Store, selfTab int) Model {
-	return Model{client: c, selfTab: selfTab, accounts: store}
+// New builds the Usage screen. c returns the current API client; selfTab is
+// this screen's tab index in the root model.
+func New(c func() *client.Client, selfTab int) Model {
+	return Model{client: c, selfTab: selfTab, every: refreshInterval}
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(m.route(m.fetch()), tick())
+	return tea.Batch(uimsg.Route(m.selfTab, m.fetch()), m.tick())
 }
 
-func tick() tea.Cmd {
-	return tea.Tick(refreshInterval, func(t time.Time) tea.Msg { return tickMsg(t) })
+// tick schedules the next refresh, routed so it reaches this tab even while
+// another one is active.
+func (m Model) tick() tea.Cmd {
+	return uimsg.Route(m.selfTab, tea.Tick(m.every, func(t time.Time) tea.Msg { return tickMsg(t) }))
 }
 
 func (m Model) fetch() tea.Cmd {
-	c := m.client
+	c := m.client()
 	return func() tea.Msg {
 		ctx := context.Background()
-		var out fetchedMsg
-
 		quota, err := c.Quota().GetQuotaLimit(ctx)
 		if err != nil {
 			return fetchedMsg{err: err}
 		}
-		out.quota = quota
-
-		status, err := c.Usage().GetAccountStatus(ctx)
-		if err == nil {
-			out.status = status
-		}
-
+		out := fetchedMsg{quota: quota}
 		start, end := usageview.Window(14, false)
 		if models, err := c.Quota().GetModelUsage(ctx, start, end); err == nil {
 			out.models = models
@@ -98,16 +89,8 @@ func (m Model) fetch() tea.Cmd {
 		if tools, err := c.Quota().GetToolUsage(ctx, start, end); err == nil {
 			out.tools = tools
 		}
-
 		return out
 	}
-}
-
-// route wraps cmd so its fetch result is delivered back to this tab even if the
-// user switched away before it completed. Same mechanism as the media tab.
-func (m Model) route(cmd tea.Cmd) tea.Cmd {
-	self := m.selfTab
-	return func() tea.Msg { return uimsg.Routed{Tab: self, Msg: cmd()} }
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -117,32 +100,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tickMsg:
-		return m, tea.Batch(m.route(m.fetch()), tick())
+		return m, tea.Batch(uimsg.Route(m.selfTab, m.fetch()), m.tick())
 
 	case fetchedMsg:
 		m.loading = false
-		if msg.err != nil {
-			return m, func() tea.Msg { return uimsg.Err{Err: msg.err} }
+		m.err = msg.err
+		if msg.err == nil {
+			m.quota, m.models, m.tools = msg.quota, msg.models, msg.tools
+			m.syncBars()
 		}
-		m.quota, m.status, m.models, m.tools = msg.quota, msg.status, msg.models, msg.tools
-		m.syncBars()
 		return m, nil
 
 	case tea.KeyPressMsg:
 		if msg.String() == "r" {
-			m.loading = true
-			return m, m.route(m.fetch())
+			return m.Refresh()
 		}
 	}
 	return m, nil
 }
 
-// Refresh forces an immediate re-fetch of quota/usage data. Implements the
-// root model's refresher interface so the command palette's "Refresh current
-// tab" action can trigger the same path as the 'r' key.
+// Refresh forces an immediate re-fetch. Implements the root model's
+// refresher interface (the palette's "Refresh current tab" and the 'r' key).
 func (m Model) Refresh() (tea.Model, tea.Cmd) {
 	m.loading = true
-	return m, m.route(m.fetch())
+	return m, uimsg.Route(m.selfTab, m.fetch())
 }
 
 // syncBars keeps one progress.Model per quota limit, reused across refreshes
@@ -159,6 +140,12 @@ func (m *Model) syncBars() {
 }
 
 func (m Model) View() tea.View {
+	if m.quota == nil && m.err != nil {
+		body := uistyle.EmptyTitle.Render("No coding-plan quota") + "\n\n" +
+			uistyle.EmptyHint.Render(m.err.Error()) + "\n\n" +
+			uistyle.Subtle.Render("Quota and usage are available for GLM Coding Plan accounts. Press 'r' to retry.")
+		return tea.NewView(body)
+	}
 	if m.quota == nil {
 		// Skeleton: a title + a few dimmed bar rows so the layout reads as
 		// "filling in" instead of a bare text label before first data.
@@ -187,30 +174,31 @@ func (m Model) View() tea.View {
 }
 
 func (m Model) renderQuotaPanel() string {
-	body := uistyle.SectionTitle.Render("Quota") + "\n"
+	body := uistyle.SectionTitle.Render(fmt.Sprintf("Quota · %s plan", m.quota.Data.Level)) + "\n"
+	mode := usageview.BillingModeOf(m.quota.Data.Limits)
+	now := time.Now()
 	for i, limit := range m.quota.Data.Limits {
+		s := usageview.SummarizeLimit(limit, mode, now, time.Local)
 		bar := ""
 		if i < len(m.bars) {
-			bar = m.bars[i].ViewAs(limit.Percentage / 100)
+			bar = m.bars[i].ViewAs(min(s.Used, 1))
 		}
-		body += fmt.Sprintf("%s\n%s %5.1f%%  (remaining %s)\n",
-			limit.WindowDescription(), bar, limit.Percentage, usageview.FormatCount(int64(limit.Remaining)))
-		if limit.IsTokenLimit() {
-			if start := limit.WindowStart(); !start.IsZero() {
-				if pace, ok := usageview.Pace(limit.Percentage/100, start, limit.ResetTime(), time.Now()); ok {
-					body += uistyle.Subtle.Render(usageview.FormatPace(pace)) + "\n"
-				}
+		body += fmt.Sprintf("%s\n%s %5.1f%%\n", s.Title, bar, s.Used*100)
+		for _, line := range []string{s.Counts, s.Reset, s.Pace} {
+			if line != "" {
+				body += uistyle.Subtle.Render(line) + "\n"
 			}
-			// Peak-hours notice: tokens count 3× during weekday 14:00–18:00
-			// server time (CST), so the window burns faster than Pace projects.
-			if warn := usageview.FormatPeakWarning(time.Now(), m.client.MonitorTimezone()); warn != "" {
-				body += uistyle.ToastWarn.Render(warn) + "\n"
-			}
+		}
+		for _, tool := range s.Tools {
+			body += uistyle.Subtle.Render("  "+tool) + "\n"
+		}
+		if s.Peak != "" {
+			body += uistyle.ToastWarn.Render(s.Peak) + "\n"
 		}
 		body += "\n"
 	}
-	if m.status != nil {
-		body += fmt.Sprintf("Account: %s\n", m.status.Message)
+	if m.err != nil {
+		body += uistyle.ToastWarn.Render("refresh failed: "+m.err.Error()) + "\n"
 	}
 	return body
 }

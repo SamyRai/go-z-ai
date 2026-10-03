@@ -33,8 +33,8 @@ func init() {
 	rootCmd.AddCommand(embeddingsCmd)
 	embeddingsCmd.AddCommand(embeddingsCreateCmd)
 
-	embeddingsCreateCmd.Flags().String("model", client.EmbeddingModel3, "Embedding model: embedding-3 or embedding-2")
-	embeddingsCreateCmd.Flags().Int("dimensions", 0, "Output vector dimensions (embedding-3 only: 256, 512, 1024, or 2048)")
+	embeddingsCreateCmd.Flags().String("model", client.EmbeddingModel3, "Embedding model: "+client.EmbeddingModel3+" or "+client.EmbeddingModel2)
+	embeddingsCreateCmd.Flags().Int("dimensions", 0, "Output vector dimensions ("+client.EmbeddingModel3+" only: 256, 512, 1024, or 2048)")
 	// Default json: the vector payload is machine-oriented, so JSON stays the
 	// out-of-the-box output (text mode prints a summary).
 	addFormatFlag("json", embeddingsCreateCmd)

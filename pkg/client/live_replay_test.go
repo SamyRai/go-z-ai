@@ -22,7 +22,7 @@ import (
 
 // These two tests replay real recorded interactions from a live account
 // (2026-07-10, coding_plan type) against the general PAYG base
-// (ProdBaseURL) to lock in a confirmed finding: both endpoints are reachable
+// (DefaultBaseURL) to lock in a confirmed finding: both endpoints are reachable
 // and correctly routed, but reject the model names documented in the
 // official SDK's own test fixtures ("moderation", "embedding-2") with
 // error 1211 "Unknown Model". This rules out a base-URL/routing problem —
@@ -32,16 +32,16 @@ import (
 //
 // No service type exists yet for either endpoint (that's the point — we
 // don't have a confirmed success response to model), so these replay
-// directly through doRequestBase and assert on the parsed *APIError.
+// directly through the transport (Client.do) and assert on the parsed *APIError.
 
 func TestModerationsLiveErrorIsUnknownModelNotRouting(t *testing.T) {
-	c := newReplayClient(t, "moderations", ProdBaseURL)
+	c := newReplayClient(t, "moderations", DefaultBaseURL)
 
 	var result any
-	err := c.doRequestBase(context.Background(), ProdBaseURL, "POST", "/moderations", map[string]any{
+	err := c.do(context.Background(), apiRequest{method: "POST", baseURL: DefaultBaseURL, path: "/moderations", body: map[string]any{
 		"model": "moderation",
 		"input": "hello world",
-	}, &result)
+	}}, &result)
 
 	apiErr, ok := err.(*APIError)
 	if !ok {
@@ -53,7 +53,7 @@ func TestModerationsLiveErrorIsUnknownModelNotRouting(t *testing.T) {
 }
 
 // TestBigModelSameKeyAuthenticates replays four real recorded interactions
-// against open.bigmodel.cn (2026-07-11, same z.ai API key as the ProdBaseURL
+// against open.bigmodel.cn (2026-07-11, same z.ai API key as the DefaultBaseURL
 // cassettes above, Authorization redacted) — the finding that overturned an
 // earlier online-research-only conclusion that Embeddings/Moderations were
 // "China platform only" and needed a separate bigmodel.cn account/key. Kept
@@ -68,7 +68,7 @@ func TestModerationsLiveErrorIsUnknownModelNotRouting(t *testing.T) {
 // (1113 insufficient balance), proving the key genuinely authenticates on
 // this platform, not just gets rejected before reaching model logic.
 // POST /embeddings and /moderations both still return 400 "Unknown Model"
-// (1211) here too — identical to ProdBaseURL — which is why this is an
+// (1211) here too — identical to DefaultBaseURL — which is why this is an
 // account/plan-entitlement gate (this account's catalog is chat-only on
 // both platforms), not a China-vs-international routing issue. See
 // BigModelBaseURL's doc comment and docs/en/accounts-and-quota.md.
@@ -79,49 +79,49 @@ func TestBigModelSameKeyAuthenticates(t *testing.T) {
 	var models struct {
 		Data []struct{ ID string } `json:"data"`
 	}
-	if err := c.doRequestBaseKey(context.Background(), BigModelBaseURL, apiKey, "GET", "/models", nil, &models); err != nil {
+	if err := c.do(context.Background(), apiRequest{method: "GET", baseURL: BigModelBaseURL, apiKey: apiKey, path: "/models"}, &models); err != nil {
 		t.Fatalf("GET /models: %v", err)
 	}
 	if len(models.Data) != 8 || models.Data[0].ID != "glm-4.5" {
-		t.Errorf("expected the same 8-model chat-only catalog as ProdBaseURL, got %+v", models.Data)
+		t.Errorf("expected the same 8-model chat-only catalog as DefaultBaseURL, got %+v", models.Data)
 	}
 
 	var chatResult any
-	chatErr := c.doRequestBaseKey(context.Background(), BigModelBaseURL, apiKey, "POST", "/chat/completions", map[string]any{
+	chatErr := c.do(context.Background(), apiRequest{method: "POST", baseURL: BigModelBaseURL, apiKey: apiKey, path: "/chat/completions", body: map[string]any{
 		"model":    "glm-4.6",
 		"messages": []map[string]string{{"role": "user", "content": "hi"}},
-	}, &chatResult)
+	}}, &chatResult)
 	if apiErr, ok := chatErr.(*APIError); !ok || apiErr.Code != ErrCodeInsufficientBalance {
 		t.Fatalf("expected code %d (insufficient balance — proves auth cleared and reached billing logic), got %v", ErrCodeInsufficientBalance, chatErr)
 	}
 
 	var embResult any
-	embErr := c.doRequestBaseKey(context.Background(), BigModelBaseURL, apiKey, "POST", "/embeddings", map[string]any{
+	embErr := c.do(context.Background(), apiRequest{method: "POST", baseURL: BigModelBaseURL, apiKey: apiKey, path: "/embeddings", body: map[string]any{
 		"model": "embedding-3",
 		"input": "hello world",
-	}, &embResult)
+	}}, &embResult)
 	if apiErr, ok := embErr.(*APIError); !ok || apiErr.Code != 1211 {
 		t.Errorf("expected code 1211 (Unknown Model) on BigModelBaseURL too, got %v", embErr)
 	}
 
 	var modResult any
-	modErr := c.doRequestBaseKey(context.Background(), BigModelBaseURL, apiKey, "POST", "/moderations", map[string]any{
+	modErr := c.do(context.Background(), apiRequest{method: "POST", baseURL: BigModelBaseURL, apiKey: apiKey, path: "/moderations", body: map[string]any{
 		"model": "moderation",
 		"input": "hello world",
-	}, &modResult)
+	}}, &modResult)
 	if apiErr, ok := modErr.(*APIError); !ok || apiErr.Code != 1211 {
 		t.Errorf("expected code 1211 (Unknown Model) on BigModelBaseURL too, got %v", modErr)
 	}
 }
 
 func TestEmbeddingsLiveErrorIsUnknownModelNotRouting(t *testing.T) {
-	c := newReplayClient(t, "embeddings", ProdBaseURL)
+	c := newReplayClient(t, "embeddings", DefaultBaseURL)
 
 	var result any
-	err := c.doRequestBase(context.Background(), ProdBaseURL, "POST", "/embeddings", map[string]any{
+	err := c.do(context.Background(), apiRequest{method: "POST", baseURL: DefaultBaseURL, path: "/embeddings", body: map[string]any{
 		"model": "embedding-2",
 		"input": "hello",
-	}, &result)
+	}}, &result)
 
 	apiErr, ok := err.(*APIError)
 	if !ok {
@@ -157,7 +157,7 @@ func assertInsufficientBalance(t *testing.T, err error) {
 // routing proof: a business-logic billing error only happens after the
 // request reaches real endpoint logic.
 func TestToolsWebSearchLive(t *testing.T) {
-	c := newReplayClient(t, "tools_web_search", ProdBaseURL)
+	c := newReplayClient(t, "tools_web_search", DefaultBaseURL)
 	_, err := c.Tools().WebSearch(context.Background(), WebSearchRequest{
 		SearchQuery:  "golang generics",
 		SearchEngine: SearchEnginePro,
@@ -174,7 +174,7 @@ func TestToolsWebSearchLive(t *testing.T) {
 // intermittently (that transcript wasn't captured as a cassette, since it
 // happened outside a recording session).
 func TestToolsWebReaderLive(t *testing.T) {
-	c := newReplayClient(t, "tools_web_reader", ProdBaseURL)
+	c := newReplayClient(t, "tools_web_reader", DefaultBaseURL)
 	_, err := c.Tools().WebReader(context.Background(), WebReaderRequest{URL: "https://go.dev"})
 	assertInsufficientBalance(t, err)
 }
@@ -183,7 +183,7 @@ func TestToolsWebReaderLive(t *testing.T) {
 // proving tools.go's rewritten POST /tokenizer is real and correctly
 // routed — see TestToolsWebSearchLive's doc comment for the full context.
 func TestToolsTokenizerLive(t *testing.T) {
-	c := newReplayClient(t, "tools_tokenizer", ProdBaseURL)
+	c := newReplayClient(t, "tools_tokenizer", DefaultBaseURL)
 	_, err := c.Tools().Tokenize(context.Background(), TokenizerRequest{
 		Model:    "glm-4.6",
 		Messages: []Message{{Role: "user", Content: "hello world, how are you today?"}},
@@ -196,7 +196,7 @@ func TestToolsTokenizerLive(t *testing.T) {
 // routed: 1211 Unknown Model, the same account-entitlement gate as
 // Embeddings/Moderations (this account's catalog is chat-only).
 func TestRerankCreateLive(t *testing.T) {
-	c := newReplayClient(t, "rerank_create", ProdBaseURL)
+	c := newReplayClient(t, "rerank_create", DefaultBaseURL)
 	_, err := c.Rerank().Create(context.Background(), RerankRequest{
 		Query:     "capital of France",
 		Documents: []string{"Paris is the capital of France.", "Berlin is the capital of Germany."},
@@ -211,7 +211,7 @@ func TestRerankCreateLive(t *testing.T) {
 // proving ChatService.CreateAsync's POST /async/chat/completions is real
 // and correctly routed: 1113 insufficient balance.
 func TestChatCreateAsyncLive(t *testing.T) {
-	c := newReplayClient(t, "chat_create_async", ProdBaseURL)
+	c := newReplayClient(t, "chat_create_async", DefaultBaseURL)
 	_, err := c.Chat().CreateAsync(context.Background(), ChatRequest{
 		Model:    "glm-4.6",
 		Messages: []Message{{Role: "user", Content: "hi"}},
@@ -229,7 +229,7 @@ func TestChatCreateAsyncLive(t *testing.T) {
 // documented schema doesn't mention this at all, matching the same
 // 200-with-embedded-failure pattern as the synchronous Invoke path.
 func TestAgentsAsyncResultLive(t *testing.T) {
-	c := newReplayClient(t, "agents_async_result", ProdBaseURL)
+	c := newReplayClient(t, "agents_async_result", DefaultBaseURL)
 	resp, err := c.Agents().AsyncResult(context.Background(), AgentAsyncResultRequest{
 		AgentID: "intelligent_education_correction_polling",
 		AsyncID: "nonexistent-async-id",
@@ -247,7 +247,7 @@ func TestAgentsAsyncResultLive(t *testing.T) {
 // routed: 1211 Unknown Model — glm-tts isn't in this account's catalog
 // either, the same entitlement gate as everything else pay-per-use.
 func TestAudioSpeechLive(t *testing.T) {
-	c := newReplayClient(t, "audio_speech", ProdBaseURL)
+	c := newReplayClient(t, "audio_speech", DefaultBaseURL)
 	_, err := c.Audio().Speech(context.Background(), AudioSpeechRequest{Input: "hello world"})
 	var apiErr *APIError
 	if !errors.As(err, &apiErr) || apiErr.Code != 1211 {
@@ -262,7 +262,7 @@ func TestAudioSpeechLive(t *testing.T) {
 // list despite this account having no PAYG balance: voice listing isn't
 // pay-per-use, unlike every other endpoint verified in this file.
 func TestVoiceListLive(t *testing.T) {
-	c := newReplayClient(t, "voice_list", ProdBaseURL)
+	c := newReplayClient(t, "voice_list", DefaultBaseURL)
 	voices, err := c.Voice().List(context.Background(), "", "")
 	if err != nil {
 		t.Fatalf("List: %v", err)
@@ -289,26 +289,26 @@ func TestVoiceListLive(t *testing.T) {
 // ({"msg":...,"code":500} — neither the usual {"error":{"code","message"}}
 // shape nor FileParseResultResponse's shape). Because FileParserService.Sync
 // now refuses a missing FileType before ever sending a request, this test
-// bypasses it and calls sendMultipart directly — the same pattern
+// bypasses it and sends the encoded request directly — the same pattern
 // TestModerationsLiveErrorIsUnknownModelNotRouting/
 // TestEmbeddingsLiveErrorIsUnknownModelNotRouting use to replay a real
 // interaction that predates (or in this case deliberately bypasses) a
 // typed service method.
 func TestFileParserSyncMissingFileTypeLive(t *testing.T) {
-	c := newReplayClient(t, "files_parser_sync", ProdBaseURL)
+	c := newReplayClient(t, "files_parser_sync", DefaultBaseURL)
 
-	buf, contentType, err := buildParseMultipart(FileParserRequest{
+	r, err := parseRequest(FileParserRequest{
 		FileName: "test.txt",
 		FileData: []byte("hello world"),
 		ToolType: FileParserToolPrimeSync,
-	})
+	}, "/files/parser/sync")
 	if err != nil {
-		t.Fatalf("buildParseMultipart: %v", err)
+		t.Fatalf("parseRequest: %v", err)
 	}
 
-	resp, err := c.sendMultipart(context.Background(), "/files/parser/sync", contentType, buf.Bytes())
+	resp, err := c.send(context.Background(), r)
 	if err != nil {
-		t.Fatalf("sendMultipart: %v", err)
+		t.Fatalf("send: %v", err)
 	}
 	defer resp.Body.Close()
 

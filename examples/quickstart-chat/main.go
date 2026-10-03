@@ -29,7 +29,7 @@ func main() {
 	}
 
 	resp, err := c.Chat().Create(context.Background(), client.ChatRequest{
-		Model:    "glm-5.2",
+		Model:    client.DefaultModel,
 		Messages: []client.Message{{Role: "user", Content: prompt}},
 	})
 	if err != nil {

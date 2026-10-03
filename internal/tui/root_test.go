@@ -8,6 +8,8 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 
+	"charm.land/lipgloss/v2"
+
 	"github.com/SamyRai/go-z-ai/internal/tui/palette"
 	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
 )
@@ -140,9 +142,10 @@ func TestMouseClickSwitchesTab(t *testing.T) {
 	m := &rootModel{active: tabChat, keys: defaultKeyMap()}
 	m.screens[tabChat] = spyScreen{}
 
-	// The first pill (Chat) starts at x=0; the second (Models) follows at
-	// x = pillWidth("Chat") = len("Chat")+4 = 8.
-	modelsX := pillWidth("Chat")
+	// The second segment (Models) starts right after the first one's
+	// rendered width, in the layout the root draws at this width.
+	m.width = 120
+	modelsX := lipgloss.Width(tabSegments(tabChat, m.width)[0])
 	m.Update(tea.MouseClickMsg{X: modelsX, Y: tabBarRow})
 
 	if m.active != tabModels {
@@ -227,5 +230,60 @@ func TestJoinBadges(t *testing.T) {
 	}
 	if s := joinBadges("  "); s != "" {
 		t.Errorf("expected empty join for all-empty input, got %q", s)
+	}
+}
+
+// The compact tab bar (used when the full bar doesn't fit) must actually be
+// narrower, fit the minimum width, and hit-test the layout it draws.
+func TestCompactTabBarFitsAndHitTests(t *testing.T) {
+	full := fullTabBarWidth()
+	compact := lipgloss.Width(renderTabBar(tabChat, minWidth))
+	if compact >= full || compact > minWidth {
+		t.Fatalf("compact bar is %d wide (full %d, min terminal %d)", compact, full, minWidth)
+	}
+	segs := tabSegments(tabChat, minWidth)
+	x := lipgloss.Width(segs[0]) + lipgloss.Width(segs[1]) // start of the third segment
+	if got, ok := tabBarHit(x, tabChat, minWidth); !ok || got != tabUsage {
+		t.Errorf("hit at %d = %v, %v; want Usage", x, got, ok)
+	}
+}
+
+// inputSpy is a screen whose text field has focus.
+type inputSpy struct{ spyScreen }
+
+func (inputSpy) CapturesInput() bool { return true }
+
+// "?" is typed into a focused text field instead of opening help; f1 still
+// opens it.
+func TestHelpKeyYieldsToFocusedInput(t *testing.T) {
+	var got []tea.Msg
+	m := &rootModel{active: tabChat, keys: defaultKeyMap()}
+	m.screens[tabChat] = inputSpy{spyScreen{got: &got}}
+	m.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
+	if m.overlay != nil || len(got) != 1 {
+		t.Fatalf("'?' should reach the focused input (overlay=%v, screen got %d msgs)", m.overlay, len(got))
+	}
+	m.Update(tea.KeyPressMsg{Code: tea.KeyF1})
+	if !m.isHelpOpen() {
+		t.Error("f1 should open help")
+	}
+}
+
+// Toasts and status messages are shown even while an overlay is open, and
+// ctrl+p closes an open palette.
+func TestOverlayDoesNotSwallowToastsOrToggles(t *testing.T) {
+	m := &rootModel{active: tabChat, keys: defaultKeyMap()}
+	m.screens[tabChat] = spyScreen{}
+	m.Update(tea.KeyPressMsg{Code: 'p', Mod: tea.ModCtrl})
+	if m.overlay == nil {
+		t.Fatal("ctrl+p should open the palette")
+	}
+	m.Update(uimsg.Status{Text: "hello"})
+	if m.toastText != "hello" {
+		t.Errorf("status swallowed by the overlay: toast %q", m.toastText)
+	}
+	m.Update(tea.KeyPressMsg{Code: 'p', Mod: tea.ModCtrl})
+	if m.overlay != nil {
+		t.Error("ctrl+p should close the palette")
 	}
 }

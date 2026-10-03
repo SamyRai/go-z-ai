@@ -29,6 +29,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"github.com/SamyRai/go-z-ai/internal/modelview"
 	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
 	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
 	"github.com/SamyRai/go-z-ai/pkg/client"
@@ -73,7 +74,7 @@ type fetchedMsg struct {
 
 // Model is the Models tab's screen model.
 type Model struct {
-	client  *client.Client
+	client  func() *client.Client
 	selfTab int // this screen's tab index, used to route the fetch result back
 	table   table.Model
 	view    viewport.Model // scrollable container for the detail view
@@ -93,7 +94,7 @@ type Model struct {
 // New builds the Models screen. c must be non-nil. selfTab is this screen's tab
 // index in the root model, so a fetch result routes back here even if the user
 // has switched away while it was loading.
-func New(c *client.Client, selfTab int) Model {
+func New(c func() *client.Client, selfTab int) Model {
 	t := table.New(
 		table.WithColumns([]table.Column{
 			{Title: "MODEL", Width: 28},
@@ -121,7 +122,7 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) fetch() tea.Cmd {
 	return func() tea.Msg {
-		info, err := m.client.Models().List(context.Background())
+		info, err := m.client().Models().List(context.Background())
 		if err != nil {
 			return fetchedMsg{err: err}
 		}
@@ -132,10 +133,7 @@ func (m Model) fetch() tea.Cmd {
 // route wraps cmd so its result is delivered back to this tab even if the user
 // switched away mid-load (otherwise the fetch result is lost and the tab stays
 // stuck "loading"). Same mechanism as the media tab.
-func (m Model) route(cmd tea.Cmd) tea.Cmd {
-	self := m.selfTab
-	return func() tea.Msg { return uimsg.Routed{Tab: self, Msg: cmd()} }
-}
+func (m Model) route(cmd tea.Cmd) tea.Cmd { return uimsg.Route(m.selfTab, cmd) }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -335,25 +333,21 @@ func (m *Model) applyFilter() {
 		if !m.matches(md) {
 			continue
 		}
-		in, out := "—", "—"
-		if md.Pricing != nil {
-			in = formatPrice(md.Pricing.Input)
-			out = formatPrice(md.Pricing.Output)
-		}
+		in, out, _ := modelview.Rates(md.Pricing)
 		if compact {
 			rows = append(rows, table.Row{
 				md.ID,
-				formatContext(md.ContextSize),
+				modelview.FormatTokens(md.ContextSize),
 				in,
 				out,
 			})
 		} else {
 			rows = append(rows, table.Row{
 				md.ID,
-				formatContext(md.ContextSize),
+				modelview.FormatTokens(md.ContextSize),
 				in,
 				out,
-				formatCaps(md.Capabilities),
+				modelview.CapabilityCodes(md.Capabilities),
 			})
 		}
 	}

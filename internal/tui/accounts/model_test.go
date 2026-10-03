@@ -8,6 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/SamyRai/go-z-ai/internal/accounts"
+	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
 	"github.com/SamyRai/go-z-ai/pkg/client"
 )
 
@@ -26,7 +27,7 @@ func storeWith(t *testing.T, names ...string) *accounts.Store {
 
 // 'a' opens the add form.
 func TestAccountsAddKeyOpensForm(t *testing.T) {
-	m := New(storeWith(t))
+	m := New(storeWith(t), 3)
 	next, cmd := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	got := next.(Model)
 	if got.mode != modeAdd {
@@ -39,7 +40,7 @@ func TestAccountsAddKeyOpensForm(t *testing.T) {
 
 // 'd' on a selected account arms the delete confirmation.
 func TestAccountsDeleteKeyArmsConfirm(t *testing.T) {
-	m := New(storeWith(t, "work"))
+	m := New(storeWith(t, "work"), 3)
 	next, _ := m.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
 	got := next.(Model)
 	if got.mode != modeConfirmDelete {
@@ -54,7 +55,7 @@ func TestAccountsDeleteKeyArmsConfirm(t *testing.T) {
 // mode with a status toast.
 func TestAccountsConfirmDeleteRemoves(t *testing.T) {
 	store := storeWith(t, "work")
-	m := New(store)
+	m := New(store, 3)
 	armed, _ := m.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
 
 	next, cmd := armed.(Model).Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
@@ -66,5 +67,46 @@ func TestAccountsConfirmDeleteRemoves(t *testing.T) {
 	}
 	if cmd == nil {
 		t.Error("expected a status toast command after delete")
+	}
+}
+
+// While the list filter is being typed into, shortcut letters are filter
+// text: typing "dy" must never arm and confirm a delete.
+func TestAccountsFilterSwallowsShortcuts(t *testing.T) {
+	store := storeWith(t, "work", "dyn")
+	m := New(store, 3)
+	var next tea.Model = m
+	for _, r := range "/dy" {
+		next, _ = next.(Model).Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+	}
+	if next.(Model).mode != modeList || !next.(Model).CapturesInput() {
+		t.Fatalf("filtering must stay in list mode and capture input (mode=%v)", next.(Model).mode)
+	}
+	if len(store.Accounts) != 2 {
+		t.Error("typing into the filter deleted an account")
+	}
+}
+
+// Switching the active account saves it and tells the root to switch clients.
+func TestAccountsSwitchSignalsAccountChanged(t *testing.T) {
+	store := storeWith(t, "a", "b") // "a" is active (first added)
+	m := New(store, 3)
+	moved, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	_, cmd := moved.(Model).Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if store.Active != "b" {
+		t.Fatalf("active = %q, want b", store.Active)
+	}
+	batch, ok := cmd().(tea.BatchMsg)
+	if !ok {
+		t.Fatalf("expected a batch, got %T", cmd())
+	}
+	found := false
+	for _, c := range batch {
+		if _, ok := c().(uimsg.AccountChanged); ok {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected uimsg.AccountChanged")
 	}
 }

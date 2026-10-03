@@ -259,22 +259,22 @@ func TestVerifyChatStreamToolCall(t *testing.T) {
 	})
 
 	var toolCallChunks int
-	err := c.Chat().CreateStream(context.Background(), ChatRequest{
-		Model:          "glm-4.6",
-		Messages:       []Message{{Role: "user", Content: "What's the weather in Tokyo?"}},
-		Tools:          []Tool{tool},
-		StreamToolCall: true,
-	}, func(ch StreamChunk) error {
+	err := drainStream(c.Chat().Stream(context.Background(), ChatRequest{
+		Model:      DefaultModel,
+		Messages:   []Message{{Role: "user", Content: "What's the weather in Tokyo?"}},
+		Tools:      []Tool{tool},
+		ToolStream: true,
+	}), func(ch StreamChunk) error {
 		if len(ch.Choices) > 0 && len(ch.Choices[0].Delta.ToolCalls) > 0 {
 			toolCallChunks++
 		}
 		return nil
 	})
 	if err != nil {
-		t.Fatalf("CreateStream: %v", err)
+		t.Fatalf("Stream: %v", err)
 	}
 	if toolCallChunks == 0 {
-		t.Error("expected at least one chunk carrying a tool-call delta under StreamToolCall=true")
+		t.Error("expected at least one chunk carrying a tool-call delta under ToolStream=true")
 	}
 }
 

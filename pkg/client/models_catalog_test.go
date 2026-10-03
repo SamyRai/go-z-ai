@@ -1,12 +1,14 @@
 package client
 
 import (
+	"slices"
+	"strings"
 	"testing"
 )
 
 // enrichModel's overlay contract, table-driven. Each case checks one rule of
 // the enrichment precedence (live API wins → catalog fills the rest → no
-// fabrication for unknown IDs → alias/prefix matching).
+// fabrication for unknown IDs → snapshot matching).
 func TestEnrichModel(t *testing.T) {
 	glm46 := func() *ModelCatalogEntry {
 		e := findCatalogEntry("glm-4.6")
@@ -93,12 +95,20 @@ func TestEnrichModel(t *testing.T) {
 			},
 		},
 		{
-			name: "alias resolves to canonical entry",
-			raw:  ModelDetails{ID: "glm-5-flash"}, // alias of glm-5-flashx
+			name: "unknown variant does not inherit a base model's metadata",
+			raw:  ModelDetails{ID: "glm-5.3-prime"},
 			checks: func(t *testing.T, m ModelDetails) {
-				flashx := findCatalogEntry("glm-5-flashx")
-				if m.ContextSize != flashx.ContextSize {
-					t.Errorf("alias should resolve to flashx entry, got ContextSize %d", m.ContextSize)
+				if m.Pricing != nil || m.ContextSize != 0 {
+					t.Errorf("glm-5.3-prime must not borrow glm-5.3 pricing/context, got %+v", m)
+				}
+			},
+		},
+		{
+			name: "IDs match case-insensitively",
+			raw:  ModelDetails{ID: "GLM-5.3"},
+			checks: func(t *testing.T, m ModelDetails) {
+				if m.Name != "GLM-5.3" || m.ContextSize == 0 {
+					t.Errorf("expected GLM-5.3 to resolve to glm-5.3, got %+v", m)
 				}
 			},
 		},
@@ -121,11 +131,11 @@ func TestEnrichModel(t *testing.T) {
 			},
 		},
 		{
-			name: "CatalogName/Description always populated for known models",
-			raw:  ModelDetails{ID: "glm-5.2"},
+			name: "Name/Description/efforts filled from the catalog",
+			raw:  ModelDetails{ID: DefaultModel},
 			checks: func(t *testing.T, m ModelDetails) {
-				if m.CatalogName == "" || m.CatalogDescription == "" {
-					t.Errorf("CatalogName/Description should be set, got %q/%q", m.CatalogName, m.CatalogDescription)
+				if m.Name == "" || m.Description == "" || len(m.ReasoningEfforts) == 0 {
+					t.Errorf("expected catalog name/description/efforts, got %+v", m)
 				}
 			},
 		},
@@ -187,5 +197,49 @@ func TestHasCapabilityExact(t *testing.T) {
 	}
 	if m.HasCapability("TEXT") { // case-sensitive
 		t.Error("capability match should be case-sensitive")
+	}
+}
+
+// Every catalog row must be internally consistent: unique lowercase IDs, a
+// name, known capability codes, and efforts drawn from AllEfforts. The
+// recommended-model constants must point at cataloged models.
+func TestCatalogIntegrity(t *testing.T) {
+	known := []string{CapText, CapVision, CapVideo, CapFile, CapThinking, CapTools, CapCode, CapOCR, CapAudio}
+	seen := map[string]bool{}
+	for _, e := range modelsCatalog {
+		if e.ID == "" || e.ID != strings.ToLower(e.ID) || seen[e.ID] {
+			t.Errorf("bad or duplicate ID %q", e.ID)
+		}
+		seen[e.ID] = true
+		if e.Name == "" || e.Family == "" || e.Pricing == nil {
+			t.Errorf("%s: missing name/family/pricing", e.ID)
+		}
+		for _, c := range e.Capabilities {
+			if !slices.Contains(known, c) {
+				t.Errorf("%s: unknown capability %q", e.ID, c)
+			}
+		}
+		for _, eff := range e.ReasoningEfforts {
+			if !slices.Contains(AllEfforts, eff) {
+				t.Errorf("%s: unknown effort %q", e.ID, eff)
+			}
+		}
+	}
+	for _, id := range []string{DefaultModel, DefaultFastModel, DefaultVisionModel, DefaultOCRModel} {
+		if !seen[id] {
+			t.Errorf("recommended model %q is not cataloged", id)
+		}
+	}
+	if e, _ := CatalogEntry(DefaultVisionModel); !slices.Contains(e.Capabilities, CapVision) {
+		t.Errorf("DefaultVisionModel %q lacks the vision capability", DefaultVisionModel)
+	}
+}
+
+// Pricing.Cost bills cached prompt tokens at the cached rate.
+func TestPricingCost(t *testing.T) {
+	p := Pricing{Input: 1.0, Cached: 0.2, Output: 4.0}
+	u := Usage{PromptTokens: 1_000_000, CompletionTokens: 500_000, PromptTokensDetails: &PromptTokensDetail{CachedTokens: 500_000}}
+	if got, want := p.Cost(u), 0.5+0.1+2.0; got < want-1e-9 || got > want+1e-9 {
+		t.Errorf("Cost = %v, want %v", got, want)
 	}
 }

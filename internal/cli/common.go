@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/SamyRai/go-z-ai/internal/accounts"
 	"github.com/SamyRai/go-z-ai/pkg/client"
@@ -45,6 +44,7 @@ func resolveConfig() (client.Config, error) {
 	apiKey := viper.GetString("api-key")
 	baseURL := viper.GetString("base-url")
 	accountName := viper.GetString("account")
+	var region client.Region
 
 	switch {
 	case apiKey != "":
@@ -57,7 +57,7 @@ func resolveConfig() (client.Config, error) {
 		if err != nil {
 			return client.Config{}, err
 		}
-		if err := applyAccount(acct, &apiKey, &baseURL); err != nil {
+		if err := applyAccount(acct, &apiKey, &baseURL, &region); err != nil {
 			return client.Config{}, err
 		}
 	default:
@@ -74,7 +74,7 @@ func resolveConfig() (client.Config, error) {
 		if acct, ok, err := activeAccount(); err != nil {
 			return client.Config{}, err
 		} else if ok {
-			if err := applyAccount(acct, &apiKey, &baseURL); err != nil {
+			if err := applyAccount(acct, &apiKey, &baseURL, &region); err != nil {
 				return client.Config{}, err
 			}
 		}
@@ -89,25 +89,15 @@ func resolveConfig() (client.Config, error) {
 		chinaAPIKey = os.Getenv("ZAI_CHINA_API_KEY")
 	}
 
-	// --region selects the regional gateway for monitor/biz/agents. It does
-	// not override --base-url (chat surface) or the China key (embeddings/
-	// moderations). The ZAI_REGION env var mirrors ZAI_API_BASE_URL /
-	// ZAI_CHINA_API_KEY so a .env file can set it persistently. Unknown values
-	// fall back to global (the historical default) rather than erroring, so a
-	// typo doesn't break a command that never touches the region-scoped
-	// services.
+	// --region / ZAI_REGION selects the regional gateway; an account's stored
+	// region applies when neither is set. Unknown values mean global, so a
+	// typo never blocks a command that doesn't touch a region-scoped service.
 	regionValue := viper.GetString("region")
 	if regionValue == "" {
-		// viper.AutomaticEnv() makes the bare key "REGION" work too, but the
-		// documented convention is ZAI_*; honor the obvious name explicitly.
 		regionValue = os.Getenv("ZAI_REGION")
 	}
-	region := client.RegionGlobal
-	switch strings.ToLower(regionValue) {
-	case "china", "cn", "bigmodel":
-		region = client.RegionChina
-	case "", "global", "west":
-		region = client.RegionGlobal
+	if regionValue != "" || region == "" {
+		region = client.ParseRegion(regionValue)
 	}
 
 	// --monitor-timezone / ZAI_MONITOR_TIMEZONE override the server zone assumed
@@ -147,18 +137,17 @@ func lookupAccount(name string) (accounts.Account, error) {
 	return acct, nil
 }
 
-// applyAccount fills *apiKey with acct's credential and, when *baseURL is
-// still unset, resolves acct's base URL into it — the "use this account's
-// credentials" step shared by the --account flag path and the accounts-store
-// active-account fallback in getClient. Also marks acct as used.
-func applyAccount(acct accounts.Account, apiKey, baseURL *string) error {
-	*apiKey = acct.APIKey
+// applyAccount takes acct's credential and region and, when *baseURL is still
+// unset, its endpoint — the "use this account" step shared by --account and
+// the active-account fallback. It also marks acct as used.
+func applyAccount(acct accounts.Account, apiKey, baseURL *string, region *client.Region) error {
+	cfg, err := acct.ClientConfig()
+	if err != nil {
+		return err
+	}
+	*apiKey, *region = cfg.APIKey, cfg.Region
 	if *baseURL == "" {
-		resolvedURL, err := acct.ResolvedBaseURL()
-		if err != nil {
-			return err
-		}
-		*baseURL = resolvedURL
+		*baseURL = cfg.BaseURL
 	}
 	markAccountUsed(acct.Name)
 	return nil
@@ -189,17 +178,6 @@ func markAccountUsed(name string) {
 	_ = store.Save()
 }
 
-func validateAPIKey(cmd *cobra.Command, args []string, apiClient *client.Client) error {
-	// Test API key by making a simple request
-	_, err := apiClient.Models().List(cmd.Context())
-	if err != nil {
-		return fmt.Errorf("invalid API key: %w", err)
-	}
-
-	fmt.Println("✓ API key is valid")
-	return nil
-}
-
 func outputJSON(v any) error {
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
@@ -217,14 +195,26 @@ func addFormatFlag(def string, cmds ...*cobra.Command) {
 	}
 }
 
+// isJSONFormat reports whether --format json was selected (see addFormatFlag).
+func isJSONFormat(cmd *cobra.Command) bool {
+	format, _ := cmd.Flags().GetString("format")
+	return format == "json"
+}
+
 // emit renders v as pretty JSON when --format json is selected, otherwise runs
-// textFn for the human-readable output. It reads the flag registered by
-// addFormatFlag, so commands no longer each hand-roll the `switch format` block.
+// textFn for the human-readable output. Every command that prints a result
+// goes through it.
 func emit(cmd *cobra.Command, v any, textFn func() error) error {
-	if format, _ := cmd.Flags().GetString("format"); format == "json" {
+	if isJSONFormat(cmd) {
 		return outputJSON(v)
 	}
 	return textFn()
+}
+
+// progressf prints progress chatter to stderr, so stdout stays clean for
+// --format json.
+func progressf(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, format, args...)
 }
 
 // maskAPIKey renders an API key safely for display (e.g. account listings),

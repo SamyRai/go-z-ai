@@ -41,6 +41,7 @@ func init() {
 
 	voiceListCmd.Flags().String("name", "", "Filter by voice name (fuzzy match)")
 	voiceListCmd.Flags().String("type", "", "Filter by type: OFFICIAL or PRIVATE")
+	addFormatFlag("text", voiceCloneCmd, voiceDeleteCmd, voiceListCmd)
 }
 
 func runVoiceClone(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -55,8 +56,10 @@ func runVoiceClone(cmd *cobra.Command, args []string, apiClient *client.Client) 
 		return fmt.Errorf("voice clone failed: %w", err)
 	}
 
-	fmt.Printf("✅ Cloned voice: %s (preview file: %s)\n", resp.Voice, resp.FileID)
-	return nil
+	return emit(cmd, resp, func() error {
+		fmt.Printf("✅ Cloned voice: %s (preview file: %s)\n", resp.Voice, resp.FileID)
+		return nil
+	})
 }
 
 func runVoiceDelete(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -65,8 +68,10 @@ func runVoiceDelete(cmd *cobra.Command, args []string, apiClient *client.Client)
 		return fmt.Errorf("voice delete failed: %w", err)
 	}
 
-	fmt.Printf("✅ Deleted: %s (at %s)\n", resp.Voice, resp.UpdateTime)
-	return nil
+	return emit(cmd, resp, func() error {
+		fmt.Printf("✅ Deleted: %s (at %s)\n", resp.Voice, resp.UpdateTime)
+		return nil
+	})
 }
 
 func runVoiceList(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -78,12 +83,14 @@ func runVoiceList(cmd *cobra.Command, args []string, apiClient *client.Client) e
 		return fmt.Errorf("voice list failed: %w", err)
 	}
 
-	if len(voices) == 0 {
-		fmt.Println("No voices found")
+	return emit(cmd, voices, func() error {
+		if len(voices) == 0 {
+			fmt.Println("No voices found")
+			return nil
+		}
+		for _, v := range voices {
+			fmt.Printf("%s  %-10s  %-20s  %s\n", v.Voice, v.VoiceType, v.VoiceName, v.CreateTime)
+		}
 		return nil
-	}
-	for _, v := range voices {
-		fmt.Printf("%s  %-10s  %-20s  %s\n", v.Voice, v.VoiceType, v.VoiceName, v.CreateTime)
-	}
-	return nil
+	})
 }

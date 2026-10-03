@@ -1,11 +1,14 @@
 // Package chat implements the TUI's Chat tab: a streaming conversation over
-// pkg/client's ChatService, the same service "go-z-ai chat" uses.
+// pkg/client's ChatService, the same service "go-z-ai chat" uses. Completed
+// messages are rendered as markdown once; the reply being streamed is shown
+// as plain text, with the model's reasoning dimmed above it.
 package chat
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/spinner"
@@ -15,47 +18,53 @@ import (
 	"charm.land/glamour/v2"
 
 	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
+	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
 	"github.com/SamyRai/go-z-ai/pkg/client"
 )
 
-const defaultModel = "glm-5.2"
-
 // Model is the Chat tab's screen model.
 type Model struct {
-	client   *client.Client
+	client   func() *client.Client
+	selfTab  int // stream chunks are routed back here
 	input    textarea.Model
 	view     viewport.Model
 	spin     spinner.Model
 	messages []client.Message
+	history  string // rendered transcript of messages, rebuilt on change
 	model    string
 
 	renderer      *glamour.TermRenderer
 	rendererWidth int
 	rendererDark  bool
 
-	streaming bool
-	handle    streamHandle
-	pending   string // partial assistant reply accumulated mid-stream
+	stream           *stream // nil when idle
+	pending          string  // assistant reply accumulated mid-stream
+	pendingReasoning string  // reasoning accumulated mid-stream
 }
 
-// New builds the Chat screen. c must be non-nil.
-func New(c *client.Client) Model {
+// New builds the Chat screen. c returns the current API client; selfTab is
+// the screen's tab index in the root model.
+func New(c func() *client.Client, selfTab int) Model {
 	in := textarea.New()
 	in.Placeholder = "Type a message, ctrl+s to send…"
 	in.Focus()
 
 	return Model{
-		client: c,
-		input:  in,
-		view:   viewport.New(),
-		spin:   spinner.New(),
-		model:  defaultModel,
+		client:  c,
+		selfTab: selfTab,
+		input:   in,
+		view:    viewport.New(),
+		spin:    spinner.New(),
+		model:   client.DefaultModel,
 	}
 }
 
-// Streaming reports whether a request is in flight, so the root model can
-// route ctrl+c to cancel-in-place instead of quitting the whole program.
-func (m Model) Streaming() bool { return m.streaming }
+// Streaming reports whether a request is in flight, so the root model routes
+// ctrl+c to cancel it instead of quitting.
+func (m Model) Streaming() bool { return m.stream != nil }
+
+// CapturesInput is always true: the message box has focus.
+func (m Model) CapturesInput() bool { return true }
 
 // Model returns the id of the model the chat tab will send to. Implements the
 // root's chatModelGetter interface so the model-picker overlay can highlight
@@ -71,9 +80,7 @@ func (m Model) SetModel(id string) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.model = id
-	// Re-render the transcript so the welcome state (and any future model
-	// indicator) reflects the new id immediately.
-	m.view.SetContent(m.transcript())
+	m.refreshView()
 	return m, nil
 }
 
@@ -97,6 +104,7 @@ func (m *Model) ensureRenderer(width int, dark bool) {
 	m.renderer = r
 	m.rendererWidth = width
 	m.rendererDark = dark
+	m.renderHistory()
 }
 
 func (m Model) renderMarkdown(s string) string {
@@ -118,28 +126,36 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.view.SetWidth(msg.Width)
 		m.view.SetHeight(max(msg.Height-6, 3))
 		m.ensureRenderer(msg.Width, m.rendererDark)
-		m.view.SetContent(m.transcript())
+		m.refreshView()
 		return m, nil
 
 	case tea.BackgroundColorMsg:
 		m.ensureRenderer(m.rendererWidth, msg.IsDark())
+		m.refreshView()
 		return m, nil
 
 	case chunkMsg:
+		if m.stream == nil {
+			return m, nil
+		}
 		for _, choice := range msg.Choices {
 			m.pending += choice.Delta.Content
+			m.pendingReasoning += choice.Delta.ReasoningContent
 		}
-		m.view.SetContent(m.transcript())
+		m.refreshView()
 		m.view.GotoBottom()
-		return m, waitForChunk(m.handle)
+		return m, m.stream.wait()
 
 	case streamDoneMsg:
-		m.streaming = false
-		if m.pending != "" {
-			m.messages = append(m.messages, client.Message{Role: "assistant", Content: m.pending})
-			m.pending = ""
+		m.stream = nil
+		if m.pending != "" || m.pendingReasoning != "" {
+			// Keep the reasoning on the message so it is echoed back on the
+			// next turn (preserved / interleaved thinking).
+			m.messages = append(m.messages, client.Message{Role: "assistant", Content: m.pending, ReasoningContent: m.pendingReasoning})
+			m.pending, m.pendingReasoning = "", ""
+			m.renderHistory()
 		}
-		m.view.SetContent(m.transcript())
+		m.refreshView()
 		m.view.GotoBottom()
 		if msg.err != nil && !errors.Is(msg.err, context.Canceled) {
 			return m, func() tea.Msg { return uimsg.Err{Err: msg.err} }
@@ -147,7 +163,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case spinner.TickMsg:
-		if !m.streaming {
+		if m.stream == nil {
 			return m, nil
 		}
 		var cmd tea.Cmd
@@ -157,24 +173,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c":
-			if m.streaming {
-				// Cancel the in-flight stream, then re-arm the chunk pump so
-				// the producer's channel-close drains into a streamDoneMsg —
-				// the only path that clears m.streaming. Returning nil here
-				// (as a prior version did) strands the streaming flag true
-				// forever, wedging the tab (can't send again, can't tab away).
-				m.handle.cancel()
-				return m, waitForChunk(m.handle)
+			// Cancelling makes the pending pull return; its streamDoneMsg
+			// clears the stream.
+			if m.stream != nil {
+				m.stream.cancel()
 			}
+			return m, nil
 		case "ctrl+s":
-			if !m.streaming && m.input.Value() != "" {
+			if m.stream == nil && strings.TrimSpace(m.input.Value()) != "" {
 				return m.send()
 			}
 			return m, nil
-		case "ctrl+m":
-			// Ask the root to open the model-picker overlay. The root owns
-			// the client and the overlay slot; on pick it calls SetModel on
-			// this screen.
+		case "ctrl+o":
+			// The root owns the model picker; it calls SetModel on a pick.
 			return m, func() tea.Msg { return uimsg.OpenModelPicker{} }
 		}
 	}
@@ -184,53 +195,56 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// send starts streaming a reply to the typed message, with the model's own
+// sampling defaults.
 func (m Model) send() (tea.Model, tea.Cmd) {
-	text := m.input.Value()
-	m.messages = append(m.messages, client.Message{Role: "user", Content: text})
+	m.messages = append(m.messages, client.Message{Role: "user", Content: m.input.Value()})
 	m.input.Reset()
-	m.streaming = true
-	m.pending = ""
-	m.view.SetContent(m.transcript())
+	m.renderHistory()
+	m.refreshView()
 	m.view.GotoBottom()
 
-	req := client.ChatRequest{
-		Model:       m.model,
-		Messages:    m.messages,
-		Temperature: 0.7,
-		TopP:        0.95,
-		MaxTokens:   4096,
-	}
-	cmd, handle := startStream(m.client, req)
-	m.handle = handle
+	req := client.ChatRequest{Model: m.model, Messages: m.messages}
+	s, cmd := startStream(m.client(), req, m.selfTab)
+	m.stream = s
 	return m, tea.Batch(cmd, m.spin.Tick)
 }
 
-func (m Model) transcript() string {
-	var out string
+// renderHistory re-renders the completed messages.
+func (m *Model) renderHistory() {
+	var b strings.Builder
 	for _, msg := range m.messages {
 		if msg.Role == "assistant" {
-			out += "assistant:\n" + m.renderMarkdown(msg.Content) + "\n"
+			b.WriteString(uistyle.SectionTitle.Render("assistant") + "\n" + m.renderMarkdown(msg.Content) + "\n")
 		} else {
-			out += fmt.Sprintf("%s: %s\n\n", msg.Role, msg.Content)
+			fmt.Fprintf(&b, "%s %s\n\n", uistyle.SectionTitle.Render(msg.Role+":"), msg.Content)
 		}
 	}
-	if m.pending != "" {
-		out += "assistant:\n" + m.renderMarkdown(m.pending)
+	m.history = b.String()
+}
+
+// refreshView sets the viewport to the rendered history plus the reply in
+// progress.
+func (m *Model) refreshView() {
+	if m.history == "" && m.stream == nil {
+		m.view.SetContent(fmt.Sprintf("model: %s\n\nType a message, ctrl+s to send, ctrl+o to switch model.", m.model))
+		return
 	}
-	if out == "" {
-		// Welcome state: instead of a blank viewport, surface the active
-		// model and the send binding so the user knows what to type where.
-		out = fmt.Sprintf("model: %s\n\nType a message, ctrl+s to send.", m.model)
+	out := m.history
+	if m.stream != nil {
+		out += uistyle.SectionTitle.Render("assistant") + "\n"
+		if m.pendingReasoning != "" {
+			out += uistyle.Subtle.Render(m.pendingReasoning) + "\n\n"
+		}
+		out += m.pending
 	}
-	return out
+	m.view.SetContent(out)
 }
 
 func (m Model) View() tea.View {
 	body := m.view.View() + "\n" + m.input.View()
-	if m.streaming {
+	if m.stream != nil {
 		body += "\n" + m.spin.View() + " streaming… (ctrl+c to cancel)"
-	} else {
-		body += "\nctrl+s: send"
 	}
 	return tea.NewView(body)
 }
@@ -239,7 +253,7 @@ func (m Model) View() tea.View {
 func (m Model) ShortHelp() []key.Binding {
 	return []key.Binding{
 		key.NewBinding(key.WithKeys("ctrl+s"), key.WithHelp("ctrl+s", "send")),
-		key.NewBinding(key.WithKeys("ctrl+m"), key.WithHelp("ctrl+m", "model")),
+		key.NewBinding(key.WithKeys("ctrl+o"), key.WithHelp("ctrl+o", "model")),
 		key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("ctrl+c", "cancel stream")),
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/SamyRai/go-z-ai/internal/atomicfile"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -67,7 +68,7 @@ func (s *Store) Save(c *StoredConfig) error {
 	if err != nil {
 		return err
 	}
-	return atomicWriteFile(s.Path(), data, 0o600)
+	return atomicfile.WriteWithBackup(s.Path(), data, 0o600)
 }
 
 // SetPlan records the plan choice.

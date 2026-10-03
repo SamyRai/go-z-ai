@@ -1,9 +1,10 @@
-// Package uimsg holds tea.Msg types shared between the TUI root model and
-// every screen subpackage. It has no dependency on pkg/tui or bubbletea's
-// Model interface itself, only on tea.Msg's underlying type, so screens can
-// report errors/status up to the root's status-line toast without an import
-// cycle (root imports every screen; screens must not import root).
+// Package uimsg holds tea.Msg types (and the Route helper) shared between the
+// TUI root model and every screen subpackage, so screens can talk to the root
+// without an import cycle (root imports every screen; screens must not import
+// root).
 package uimsg
+
+import tea "charm.land/bubbletea/v2"
 
 // Err is returned by a screen's tea.Cmd when an operation fails. The root
 // model renders it as a status-line toast instead of crashing.
@@ -24,6 +25,15 @@ type Routed struct {
 	Msg any
 }
 
+// Route wraps cmd so its result is delivered to screen tab as a Routed
+// message, however the user moves between tabs while it runs.
+func Route(tab int, cmd tea.Cmd) tea.Cmd {
+	if cmd == nil {
+		return nil
+	}
+	return func() tea.Msg { return Routed{Tab: tab, Msg: cmd()} }
+}
+
 // CloseOverlay tells the root model to dismiss the currently-open overlay.
 // Overlays (help, palette, model picker) emit this when the user presses esc,
 // selects an item, or otherwise finishes — they can't clear themselves off
@@ -37,3 +47,12 @@ type CloseOverlay struct{}
 // this way keeps the picker as a root-owned overlay (consistent with help /
 // palette) while the chat screen stays the source of truth for the model.
 type OpenModelPicker struct{}
+
+// AccountChanged tells the root that the active account changed (switched,
+// added as the first account, or removed), so it can rebuild the API client
+// every tab uses and refresh the header.
+type AccountChanged struct{}
+
+// PlanChanged tells the root that the stored GLM Coding Plan changed, so the
+// header's plan badge can update without re-reading the store every frame.
+type PlanChanged struct{ Plan string }

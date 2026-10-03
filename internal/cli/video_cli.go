@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
@@ -10,7 +11,7 @@ import (
 var videoCmd = &cobra.Command{
 	Use:   "video",
 	Short: "Video generation",
-	Long:  `Generate videos with Z.AI's cogvideox-3 / Vidu models. Always asynchronous — use 'video status' to poll.`,
+	Long:  `Generate videos with Z.AI's CogVideoX / Vidu models. Always asynchronous — use 'video status' to poll.`,
 }
 
 var videoGenerateCmd = &cobra.Command{
@@ -24,14 +25,14 @@ var videoStatusCmd = &cobra.Command{
 	Use:   "status [id]",
 	Short: "Check an async video generation task",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runWithClient(runVideoStatus),
+	RunE:  runWithClient(runAsyncStatus),
 }
 
 func init() {
 	rootCmd.AddCommand(videoCmd)
 	videoCmd.AddCommand(videoGenerateCmd, videoStatusCmd)
 
-	videoGenerateCmd.Flags().String("model", "cogvideox-3", "Model: cogvideox-3, viduq1-text, viduq1-image, vidu2-image, viduq1-start-end, vidu2-start-end, vidu2-reference")
+	videoGenerateCmd.Flags().String("model", client.ModelCogVideoX3, "Model: "+strings.Join(client.VideoModels, ", "))
 	videoGenerateCmd.Flags().String("prompt", "", "Text prompt (<=512 chars)")
 	videoGenerateCmd.Flags().StringArray("image", nil, "Image URL/base64 (repeatable; count/meaning depends on --model)")
 	videoGenerateCmd.Flags().String("size", "", "Resolution, e.g. 1920x1080 (model-dependent)")
@@ -42,6 +43,7 @@ func init() {
 	videoGenerateCmd.Flags().String("quality", "", "cogvideox-3 only: speed or quality")
 	videoGenerateCmd.Flags().String("movement", "", "Vidu models only: auto | small | medium | large")
 	videoGenerateCmd.Flags().Bool("audio", false, "Generate with audio (model-dependent)")
+	videoGenerateCmd.Flags().Bool("off-peak", false, "Queue for off-peak processing at a lower price")
 	addFormatFlag("text", videoGenerateCmd, videoStatusCmd)
 }
 
@@ -57,6 +59,7 @@ func runVideoGenerate(cmd *cobra.Command, args []string, apiClient *client.Clien
 	quality, _ := cmd.Flags().GetString("quality")
 	movement, _ := cmd.Flags().GetString("movement")
 	withAudio, _ := cmd.Flags().GetBool("audio")
+	offPeak, _ := cmd.Flags().GetBool("off-peak")
 
 	resp, err := apiClient.Videos().Generate(cmd.Context(), client.VideoGenerationRequest{
 		Model:             model,
@@ -70,6 +73,7 @@ func runVideoGenerate(cmd *cobra.Command, args []string, apiClient *client.Clien
 		Quality:           quality,
 		MovementAmplitude: movement,
 		WithAudio:         withAudio,
+		OffPeak:           offPeak,
 	})
 	if err != nil {
 		return fmt.Errorf("video generation failed: %w", err)
@@ -78,24 +82,6 @@ func runVideoGenerate(cmd *cobra.Command, args []string, apiClient *client.Clien
 	return emit(cmd, resp, func() error {
 		fmt.Printf("⏳ Task submitted: %s (status: %s)\n", resp.ID, resp.TaskStatus)
 		fmt.Printf("   Check with: go-z-ai video status %s\n", resp.ID)
-		return nil
-	})
-}
-
-func runVideoStatus(cmd *cobra.Command, args []string, apiClient *client.Client) error {
-	result, err := apiClient.GetAsyncResult(cmd.Context(), args[0])
-	if err != nil {
-		return fmt.Errorf("failed to check status: %w", err)
-	}
-
-	return emit(cmd, result, func() error {
-		fmt.Printf("Status: %s\n", result.TaskStatus)
-		for i, v := range result.VideoResult {
-			fmt.Printf("Video %d: %s\n", i+1, v.URL)
-			if v.CoverImageURL != "" {
-				fmt.Printf("  Cover: %s\n", v.CoverImageURL)
-			}
-		}
 		return nil
 	})
 }

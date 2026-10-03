@@ -174,7 +174,7 @@ func TestResolvedBaseURL(t *testing.T) {
 	}
 
 	payg := Account{Name: "p", Type: client.AccountTypePayAsYouGo}
-	if u, err := payg.ResolvedBaseURL(); err != nil || u != client.ProdBaseURL {
+	if u, err := payg.ResolvedBaseURL(); err != nil || u != client.DefaultBaseURL {
 		t.Errorf("pay_as_you_go URL: got %q err=%v", u, err)
 	}
 

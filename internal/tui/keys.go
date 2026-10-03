@@ -29,9 +29,11 @@ func defaultKeyMap() keyMap {
 			key.WithKeys("shift+tab"),
 			key.WithHelp("shift+tab", "prev tab"),
 		),
+		// "?" yields to a focused text field (where it is typed); f1
+		// always works.
 		Help: key.NewBinding(
-			key.WithKeys("?"),
-			key.WithHelp("?", "help"),
+			key.WithKeys("?", "f1"),
+			key.WithHelp("?/f1", "help"),
 		),
 		Palette: key.NewBinding(
 			key.WithKeys("ctrl+p"),

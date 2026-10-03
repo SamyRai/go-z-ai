@@ -287,37 +287,6 @@ func TestStreamEarlyBreakNoCancel(t *testing.T) {
 	}
 }
 
-// TestStreamCallbackDelegation confirms the deprecated CreateStream still
-// works by delegating to Stream. This is the equivalence guarantee for
-// existing callers until v1.0 removal.
-func TestStreamCallbackDelegation(t *testing.T) {
-	srv := httptest.NewServer(sseHandler(
-		`{"id":"1","model":"m","choices":[{"index":0,"delta":{"content":"delegated"}}]}`,
-		`[DONE]`,
-	))
-	defer srv.Close()
-
-	c := newTestClient(t, srv.URL, Config{MaxRetries: 0})
-	req := ChatRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}, TopP: 0.95}
-
-	var got strings.Builder
-	if err := c.Chat().CreateStream(context.Background(), req, func(ch StreamChunk) error {
-		if len(ch.Choices) > 0 {
-			got.WriteString(ch.Choices[0].Delta.Content)
-		}
-		return nil
-	}); err != nil {
-		t.Fatalf("CreateStream: %v", err)
-	}
-	if got.String() != "delegated" {
-		t.Errorf("expected 'delegated', got %q", got.String())
-	}
-}
-
-// TestAnthropicStreamContent verifies the Anthropic iterator path mirrors the
-// chat iterator's basic content-delivery semantics, using Anthropic's
-// event:/data: SSE framing. Uses newRedirectingTestClient because the
-// Anthropic endpoint hardcodes AnthropicBaseURL (not Config.BaseURL).
 func TestAnthropicStreamContent(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")

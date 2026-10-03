@@ -13,7 +13,7 @@ import (
 var ocrCmd = &cobra.Command{
 	Use:   "ocr",
 	Short: "Layout parsing (OCR)",
-	Long:  `Parse an image or PDF into Markdown with Z.AI's glm-ocr model.`,
+	Long:  "Parse an image or PDF into Markdown with Z.AI's " + client.DefaultOCRModel + " model.",
 }
 
 var ocrParseCmd = &cobra.Command{
@@ -43,6 +43,7 @@ func init() {
 
 	ocrHandwritingCmd.Flags().String("language", "", "Language hint (optional)")
 	ocrHandwritingCmd.Flags().Bool("probability", false, "Include per-word confidence statistics")
+	addFormatFlag("text", ocrHandwritingCmd)
 }
 
 func runOCRParse(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -54,7 +55,7 @@ func runOCRParse(cmd *cobra.Command, args []string, apiClient *client.Client) er
 	startPage, _ := cmd.Flags().GetInt("start-page")
 	endPage, _ := cmd.Flags().GetInt("end-page")
 
-	fmt.Fprintln(os.Stderr, "📄 Parsing document...")
+	progressf("📄 Parsing document...\n")
 	resp, err := apiClient.Layout().Parse(cmd.Context(), client.LayoutParsingRequest{
 		File:        file,
 		StartPageID: startPage,
@@ -80,7 +81,7 @@ func runOCRHandwriting(cmd *cobra.Command, args []string, apiClient *client.Clie
 	language, _ := cmd.Flags().GetString("language")
 	probability, _ := cmd.Flags().GetBool("probability")
 
-	fmt.Println("✍️  Recognizing handwriting...")
+	progressf("✍️  Recognizing handwriting...\n")
 	resp, err := apiClient.Layout().HandwritingOCR(cmd.Context(), client.HandwritingOCRRequest{
 		FileName:     filepath.Base(path),
 		FileData:     data,
@@ -90,17 +91,18 @@ func runOCRHandwriting(cmd *cobra.Command, args []string, apiClient *client.Clie
 	if err != nil {
 		return fmt.Errorf("handwriting OCR failed: %w", err)
 	}
-
-	if resp.WordsResultNum == 0 {
-		fmt.Println("No text recognized")
-		return nil
-	}
-	for _, wr := range resp.WordsResult {
-		if probability && wr.Probability != nil {
-			fmt.Printf("%s  (confidence: %.2f)\n", wr.Words, wr.Probability.Average)
-		} else {
-			fmt.Println(wr.Words)
+	return emit(cmd, resp, func() error {
+		if resp.WordsResultNum == 0 {
+			fmt.Println("No text recognized")
+			return nil
 		}
-	}
-	return nil
+		for _, wr := range resp.WordsResult {
+			if probability && wr.Probability != nil {
+				fmt.Printf("%s  (confidence: %.2f)\n", wr.Words, wr.Probability.Average)
+			} else {
+				fmt.Println(wr.Words)
+			}
+		}
+		return nil
+	})
 }

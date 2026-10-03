@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -30,12 +29,13 @@ func init() {
 	anthropicCmd.AddCommand(anthropicMessagesCmd)
 
 	f := anthropicMessagesCmd.Flags()
-	f.String("model", "glm-4.6", "Model to use")
+	f.String("model", client.DefaultModel, "Model to use")
 	f.Int("max-tokens", 1024, "Maximum tokens to generate (required by the Messages API)")
 	f.String("system", "", "System prompt")
-	f.Float64("temperature", -1, "Sampling temperature (omitted when negative)")
+	f.Float64("temperature", 0, "Sampling temperature (server default when unset)")
 	f.Int("thinking-budget", 0, "Enable extended thinking with this token budget (0 = off); reasoning is printed to stderr")
-	f.Bool("stream", false, "Stream the response as it is generated")
+	f.Bool("stream", false, "Stream the response as it is generated (JSON: one event per line)")
+	addFormatFlag("text", anthropicMessagesCmd)
 }
 
 func runAnthropicMessages(cmd *cobra.Command, args []string, apiClient *client.Client) error {
@@ -52,7 +52,7 @@ func runAnthropicMessages(cmd *cobra.Command, args []string, apiClient *client.C
 		System:    system,
 		Messages:  []client.AnthropicMessage{client.AnthropicTextMessage("user", args[0])},
 	}
-	if temperature >= 0 {
+	if cmd.Flags().Changed("temperature") {
 		req.Temperature = &temperature
 	}
 	if thinkingBudget > 0 {
@@ -60,49 +60,44 @@ func runAnthropicMessages(cmd *cobra.Command, args []string, apiClient *client.C
 	}
 
 	if stream {
-		return runAnthropicStream(cmd.Context(), apiClient, req)
+		return runAnthropicStream(cmd, apiClient, req)
 	}
 
 	resp, err := apiClient.Anthropic().Create(cmd.Context(), req)
 	if err != nil {
-		return err // already descriptive ("failed to create anthropic message: …")
+		return err
 	}
-	if reasoning := resp.Thinking(); reasoning != "" {
-		fmt.Fprintln(os.Stderr, "--- reasoning ---")
-		fmt.Fprintln(os.Stderr, reasoning)
-		fmt.Fprintln(os.Stderr, "------------------")
-	}
-	fmt.Println(resp.Text())
-	return nil
+	return emit(cmd, resp, func() error {
+		printReasoning(resp.Thinking())
+		fmt.Println(resp.Text())
+		return nil
+	})
 }
 
-// runAnthropicStream prints text deltas from a streaming Messages response to
-// stdout as they arrive.
-func runAnthropicStream(ctx context.Context, apiClient *client.Client, req client.AnthropicMessageRequest) error {
-	for ev, err := range apiClient.Anthropic().Stream(ctx, req) {
+// runAnthropicStream prints a streaming Messages response as it arrives: the
+// answer to stdout and reasoning to stderr, or each raw event as a JSON line.
+func runAnthropicStream(cmd *cobra.Command, apiClient *client.Client, req client.AnthropicMessageRequest) error {
+	asJSON := isJSONFormat(cmd)
+	enc := json.NewEncoder(os.Stdout)
+	for ev, err := range apiClient.Anthropic().Stream(cmd.Context(), req) {
 		if err != nil {
-			return err // the APIError / stream error is already self-describing
+			return err
 		}
-		if ev.Type != "content_block_delta" {
+		if asJSON {
+			if err := enc.Encode(ev); err != nil {
+				return err
+			}
 			continue
 		}
-		var d struct {
-			Delta struct {
-				Type     string `json:"type"`
-				Text     string `json:"text"`
-				Thinking string `json:"thinking"`
-			} `json:"delta"`
-		}
-		if err := json.Unmarshal(ev.Data, &d); err != nil {
-			continue // non-text delta (e.g. tool input JSON); ignore for plain output
-		}
-		switch d.Delta.Type {
+		switch d, _ := ev.Delta(); d.Type {
 		case "thinking_delta":
-			fmt.Fprint(os.Stderr, d.Delta.Thinking) // reasoning to stderr, answer to stdout
+			fmt.Fprint(os.Stderr, d.Thinking)
 		case "text_delta":
-			fmt.Print(d.Delta.Text)
+			fmt.Print(d.Text)
 		}
 	}
-	fmt.Fprintln(os.Stdout)
+	if !asJSON {
+		fmt.Println()
+	}
 	return nil
 }

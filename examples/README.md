@@ -14,9 +14,9 @@ on every push.
 | Example | What it shows |
 |---|---|
 | [`quickstart-chat`](quickstart-chat) | Minimal one-shot chat: one message in, the assistant reply out. |
-| [`quickstart-structured`](quickstart-structured) | Asking the model for typed data and parsing the response into a Go struct (JSON Schema response format). |
-| [`quickstart-vision`](quickstart-vision) | Sending an image URL to a vision-capable model (`glm-4.6v`). |
-| [`chat-streaming`](chat-streaming) | Token-by-token SSE streaming via `Chat().Stream` (Go 1.23+ iterator). |
+| [`quickstart-structured`](quickstart-structured) | Asking the model for typed data and parsing the response into a Go struct (JSON-object mode plus `client.JSONSchemaPrompt`). |
+| [`quickstart-vision`](quickstart-vision) | Sending an image URL to a multimodal model (`client.DefaultVisionModel`). |
+| [`chat-streaming`](chat-streaming) | Token-by-token SSE streaming via `Chat().Stream` (Go iterator). |
 | [`chat-tools`](chat-tools) | Function/tool calling: define a tool, let the model decide to call it, and return the result. |
 | [`embeddings-batch`](embeddings-batch) | Generating embeddings for a batch of texts and computing cosine-similarity against a query. |
 | [`rerank-documents`](rerank-documents) | Reranking documents with GLM's rerank API (a RAG second stage). |
@@ -32,8 +32,10 @@ and [CLI Reference](../docs/en/cli-reference.md).
 
 ## Notes
 
-- Streaming uses a Go 1.23+ iterator (`for chunk, err := range c.Chat().Stream(ctx, req)`).
-  The older callback-based `CreateStream` is deprecated and delegates to `Stream`.
+- Streaming uses a Go iterator (`for chunk, err := range c.Chat().Stream(ctx, req)`);
+  breaking out of the loop closes the stream.
+- Examples use the library's model constants (`client.DefaultModel`,
+  `client.DefaultVisionModel`, …), so they track the curated catalog.
 - Async tasks start in `PROCESSING` and end in `SUCCESS` or `FAIL`. URL outputs
   expire after ~30 days.
 - The Anthropic endpoint authenticates with a Bearer token (the same

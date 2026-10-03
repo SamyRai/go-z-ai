@@ -5,6 +5,12 @@ import (
 	"fmt"
 )
 
+// Image generation models. Only ModelGLMImage supports GenerateAsync.
+const (
+	ModelGLMImage = "glm-image"        // posters, slides, diagrams; $0.015/image
+	ModelCogView4 = "cogview-4-250304" // open text-to-image; $0.01/image
+)
+
 // ImagesService handles image generation.
 type ImagesService struct {
 	client *Client
@@ -12,11 +18,12 @@ type ImagesService struct {
 
 // ImageGenerationRequest is the request body for image generation.
 type ImageGenerationRequest struct {
-	Model   string `json:"model"` // glm-image | cogview-4-250304 | cogview-4 | cogview-3-flash
-	Prompt  string `json:"prompt"`
-	Quality string `json:"quality,omitempty"` // hd (default) | standard
-	Size    string `json:"size,omitempty"`    // default 1280x1280
-	UserID  string `json:"user_id,omitempty"`
+	Model     string `json:"model"` // ModelGLMImage (async-capable) or ModelCogView4
+	Prompt    string `json:"prompt"`
+	Quality   string `json:"quality,omitempty"` // hd (glm-image default) | standard
+	Size      string `json:"size,omitempty"`    // default 1280x1280; each side 512–2048, a multiple of 32
+	RequestID string `json:"request_id,omitempty"`
+	UserID    string `json:"user_id,omitempty"`
 	// WatermarkEnabled controls the AI-generated watermark (both a visible
 	// mark and an embedded digital one), which the API defaults to true. A
 	// pointer so an explicit false survives — omitempty on a plain bool
@@ -24,13 +31,17 @@ type ImageGenerationRequest struct {
 	WatermarkEnabled *bool `json:"watermark_enabled,omitempty"`
 }
 
+// GeneratedImage is one generated image. URL expires 30 days after
+// generation.
+type GeneratedImage struct {
+	URL string `json:"url"`
+}
+
 // ImageGenerationResponse is the response from a synchronous (or completed
 // async) image generation request.
 type ImageGenerationResponse struct {
-	Created int64 `json:"created"`
-	Data    []struct {
-		URL string `json:"url"` // expires 30 days after generation
-	} `json:"data"`
+	Created       int64            `json:"created"`
+	Data          []GeneratedImage `json:"data"`
 	ContentFilter []struct {
 		Role  string `json:"role"`  // assistant | user | history
 		Level int    `json:"level"` // 0 (most severe) - 3

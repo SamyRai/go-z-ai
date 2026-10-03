@@ -61,23 +61,35 @@ func TestUserAgentOverride(t *testing.T) {
 	}
 }
 
-// TestUserAgentOnMultipart verifies sendMultipart (used by Audio.Transcribe)
-// also carries the User-Agent — covers the second send path independently.
-func TestUserAgentOnMultipart(t *testing.T) {
-	var gotUA string
+// TestMultipartUserAgentAndNoRetry verifies a multipart upload goes through
+// the shared transport: it carries the User-Agent and its content type, and a
+// retriable failure is not retried (re-uploading is the caller's decision).
+func TestMultipartUserAgentAndNoRetry(t *testing.T) {
+	var gotUA, gotType string
+	calls := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotUA = r.Header.Get("User-Agent")
-		writeJSON(w, http.StatusOK, `{}`)
+		calls++
+		gotUA, gotType = r.Header.Get("User-Agent"), r.Header.Get("Content-Type")
+		writeJSON(w, http.StatusServiceUnavailable, `{"error":{"code":"1305","message":"overloaded"}}`)
 	}))
 	defer srv.Close()
 
-	c := newTestClient(t, srv.URL, Config{})
-	if _, err := c.sendMultipart(context.Background(), "/audio/transcriptions", "multipart/form-data; boundary=x", []byte("body")); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	c := newTestClient(t, srv.URL, Config{MaxRetries: 3})
+	form, err := newMultipartBody(&formFile{field: "file", name: "a.wav", data: []byte("x")}, "model", "glm-asr-2512")
+	if err != nil {
+		t.Fatalf("newMultipartBody: %v", err)
 	}
-
+	if err := c.do(context.Background(), apiRequest{method: "POST", path: "/audio/transcriptions", form: form}, nil); err == nil {
+		t.Fatal("expected the 503 to surface")
+	}
+	if calls != 1 {
+		t.Errorf("multipart upload attempted %d times, want 1 (no retry)", calls)
+	}
 	if !strings.HasPrefix(gotUA, "go-z-ai/") {
-		t.Errorf("sendMultipart User-Agent = %q, want prefix %q", gotUA, "go-z-ai/")
+		t.Errorf("User-Agent = %q, want prefix go-z-ai/", gotUA)
+	}
+	if !strings.HasPrefix(gotType, "multipart/form-data; boundary=") {
+		t.Errorf("Content-Type = %q, want multipart/form-data", gotType)
 	}
 }
 

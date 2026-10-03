@@ -96,8 +96,8 @@ func TestResolveConfigAccountBeatsAmbientEnv(t *testing.T) {
 		t.Errorf("expected --account key to win over env, got %q", cfg.APIKey)
 	}
 	// The account's type resolves its base URL when --base-url is unset.
-	if cfg.BaseURL != client.ProdBaseURL {
-		t.Errorf("expected account base URL %q, got %q", client.ProdBaseURL, cfg.BaseURL)
+	if cfg.BaseURL != client.DefaultBaseURL {
+		t.Errorf("expected account base URL %q, got %q", client.DefaultBaseURL, cfg.BaseURL)
 	}
 }
 

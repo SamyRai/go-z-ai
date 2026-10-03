@@ -37,83 +37,92 @@ func init() {
 	rootCmd.AddCommand(agentsCmd)
 	agentsCmd.AddCommand(agentsInvokeCmd, agentsAsyncResultCmd)
 
+	for _, c := range []*cobra.Command{agentsInvokeCmd, agentsAsyncResultCmd} {
+		c.Flags().StringToString("var", nil, "Agent custom variable key=value (repeatable)")
+	}
 	agentsInvokeCmd.Flags().String("source-lang", "", "Source language (translation agents, e.g. 'auto')")
 	agentsInvokeCmd.Flags().String("target-lang", "", "Target language (translation agents, e.g. 'zh-CN')")
+	agentsAsyncResultCmd.Flags().String("conversation-id", "", "Conversation ID returned by the invocation")
+	addFormatFlag("text", agentsInvokeCmd, agentsAsyncResultCmd)
+}
+
+// translationVars maps the translation convenience flags to the custom
+// variables they set.
+var translationVars = map[string]string{"source-lang": "source_lang", "target-lang": "target_lang"}
+
+// customVariables merges --var with the non-empty convenience flags in
+// flagVars; nil when none are set.
+func customVariables(cmd *cobra.Command, flagVars map[string]string) map[string]any {
+	vars, _ := cmd.Flags().GetStringToString("var")
+	out := make(map[string]any, len(vars))
+	for k, v := range vars {
+		out[k] = v
+	}
+	for flag, name := range flagVars {
+		if v, _ := cmd.Flags().GetString(flag); v != "" {
+			out[name] = v
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 func runAgentsInvoke(cmd *cobra.Command, args []string, apiClient *client.Client) error {
-	agentID, message := args[0], args[1]
-
-	req := client.AgentInvokeRequest{
-		AgentID:  agentID,
-		Messages: []client.AgentMessage{client.NewAgentTextMessage("user", message)},
-	}
-	sourceLang, _ := cmd.Flags().GetString("source-lang")
-	targetLang, _ := cmd.Flags().GetString("target-lang")
-	if sourceLang != "" || targetLang != "" {
-		req.CustomVariables = map[string]any{}
-		if sourceLang != "" {
-			req.CustomVariables["source_lang"] = sourceLang
-		}
-		if targetLang != "" {
-			req.CustomVariables["target_lang"] = targetLang
-		}
-	}
-
-	resp, err := apiClient.Agents().Invoke(cmd.Context(), req)
+	resp, err := apiClient.Agents().Invoke(cmd.Context(), client.AgentInvokeRequest{
+		AgentID:         args[0],
+		Messages:        []client.AgentMessage{client.NewAgentTextMessage("user", args[1])},
+		CustomVariables: customVariables(cmd, translationVars),
+	})
 	if err != nil {
 		return fmt.Errorf("failed to invoke agent: %w", err)
 	}
-
 	if resp.Failed() {
-		msg := "unknown error"
-		if resp.Error != nil {
-			msg = resp.Error.Message
+		return fmt.Errorf("agent invocation failed: %w", resp.Error)
+	}
+	return emit(cmd, resp, func() error {
+		for _, choice := range resp.Choices {
+			fmt.Println(choice.Messages.Content.Text)
 		}
-		return fmt.Errorf("agent invocation failed: %s", msg)
-	}
-
-	for _, choice := range resp.Choices {
-		fmt.Println(choice.Messages.Content.Text)
-	}
-	return nil
+		if resp.ConversationID != "" {
+			progressf("conversation: %s\n", resp.ConversationID)
+		}
+		return nil
+	})
 }
 
 func runAgentsAsyncResult(cmd *cobra.Command, args []string, apiClient *client.Client) error {
-	agentID, asyncID := args[0], args[1]
-
+	conversationID, _ := cmd.Flags().GetString("conversation-id")
 	resp, err := apiClient.Agents().AsyncResult(cmd.Context(), client.AgentAsyncResultRequest{
-		AgentID: agentID,
-		AsyncID: asyncID,
+		AgentID:         args[0],
+		AsyncID:         args[1],
+		ConversationID:  conversationID,
+		CustomVariables: customVariables(cmd, nil),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to get async result: %w", err)
 	}
-
 	if resp.Failed() {
-		msg := "unknown error"
-		if resp.Error != nil {
-			msg = resp.Error.Message
+		return fmt.Errorf("agent task failed: %w", resp.Error)
+	}
+	return emit(cmd, resp, func() error {
+		if !resp.Done() {
+			progressf("status: %s (try again shortly)\n", resp.Status)
+			return nil
 		}
-		return fmt.Errorf("agent task failed: %s", msg)
-	}
-
-	if !resp.Done() {
-		fmt.Println("⏳ Task still pending, try again shortly")
-		return nil
-	}
-
-	for _, choice := range resp.Choices {
-		for _, msg := range choice.Messages {
-			for _, part := range msg.Content {
-				if part.FileURL != "" {
-					fmt.Printf("%s: %s\n", part.TagEN, part.FileURL)
+		for _, choice := range resp.Choices {
+			for _, msg := range choice.Messages {
+				for _, part := range msg.Content {
+					if part.FileURL != "" {
+						fmt.Printf("%s: %s\n", part.TagEN, part.FileURL)
+					}
 				}
 			}
 		}
-	}
-	if resp.Usage != nil {
-		fmt.Printf("Total tokens: %d\n", resp.Usage.TotalTokens)
-	}
-	return nil
+		if resp.Usage != nil {
+			progressf("total tokens: %d\n", resp.Usage.TotalTokens)
+		}
+		return nil
+	})
 }

@@ -1,119 +1,94 @@
 package coding
 
 import (
+	"errors"
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
-	"runtime"
+	"slices"
+	"strings"
 )
 
-// Tool describes a supported coding app, mirroring @z_ai/coding-helper's
-// SUPPORTED_TOOLS table: the CLI binary name, install command, display name,
-// and the config file the helper writes.
+// ErrNotConfigured is returned by Tool.Unload when the tool's config holds no
+// Z.AI plan configuration, so there is nothing to remove.
+var ErrNotConfigured = errors.New("not configured for a Z.AI plan")
+
+// LoadConfig is what a tool's config is written from.
+type LoadConfig struct {
+	Plan   string
+	APIKey string
+	// Claude tunes the Claude Code config; other tools ignore it.
+	Claude ClaudeOptions
+}
+
+// NewLoadConfig returns a LoadConfig with the recommended defaults.
+func NewLoadConfig(plan, apiKey string) LoadConfig {
+	return LoadConfig{Plan: plan, APIKey: apiKey, Claude: DefaultClaudeOptions()}
+}
+
+// Detection is the result of probing a tool's config for a Z.AI plan.
+type Detection struct {
+	Configured bool      // a Z.AI plan configuration is present
+	Plan       string    // PlanGlobal / PlanChina, or "" if it can't be told
+	APIKey     string    // the key found in the config (may be empty)
+	ModelMap   *ModelMap // Claude Code tier→model mapping, when present
+}
+
+// Tool is a supported coding app: how to find it, where its config lives,
+// and how to write, remove, and detect the plan and MCP servers in it. Each
+// tool's behavior lives in its own tool_*.go file.
 type Tool struct {
-	ID             string
-	Command        string // CLI binary looked up on PATH to detect installation
-	DisplayName    string
-	InstallCommand string
-	configPath     func(home string) string
+	ID          string
+	Command     string // binary looked up on PATH to detect installation
+	DisplayName string
+	InstallHint string
+	aliases     []string
+	configPath  func(home string) string
+	load        func(home string, cfg LoadConfig) error
+	unload      func(home string) error
+	detect      func(home string) (Detection, error)
+	mcp         mcpTarget
 }
 
-// ConfigPath returns the absolute config file path for this tool under home.
-func (t Tool) ConfigPath(home string) string {
-	return t.configPath(home)
+// Tools is the ordered registry of supported coding tools.
+var Tools = []Tool{claudeCode, openCode, crush, factoryDroid}
+
+// FindTool resolves a tool by ID or alias (e.g. "claude" → "claude-code").
+func FindTool(id string) (Tool, error) {
+	for _, t := range Tools {
+		if t.ID == id || slices.Contains(t.aliases, id) {
+			return t, nil
+		}
+	}
+	ids := make([]string, len(Tools))
+	for i, t := range Tools {
+		ids[i] = t.ID
+	}
+	return Tool{}, fmt.Errorf("unsupported tool %q (supported: %s)", id, strings.Join(ids, ", "))
 }
 
-// IsInstalled reports whether the tool's CLI binary is on PATH.
+// ConfigPath returns the tool's config file under home.
+func (t Tool) ConfigPath(home string) string { return t.configPath(home) }
+
+// IsInstalled reports whether the tool's binary is on PATH.
 func (t Tool) IsInstalled() bool {
 	_, err := exec.LookPath(t.Command)
 	return err == nil
 }
 
-// Tools is the ordered registry of supported coding tools.
-var Tools = []Tool{
-	{
-		ID:             "claude-code",
-		Command:        "claude",
-		DisplayName:    "Claude Code",
-		InstallCommand: "npm install -g @anthropic-ai/claude-code",
-		configPath:     func(h string) string { return filepath.Join(h, ".claude", "settings.json") },
-	},
-	{
-		ID:             "opencode",
-		Command:        "opencode",
-		DisplayName:    "OpenCode",
-		InstallCommand: "npm install -g opencode-ai",
-		configPath:     func(h string) string { return filepath.Join(h, ".config", "opencode", "opencode.json") },
-	},
-	{
-		ID:             "crush",
-		Command:        "crush",
-		DisplayName:    "Crush",
-		InstallCommand: "npm install -g @charmland/crush",
-		configPath:     func(h string) string { return filepath.Join(h, ".config", "crush", "crush.json") },
-	},
-	{
-		ID:             "factory-droid",
-		Command:        "droid",
-		DisplayName:    "Factory Droid",
-		InstallCommand: factoryDroidInstall(),
-		// The helper's FactoryDroidManager writes ~/.factory/settings.json
-		// (SUPPORTED_TOOLS lists config.json, but the manager uses settings.json).
-		configPath: func(h string) string { return filepath.Join(h, ".factory", "settings.json") },
-	},
-	{
-		ID:             "cursor",
-		Command:        "cursor",
-		DisplayName:    "Cursor",
-		InstallCommand: "https://cursor.com/download",
-		configPath:     cursorConfigPath,
-	},
-}
-
-// cursorConfigPath mirrors Cursor's own per-OS settings location: macOS
-// stores it under Application Support, Linux/Windows under ~/.cursor with a
-// ~/.config/Cursor fallback if that doesn't exist yet.
-func cursorConfigPath(home string) string {
-	return filepath.Join(cursorConfigDir(home), "settings.json")
-}
-
-// cursorConfigDir resolves the directory settings.json (and, for MCP,
-// mcp.json) live in — shared so both files agree on the same per-OS
-// resolution instead of duplicating the runtime.GOOS switch.
-func cursorConfigDir(home string) string {
-	switch runtime.GOOS {
-	case "darwin":
-		return filepath.Join(home, "Library", "Application Support", "Cursor", "User")
-	default:
-		p := filepath.Join(home, ".cursor")
-		if _, err := os.Stat(filepath.Join(p, "settings.json")); os.IsNotExist(err) {
-			return filepath.Join(home, ".config", "Cursor", "User")
-		}
-		return p
+// Load writes the plan into the tool's config, preserving unrelated settings.
+func (t Tool) Load(home string, cfg LoadConfig) error {
+	if !IsValidPlan(cfg.Plan) {
+		return fmt.Errorf("invalid plan %q", cfg.Plan)
 	}
+	if cfg.APIKey == "" {
+		return errors.New("API key is required")
+	}
+	return t.load(home, cfg)
 }
 
-func factoryDroidInstall() string {
-	if runtime.GOOS == "windows" {
-		return "irm https://app.factory.ai/cli/windows | iex"
-	}
-	return "curl -fsSL https://app.factory.ai/cli | sh"
-}
+// Unload removes the plan from the tool's config; ErrNotConfigured when the
+// config holds none (the user's own settings are never touched).
+func (t Tool) Unload(home string) error { return t.unload(home) }
 
-// FindTool resolves a tool by ID or alias (e.g. "claude" → "claude-code").
-func FindTool(id string) (Tool, error) {
-	switch id {
-	case "claude", "claude-code":
-		return Tools[0], nil
-	case "opencode":
-		return Tools[1], nil
-	case "crush":
-		return Tools[2], nil
-	case "factory-droid", "droid", "factory":
-		return Tools[3], nil
-	case "cursor":
-		return Tools[4], nil
-	}
-	return Tool{}, fmt.Errorf("unsupported tool %q (supported: claude-code, opencode, crush, factory-droid, cursor)", id)
-}
+// Detect reports the tool's Z.AI plan configuration.
+func (t Tool) Detect(home string) (Detection, error) { return t.detect(home) }

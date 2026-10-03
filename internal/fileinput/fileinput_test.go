@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -38,5 +39,26 @@ func TestFileOrURLBase64EncodesLocalFile(t *testing.T) {
 func TestFileOrURLMissingFileErrors(t *testing.T) {
 	if _, err := FileOrURL("/nonexistent/path/x.png"); err == nil {
 		t.Fatal("expected an error for a missing file")
+	}
+}
+
+func TestURLOrDataURI(t *testing.T) {
+	if got, err := URLOrDataURI("https://x/a.png", "image/jpeg"); err != nil || got != "https://x/a.png" {
+		t.Errorf("URL passthrough = %q, %v", got, err)
+	}
+	path := filepath.Join(t.TempDir(), "a.png")
+	if err := os.WriteFile(path, []byte("png"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := URLOrDataURI("@"+path, "image/jpeg")
+	if err != nil || got != "data:image/png;base64,cG5n" {
+		t.Errorf("data URI = %q, %v", got, err)
+	}
+	noext := filepath.Join(t.TempDir(), "blob")
+	if err := os.WriteFile(noext, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := URLOrDataURI(noext, "video/mp4"); !strings.HasPrefix(got, "data:video/mp4;base64,") {
+		t.Errorf("fallback type not used: %q", got)
 	}
 }

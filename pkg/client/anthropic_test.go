@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -273,21 +274,13 @@ func TestAnthropicCreateStream(t *testing.T) {
 	c := newRedirectingTestClient(t, srv, Config{})
 	var types []string
 	var text strings.Builder
-	err := c.Anthropic().CreateStream(context.Background(), AnthropicMessageRequest{
+	err := drainStream(c.Anthropic().Stream(context.Background(), AnthropicMessageRequest{
 		Model: "glm-4.6", MaxTokens: 32,
 		Messages: []AnthropicMessage{AnthropicTextMessage("user", "hi")},
-	}, func(ev AnthropicStreamEvent) error {
+	}), func(ev AnthropicStreamEvent) error {
 		types = append(types, ev.Type)
-		if ev.Type == "content_block_delta" {
-			var d struct {
-				Delta struct {
-					Text string `json:"text"`
-				} `json:"delta"`
-			}
-			if err := json.Unmarshal(ev.Data, &d); err != nil {
-				return err
-			}
-			text.WriteString(d.Delta.Text)
+		if d, ok := ev.Delta(); ok {
+			text.WriteString(d.Text)
 		}
 		return nil
 	})
@@ -315,10 +308,10 @@ func TestAnthropicCreateStreamMultilineData(t *testing.T) {
 
 	c := newRedirectingTestClient(t, srv, Config{})
 	var gotData string
-	err := c.Anthropic().CreateStream(context.Background(), AnthropicMessageRequest{
+	err := drainStream(c.Anthropic().Stream(context.Background(), AnthropicMessageRequest{
 		Model: "glm-4.6", MaxTokens: 8,
 		Messages: []AnthropicMessage{AnthropicTextMessage("user", "hi")},
-	}, func(ev AnthropicStreamEvent) error {
+	}), func(ev AnthropicStreamEvent) error {
 		gotData = string(ev.Data)
 		return nil
 	})
@@ -344,10 +337,10 @@ func TestAnthropicCreateStreamAbort(t *testing.T) {
 
 	c := newRedirectingTestClient(t, srv, Config{})
 	seen := 0
-	err := c.Anthropic().CreateStream(context.Background(), AnthropicMessageRequest{
+	err := drainStream(c.Anthropic().Stream(context.Background(), AnthropicMessageRequest{
 		Model: "glm-4.6", MaxTokens: 8,
 		Messages: []AnthropicMessage{AnthropicTextMessage("user", "hi")},
-	}, func(ev AnthropicStreamEvent) error {
+	}), func(ev AnthropicStreamEvent) error {
 		seen++
 		return io.EOF // abort on the first event
 	})
@@ -356,5 +349,39 @@ func TestAnthropicCreateStreamAbort(t *testing.T) {
 	}
 	if seen != 1 {
 		t.Errorf("expected abort after 1 event, saw %d", seen)
+	}
+}
+
+// An in-band error event ends the stream with its *APIError instead of being
+// passed through as an ordinary event.
+func TestDecodeAnthropicStreamErrorEvent(t *testing.T) {
+	body := "event: content_block_delta\n" +
+		"data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"par\"}}\n\n" +
+		"event: error\n" +
+		"data: {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}}\n\n"
+	var events int
+	err := decodeAnthropicStream(context.Background(), strings.NewReader(body), func(AnthropicStreamEvent) error {
+		events++
+		return nil
+	})
+	apiErr, ok := errors.AsType[*APIError](err)
+	if !ok {
+		t.Fatalf("want *APIError, got %v", err)
+	}
+	if !strings.Contains(apiErr.Error(), "Overloaded") {
+		t.Errorf("error %q lacks the server message", apiErr)
+	}
+	if events != 1 {
+		t.Errorf("delivered %d events before the error, want 1", events)
+	}
+}
+
+func TestAnthropicStreamEventDelta(t *testing.T) {
+	ev := AnthropicStreamEvent{Type: "content_block_delta", Data: json.RawMessage(`{"delta":{"type":"thinking_delta","thinking":"hmm"}}`)}
+	if d, ok := ev.Delta(); !ok || d.Type != "thinking_delta" || d.Thinking != "hmm" {
+		t.Errorf("Delta() = %+v, %v", d, ok)
+	}
+	if _, ok := (AnthropicStreamEvent{Type: "message_stop"}).Delta(); ok {
+		t.Error("Delta() must be false for a non-delta event")
 	}
 }

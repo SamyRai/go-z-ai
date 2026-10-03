@@ -15,6 +15,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/sahilm/fuzzy"
 
+	"github.com/SamyRai/go-z-ai/internal/modelview"
 	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
 	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
 	"github.com/SamyRai/go-z-ai/pkg/client"
@@ -36,7 +37,7 @@ type fetchedMsg struct {
 // can fetch the catalog on open) and the currently-selected model id (to
 // highlight it in the list).
 type Model struct {
-	client    *client.Client
+	client    func() *client.Client
 	current   string
 	input     textinput.Model
 	models    []client.ModelDetails
@@ -48,7 +49,7 @@ type Model struct {
 
 // New builds the picker. The fetch is kicked off by Init (returned as a Cmd),
 // so construction itself is cheap and side-effect-free.
-func New(c *client.Client, current string) Model {
+func New(c func() *client.Client, current string) Model {
 	in := textinput.New()
 	in.Placeholder = "filter models…"
 	in.Prompt = "> "
@@ -59,7 +60,7 @@ func New(c *client.Client, current string) Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	c := m.client
+	c := m.client()
 	return func() tea.Msg {
 		info, err := c.Models().List(context.Background())
 		if err != nil {
@@ -181,28 +182,11 @@ func (m Model) View() tea.View {
 					mark = "▸●"
 				}
 			}
-			line := fmt.Sprintf("%s %-28s ctx %-8s %s", mark, md.ID, formatContext(md.ContextSize), joinCaps(md.Capabilities))
+			line := fmt.Sprintf("%s %-28s ctx %-8s %s", mark, md.ID, modelview.FormatTokens(md.ContextSize), modelview.Capabilities(md.Capabilities))
 			b.WriteString(strings.TrimRight(line, " "))
 			b.WriteByte('\n')
 		}
 	}
 	body := strings.TrimRight(b.String(), "\n")
 	return tea.NewView(uistyle.RenderOverlayCard("Switch chat model", body))
-}
-
-func formatContext(n int) string {
-	if n <= 0 {
-		return "—"
-	}
-	if n >= 1000 {
-		return fmt.Sprintf("%dk", n/1000)
-	}
-	return fmt.Sprintf("%d", n)
-}
-
-func joinCaps(caps []string) string {
-	if len(caps) == 0 {
-		return ""
-	}
-	return strings.Join(caps, ",")
 }

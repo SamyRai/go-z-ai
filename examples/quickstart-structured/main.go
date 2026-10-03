@@ -1,6 +1,7 @@
-// Command quickstart-structured shows structured (JSON Schema) output: ask
-// the model for typed data, parse the response into a Go struct. Useful as
-// the building block for extraction pipelines.
+// Command quickstart-structured shows structured output: JSON-object mode
+// plus a JSON Schema in the system prompt (the API has no json_schema
+// response format), parsed into a Go struct. Useful as the building block
+// for extraction pipelines.
 //
 // Usage:
 //
@@ -18,16 +19,16 @@ import (
 	"github.com/SamyRai/go-z-ai/pkg/client"
 )
 
-// Person is the typed shape we want the model to fill. The JSON Schema we
-// send to the API is hand-built to match; in a real app you'd generate it
-// from the struct via reflection (an instructor-go-style helper is on the
-// roadmap — see ops/objectives-and-opportunities.md §2.3).
+// Person is the typed shape we want the model to fill. personSchema is
+// hand-built to match; in a real app you'd generate it from the struct.
 type Person struct {
 	Name       string `json:"name"`
 	BirthYear  int    `json:"birth_year"`
 	NotableFor string `json:"notable_for"`
 	NobelYears []int  `json:"nobel_years,omitempty"`
 }
+
+const personSchema = `{"type":"object","properties":{"name":{"type":"string"},"birth_year":{"type":"integer"},"notable_for":{"type":"string"},"nobel_years":{"type":"array","items":{"type":"integer"}}},"required":["name","birth_year","notable_for"]}`
 
 func main() {
 	subject := "Marie Curie, born 1867, won Nobel prizes in physics (1903) and chemistry (1911)"
@@ -40,17 +41,17 @@ func main() {
 		log.Fatalf("client: %v", err)
 	}
 
+	instruction, err := client.JSONSchemaPrompt(json.RawMessage(personSchema))
+	if err != nil {
+		log.Fatalf("schema: %v", err)
+	}
 	resp, err := c.Chat().Create(context.Background(), client.ChatRequest{
-		Model: "glm-5.2",
+		Model: client.DefaultModel,
 		Messages: []client.Message{
-			{Role: "system", Content: "Extract a structured person record from the user's description."},
+			{Role: "system", Content: "Extract a structured person record from the user's description.\n\n" + instruction},
 			{Role: "user", Content: subject},
 		},
-		ResponseFormat: client.NewJSONSchemaFormat(
-			"person",
-			json.RawMessage(`{"type":"object","properties":{"name":{"type":"string"},"birth_year":{"type":"integer"},"notable_for":{"type":"string"},"nobel_years":{"type":"array","items":{"type":"integer"}}},"required":["name","birth_year","notable_for"]}`),
-			true, // strict
-		),
+		ResponseFormat: client.JSONObjectFormat(),
 	})
 	if err != nil {
 		log.Fatalf("chat: %v", err)

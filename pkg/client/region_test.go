@@ -28,13 +28,13 @@ func TestRegionBaseURLResolution(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := tc.region.monitorBaseURL(); got != tc.monitor {
+			if got := tc.region.MonitorBaseURL(); got != tc.monitor {
 				t.Errorf("monitor: got %q, want %q", got, tc.monitor)
 			}
-			if got := tc.region.bizBaseURL(); got != tc.biz {
+			if got := tc.region.BizBaseURL(); got != tc.biz {
 				t.Errorf("biz: got %q, want %q", got, tc.biz)
 			}
-			if got := tc.region.agentsBaseURL(); got != tc.agents {
+			if got := tc.region.AgentsBaseURL(); got != tc.agents {
 				t.Errorf("agents: got %q, want %q", got, tc.agents)
 			}
 		})
@@ -45,13 +45,13 @@ func TestRegionBaseURLResolution(t *testing.T) {
 // never return an empty string. This makes a config typo non-fatal.
 func TestRegionUnknownFallsBackToGlobal(t *testing.T) {
 	unknown := Region("mars")
-	if got := unknown.monitorBaseURL(); got != MonitorBaseURL {
+	if got := unknown.MonitorBaseURL(); got != MonitorBaseURL {
 		t.Errorf("monitor for unknown region: got %q, want %q", got, MonitorBaseURL)
 	}
-	if got := unknown.bizBaseURL(); got != BizBaseURL {
+	if got := unknown.BizBaseURL(); got != BizBaseURL {
 		t.Errorf("biz for unknown region: got %q, want %q", got, BizBaseURL)
 	}
-	if got := unknown.agentsBaseURL(); got != AgentsBaseURL {
+	if got := unknown.AgentsBaseURL(); got != AgentsBaseURL {
 		t.Errorf("agents for unknown region: got %q, want %q", got, AgentsBaseURL)
 	}
 }
@@ -60,7 +60,7 @@ func TestRegionUnknownFallsBackToGlobal(t *testing.T) {
 // — this is the back-compat guarantee for callers who never set Region.
 func TestRegionEmptyDefaultsGlobal(t *testing.T) {
 	var r Region
-	if got := r.monitorBaseURL(); got != MonitorBaseURL {
+	if got := r.MonitorBaseURL(); got != MonitorBaseURL {
 		t.Errorf("empty Region monitor: got %q, want %q", got, MonitorBaseURL)
 	}
 }

@@ -2,8 +2,26 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
+
+// Video generation models.
+const (
+	ModelCogVideoX3     = "cogvideox-3" // text/image-to-video up to 4K
+	ModelViduQ1Text     = "viduq1-text"
+	ModelViduQ1Image    = "viduq1-image"
+	ModelViduQ1StartEnd = "viduq1-start-end"
+	ModelVidu2Image     = "vidu2-image"
+	ModelVidu2StartEnd  = "vidu2-start-end"
+	ModelVidu2Reference = "vidu2-reference"
+)
+
+// VideoModels lists the video generation models.
+var VideoModels = []string{
+	ModelCogVideoX3, ModelViduQ1Text, ModelViduQ1Image, ModelViduQ1StartEnd,
+	ModelVidu2Image, ModelVidu2StartEnd, ModelVidu2Reference,
+}
 
 // VideosService handles video generation. Video generation is always
 // asynchronous — Generate returns a task to poll via Client.GetAsyncResult.
@@ -32,6 +50,8 @@ type VideoGenerationRequest struct {
 	Quality           string `json:"quality,omitempty"`            // cogvideox-3 only: speed | quality
 	MovementAmplitude string `json:"movement_amplitude,omitempty"` // auto | small | medium | large
 	WithAudio         bool   `json:"with_audio,omitempty"`
+	// OffPeak queues the task for off-peak processing at a lower price.
+	OffPeak bool `json:"off_peak,omitempty"`
 	// WatermarkEnabled controls the AI-generated watermark, which the API
 	// defaults to true. A pointer so an explicit false survives — see
 	// ImageGenerationRequest.WatermarkEnabled for why (omitempty would
@@ -43,7 +63,7 @@ type VideoGenerationRequest struct {
 // the result with Client.GetAsyncResult(resp.ID).
 func (s *VideosService) Generate(ctx context.Context, req VideoGenerationRequest) (*AsyncTaskResponse, error) {
 	if req.Model == "" {
-		return nil, fmt.Errorf("model is required")
+		return nil, errors.New("model is required")
 	}
 	if req.Prompt == "" && len(req.ImageURL) == 0 {
 		return nil, fmt.Errorf("prompt or image_url is required")

@@ -1,160 +1,22 @@
 package client
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"math/rand"
-	"net"
 	"net/http"
-	"os"
-	"strconv"
-	"strings"
 	"time"
 )
 
-const (
-	DefaultBaseURL   = "https://api.z.ai/api/paas/v4"
-	ProdBaseURL      = "https://api.z.ai/api/paas/v4"
-	CodingBaseURL    = "https://api.z.ai/api/coding/paas/v4"
-	AnthropicBaseURL = "https://api.z.ai/api/anthropic"
-	MonitorBaseURL   = "https://api.z.ai/api/monitor"
-	BizBaseURL       = "https://api.z.ai/api/biz"
-
-	// China*BaseURL mirrors the api.z.ai hosts on the China-mainland gateway
-	// (open.bigmodel.cn). A glm_coding_plan_china key's monitor/biz/agents
-	// calls should land here; selected via Config.Region = RegionChina. NOT
-	// VERIFIED LIVE for monitor/biz/agents on the China host — the China
-	// mirror is documented to serve the same OpenAPI surface as api.z.ai
-	// (live-verified for /models and /chat/completions, see BigModelBaseURL
-	// below), so these mirror that host's path layout. Pin with a cassette if
-	// you hold an entitled China key.
-	ChinaMonitorBaseURL = "https://open.bigmodel.cn/api/monitor"
-	ChinaBizBaseURL     = "https://open.bigmodel.cn/api/biz"
-	ChinaAgentsBaseURL  = "https://open.bigmodel.cn/api"
-
-	// ChinaCodingBaseURL / ChinaProdBaseURL are the China-mirror chat bases,
-	// used by DetectionService to probe the right platform for a RegionChina
-	// key. They mirror CodingBaseURL/ProdBaseURL on the global host.
-	ChinaCodingBaseURL = "https://open.bigmodel.cn/api/coding/paas/v4"
-	ChinaProdBaseURL   = "https://open.bigmodel.cn/api/paas/v4"
-
-	// BigModelBaseURL is Z.AI's China-mainland mirror (Zhipu's open.bigmodel.cn
-	// platform, run under the same "ZHIPU AI API" OpenAPI spec as api.z.ai.
-	// LIVE-VERIFIED 2026-07-11: a single z.ai API key authenticates
-	// identically on both platforms (GET /models returns the exact same
-	// 8-model chat catalog on both; POST /chat/completions clears auth and
-	// reaches the same billing-level error, HTTP 400 code 1113 insufficient
-	// balance, on both) — this is NOT a separate account/billing system per
-	// platform, despite ZaiClient/ZhipuAiClient naming conventions in some
-	// SDKs suggesting otherwise. What IS platform-specific is
-	// documentation coverage: docs.z.ai's complete doc index never
-	// mentions Embeddings, Moderations, or Assistant, while
-	// docs.bigmodel.cn documents all three (Assistant's paths marked
-	// "deprecated": true in the live spec at
-	// https://docs.bigmodel.cn/openapi/openapi.json — hence not
-	// implemented; see EmbeddingsService/ModerationsService for the other
-	// two). Calling those two here still returns 400 "Unknown Model" (code
-	// 1211) with this account's key on either platform — live-verified
-	// that's an account/plan-entitlement gate (this account's model
-	// catalog, per /models, is chat-only), not a platform-routing issue.
-	// See docs/en/accounts-and-quota.md for the user-facing explanation.
-	BigModelBaseURL = "https://open.bigmodel.cn/api/paas/v4"
-
-	// Monitor usage endpoints
-	QuotaLimitEndpoint = "/usage/quota/limit"
-	ModelUsageEndpoint = "/usage/model-usage"
-	ToolUsageEndpoint  = "/usage/tool-usage"
-
-	// Retry defaults
-	DefaultMaxRetries = 3                      // retries on transient (429/5xx/network) failures
-	DefaultRetryDelay = 200 * time.Millisecond // base exponential-backoff delay
-	maxRetryDelay     = 30 * time.Second       // cap on any single backoff
-)
-
-// Config holds the client configuration
-type Config struct {
-	APIKey     string
-	BaseURL    string
-	HTTPClient *http.Client
-	// Timeout bounds connection setup (dial + TLS handshake) and the wait
-	// for response headers — not the time spent reading the response body.
-	// It is deliberately NOT the whole-request http.Client.Timeout, which
-	// would cut off a long-running CreateStream read (SSE bodies can stay
-	// open for minutes) partway through a generation. Defaults to 30s.
-	Timeout time.Duration
-	// MaxRetries is the number of retry attempts on transient failures
-	// (429, 5xx, network errors). The zero value does NOT mean "no retries" —
-	// it means "unset", and resolves to DefaultMaxRetries (3) in NewClient,
-	// so a bare Config{MaxRetries: 0} still retries 3×. To disable retries
-	// entirely, set MaxRetries to -1 (NewClient maps that to 0 attempts).
-	// This trichotomy (0→default, -1→disabled, >0→explicit) is easy to get
-	// wrong; if you want zero retries, always use -1.
-	MaxRetries int
-	// RetryDelay is the base delay for exponential backoff. Defaults to 200ms.
-	RetryDelay time.Duration
-	// ChinaAPIKey authenticates against BigModelBaseURL (open.bigmodel.cn),
-	// used by EmbeddingsService and ModerationsService. Falls back to
-	// APIKey when empty — live-verified 2026-07-11 that a z.ai key
-	// authenticates identically on both api.z.ai and open.bigmodel.cn (same
-	// /models catalog, same billing-level errors on chat/completions), so
-	// the fallback is the common case, not a fringe one. Set this
-	// separately only if you hold a distinct bigmodel.cn-only credential.
-	ChinaAPIKey string
-	// DisableToolSchemaCompat turns off automatic normalization of tool
-	// (function) parameter schemas before they are sent. By default the
-	// client rewrites the JSON Schema constructs GLM's chat/completions
-	// parser rejects with HTTP 500 — `anyOf`, `oneOf`, `allOf`, and
-	// `$ref`/`$defs` — into the flat subset it accepts (see
-	// SanitizeToolSchemas). Set this to send tool schemas through untouched.
-	DisableToolSchemaCompat bool
-	// Region selects the regional gateway (api.z.ai vs open.bigmodel.cn) for
-	// the services whose host is otherwise hardcoded: monitor (quota/usage),
-	// biz (account info), and agents. It does NOT override Config.BaseURL
-	// (chat/completions) or BigModelBaseURL (embeddings/moderations).
-	// Defaults to RegionGlobal (api.z.ai) — the historical behavior. Set to
-	// RegionChina when the key was issued on open.bigmodel.cn so those calls
-	// land on the matching host. See region.go.
-	Region Region
-	// MonitorTimezone overrides the timezone assumed for the monitor (quota/
-	// usage) API, which exchanges zoneless time strings the server interprets
-	// as its own wall-clock (UTC+8 / CST by default — see MonitorServerTZ).
-	// Set this only if a live capture shows a different server zone for your
-	// account; nil means "use Region.monitorTimezone()". When non-nil it wins
-	// over Region. The CLI mirrors it as ZAI_MONITOR_TIMEZONE.
-	MonitorTimezone *time.Location
-	// UserAgent overrides the default User-Agent header ("go-z-ai/<version>")
-	// sent on every request. The default identifies go-z-ai to Z.AI's API —
-	// important under the coding endpoint's usage policy, which treats
-	// unidentified clients as policy violations (see docs/en/coding-tools.md).
-	// Override only when you need a distinct identifier (a downstream app, a
-	// proxy, an MCP server); the override string is sent verbatim.
-	UserAgent string
-	// Hooks attaches observability hooks (tracing, metrics, logging) that
-	// fire on every request/response/error/stream-chunk without wrapping the
-	// http.RoundTripper. Empty by default — the no-hook path is zero-cost.
-	// Concrete implementations live in pkg/observe (e.g. OpenTelemetry);
-	// users can also provide their own (slog-based, custom metrics). See Hook.
-	Hooks []Hook
-}
-
-// Client represents the Z.AI API client
+// Client is the Z.AI API client. It is safe for concurrent use. Each API
+// family is exposed as a service (Chat, Models, Images, …); all of them share
+// one transport (see transport.go), so retry, error parsing, and
+// observability hooks behave identically across endpoints.
 type Client struct {
 	config     Config
 	httpClient *http.Client
-	// userAgent is the resolved User-Agent header value (Config.UserAgent if
-	// set, otherwise the package default "go-z-ai/<version>"). Resolved once
-	// in NewClient and reused on every request.
-	userAgent string
-	// hooks is the resolved observability hook list (Config.Hooks). Empty
-	// when no hooks are configured — the no-hook path is zero-allocation
-	// (every callHooks* method early-returns on len==0).
-	hooks       []Hook
+	hooks      []Hook
+
 	chat        *ChatService
 	models      *ModelsService
-	usage       *UsageService
 	detection   *DetectionService
 	quota       *QuotaService
 	account     *AccountService
@@ -174,114 +36,43 @@ type Client struct {
 	anthropic   *AnthropicService
 }
 
-// NewClient creates a new Z.AI API client with the given configuration
+// NewClient creates a client from config, resolving unset fields to their
+// defaults (see Config).
 func NewClient(config Config) (*Client, error) {
-	if err := validateConfig(config); err != nil {
+	if err := config.validate(); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
+	config = config.withDefaults()
 
-	// Set defaults
-	if config.BaseURL == "" {
-		config.BaseURL = DefaultBaseURL
-	}
-	if config.Timeout == 0 {
-		config.Timeout = 30 * time.Second
-	}
-	if config.HTTPClient == nil {
-		// No http.Client.Timeout here: that field bounds the entire
-		// request/response cycle, including reading the body — which would
-		// kill a streaming SSE read after config.Timeout even while tokens
-		// are still arriving. Bounding dial/TLS/response-header wait
-		// instead protects against a hung/unreachable server without
-		// capping a live stream.
-		config.HTTPClient = &http.Client{
-			Transport: &http.Transport{
-				Proxy: http.ProxyFromEnvironment,
-				DialContext: (&net.Dialer{
-					Timeout:   config.Timeout,
-					KeepAlive: 30 * time.Second,
-				}).DialContext,
-				ForceAttemptHTTP2:     true,
-				MaxIdleConns:          100,
-				IdleConnTimeout:       90 * time.Second,
-				TLSHandshakeTimeout:   config.Timeout,
-				ExpectContinueTimeout: 1 * time.Second,
-				ResponseHeaderTimeout: config.Timeout,
-			},
-			// Strip the Authorization header on any cross-host redirect so a
-			// compromised/misconfigured upstream or a transparent proxy
-			// (ProxyFromEnvironment above) can't capture the bearer token by
-			// returning a 3xx to an attacker-controlled host. net/http's
-			// default only strips it on a scheme change, not a host change.
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				if len(via) >= 10 {
-					return fmt.Errorf("stopped after 10 redirects")
-				}
-				// Compare the full host:port. A redirect to a different port
-				// can be a different service on the same machine, so strip the
-				// credential on any host:port change — stricter than net/http's
-				// default, which is the right posture for an API bearer token.
-				if req.URL.Host != via[0].URL.Host {
-					req.Header.Del("Authorization")
-				}
-				return nil
-			},
-		}
-	}
-
-	// Retry defaults: MaxRetries==0 means "unset" (use default); -1 disables.
-	if config.MaxRetries == 0 {
-		config.MaxRetries = DefaultMaxRetries
-	}
-	if config.MaxRetries < 0 {
-		config.MaxRetries = 0
-	}
-	if config.RetryDelay <= 0 {
-		config.RetryDelay = DefaultRetryDelay
-	}
-
-	// Resolve the User-Agent: Config.UserAgent overrides the package default.
-	// Computed once here so the send* paths don't re-check on every request.
-	effectiveUA := userAgent
-	if config.UserAgent != "" {
-		effectiveUA = config.UserAgent
-	}
-
-	client := &Client{
+	c := &Client{
 		config:     config,
 		httpClient: config.HTTPClient,
-		userAgent:  effectiveUA,
 		hooks:      config.Hooks,
 	}
-
-	// Initialize services
-	client.chat = &ChatService{client: client}
-	client.models = &ModelsService{client: client}
-	client.usage = &UsageService{client: client}
-	client.detection = &DetectionService{client: client}
-	client.quota = &QuotaService{client: client}
-	client.tools = &ToolsService{client: client}
-	client.account = &AccountService{client: client}
-	client.images = &ImagesService{client: client}
-	client.videos = &VideosService{client: client}
-	client.audio = &AudioService{client: client}
-	client.layout = &LayoutService{client: client}
-	client.files = &FilesService{client: client}
-	client.batch = &BatchService{client: client}
-	client.agents = &AgentsService{client: client}
-	client.embeddings = &EmbeddingsService{client: client}
-	client.moderations = &ModerationsService{client: client}
-	client.rerank = &RerankService{client: client}
-	client.voice = &VoiceService{client: client}
-	client.fileParser = &FileParserService{client: client}
-	client.anthropic = &AnthropicService{client: client}
-
-	return client, nil
+	c.chat = &ChatService{client: c}
+	c.models = &ModelsService{client: c}
+	c.detection = &DetectionService{client: c}
+	c.quota = &QuotaService{client: c}
+	c.account = &AccountService{client: c}
+	c.tools = &ToolsService{client: c}
+	c.images = &ImagesService{client: c}
+	c.videos = &VideosService{client: c}
+	c.audio = &AudioService{client: c}
+	c.layout = &LayoutService{client: c}
+	c.files = &FilesService{client: c}
+	c.batch = &BatchService{client: c}
+	c.agents = &AgentsService{client: c}
+	c.embeddings = &EmbeddingsService{client: c}
+	c.moderations = &ModerationsService{client: c}
+	c.rerank = &RerankService{client: c}
+	c.voice = &VoiceService{client: c}
+	c.fileParser = &FileParserService{client: c}
+	c.anthropic = &AnthropicService{client: c}
+	return c, nil
 }
 
 // chinaAPIKey returns the credential for BigModelBaseURL calls: ChinaAPIKey
-// when set, otherwise APIKey (which only authenticates there if the same key
-// happens to be valid on both platforms — see Config.ChinaAPIKey).
+// when set, otherwise APIKey (see Config.ChinaAPIKey).
 func (c *Client) chinaAPIKey() string {
 	if c.config.ChinaAPIKey != "" {
 		return c.config.ChinaAPIKey
@@ -289,480 +80,71 @@ func (c *Client) chinaAPIKey() string {
 	return c.config.APIKey
 }
 
-// monitorTimezone returns the timezone the monitor (quota/usage) API operates
-// in: Config.MonitorTimezone when set (an explicit override), otherwise the
-// region's default (CST / UTC+8). Used to format query params in the server's
-// zone and by MonitorTimezone() to let the render layer re-label buckets.
-func (c *Client) monitorTimezone() *time.Location {
-	if c.config.MonitorTimezone != nil {
-		return c.config.MonitorTimezone
-	}
-	return c.config.Region.monitorTimezone()
-}
-
-// ParseTimezone parses a timezone string as accepted by ZAI_MONITOR_TIMEZONE:
-// an IANA name ("Asia/Shanghai"), a "UTC" literal, a UTC offset ("UTC+8",
-// "+08:00", "-5"), or "local". It returns nil (no error) for an empty string
-// so callers can pass an unset env var through as "no override". This avoids a
-// tzdata dependency in the common case — the package default (MonitorServerTZ)
-// is a time.FixedZone — while still allowing IANA names when the caller knows
-// tzdata is present.
-func ParseTimezone(s string) (*time.Location, error) {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return nil, nil
-	}
-	lower := strings.ToLower(s)
-	if lower == "local" {
-		return time.Local, nil
-	}
-	if lower == "utc" {
-		return time.UTC, nil
-	}
-	// Offset forms: "UTC+8", "UTC-05:00", "+8", "-05:00". Strip a "UTC" prefix.
-	off := strings.TrimPrefix(s, "UTC")
-	off = strings.TrimPrefix(off, "utc")
-	off = strings.TrimSpace(off)
-	if off != "" && (off[0] == '+' || off[0] == '-') {
-		loc, err := parseUTCOffset(off)
-		if err != nil {
-			return nil, fmt.Errorf("ZAI_MONITOR_TIMEZONE %q: %w", s, err)
-		}
-		return loc, nil
-	}
-	// IANA name. Requires tzdata — on platforms without it (some Windows CI),
-	// LoadLocation returns an error; surface it so the caller can drop the
-	// override rather than silently ignoring it.
-	loc, err := time.LoadLocation(s)
-	if err != nil {
-		return nil, fmt.Errorf("ZAI_MONITOR_TIMEZONE %q: %w", s, err)
-	}
-	return loc, nil
-}
-
-// parseUTCOffset converts an offset like "+8", "-05:00", or "+0830" into a
-// named fixed zone ("UTC+08:00"). It is the tzdata-free path of ParseTimezone.
-func parseUTCOffset(s string) (*time.Location, error) {
-	sign := s[0]
-	body := s[1:]
-	body = strings.ReplaceAll(body, ":", "")
-	switch len(body) {
-	case 1, 2: // hours only
-		body = fmt.Sprintf("%02s", body) + "00"
-	case 3, 4: // hhm[m]
-		if len(body) == 3 {
-			body = "0" + body
-		}
-	default:
-		return nil, fmt.Errorf("invalid UTC offset %q", s)
-	}
-	h, err := strconv.Atoi(body[:2])
-	if err != nil || h > 23 {
-		return nil, fmt.Errorf("invalid UTC offset hours %q", s)
-	}
-	m, err := strconv.Atoi(body[2:])
-	if err != nil || m > 59 {
-		return nil, fmt.Errorf("invalid UTC offset minutes %q", s)
-	}
-	secs := h*3600 + m*60
-	if sign == '-' {
-		secs = -secs
-	}
-	return time.FixedZone(fmt.Sprintf("UTC%c%02d:%02d", sign, h, m), secs), nil
-}
-
-// NewClientFromEnv creates a new client from environment variables
-func NewClientFromEnv() (*Client, error) {
-	apiKey := os.Getenv("ZAI_API_KEY")
-	if apiKey == "" {
-		return nil, fmt.Errorf("ZAI_API_KEY environment variable not set")
-	}
-
-	baseURL := os.Getenv("ZAI_API_BASE_URL")
-	if baseURL == "" {
-		baseURL = DefaultBaseURL
-	}
-
-	monitorTZ, err := ParseTimezone(os.Getenv("ZAI_MONITOR_TIMEZONE"))
-	if err != nil {
-		return nil, err
-	}
-
-	return NewClient(Config{
-		APIKey:          apiKey,
-		BaseURL:         baseURL,
-		MonitorTimezone: monitorTZ,
-	})
-}
-
-// Chat returns the chat service
-func (c *Client) Chat() *ChatService {
-	return c.chat
-}
-
-// Models returns the models service
-func (c *Client) Models() *ModelsService {
-	return c.models
-}
-
-// Usage returns the usage service
-func (c *Client) Usage() *UsageService {
-	return c.usage
-}
-
-// Detection returns the detection service
-func (c *Client) Detection() *DetectionService {
-	return c.detection
-}
-
-// Quota returns the quota service
-func (c *Client) Quota() *QuotaService {
-	return c.quota
-
-}
-
 // MonitorTimezone returns the timezone the monitor (quota/usage) API operates
-// in (Config.MonitorTimezone override, else the region default — CST/UTC+8).
-// Render layers use it to convert the server-local x_time bucket labels into
-// the viewer's local time and to annotate reset times. See MonitorServerTZ.
-func (c *Client) MonitorTimezone() *time.Location {
-	return c.monitorTimezone()
-}
+// in (Config.MonitorTimezone, defaulting to MonitorServerTZ). Render layers
+// use it to convert the server-local x_time bucket labels into the viewer's
+// local time and to annotate reset times.
+func (c *Client) MonitorTimezone() *time.Location { return c.config.MonitorTimezone }
 
-// Account returns the account service
-func (c *Client) Account() *AccountService {
-	return c.account
-}
+// Region returns the regional gateway the client targets.
+func (c *Client) Region() Region { return c.config.Region }
 
-func validateConfig(config Config) error {
-	if config.APIKey == "" {
-		return fmt.Errorf("API key is required")
-	}
-	return nil
-}
+// Chat returns the chat-completions service.
+func (c *Client) Chat() *ChatService { return c.chat }
 
-// doRequest performs an HTTP request against the client's configured
-// BaseURL, with authentication, structured error handling, and automatic
-// retry on transient failures (429, 5xx, network errors) up to
-// Config.MaxRetries, with exponential backoff and Retry-After.
-func (c *Client) doRequest(ctx context.Context, method, endpoint string, body any, result any) error {
-	return c.doRequestBase(ctx, c.config.BaseURL, method, endpoint, body, result)
-}
+// Models returns the models service.
+func (c *Client) Models() *ModelsService { return c.models }
 
-// doRequestBase is doRequest against an explicit base URL, for the handful
-// of endpoints that don't live under Config.BaseURL (monitor/biz/tools).
-// Every service goes through this (or doRequest) — no service should build
-// its own http.Client, which would bypass retry, timeout, and error parsing.
-func (c *Client) doRequestBase(ctx context.Context, baseURL, method, endpoint string, body any, result any) error {
-	return c.doRequestBaseKey(ctx, baseURL, c.config.APIKey, method, endpoint, body, result)
-}
+// Detection returns the account-type detection service.
+func (c *Client) Detection() *DetectionService { return c.detection }
 
-// doRequestBaseKey is doRequestBase with an explicit bearer credential,
-// for platforms that authenticate separately from Config.APIKey (currently
-// BigModelBaseURL — see Config.ChinaAPIKey).
-func (c *Client) doRequestBaseKey(ctx context.Context, baseURL, apiKey, method, endpoint string, body any, result any) error {
-	return c.doRequestBaseKeyHeaders(ctx, baseURL, apiKey, method, endpoint, body, result, nil)
-}
+// Quota returns the coding-plan quota/usage (monitor) service.
+func (c *Client) Quota() *QuotaService { return c.quota }
 
-// doRequestBaseKeyHeaders is doRequestBaseKey with additional request headers,
-// for endpoints (currently the Anthropic-compatible surface) that require a
-// header the shared defaults don't set.
-func (c *Client) doRequestBaseKeyHeaders(ctx context.Context, baseURL, apiKey, method, endpoint string, body any, result any, headers map[string]string) error {
-	maxRetries := c.config.MaxRetries
-	if maxRetries < 0 {
-		maxRetries = 0
-	}
+// Account returns the account (biz) service.
+func (c *Client) Account() *AccountService { return c.account }
 
-	// hookBase is rebuilt per attempt (Attempt differs) but the Service/Model
-	// fields are constant across retries — they come from the context.
-	var lastErr error
-	for attempt := 0; attempt <= maxRetries; attempt++ {
-		if err := ctx.Err(); err != nil {
-			// Cancellation between attempts: surface as an error to hooks.
-			c.callHooksError(ctx, c.buildRequestMeta(ctx, method, endpoint, attempt), err)
-			return err
-		}
+// Tools returns the tools service (web search, web reader, tokenizer).
+func (c *Client) Tools() *ToolsService { return c.tools }
 
-		// OnRequest fires per attempt (a retried request is a new request from
-		// the hook's perspective — spans, counters, etc. want one event per
-		// actual HTTP send). The hook may return a derived context (e.g. with
-		// a child span).
-		reqMeta := c.buildRequestMeta(ctx, method, endpoint, attempt)
-		hookCtx := c.callHooksRequest(ctx, reqMeta)
+// Images returns the image generation service.
+func (c *Client) Images() *ImagesService { return c.images }
 
-		start := time.Now()
-		resp, err := c.sendHeaders(hookCtx, baseURL, apiKey, method, endpoint, body, headers)
-		if err != nil {
-			// Transport-level failure: no server response was produced, so the
-			// request is safe to retry (the server never answered).
-			lastErr = fmt.Errorf("failed to execute request: %w", err)
-			if attempt < maxRetries {
-				// End this attempt's span before retrying: OnRequest already
-				// fired above, so without OnError the span leaks.
-				c.callHooksError(hookCtx, reqMeta, lastErr)
-				c.backoff(hookCtx, "", attempt)
-				continue
-			}
-			c.callHooksError(hookCtx, reqMeta, lastErr)
-			return lastErr
-		}
+// Videos returns the video generation service.
+func (c *Client) Videos() *VideosService { return c.videos }
 
-		if resp.StatusCode == http.StatusOK {
-			err = c.decodeBody(resp, result)
-			resp.Body.Close()
-			if err != nil {
-				// Body parse failure after a 200 — treat as terminal error.
-				c.callHooksError(hookCtx, reqMeta, err)
-				return err
-			}
-			c.callHooksResponse(hookCtx, ResponseMeta{
-				RequestMeta: reqMeta,
-				StatusCode:  resp.StatusCode,
-				Duration:    time.Since(start),
-				Usage:       extractUsage(result),
-			})
-			return nil
-		}
+// Audio returns the speech (TTS) and transcription (ASR) service.
+func (c *Client) Audio() *AudioService { return c.audio }
 
-		// Non-200: classify via the structured API error mapping.
-		retryAfter := resp.Header.Get("Retry-After")
-		apiErr := parseAPIError(resp)
-		resp.Body.Close()
+// Layout returns the layout parsing (OCR) service.
+func (c *Client) Layout() *LayoutService { return c.layout }
 
-		retriable := false
-		if ae, ok := apiErr.(*APIError); ok {
-			retriable = ae.IsRetriable
-		}
+// Files returns the file upload/management service.
+func (c *Client) Files() *FilesService { return c.files }
 
-		lastErr = apiErr
-		if attempt < maxRetries && retriable {
-			// End this attempt's span before retrying (see transport branch).
-			c.callHooksError(hookCtx, reqMeta, apiErr)
-			c.backoff(hookCtx, retryAfter, attempt)
-			continue
-		}
-		c.callHooksError(hookCtx, reqMeta, apiErr)
-		return apiErr
-	}
-	// Loop exhausted; lastErr is the final retriable error.
-	if lastErr != nil {
-		c.callHooksError(ctx, c.buildRequestMeta(ctx, method, endpoint, maxRetries), lastErr)
-	}
-	return lastErr
-}
+// Batch returns the batch job service.
+func (c *Client) Batch() *BatchService { return c.batch }
 
-// usageBearer is implemented by response types that carry a Usage field
-// (ChatResponse, EmbeddingsResponse, AsyncResultResponse). Used by
-// extractUsage to surface token counts to OnResponse hooks without
-// reflection or a type switch.
-type usageBearer interface {
-	GetUsage() *Usage
-}
-
-// extractUsage returns the Usage pointer from a parsed response, or nil when
-// the response type doesn't carry one (models list, file ops, etc.). The hook
-// gets nil Usage for those — it can distinguish "no usage reported" from
-// "zero tokens" by the nil check.
-func extractUsage(result any) *Usage {
-	if result == nil {
-		return nil
-	}
-	if u, ok := result.(usageBearer); ok {
-		return u.GetUsage()
-	}
-	return nil
-}
-
-// send builds and issues a single HTTP request against baseURL+endpoint,
-// authenticating with apiKey. The caller owns resp.Body.
-func (c *Client) send(ctx context.Context, baseURL, apiKey, method, endpoint string, body any) (*http.Response, error) {
-	return c.sendHeaders(ctx, baseURL, apiKey, method, endpoint, body, nil)
-}
-
-// sendHeaders is send with additional request headers (set after the defaults,
-// so they can override them). Used by the Anthropic-compatible surface, which
-// needs an anthropic-version header the OpenAI-style endpoints don't.
-func (c *Client) sendHeaders(ctx context.Context, baseURL, apiKey, method, endpoint string, body any, headers map[string]string) (*http.Response, error) {
-	url := baseURL + endpoint
-
-	var bodyReader io.Reader
-	if body != nil {
-		jsonData, err := json.Marshal(body)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal request body: %w", err)
-		}
-		bodyReader = bytes.NewReader(jsonData)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept-Language", "en-US,en")
-	req.Header.Set("User-Agent", c.userAgent)
-	if body != nil {
-		req.Header.Set("Accept", "application/json")
-	}
-	for k, v := range headers {
-		req.Header.Set(k, v)
-	}
-
-	return c.httpClient.Do(req)
-}
-
-// sendMultipart issues a single multipart/form-data POST (used by
-// AudioService.Transcribe). Unlike doRequest/send it does not retry —
-// re-uploading a file on transient failure is left to the caller.
-func (c *Client) sendMultipart(ctx context.Context, endpoint, contentType string, body []byte) (*http.Response, error) {
-	url := c.config.BaseURL + endpoint
-
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+c.config.APIKey)
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", c.userAgent)
-
-	return c.httpClient.Do(req)
-}
-
-// decodeBody reads and JSON-decodes the response body into result (when non-nil).
-func (c *Client) decodeBody(resp *http.Response, result any) error {
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
-	}
-	if result != nil {
-		if err := json.Unmarshal(respBody, result); err != nil {
-			return fmt.Errorf("failed to unmarshal response: %w", err)
-		}
-	}
-	return nil
-}
-
-// backoff sleeps before a retry, honoring a Retry-After header value (integer
-// seconds) when present, otherwise exponential backoff with jitter. It respects
-// ctx cancellation so callers can abort a pending retry.
-func (c *Client) backoff(ctx context.Context, retryAfter string, attempt int) {
-	d := c.retryDelay(retryAfter, attempt)
-	if d <= 0 {
-		return
-	}
-	t := time.NewTimer(d)
-	defer t.Stop()
-	select {
-	case <-t.C:
-	case <-ctx.Done():
-	}
-}
-
-// retryDelay computes the delay before the next attempt. Retry-After (integer
-// seconds) wins when present; otherwise base * 2^attempt, capped at
-// maxRetryDelay, with up to 25% jitter to avoid thundering herds.
-func (c *Client) retryDelay(retryAfter string, attempt int) time.Duration {
-	base := c.config.RetryDelay
-	if base <= 0 {
-		base = DefaultRetryDelay
-	}
-	if retryAfter != "" {
-		if secs, err := strconv.Atoi(retryAfter); err == nil && secs >= 0 {
-			d := time.Duration(secs) * time.Second
-			if d > maxRetryDelay {
-				return maxRetryDelay
-			}
-			return d
-		}
-	}
-	d := base << uint(attempt)
-	if d <= 0 || d > maxRetryDelay {
-		d = maxRetryDelay
-	}
-	jitter := time.Duration(rand.Int63n(int64(d)/4 + 1))
-	// Cap the final result (base + jitter) so a single backoff never exceeds
-	// maxRetryDelay — jitter added on top of a capped base would otherwise
-	// push the sleep past the documented ceiling.
-	if result := d + jitter; result > maxRetryDelay {
-		return maxRetryDelay
-	}
-	return d + jitter
-}
-
-// Tools returns the tools service
-func (c *Client) Tools() *ToolsService {
-	return c.tools
-}
-
-// Images returns the image generation service
-func (c *Client) Images() *ImagesService {
-	return c.images
-}
-
-// Videos returns the video generation service
-func (c *Client) Videos() *VideosService {
-	return c.videos
-}
-
-// Audio returns the audio transcription service
-func (c *Client) Audio() *AudioService {
-	return c.audio
-}
-
-// Layout returns the layout parsing (OCR) service
-func (c *Client) Layout() *LayoutService {
-	return c.layout
-}
-
-// Files returns the file upload/management service
-func (c *Client) Files() *FilesService {
-	return c.files
-}
-
-// Batch returns the batch job service
-func (c *Client) Batch() *BatchService {
-	return c.batch
-}
-
-// Agents returns the agents (specialized-agent invocation) service
-func (c *Client) Agents() *AgentsService {
-	return c.agents
-}
+// Agents returns the agents (specialized-agent invocation) service.
+func (c *Client) Agents() *AgentsService { return c.agents }
 
 // Embeddings returns the text-embeddings service. It calls BigModelBaseURL
 // (open.bigmodel.cn), not Config.BaseURL — see Config.ChinaAPIKey.
-func (c *Client) Embeddings() *EmbeddingsService {
-	return c.embeddings
-}
+func (c *Client) Embeddings() *EmbeddingsService { return c.embeddings }
 
 // Moderations returns the content-moderation service. It calls
 // BigModelBaseURL (open.bigmodel.cn), not Config.BaseURL — see
 // Config.ChinaAPIKey.
-func (c *Client) Moderations() *ModerationsService {
-	return c.moderations
-}
+func (c *Client) Moderations() *ModerationsService { return c.moderations }
 
 // Rerank returns the document-reranking service.
-func (c *Client) Rerank() *RerankService {
-	return c.rerank
-}
+func (c *Client) Rerank() *RerankService { return c.rerank }
 
 // Voice returns the voice-cloning service.
-func (c *Client) Voice() *VoiceService {
-	return c.voice
-}
+func (c *Client) Voice() *VoiceService { return c.voice }
 
 // FileParser returns the document-parsing service.
-func (c *Client) FileParser() *FileParserService {
-	return c.fileParser
-}
+func (c *Client) FileParser() *FileParserService { return c.fileParser }
 
-// Anthropic returns the Anthropic-compatible Messages service. It calls Z.AI's
-// /api/anthropic surface (AnthropicBaseURL), not Config.BaseURL — see
-// AnthropicService.
-func (c *Client) Anthropic() *AnthropicService {
-	return c.anthropic
-}
+// Anthropic returns the Anthropic-compatible Messages service.
+func (c *Client) Anthropic() *AnthropicService { return c.anthropic }

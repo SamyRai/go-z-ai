@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
@@ -51,11 +53,9 @@ func runCLI(t *testing.T, srv *httptest.Server, args ...string) (string, error) 
 		setViper(t, "base-url", "")
 	}
 
-	// Restore sticky package-level format vars (bound with StringVar, they
-	// persist across Execute calls) so one test's --format can't leak into the
-	// next.
-	prevOut, prevChat, prevUsage := outputFormat, chatFormat, usageFormat
-	t.Cleanup(func() { outputFormat, chatFormat, usageFormat = prevOut, prevChat, prevUsage })
+	// Cobra keeps parsed flag values across Execute calls, so one test's
+	// --format json would leak into the next.
+	t.Cleanup(func() { resetFlags(t, rootCmd) })
 
 	old := os.Stdout
 	r, w, err := os.Pipe()
@@ -78,6 +78,31 @@ func runCLI(t *testing.T, srv *httptest.Server, args ...string) (string, error) 
 	w.Close()
 	os.Stdout = old
 	return <-captured, execErr
+}
+
+// resetFlags restores every flag a run changed in cmd's tree to its default.
+func resetFlags(t *testing.T, cmd *cobra.Command) {
+	t.Helper()
+	reset := func(f *pflag.Flag) {
+		if !f.Changed {
+			return
+		}
+		var err error
+		if sv, ok := f.Value.(pflag.SliceValue); ok {
+			err = sv.Replace(nil)
+		} else {
+			err = f.Value.Set(f.DefValue)
+		}
+		if err != nil {
+			t.Errorf("reset --%s: %v", f.Name, err)
+		}
+		f.Changed = false
+	}
+	cmd.Flags().VisitAll(reset)
+	cmd.PersistentFlags().VisitAll(reset)
+	for _, c := range cmd.Commands() {
+		resetFlags(t, c)
+	}
 }
 
 func modelsHandler(t *testing.T) http.HandlerFunc {

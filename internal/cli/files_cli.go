@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/SamyRai/go-z-ai/pkg/client"
 	"github.com/spf13/cobra"
@@ -12,7 +13,7 @@ import (
 var filesCmd = &cobra.Command{
 	Use:   "files",
 	Short: "File upload and management",
-	Long:  `Upload files for use in other API calls (batch input, code-interpreter sandbox input, agent file upload, voice-clone input).`,
+	Long:  `Upload files for use in other API calls (batch input, agent inputs, file extraction, code-interpreter sandbox input, voice-clone input).`,
 }
 
 var filesUploadCmd = &cobra.Command{
@@ -47,7 +48,7 @@ func init() {
 	rootCmd.AddCommand(filesCmd)
 	filesCmd.AddCommand(filesUploadCmd, filesListCmd, filesDeleteCmd, filesDownloadCmd)
 
-	filesUploadCmd.Flags().String("purpose", "batch", "File purpose: batch, code-interpreter, agent, or voice-clone-input")
+	filesUploadCmd.Flags().String("purpose", string(client.FilePurposeBatch), "File purpose: "+filePurposeList())
 	filesListCmd.Flags().String("purpose", "", "Filter by purpose (omit for all)")
 	addFormatFlag("text", filesUploadCmd, filesListCmd, filesDeleteCmd)
 }
@@ -61,7 +62,7 @@ func runFilesUpload(cmd *cobra.Command, args []string, apiClient *client.Client)
 
 	purpose, _ := cmd.Flags().GetString("purpose")
 
-	fmt.Fprintf(os.Stderr, "📤 Uploading %s...\n", filepath.Base(path))
+	progressf("📤 Uploading %s...\n", filepath.Base(path))
 	f, err := apiClient.Files().Upload(cmd.Context(), filepath.Base(path), data, client.FilePurpose(purpose))
 	if err != nil {
 		return fmt.Errorf("upload failed: %w", err)
@@ -121,4 +122,13 @@ func runFilesDownload(cmd *cobra.Command, args []string, apiClient *client.Clien
 
 	fmt.Printf("✅ Downloaded %d bytes to %s\n", len(data), outPath)
 	return nil
+}
+
+// filePurposeList renders client.FilePurposes for flag help.
+func filePurposeList() string {
+	names := make([]string, len(client.FilePurposes))
+	for i, p := range client.FilePurposes {
+		names[i] = string(p)
+	}
+	return strings.Join(names, ", ")
 }

@@ -51,7 +51,7 @@ func main() {
 	}
 
 	resp, err := c.Chat().RunWithTools(context.Background(), client.ChatRequest{
-		Model:    "glm-5.2",
+		Model:    client.DefaultModel,
 		Messages: []client.Message{{Role: "user", Content: prompt}},
 		Tools:    tools,
 	}, func(name, argsJSON string) (string, error) {

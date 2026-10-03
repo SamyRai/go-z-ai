@@ -1,247 +1,299 @@
 package client
 
 import (
+	"slices"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // This file holds the curated Z.AI model catalog — the single source of truth
-// for the metadata the /models endpoint does not return (context window,
-// pricing, capabilities, descriptions). It follows the codebase's documented
-// "structured lookup table" pattern (see docs/en/architecture.md, "Extending a
-// structured lookup table"): append a row to add a model, no new conditionals.
+// for model knowledge the /models endpoint does not return (context window,
+// pricing, capabilities, accepted reasoning-effort levels, descriptions) and
+// for the recommended default models every caller (CLI, TUI, coding-tool
+// config writers) uses. It follows the "structured lookup table" pattern (see
+// docs/en/architecture.md): append a row to add a model, no new conditionals.
 //
-// SOURCE & VERIFICATION
+// SOURCE & VERIFICATION (2026-10-02)
 //
-// Pricing and context figures are transcribed from Z.AI's official pricing
-// page: https://docs.z.ai/guides/overview/pricing  (verified 2026-07-19).
-// All prices are USD per 1M tokens.
+// Prices: https://docs.z.ai/guides/overview/pricing (USD per 1M tokens; cached
+// input storage is "limited-time free" everywhere, so it is not modeled).
+// Context/output limits: docs.z.ai model pages, cross-checked against the
+// Hugging Face config.json of the open-weight releases (1M = 1,048,576;
+// 200K = 202,752; 128K = 131,072; 96K = 98,304). reasoning_effort levels:
+// docs.z.ai chat-completion reference and the GLM-5.2/5.3 guides.
 //
-// This catalog is a SNAPSHOT. Z.AI changes pricing periodically and adds new
-// models without notice, and the /models endpoint gives no signal when either
-// happens. Mitigations baked in here:
-//
-//   - Unknown models from /models still appear in listings; they just render
-//     with sparse data (`-` for unknown cells) rather than being hidden or
-//     guessed at.
-//   - enrichModel overlays catalog values, but LIVE API VALUES ALWAYS WIN
-//     when both are present — so the day Z.AI starts sending max_context or
-//     pricing in /models, the real numbers take over automatically.
-//
-// When refreshing: re-fetch the pricing page, update the rows whose numbers
-// changed, bump the "verified" date in the comment above, and add a row for
-// any model /models reports that isn't cataloged yet.
+// The catalog is a SNAPSHOT: Z.AI changes prices and adds models without
+// notice, and /models gives no signal when either happens. Unknown models
+// still appear in listings with sparse data, and enrichModel lets live API
+// values win over catalog values. When refreshing: re-check the pricing page,
+// update changed rows, bump the date above, add rows for new models.
 
-// Well-known capability codes used across the catalog and the HasCapability
-// predicate. Adding a new capability is additive: append a constant and use
-// it in catalog entries + HasCapability callsites.
+// Recommended models. Callers pick defaults from here rather than
+// hard-coding model IDs.
 const (
-	CapText     = "text"     // ordinary chat / completions
-	CapVision   = "vision"   // accepts image inputs
-	CapThinking = "thinking" // hybrid reasoning mode (thinking on/off)
-	CapTools    = "tools"    // function / tool calling
-	CapCode     = "code"     // optimized for code generation / agentic coding
-	CapOCR      = "ocr"      // document / text extraction from images
+	// DefaultModel is the flagship text model for reasoning, coding, and
+	// agentic work.
+	DefaultModel = "glm-5.3"
+	// DefaultFastModel is the fast, low-cost tier — also natively multimodal.
+	DefaultFastModel = "glm-5.3-flash"
+	// DefaultVisionModel accepts image, video, and file input.
+	DefaultVisionModel = DefaultFastModel
+	// DefaultOCRModel serves LayoutService.Parse (/layout_parsing).
+	DefaultOCRModel = "glm-ocr"
+	// DefaultASRModel serves AudioService.Transcribe.
+	DefaultASRModel = "glm-asr-2512"
+	// DefaultTTSModel serves AudioService.Speech.
+	DefaultTTSModel = "glm-tts"
+)
+
+// Capability codes used by the catalog and ModelDetails.HasCapability.
+const (
+	CapText     = "text"     // chat / completions
+	CapVision   = "vision"   // image input
+	CapVideo    = "video"    // video input
+	CapFile     = "file"     // document (file_url) input
+	CapThinking = "thinking" // reasoning (reasoning_content)
+	CapTools    = "tools"    // function calling
+	CapCode     = "code"     // tuned for code generation / agentic coding
+	CapOCR      = "ocr"      // document / text extraction
+	CapAudio    = "audio"    // speech input (transcription)
 )
 
 // ModelCatalogEntry is one curated model row. Zero-valued fields mean
-// "unknown" (rendered as `-`), never "free" or "no context" — IsFree requires
-// an explicit zero-cost Pricing pointer to avoid the polarity bug that
-// previously made every model appear free when Pricing was nil.
+// "unknown" (rendered as `-`), never "free" or "no context": IsFree requires
+// an explicit zero-cost Pricing.
 type ModelCatalogEntry struct {
-	// ID is the canonical model identifier as returned by /models.
+	// ID is the canonical model identifier as sent in requests.
 	ID string
-	// Aliases are alternative IDs that should resolve to this entry (e.g.
-	// older names, regional variants). Matched only if ID doesn't match.
-	Aliases []string
-	// Family groups related variants ("GLM-5", "GLM-4.6"); Tier is a short
-	// label ("flagship", "fast", "air", "vision", "ocr").
+	// Family groups related variants ("GLM-5", "GLM-4"); Tier is a short
+	// label ("flagship", "flash", "flashx", "air", "turbo", "vision", ...).
 	Family, Tier string
-	// Capabilities is the set of CapXxx codes this model supports.
+	// Capabilities is the set of Cap* codes the model supports.
 	Capabilities []string
-	// ContextSize is the max input context in tokens; MaxOutput is the max
+	// ReasoningEfforts lists the ChatRequest.ReasoningEffort levels the model
+	// accepts; empty means the model does not take the parameter.
+	ReasoningEfforts []string
+	// ContextSize is the max input context in tokens; MaxOutput the max
 	// generated tokens. Zero means unknown.
 	ContextSize, MaxOutput int
-	// Pricing is per 1M tokens (USD). Non-nil only when at least one price
-	// is known. For truly free models, set a non-nil Pricing with all-zero
-	// fields — IsFree reads that as free.
+	// Pricing is per 1M tokens (USD); nil means unknown, an all-zero value
+	// means free.
 	Pricing *Pricing
-	// Name is the human-readable display name; Description is a one-line
-	// blurb. Both populate the enriched ModelDetails.
+	// Name is the display name; Description a one-line blurb.
 	Name, Description string
-	// Created is the release epoch (Unix seconds), best-effort. Used to
-	// populate ModelDetails.Created when /models omits it.
+	// Created is the release date (Unix seconds), best effort.
 	Created int64
 }
 
-// modelsCatalog is the curated catalog. Order is loose; lookup is by exact
-// ID, then alias, then prefix (see findCatalogEntry).
-//
-// Pricing source: https://docs.z.ai/guides/overview/pricing (verified 2026-07-19).
-// Context sources: docs.z.ai model pages + z.ai blog posts for each family.
+// Shared capability sets and effort lists, so related rows can't drift.
+var (
+	capsReasoning  = []string{CapText, CapThinking, CapTools, CapCode}
+	capsMultimodal = []string{CapText, CapVision, CapVideo, CapFile, CapThinking, CapTools, CapCode}
+	capsVision     = []string{CapText, CapVision, CapVideo, CapFile, CapThinking, CapTools}
+	effortsGLM53   = []string{EffortLow, EffortHigh, EffortMax}
+)
+
+// Context and output limits (tokens).
+const (
+	ctx1M   = 1_048_576
+	ctx200K = 202_752
+	ctx128K = 131_072
+	ctx64K  = 65_536
+	out128K = 131_072
+	out96K  = 98_304
+	out32K  = 32_768
+	out16K  = 16_384
+)
+
+func usd(in, cached, out float64) *Pricing {
+	return &Pricing{Input: in, Cached: cached, Output: out, Unit: "USD/1M"}
+}
+
+// modelsCatalog is the curated catalog. Lookup is by exact ID, then by dated
+// snapshot of an ID (see findCatalogEntry).
 var modelsCatalog = []ModelCatalogEntry{
-	// --- GLM-5 family (flagship line) ---
+	// --- GLM-5 family ---
 	{
-		ID:           "glm-5.2",
-		Family:       "GLM-5",
-		Tier:         "flagship",
-		Capabilities: []string{CapText, CapThinking, CapTools, CapCode},
-		ContextSize:  128_000,
-		Pricing:      &Pricing{Input: 1.40, Output: 4.40, Cached: 0.28, Unit: "USD/1M"},
-		Name:         "GLM-5.2",
-		Description:  "Latest flagship GLM model; top-tier reasoning, coding, and agentic performance.",
-		Created:      1_781_625_600,
+		ID: "glm-5.3", Family: "GLM-5", Tier: "flagship", Name: "GLM-5.3",
+		Capabilities: capsReasoning, ReasoningEfforts: effortsGLM53,
+		ContextSize: ctx1M, MaxOutput: out128K, Pricing: usd(1.40, 0.26, 4.40),
+		Description: "Flagship model for coding and long-horizon agentic work; always reasons (effort low/high/max).",
+		Created:     1_786_665_600,
 	},
 	{
-		ID:           "glm-5.1",
-		Family:       "GLM-5",
-		Tier:         "flagship",
-		Capabilities: []string{CapText, CapThinking, CapTools, CapCode},
-		ContextSize:  128_000,
-		Pricing:      &Pricing{Input: 1.40, Output: 4.40, Cached: 0.28, Unit: "USD/1M"},
-		Name:         "GLM-5.1",
-		Description:  "Flagship GLM model; strong reasoning and tool use.",
-		Created:      1_774_620_000,
+		ID: "glm-5.3-flash", Family: "GLM-5", Tier: "flash", Name: "GLM-5.3-Flash",
+		Capabilities: capsMultimodal, ReasoningEfforts: effortsGLM53,
+		ContextSize: ctx1M, MaxOutput: out128K, Pricing: usd(0.15, 0.03, 0.50),
+		Description: "Fast, low-cost, natively multimodal GLM-5.3 (image, video, and file input).",
+		Created:     1_787_702_400,
 	},
 	{
-		ID:           "glm-5",
-		Family:       "GLM-5",
-		Tier:         "flagship",
-		Capabilities: []string{CapText, CapThinking, CapTools, CapCode},
-		ContextSize:  128_000,
-		Pricing:      &Pricing{Input: 1.00, Output: 3.20, Cached: 0.20, Unit: "USD/1M"},
-		Name:         "GLM-5",
-		Description:  "Flagship-tier model at lower cost than mainstream frontier alternatives.",
-		Created:      1_770_739_200,
+		ID: "glm-5.3-flashx", Family: "GLM-5", Tier: "flashx", Name: "GLM-5.3-FlashX",
+		Capabilities: capsMultimodal, ReasoningEfforts: effortsGLM53,
+		ContextSize: ctx1M, MaxOutput: out128K, Pricing: usd(0.37, 0.075, 1.25),
+		Description: "Higher-throughput serving of GLM-5.3-Flash.",
+		Created:     1_789_689_600,
 	},
 	{
-		ID:           "glm-5-turbo",
-		Family:       "GLM-5",
-		Tier:         "fast",
-		Capabilities: []string{CapText, CapTools},
-		ContextSize:  128_000,
-		Pricing:      &Pricing{Input: 1.20, Output: 4.00, Unit: "USD/1M"},
-		Name:         "GLM-5 Turbo",
-		Description:  "Higher-throughput, lower-latency GLM-5 variant for production workloads.",
-		Created:      1_773_504_000,
+		ID: "glm-5.2", Family: "GLM-5", Tier: "flagship", Name: "GLM-5.2",
+		Capabilities: capsReasoning, ReasoningEfforts: AllEfforts,
+		ContextSize: ctx1M, MaxOutput: out128K, Pricing: usd(1.40, 0.26, 4.40),
+		Description: "Previous flagship; superseded by GLM-5.3.",
+		Created:     1_781_625_600,
 	},
 	{
-		ID:           "glm-5-flashx",
-		Aliases:      []string{"glm-5-flash"},
-		Family:       "GLM-5",
-		Tier:         "fast",
-		Capabilities: []string{CapText, CapTools},
-		ContextSize:  128_000,
-		Pricing:      &Pricing{Input: 0.10, Output: 0.30, Cached: 0.02, Unit: "USD/1M"},
-		Name:         "GLM-5 FlashX",
-		Description:  "Ultra-fast, ultra-cheap FlashX variant — good for high-volume simple tasks.",
+		ID: "glm-5.1", Family: "GLM-5", Tier: "flagship", Name: "GLM-5.1",
+		Capabilities: capsReasoning,
+		ContextSize:  ctx200K, MaxOutput: out128K, Pricing: usd(1.40, 0.26, 4.40),
+		Description: "Earlier GLM-5 flagship; superseded by GLM-5.3.",
+		Created:     1_774_620_000,
 	},
 	{
-		ID:           "glm-5v",
-		Family:       "GLM-5",
-		Tier:         "vision",
-		Capabilities: []string{CapText, CapVision, CapThinking, CapTools},
-		ContextSize:  128_000,
-		Pricing:      &Pricing{Input: 1.40, Output: 4.40, Cached: 0.28, Unit: "USD/1M"},
-		Name:         "GLM-5V",
-		Description:  "Vision-capable GLM-5; accepts images alongside text for multimodal reasoning.",
-	},
-
-	// --- GLM-4.x family ---
-	{
-		ID:           "glm-4.7",
-		Family:       "GLM-4",
-		Tier:         "flagship",
-		Capabilities: []string{CapText, CapThinking, CapTools, CapCode},
-		ContextSize:  128_000,
-		Pricing:      &Pricing{Input: 0.60, Output: 2.20, Cached: 0.11, Unit: "USD/1M"},
-		Name:         "GLM-4.7",
-		Description:  "Newer GLM-4 family release; competitive reasoning and coding.",
-		Created:      1_766_332_800,
+		ID: "glm-5", Family: "GLM-5", Tier: "flagship", Name: "GLM-5",
+		Capabilities: capsReasoning,
+		ContextSize:  ctx200K, MaxOutput: out128K, Pricing: usd(1.00, 0.20, 3.20),
+		Description: "First GLM-5 release.",
+		Created:     1_770_739_200,
 	},
 	{
-		ID:           "glm-4.6",
-		Family:       "GLM-4",
-		Tier:         "flagship",
-		Capabilities: []string{CapText, CapThinking, CapTools, CapCode},
-		ContextSize:  200_000,
-		MaxOutput:    128_000,
-		Pricing:      &Pricing{Input: 0.60, Output: 2.20, Cached: 0.11, Unit: "USD/1M"},
-		Name:         "GLM-4.6",
-		Description:  "Advanced reasoning and coding model with 200K context; built for agentic workflows.",
-		Created:      1_759_276_800,
-	},
-	{
-		ID:           "glm-4.6v",
-		Family:       "GLM-4",
-		Tier:         "vision",
-		Capabilities: []string{CapText, CapVision, CapThinking, CapTools},
-		ContextSize:  64_000,
-		Pricing:      &Pricing{Input: 0.60, Output: 2.20, Cached: 0.11, Unit: "USD/1M"},
-		Name:         "GLM-4.6V",
-		Description:  "Vision-capable variant of GLM-4.6; multimodal understanding.",
-	},
-	{
-		ID:           "glm-4.5",
-		Family:       "GLM-4",
-		Tier:         "flagship",
-		Capabilities: []string{CapText, CapThinking, CapTools, CapCode},
-		ContextSize:  200_000,
-		MaxOutput:    96_000,
-		Pricing:      &Pricing{Input: 0.60, Output: 2.20, Cached: 0.11, Unit: "USD/1M"},
-		Name:         "GLM-4.5",
-		Description:  "Hybrid reasoning model with 200K context; predecessor to GLM-4.6.",
-		Created:      1_753_632_000,
-	},
-	{
-		ID:           "glm-4.5-air",
-		Family:       "GLM-4",
-		Tier:         "air",
+		ID: "glm-5-turbo", Family: "GLM-5", Tier: "turbo", Name: "GLM-5-Turbo",
 		Capabilities: []string{CapText, CapTools, CapCode},
-		ContextSize:  200_000,
-		Pricing:      &Pricing{Input: 0.20, Output: 1.10, Cached: 0.03, Unit: "USD/1M"},
-		Name:         "GLM-4.5 Air",
-		Description:  "Lightweight MoE variant of GLM-4.5; optimized for tool use and front-end coding at low cost.",
+		ContextSize:  ctx200K, MaxOutput: out128K, Pricing: usd(1.20, 0.24, 4.00),
+		Description: "GLM-5 tuned for long tool-call chains in agent frameworks; no longer on the pricing page.",
+		Created:     1_773_504_000,
 	},
 	{
-		ID:           "glm-4.5v",
-		Family:       "GLM-4",
-		Tier:         "vision",
-		Capabilities: []string{CapText, CapVision, CapThinking, CapTools},
-		ContextSize:  64_000,
-		Pricing:      &Pricing{Input: 0.60, Output: 2.20, Cached: 0.11, Unit: "USD/1M"},
-		Name:         "GLM-4.5V",
-		Description:  "Vision-capable variant of GLM-4.5; multimodal understanding.",
-	},
-	{
-		ID:           "glm-4.5-airx",
-		Family:       "GLM-4",
-		Tier:         "air",
-		Capabilities: []string{CapText, CapTools},
-		ContextSize:  128_000,
-		Pricing:      &Pricing{Input: 0.30, Output: 1.50, Unit: "USD/1M"},
-		Name:         "GLM-4.5 AirX",
-		Description:  "Higher-throughput Air variant for production traffic.",
+		ID: "glm-5v-turbo", Family: "GLM-5", Tier: "vision", Name: "GLM-5V-Turbo",
+		Capabilities: capsVision,
+		ContextSize:  ctx200K, MaxOutput: out128K, Pricing: usd(1.20, 0.24, 4.00),
+		Description: "GLM-5 vision model for multimodal coding agents; no longer on the pricing page.",
+		Created:     1_775_001_600,
 	},
 
-	// --- OCR ---
+	// --- GLM-4 family ---
 	{
-		ID:           "glm-ocr",
-		Family:       "GLM",
-		Tier:         "ocr",
-		Capabilities: []string{CapVision, CapOCR, CapText},
-		Pricing:      &Pricing{Input: 0.50, Unit: "USD/1M"}, // image-priced in practice; token rate is approximate
-		Name:         "GLM-OCR",
-		Description:  "Document / text extraction from images; returns structured text.",
+		ID: "glm-4.7", Family: "GLM-4", Tier: "flagship", Name: "GLM-4.7",
+		Capabilities: capsReasoning,
+		ContextSize:  ctx200K, MaxOutput: out128K, Pricing: usd(0.60, 0.11, 2.20),
+		Description: "Last GLM-4 flagship; strong reasoning and coding.",
+		Created:     1_766_332_800,
+	},
+	{
+		ID: "glm-4.7-flashx", Family: "GLM-4", Tier: "flashx", Name: "GLM-4.7-FlashX",
+		Capabilities: []string{CapText, CapThinking, CapTools},
+		ContextSize:  ctx200K, MaxOutput: out128K, Pricing: usd(0.07, 0.01, 0.40),
+		Description: "Cheapest paid text model; higher concurrency than GLM-4.7-Flash.",
+		Created:     1_768_780_800,
+	},
+	{
+		ID: "glm-4.7-flash", Family: "GLM-4", Tier: "flash", Name: "GLM-4.7-Flash",
+		Capabilities: []string{CapText, CapThinking, CapTools},
+		ContextSize:  ctx200K, MaxOutput: out128K, Pricing: usd(0, 0, 0),
+		Description: "Free lightweight model (rate-limited).",
+		Created:     1_768_780_800,
+	},
+	{
+		ID: "glm-4.6", Family: "GLM-4", Tier: "flagship", Name: "GLM-4.6",
+		Capabilities: capsReasoning,
+		ContextSize:  ctx200K, MaxOutput: out128K, Pricing: usd(0.60, 0.11, 2.20),
+		Description: "Reasoning and coding model with 200K context.",
+		Created:     1_759_276_800,
+	},
+	{
+		ID: "glm-4.6v", Family: "GLM-4", Tier: "vision", Name: "GLM-4.6V",
+		Capabilities: capsVision,
+		ContextSize:  ctx128K, MaxOutput: out32K, Pricing: usd(0.30, 0.05, 0.90),
+		Description: "Vision model with native multimodal function calling.",
+		Created:     1_765_152_000,
+	},
+	{
+		ID: "glm-4.6v-flashx", Family: "GLM-4", Tier: "vision", Name: "GLM-4.6V-FlashX",
+		Capabilities: capsVision,
+		ContextSize:  ctx128K, MaxOutput: out32K, Pricing: usd(0.04, 0.004, 0.40),
+		Description: "Low-cost GLM-4.6V variant.",
+		Created:     1_765_152_000,
+	},
+	{
+		ID: "glm-4.6v-flash", Family: "GLM-4", Tier: "vision", Name: "GLM-4.6V-Flash",
+		Capabilities: capsVision,
+		ContextSize:  ctx128K, MaxOutput: out32K, Pricing: usd(0, 0, 0),
+		Description: "Free lightweight vision model (rate-limited).",
+		Created:     1_765_152_000,
+	},
+	{
+		ID: "glm-4.5", Family: "GLM-4", Tier: "flagship", Name: "GLM-4.5",
+		Capabilities: capsReasoning,
+		ContextSize:  ctx128K, MaxOutput: out96K, Pricing: usd(0.60, 0.11, 2.20),
+		Description: "Hybrid reasoning model; predecessor to GLM-4.6.",
+		Created:     1_753_632_000,
+	},
+	{
+		ID: "glm-4.5-x", Family: "GLM-4", Tier: "x", Name: "GLM-4.5-X",
+		Capabilities: capsReasoning,
+		ContextSize:  ctx128K, MaxOutput: out96K, Pricing: usd(2.20, 0.45, 8.90),
+		Description: "High-speed serving of GLM-4.5.",
+		Created:     1_753_632_000,
+	},
+	{
+		ID: "glm-4.5-air", Family: "GLM-4", Tier: "air", Name: "GLM-4.5-Air",
+		Capabilities: capsReasoning,
+		ContextSize:  ctx128K, MaxOutput: out96K, Pricing: usd(0.20, 0.03, 1.10),
+		Description: "Lightweight MoE variant of GLM-4.5.",
+		Created:     1_753_632_000,
+	},
+	{
+		ID: "glm-4.5-airx", Family: "GLM-4", Tier: "air", Name: "GLM-4.5-AirX",
+		Capabilities: capsReasoning,
+		ContextSize:  ctx128K, MaxOutput: out96K, Pricing: usd(1.10, 0.22, 4.50),
+		Description: "High-speed serving of GLM-4.5-Air.",
+		Created:     1_753_632_000,
+	},
+	{
+		ID: "glm-4.5-flash", Family: "GLM-4", Tier: "flash", Name: "GLM-4.5-Flash",
+		Capabilities: []string{CapText, CapThinking, CapTools},
+		ContextSize:  ctx128K, MaxOutput: out96K, Pricing: usd(0, 0, 0),
+		Description: "Free model, retirement announced — prefer GLM-4.7-Flash.",
+		Created:     1_753_632_000,
+	},
+	{
+		ID: "glm-4.5v", Family: "GLM-4", Tier: "vision", Name: "GLM-4.5V",
+		Capabilities: []string{CapText, CapVision, CapVideo, CapThinking, CapTools},
+		ContextSize:  ctx64K, MaxOutput: out16K, Pricing: usd(0.60, 0.11, 1.80),
+		Description: "Earlier vision model; superseded by GLM-4.6V.",
+		Created:     1_754_870_400,
+	},
+	{
+		ID: "glm-4-32b-0414-128k", Family: "GLM-4", Tier: "compact", Name: "GLM-4-32B-0414-128K",
+		Capabilities: []string{CapText, CapTools},
+		ContextSize:  ctx128K, MaxOutput: out16K, Pricing: usd(0.10, 0, 0.10),
+		Description: "Cost-effective 32B dense model.",
+		Created:     1_744_588_800,
+	},
+
+	// --- Specialized (token-priced, not served by chat completions) ---
+	{
+		ID: DefaultOCRModel, Family: "GLM", Tier: "ocr", Name: "GLM-OCR",
+		Capabilities: []string{CapVision, CapOCR},
+		Pricing:      usd(0.03, 0, 0.03),
+		Description:  "Document layout parsing / OCR for images and PDFs (LayoutService).",
+	},
+	{
+		ID: "glm-asr-2512", Family: "GLM", Tier: "asr", Name: "GLM-ASR-2512",
+		Capabilities: []string{CapAudio},
+		Pricing:      usd(0.03, 0, 0),
+		Description:  "Speech-to-text for clips up to 30 s (AudioService.Transcribe).",
+		Created:      1_765_238_400,
 	},
 }
 
-// findCatalogEntry resolves a model ID to its catalog entry, or returns nil if
-// none matches. Match order: exact ID, then alias, then (as a last resort for
-// versioned variants like `glm-4.6-2025-07-09`) the longest ID prefix that
-// starts with a catalog entry's ID. Prefix matching never invents data — it
-// only reuses an existing entry's metadata for an unrecognized versioned ID.
+// findCatalogEntry resolves a model ID to its catalog entry, or nil. Match
+// order: exact ID (case-insensitive — the API accepts "GLM-5.3"), then a
+// dated snapshot of a cataloged ID ("glm-4.6-2025-07-09" → glm-4.6). Only
+// snapshot suffixes that start with a digit match, so an unknown variant such
+// as "glm-5.3-prime" never inherits glm-5.3's pricing.
 func findCatalogEntry(id string) *ModelCatalogEntry {
+	id = strings.ToLower(id)
 	if id == "" {
 		return nil
 	}
@@ -250,62 +302,56 @@ func findCatalogEntry(id string) *ModelCatalogEntry {
 			return &modelsCatalog[i]
 		}
 	}
-	for i := range modelsCatalog {
-		for _, a := range modelsCatalog[i].Aliases {
-			if a == id {
-				return &modelsCatalog[i]
-			}
-		}
-	}
-	// Prefix fallback: a versioned snapshot ID like "glm-4.6-2025-07-09"
-	// should still resolve to the glm-4.6 entry. Walk all entries and pick
-	// the longest matching ID so a more-specific entry wins over a shorter
-	// prefix.
 	var best *ModelCatalogEntry
-	bestLen := 0
 	for i := range modelsCatalog {
-		cid := modelsCatalog[i].ID
-		if len(id) > len(cid)+1 && strings.HasPrefix(id, cid+"-") && len(cid) > bestLen {
-			best = &modelsCatalog[i]
-			bestLen = len(cid)
+		e := &modelsCatalog[i]
+		suffix, ok := strings.CutPrefix(id, e.ID+"-")
+		if !ok || suffix == "" || !unicode.IsDigit(rune(suffix[0])) {
+			continue
+		}
+		if best == nil || len(e.ID) > len(best.ID) {
+			best = e
 		}
 	}
 	return best
 }
 
-// enrichModel returns a copy of raw with catalog metadata overlaid for the
-// fields raw leaves empty. Live API values always win:
-//
-//   - Name: kept if non-empty, else catalog Name (via CatalogName).
-//   - Description: same.
-//   - ContextSize: kept if non-zero, else catalog value.
-//   - MaxOutput, Family, Tier, Capabilities: always taken from catalog
-//     (the API doesn't send these today; if it ever does, they'll be added
-//     to the wire shape and this logic updated then).
-//   - Pricing: kept if non-nil, else catalog value. A live nil Pricing is
-//     treated as "unknown" (not "free") — see IsFree.
-//   - Created: kept if non-zero, else catalog value.
-//
-// If no catalog entry matches, raw is returned unchanged (no fabrication).
+// CatalogEntry returns a copy of the catalog entry for model, if known.
+func CatalogEntry(model string) (ModelCatalogEntry, bool) {
+	e := findCatalogEntry(model)
+	if e == nil {
+		return ModelCatalogEntry{}, false
+	}
+	return e.clone(), true
+}
+
+// clone returns a deep copy, so callers can never mutate the catalog.
+func (e ModelCatalogEntry) clone() ModelCatalogEntry {
+	e.Capabilities = slices.Clone(e.Capabilities)
+	e.ReasoningEfforts = slices.Clone(e.ReasoningEfforts)
+	if e.Pricing != nil {
+		p := *e.Pricing
+		e.Pricing = &p
+	}
+	return e
+}
+
+// enrichModel returns raw with catalog metadata filled into the fields the
+// API left empty. Live API values always win; a model without a catalog
+// entry is returned unchanged (nothing is invented).
 func enrichModel(raw ModelDetails) ModelDetails {
-	entry := findCatalogEntry(raw.ID)
-	if entry == nil {
+	found := findCatalogEntry(raw.ID)
+	if found == nil {
 		return raw
 	}
+	entry := found.clone()
 	out := raw
-
-	// Name/Description: prefer live API, fall back to catalog. Stored in the
-	// dedicated Catalog* fields so future wire-decoded Name/Description are
-	// distinguishable and take precedence at the presentation layer.
-	out.CatalogName = entry.Name
-	out.CatalogDescription = entry.Description
-	if out.Name == "" && entry.Name != "" {
+	if out.Name == "" {
 		out.Name = entry.Name
 	}
-	if out.Description == "" && entry.Description != "" {
+	if out.Description == "" {
 		out.Description = entry.Description
 	}
-
 	if out.ContextSize == 0 {
 		out.ContextSize = entry.ContextSize
 	}
@@ -321,9 +367,11 @@ func enrichModel(raw ModelDetails) ModelDetails {
 	if len(out.Capabilities) == 0 {
 		out.Capabilities = entry.Capabilities
 	}
-	if out.Pricing == nil && entry.Pricing != nil {
-		p := *entry.Pricing // copy so callers can't mutate the catalog
-		out.Pricing = &p
+	if len(out.ReasoningEfforts) == 0 {
+		out.ReasoningEfforts = entry.ReasoningEfforts
+	}
+	if out.Pricing == nil {
+		out.Pricing = entry.Pricing
 	}
 	if out.Created == 0 {
 		out.Created = entry.Created
@@ -334,32 +382,20 @@ func enrichModel(raw ModelDetails) ModelDetails {
 	return out
 }
 
-// HasCapability reports whether m advertises capability c (one of the CapXxx
-// constants). This replaces every prior substring-based vision/text heuristic
-// — there is now exactly one place a capability is determined, and the TUI /
-// CLI / client all read it, so the Vision/Text filters can never drift apart.
-// A model with no catalog entry has no known capabilities and reports false
-// for everything (it still appears under the All filter).
+// HasCapability reports whether m advertises capability c (a Cap* code) —
+// the one place a capability is determined, so the CLI, TUI, and library
+// filters can never drift apart. An uncataloged model reports false.
 func (m ModelDetails) HasCapability(c string) bool {
-	for _, cap := range m.Capabilities {
-		if cap == c {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(m.Capabilities, c)
 }
 
-// IsFree reports whether m is genuinely free — a non-nil Pricing whose input
-// and output rates are both zero. A nil Pricing means "unknown" and is NOT
-// treated as free, which is the fix for the polarity bug where the TUI's Free
-// filter used to show every model (because Pricing was always nil in
-// production) while the CLI's showed none.
+// IsFree reports whether m is genuinely free: a known Pricing whose input
+// and output rates are both zero. Unknown (nil) pricing is not free.
 func (m ModelDetails) IsFree() bool {
 	return m.Pricing != nil && m.Pricing.Input == 0 && m.Pricing.Output == 0
 }
 
-// CreatedTime returns the model's release time, or the zero time if Created
-// is unset. Convenience so callers don't each repeat the epoch conversion.
+// CreatedTime returns the model's release time, or the zero time if unknown.
 func (m ModelDetails) CreatedTime() time.Time {
 	if m.Created <= 0 {
 		return time.Time{}

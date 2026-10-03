@@ -1,6 +1,7 @@
 // Package accounts implements the TUI's Accounts tab: list, add, switch, and
-// remove stored Z.AI account credentials via pkg/accounts.Store, the same
-// store the "go-z-ai accounts" commands use.
+// remove stored Z.AI account credentials via internal/accounts.Store, the
+// same store the "go-z-ai accounts" commands use. The store is only touched
+// on the UI goroutine; background work (key detection) returns messages.
 package accounts
 
 import (
@@ -17,6 +18,7 @@ import (
 	"github.com/SamyRai/go-z-ai/internal/tui/uimsg"
 	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
 	"github.com/SamyRai/go-z-ai/internal/usageview"
+	"github.com/SamyRai/go-z-ai/pkg/client"
 )
 
 type item struct{ accounts.Account }
@@ -35,13 +37,19 @@ const (
 	modeConfirmDelete
 )
 
-type reloadedMsg struct{ err error }
+// detectedMsg carries a new account whose type and region were detected in
+// the background, ready to be stored on the UI goroutine.
+type detectedMsg struct {
+	account accounts.Account
+	err     error
+}
 
 // Model is the Accounts tab's screen model.
 type Model struct {
-	store *accounts.Store
-	list  list.Model
-	mode  mode
+	store   *accounts.Store
+	selfTab int // routes background results back to this tab
+	list    list.Model
+	mode    mode
 
 	form        *huh.Form
 	formName    string
@@ -49,15 +57,16 @@ type Model struct {
 	confirmName string
 }
 
-// New builds the Accounts screen. store must be non-nil.
-func New(store *accounts.Store) Model {
+// New builds the Accounts screen. store must be non-nil; selfTab is this
+// screen's tab index in the root model.
+func New(store *accounts.Store, selfTab int) Model {
 	l := list.New(nil, list.NewDefaultDelegate(), 0, 0)
 	l.SetShowTitle(false)
 	// Enable the list's built-in fuzzy filter (sahilm/fuzzy, already an
 	// indirect dep): press '/' to start typing a query, 'esc' to clear.
 	l.SetFilteringEnabled(true)
 
-	m := Model{store: store, list: l}
+	m := Model{store: store, selfTab: selfTab, list: l}
 	m.reload()
 	return m
 }
@@ -96,12 +105,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list.SetSize(msg.Width, max(msg.Height-2, 3))
 		return m, nil
 
-	case reloadedMsg:
+	case detectedMsg:
 		if msg.err != nil {
-			return m, func() tea.Msg { return uimsg.Err{Err: msg.err} }
+			return m, errCmd(msg.err)
 		}
-		m.reload()
-		return m, nil
+		wasEmpty := m.store.Active == ""
+		if err := m.store.Add(msg.account, false); err != nil {
+			return m, errCmd(err)
+		}
+		return m, m.saved(fmt.Sprintf("added %s (%s)", msg.account.Name, msg.account.Type), wasEmpty)
 
 	case tea.KeyPressMsg:
 		switch m.mode {
@@ -109,6 +121,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateAdd(msg)
 		case modeConfirmDelete:
 			return m.updateConfirmDelete(msg)
+		}
+		// While the filter is being typed into, every key belongs to it.
+		if m.list.FilterState() == list.Filtering {
+			break
 		}
 
 		switch msg.String() {
@@ -123,13 +139,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		case "enter", "u":
-			if it, ok := m.selected(); ok {
-				if err := m.store.SetActive(it.Name); err == nil {
-					_ = m.store.Save()
-				}
-				m.reload()
+			it, ok := m.selected()
+			if !ok || it.Name == m.store.Active {
+				return m, nil
 			}
-			return m, nil
+			if err := m.store.SetActive(it.Name); err != nil {
+				return m, errCmd(err)
+			}
+			return m, m.saved("active account: "+it.Name, true)
 		}
 	}
 
@@ -137,6 +154,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.list, cmd = m.list.Update(msg)
 	return m, cmd
 }
+
+// saved persists the store, reloads the list, and reports status; when the
+// active account may have changed it also tells the root to switch clients.
+func (m *Model) saved(status string, activeChanged bool) tea.Cmd {
+	if err := m.store.Save(); err != nil {
+		return errCmd(err)
+	}
+	m.reload()
+	cmds := []tea.Cmd{func() tea.Msg { return uimsg.Status{Text: status} }}
+	if activeChanged {
+		cmds = append(cmds, func() tea.Msg { return uimsg.AccountChanged{} })
+	}
+	return tea.Batch(cmds...)
+}
+
+func errCmd(err error) tea.Cmd { return func() tea.Msg { return uimsg.Err{Err: err} } }
 
 func (m Model) selected() (accounts.Account, bool) {
 	it, ok := m.list.SelectedItem().(item)
@@ -151,14 +184,11 @@ func (m Model) updateConfirmDelete(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "y", "enter":
 		name := m.confirmName
 		m.mode = modeList
+		wasActive := m.store.Active == name
 		if err := m.store.Remove(name, true); err != nil {
-			return m, func() tea.Msg { return uimsg.Err{Err: err} }
+			return m, errCmd(err)
 		}
-		if err := m.store.Save(); err != nil {
-			return m, func() tea.Msg { return uimsg.Err{Err: err} }
-		}
-		m.reload()
-		return m, func() tea.Msg { return uimsg.Status{Text: fmt.Sprintf("removed account %q", name)} }
+		return m, m.saved(fmt.Sprintf("removed account %q", name), wasActive)
 	default:
 		m.mode = modeList
 		return m, nil
@@ -176,7 +206,7 @@ func (m Model) updateAdd(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 	if m.form.State == huh.StateCompleted {
 		m.mode = modeList
-		return m, m.submitAdd()
+		return m, uimsg.Route(m.selfTab, m.submitAdd())
 	}
 	if m.form.State == huh.StateAborted {
 		m.mode = modeList
@@ -185,27 +215,26 @@ func (m Model) updateAdd(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// submitAdd detects the new key's type and region in the background (a free
+// quota probe, no tokens spent) and hands the account back as a detectedMsg.
 func (m Model) submitAdd() tea.Cmd {
-	name := m.formName
-	apiKey := m.formAPIKey
-	store := m.store
+	name, apiKey := m.formName, m.formAPIKey
 	return func() tea.Msg {
-		accType, _, err := accounts.ProbeType(context.Background(), apiKey)
+		c, err := client.NewClient(client.Config{APIKey: apiKey})
 		if err != nil {
-			return reloadedMsg{err: err}
+			return detectedMsg{err: err}
 		}
-		if err := store.Add(accounts.Account{
+		det, err := c.Detection().DetectAccountType(context.Background())
+		if err != nil {
+			return detectedMsg{err: fmt.Errorf("detect account type: %w", err)}
+		}
+		return detectedMsg{account: accounts.Account{
 			Name:      name,
 			APIKey:    apiKey,
-			Type:      accType,
+			Type:      det.Type,
+			Region:    det.Region,
 			CreatedAt: time.Now(),
-		}, false); err != nil {
-			return reloadedMsg{err: err}
-		}
-		if err := store.Save(); err != nil {
-			return reloadedMsg{err: err}
-		}
-		return reloadedMsg{}
+		}}
 	}
 }
 
@@ -226,6 +255,12 @@ func (m Model) View() tea.View {
 		}
 		return tea.NewView(m.list.View())
 	}
+}
+
+// CapturesInput reports whether a text field has focus (the add form or the
+// list filter), so the root leaves printable keys to it.
+func (m Model) CapturesInput() bool {
+	return m.mode == modeAdd || m.list.FilterState() == list.Filtering
 }
 
 // ShortHelp implements the root model's helpProvider interface.

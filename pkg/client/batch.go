@@ -38,11 +38,13 @@ const defaultCompletionWindow = "24h"
 
 // BatchCreateRequest submits a new batch job.
 type BatchCreateRequest struct {
-	InputFileID         string            `json:"input_file_id"`
-	Endpoint            BatchEndpoint     `json:"endpoint"`
-	CompletionWindow    string            `json:"completion_window,omitempty"` // defaults to "24h"
-	Metadata            map[string]string `json:"metadata,omitempty"`
-	AutoDeleteInputFile bool              `json:"auto_delete_input_file,omitempty"`
+	InputFileID      string            `json:"input_file_id"`
+	Endpoint         BatchEndpoint     `json:"endpoint"`
+	CompletionWindow string            `json:"completion_window,omitempty"` // defaults to "24h"
+	Metadata         map[string]string `json:"metadata,omitempty"`
+	// AutoDeleteInputFile deletes the input file once the batch finishes. A
+	// pointer so an explicit false is sent.
+	AutoDeleteInputFile *bool `json:"auto_delete_input_file,omitempty"`
 }
 
 // BatchRequestCounts summarizes a batch's request completion progress.

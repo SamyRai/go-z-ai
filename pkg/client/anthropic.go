@@ -1,19 +1,20 @@
 package client
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"iter"
 	"net/http"
 	"strings"
 )
 
-// AnthropicService talks to Z.AI's Anthropic-compatible Messages API at
-// AnthropicBaseURL (https://api.z.ai/api/anthropic), the same surface the
-// GLM Coding Plan points Claude Code and other Anthropic-protocol tools at via
-// pkg/coding. It is a typed Go client for POST /v1/messages, parallel to
-// ChatService's OpenAI-style /chat/completions.
+// AnthropicService talks to Z.AI's Anthropic-compatible Messages API at the
+// region's Anthropic root (AnthropicBaseURL, or ChinaAnthropicBaseURL under
+// RegionChina) — the surface the GLM Coding Plan points Claude Code and other
+// Anthropic-protocol tools at. It is a typed Go client for POST /v1/messages,
+// parallel to ChatService's OpenAI-style /chat/completions.
 //
 // Authentication is the z.ai API key as a Bearer token (Config.APIKey), not
 // Anthropic's x-api-key header — this matches how @z_ai/coding-helper wires
@@ -190,13 +191,12 @@ func (r *AnthropicResponse) Thinking() string {
 
 // Create sends a POST /v1/messages request and returns the completed message.
 func (s *AnthropicService) Create(ctx context.Context, req AnthropicMessageRequest) (*AnthropicResponse, error) {
-	if err := validateAnthropicRequest(&req); err != nil {
-		return nil, fmt.Errorf("invalid anthropic request: %w", err)
+	r, err := s.prepare(req)
+	if err != nil {
+		return nil, err
 	}
-	req.Tools = s.compatTools(req.Tools)
-
 	var resp AnthropicResponse
-	if err := s.client.doRequestBaseKeyHeaders(ctx, AnthropicBaseURL, s.client.config.APIKey, "POST", anthropicMessagesEndpoint, req, &resp, anthropicHeaders()); err != nil {
+	if err := s.client.do(ctx, r, &resp); err != nil {
 		return nil, fmt.Errorf("failed to create anthropic message: %w", err)
 	}
 	return &resp, nil
@@ -209,91 +209,75 @@ func (s *AnthropicService) Create(ctx context.Context, req AnthropicMessageReque
 // to Type. The raw form is deliberate: it faithfully passes through Anthropic's
 // event protocol without this client having to model every delta subtype.
 type AnthropicStreamEvent struct {
-	Type string
-	Data json.RawMessage
+	Type string          `json:"type"`
+	Data json.RawMessage `json:"data,omitempty"`
 }
 
-// CreateStream sends a streaming POST /v1/messages request, invoking onEvent
-// once per SSE event. Returning a non-nil error from onEvent aborts the stream.
-// Connect-level transient failures (429/5xx/network) are retried like Create;
-// once the stream has begun, mid-stream failures are surfaced, not retried.
-//
-// Deprecated: use Stream, which returns an iter.Seq2[AnthropicStreamEvent,
-// error] compatible with Go 1.23+'s range-over-func. CreateStream delegates
-// to Stream and will be removed in v1.0.
-func (s *AnthropicService) CreateStream(ctx context.Context, req AnthropicMessageRequest, onEvent func(AnthropicStreamEvent) error) error {
-	for ev, err := range s.Stream(ctx, req) {
-		if err != nil {
-			return err
-		}
-		if err := onEvent(ev); err != nil {
-			return err
-		}
-	}
-	return nil
+// AnthropicDelta is the payload of a content_block_delta event.
+type AnthropicDelta struct {
+	Type        string `json:"type"` // text_delta, thinking_delta, input_json_delta, signature_delta
+	Text        string `json:"text,omitempty"`
+	Thinking    string `json:"thinking,omitempty"`
+	PartialJSON string `json:"partial_json,omitempty"`
 }
 
-// readAnthropicSSE parses Anthropic's `event:`/`data:` SSE framing, pairing
-// each event name with its data payload and delivering one AnthropicStreamEvent
-// per event.
-func readAnthropicSSE(ctx context.Context, resp *http.Response, onEvent func(AnthropicStreamEvent) error) error {
-	scanner := bufio.NewScanner(resp.Body)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-
-	var eventType string
-	var data strings.Builder
-
-	flush := func() error {
-		if data.Len() == 0 && eventType == "" {
-			return nil
-		}
-		payload := strings.TrimSpace(data.String())
-		ev := AnthropicStreamEvent{Type: eventType}
-		if payload != "" {
-			ev.Data = json.RawMessage(payload)
-		}
-		eventType = ""
-		data.Reset()
-		if payload == "" && ev.Type == "" {
-			return nil
-		}
-		return onEvent(ev)
+// Delta decodes a content_block_delta event; ok is false for any other event.
+func (e AnthropicStreamEvent) Delta() (d AnthropicDelta, ok bool) {
+	if e.Type != "content_block_delta" {
+		return d, false
 	}
+	var p struct {
+		Delta AnthropicDelta `json:"delta"`
+	}
+	if json.Unmarshal(e.Data, &p) != nil {
+		return d, false
+	}
+	return p.Delta, true
+}
 
-	for scanner.Scan() {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		line := scanner.Text()
-		if line == "" {
-			// Blank line terminates one event.
-			if err := flush(); err != nil {
-				return err
-			}
-			continue
-		}
-		if line[0] == ':' {
-			continue // SSE comment / keep-alive
-		}
-		if name, ok := strings.CutPrefix(line, "event:"); ok {
-			eventType = strings.TrimSpace(name)
-			continue
-		}
-		if payload, ok := strings.CutPrefix(line, "data:"); ok {
-			// SSE joins multiple data: lines within one event with newlines.
-			if data.Len() > 0 {
-				data.WriteByte('\n')
-			}
-			data.WriteString(strings.TrimSpace(payload))
-			continue
-		}
-		// Ignore id:/retry: and any other control lines.
+// Stream sends a streaming POST /v1/messages request and returns an iterator
+// over Anthropic's SSE events. Iterator semantics match ChatService.Stream.
+func (s *AnthropicService) Stream(ctx context.Context, req AnthropicMessageRequest) iter.Seq2[AnthropicStreamEvent, error] {
+	req.Stream = true
+	r, err := s.prepare(req)
+	if err != nil {
+		return errorIter[AnthropicStreamEvent](err)
 	}
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("stream read error: %w", err)
+	return streamSSE(ctx, s.client, r, decodeAnthropicStream)
+}
+
+// prepare validates req, applies the tool-schema compatibility rewrite, and
+// wraps it as an apiRequest against the region's Anthropic-compatible root.
+func (s *AnthropicService) prepare(req AnthropicMessageRequest) (apiRequest, error) {
+	if err := validateAnthropicRequest(&req); err != nil {
+		return apiRequest{}, fmt.Errorf("invalid anthropic request: %w", err)
 	}
-	// Deliver a trailing event with no terminating blank line.
-	return flush()
+	req.Tools = s.compatTools(req.Tools)
+	return apiRequest{
+		method:  "POST",
+		baseURL: s.client.config.Region.AnthropicBaseURL(),
+		path:    anthropicMessagesEndpoint,
+		header:  map[string]string{"anthropic-version": AnthropicVersion},
+		body:    req,
+		service: "anthropic",
+		model:   req.Model,
+	}, nil
+}
+
+// decodeAnthropicStream decodes Anthropic's event:/data: SSE framing into one
+// AnthropicStreamEvent per event; an error event ends the stream with its
+// *APIError.
+func decodeAnthropicStream(ctx context.Context, body io.Reader, emit func(AnthropicStreamEvent) error) error {
+	return scanSSE(ctx, body, func(event, data string) error {
+		if event == "error" {
+			return errorFromBody(http.StatusOK, []byte(data))
+		}
+		ev := AnthropicStreamEvent{Type: event}
+		if data != "" {
+			ev.Data = json.RawMessage(data)
+		}
+		return emit(ev)
+	})
 }
 
 // compatTools applies the GLM tool-schema compatibility rewrite to each tool's
@@ -311,10 +295,6 @@ func (s *AnthropicService) compatTools(tools []AnthropicTool) []AnthropicTool {
 		}
 	}
 	return out
-}
-
-func anthropicHeaders() map[string]string {
-	return map[string]string{"anthropic-version": AnthropicVersion}
 }
 
 func validateAnthropicRequest(req *AnthropicMessageRequest) error {

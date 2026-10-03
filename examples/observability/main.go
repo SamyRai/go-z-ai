@@ -66,7 +66,7 @@ func main() {
 
 	ctx := context.Background()
 	for chunk, err := range c.Chat().Stream(ctx, client.ChatRequest{
-		Model:    "glm-5.2",
+		Model:    client.DefaultModel,
 		Messages: []client.Message{{Role: "user", Content: prompt}},
 		TopP:     0.95,
 	}) {

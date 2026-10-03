@@ -158,7 +158,7 @@ func FormatPace(p QuotaPace) string {
 	head := fmt.Sprintf("%.0f%% used at %.0f%% of window elapsed", p.Used*100, p.WindowElapsed*100)
 	switch {
 	case p.ExhaustsEarly:
-		return head + fmt.Sprintf(" — on pace to run out ~%s before reset", compactDuration(p.ExhaustsBefore))
+		return head + fmt.Sprintf(" — on pace to run out ~%s before reset", FormatDuration(p.ExhaustsBefore))
 	case p.Projected > 0:
 		return head + fmt.Sprintf(" — on track (~%.0f%% projected by reset)", p.Projected*100)
 	default:
@@ -166,9 +166,9 @@ func FormatPace(p QuotaPace) string {
 	}
 }
 
-// compactDuration renders a positive duration as "3d", "5h", "2h 30m", or
+// FormatDuration renders a positive duration as "3d", "5h", "2h 30m", or
 // "45m" — coarse enough for a pace hint, never seconds.
-func compactDuration(d time.Duration) string {
+func FormatDuration(d time.Duration) string {
 	if d < time.Minute {
 		return "under 1m"
 	}

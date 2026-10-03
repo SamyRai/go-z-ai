@@ -164,3 +164,19 @@ func TestAgentsAsyncResultValidation(t *testing.T) {
 		t.Error("expected error for missing async_id")
 	}
 }
+
+func TestAgentErrorMessage(t *testing.T) {
+	for _, tc := range []struct {
+		err  *AgentError
+		want string
+	}{
+		{nil, "agent failed (no error details)"},
+		{&AgentError{}, "agent failed (no error details)"},
+		{&AgentError{Message: "no balance"}, "no balance"},
+		{&AgentError{Code: "1113", Message: "no balance"}, "1113: no balance"},
+	} {
+		if got := tc.err.Error(); got != tc.want {
+			t.Errorf("%+v: got %q, want %q", tc.err, got, tc.want)
+		}
+	}
+}

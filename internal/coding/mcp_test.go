@@ -1,275 +1,70 @@
 package coding
 
 import (
-	"os"
-	"path/filepath"
+	"slices"
 	"testing"
+
+	"github.com/SamyRai/go-z-ai/pkg/client"
 )
 
-func TestClaudeCodeMCPLoadDetectUnload(t *testing.T) {
-	home := t.TempDir()
+// Every tool registers all official servers (local Vision + three hosted
+// HTTP servers), detects them, and removes them without touching other
+// entries in the same file.
+func TestToolsMCPLoadDetectUnload(t *testing.T) {
+	for _, tool := range Tools {
+		t.Run(tool.ID, func(t *testing.T) {
+			home := t.TempDir()
+			writeJSON(t, tool.mcp.path(home), map[string]any{tool.mcp.key: map[string]any{"mine": map[string]any{}}, "other": true})
+			if err := tool.LoadMCP(home, PlanGlobal, "k", MCPServers); err != nil {
+				t.Fatalf("LoadMCP: %v", err)
+			}
+			found, err := tool.MCPConfigured(home)
+			if err != nil || len(found) != len(MCPServers) {
+				t.Fatalf("MCPConfigured = %v, %v", found, err)
+			}
+			if err := tool.UnloadMCP(home, MCPServers); err != nil {
+				t.Fatalf("UnloadMCP: %v", err)
+			}
+			m := readJSON(t, tool.mcp.path(home))
+			entries := m[tool.mcp.key].(map[string]any)
+			if _, ok := entries["mine"]; !ok || len(entries) != 1 || m["other"] != true {
+				t.Errorf("user's entries disturbed: %v", m)
+			}
+		})
+	}
+}
 
-	if err := LoadMCP(home, "claude-code", "vision-key"); err != nil {
+// The Vision server's mode follows the plan's region (ZHIPU for China), and
+// hosted servers use the region's MCP URL with a bearer header.
+func TestMCPEntriesFollowRegion(t *testing.T) {
+	home := t.TempDir()
+	if err := claudeCode.LoadMCP(home, PlanChina, "k", MCPServers); err != nil {
 		t.Fatalf("LoadMCP: %v", err)
 	}
-
-	m := readJSON(t, mcpConfigPathClaudeCode(home))
-	servers := m["mcpServers"].(map[string]any)
-	entry := servers[zaiMCPServerName].(map[string]any)
-	if entry["type"] != "stdio" {
-		t.Errorf("type = %v, want stdio", entry["type"])
+	servers := readJSON(t, claudeStatePath(home))["mcpServers"].(map[string]any)
+	vision := servers["zai-mcp-server"].(map[string]any)
+	if vision["type"] != "stdio" || vision["env"].(map[string]any)["Z_AI_MODE"] != "ZHIPU" {
+		t.Errorf("vision entry %v", vision)
 	}
-	if entry["command"] != "npx" {
-		t.Errorf("command = %v, want npx", entry["command"])
+	search := servers["web-search-prime"].(map[string]any)
+	if search["type"] != "http" || search["url"] != client.RegionChina.MCPServerURL("web_search_prime") {
+		t.Errorf("web-search-prime entry %v", search)
 	}
-	env := entry["env"].(map[string]any)
-	if env["Z_AI_API_KEY"] != "vision-key" || env["Z_AI_MODE"] != "ZAI" {
-		t.Errorf("unexpected env: %+v", env)
-	}
-
-	configured, err := DetectMCPConfigured(home, "claude-code")
-	if err != nil || !configured {
-		t.Fatalf("DetectMCPConfigured = %v, %v; want true, nil", configured, err)
-	}
-
-	if err := UnloadMCP(home, "claude-code"); err != nil {
-		t.Fatalf("UnloadMCP: %v", err)
-	}
-	configured, _ = DetectMCPConfigured(home, "claude-code")
-	if configured {
-		t.Fatal("should not be configured after unload")
+	if search["headers"].(map[string]any)["Authorization"] != "Bearer k" {
+		t.Errorf("missing bearer header: %v", search)
 	}
 }
 
-// Claude Code's MCP config lives in the same ~/.claude.json file
-// LoadClaudeCodeOpts uses for hasCompletedOnboarding — confirm LoadMCP
-// doesn't clobber it, and vice versa.
-func TestClaudeCodeMCPPreservesOnboardingFlag(t *testing.T) {
-	home := t.TempDir()
-	path := mcpConfigPathClaudeCode(home)
-	_ = os.MkdirAll(filepath.Dir(path), 0o700)
-	_ = os.WriteFile(path, []byte(`{"hasCompletedOnboarding":true,"other":1}`), 0o600)
-
-	if err := LoadMCP(home, "claude-code", "k"); err != nil {
-		t.Fatalf("LoadMCP: %v", err)
+func TestFindMCPServers(t *testing.T) {
+	all, err := FindMCPServers()
+	if err != nil || len(all) != len(MCPServers) {
+		t.Fatalf("FindMCPServers() = %v, %v", all, err)
 	}
-	m := readJSON(t, path)
-	if m["hasCompletedOnboarding"] != true {
-		t.Errorf("hasCompletedOnboarding lost: %v", m["hasCompletedOnboarding"])
+	some, err := FindMCPServers("zread", "zai-mcp-server")
+	if err != nil || !slices.EqualFunc(some, []string{"zread", "zai-mcp-server"}, func(s MCPServer, id string) bool { return s.ID == id }) {
+		t.Errorf("FindMCPServers(zread, zai-mcp-server) = %v, %v", some, err)
 	}
-	if m["other"] != float64(1) {
-		t.Errorf("unrelated key lost: %v", m["other"])
-	}
-
-	if err := UnloadMCP(home, "claude-code"); err != nil {
-		t.Fatalf("UnloadMCP: %v", err)
-	}
-	m = readJSON(t, path)
-	if m["hasCompletedOnboarding"] != true || m["other"] != float64(1) {
-		t.Errorf("unrelated keys not preserved after unload: %+v", m)
-	}
-}
-
-func TestOpenCodeMCPLoadDetectUnload(t *testing.T) {
-	home := t.TempDir()
-
-	if err := LoadMCP(home, "opencode", "vision-key"); err != nil {
-		t.Fatalf("LoadMCP: %v", err)
-	}
-
-	m := readJSON(t, Tools[1].ConfigPath(home))
-	servers := m["mcp"].(map[string]any)
-	entry := servers[zaiMCPServerName].(map[string]any)
-	if entry["type"] != "local" {
-		t.Errorf("type = %v, want local", entry["type"])
-	}
-	cmdArr, ok := entry["command"].([]any)
-	if !ok || len(cmdArr) != 3 || cmdArr[0] != "npx" || cmdArr[2] != ZAIMCPPackage {
-		t.Errorf("command = %v, want [npx -y %s]", entry["command"], ZAIMCPPackage)
-	}
-	env := entry["environment"].(map[string]any)
-	if env["Z_AI_API_KEY"] != "vision-key" {
-		t.Errorf("unexpected environment: %+v", env)
-	}
-
-	configured, err := DetectMCPConfigured(home, "opencode")
-	if err != nil || !configured {
-		t.Fatalf("DetectMCPConfigured = %v, %v; want true, nil", configured, err)
-	}
-
-	if err := UnloadMCP(home, "opencode"); err != nil {
-		t.Fatalf("UnloadMCP: %v", err)
-	}
-	configured, _ = DetectMCPConfigured(home, "opencode")
-	if configured {
-		t.Fatal("should not be configured after unload")
-	}
-}
-
-// OpenCode's MCP config shares opencode.json with the provider config —
-// confirm loading MCP doesn't disturb an existing provider entry.
-func TestOpenCodeMCPPreservesProvider(t *testing.T) {
-	home := t.TempDir()
-	if err := Load(home, "opencode", PlanGlobal, "provider-key"); err != nil {
-		t.Fatalf("Load: %v", err)
-	}
-	if err := LoadMCP(home, "opencode", "vision-key"); err != nil {
-		t.Fatalf("LoadMCP: %v", err)
-	}
-	m := readJSON(t, Tools[1].ConfigPath(home))
-	if _, ok := m["provider"]; !ok {
-		t.Error("provider config lost after LoadMCP")
-	}
-	if _, ok := m["mcp"]; !ok {
-		t.Error("mcp config missing")
-	}
-}
-
-func TestCrushMCPLoadDetectUnload(t *testing.T) {
-	home := t.TempDir()
-
-	if err := LoadMCP(home, "crush", "vision-key"); err != nil {
-		t.Fatalf("LoadMCP: %v", err)
-	}
-
-	m := readJSON(t, Tools[2].ConfigPath(home))
-	servers := m["mcp"].(map[string]any)
-	entry := servers[zaiMCPServerName].(map[string]any)
-	if entry["type"] != "stdio" || entry["command"] != "npx" {
-		t.Errorf("unexpected entry: %+v", entry)
-	}
-
-	configured, err := DetectMCPConfigured(home, "crush")
-	if err != nil || !configured {
-		t.Fatalf("DetectMCPConfigured = %v, %v; want true, nil", configured, err)
-	}
-
-	if err := UnloadMCP(home, "crush"); err != nil {
-		t.Fatalf("UnloadMCP: %v", err)
-	}
-	configured, _ = DetectMCPConfigured(home, "crush")
-	if configured {
-		t.Fatal("should not be configured after unload")
-	}
-}
-
-func TestCrushMCPPreservesProvider(t *testing.T) {
-	home := t.TempDir()
-	if err := Load(home, "crush", PlanGlobal, "provider-key"); err != nil {
-		t.Fatalf("Load: %v", err)
-	}
-	if err := LoadMCP(home, "crush", "vision-key"); err != nil {
-		t.Fatalf("LoadMCP: %v", err)
-	}
-	m := readJSON(t, Tools[2].ConfigPath(home))
-	if _, ok := m["providers"]; !ok {
-		t.Error("providers config lost after LoadMCP")
-	}
-}
-
-func TestFactoryDroidMCPLoadDetectUnload(t *testing.T) {
-	home := t.TempDir()
-
-	if err := LoadMCP(home, "factory-droid", "vision-key"); err != nil {
-		t.Fatalf("LoadMCP: %v", err)
-	}
-
-	mcpPath := mcpConfigPathFactoryDroid(home)
-	m := readJSON(t, mcpPath)
-	servers := m["mcpServers"].(map[string]any)
-	entry := servers[zaiMCPServerName].(map[string]any)
-	if entry["command"] != "npx" {
-		t.Errorf("unexpected entry: %+v", entry)
-	}
-	if _, hasType := entry["type"]; hasType {
-		t.Error("Factory Droid's real config has no \"type\" field — don't add one")
-	}
-
-	configured, err := DetectMCPConfigured(home, "factory-droid")
-	if err != nil || !configured {
-		t.Fatalf("DetectMCPConfigured = %v, %v; want true, nil", configured, err)
-	}
-
-	if err := UnloadMCP(home, "factory-droid"); err != nil {
-		t.Fatalf("UnloadMCP: %v", err)
-	}
-	configured, _ = DetectMCPConfigured(home, "factory-droid")
-	if configured {
-		t.Fatal("should not be configured after unload")
-	}
-}
-
-// Factory Droid's MCP config is a *separate* file (~/.factory/mcp.json) from
-// its credential config (~/.factory/settings.json) — confirm LoadMCP never
-// touches settings.json's customModels.
-func TestFactoryDroidMCPDoesNotTouchSettingsJSON(t *testing.T) {
-	home := t.TempDir()
-	if err := Load(home, "factory-droid", PlanGlobal, "cred-key"); err != nil {
-		t.Fatalf("Load: %v", err)
-	}
-	settingsPath := Tools[3].ConfigPath(home)
-	before := readJSON(t, settingsPath)
-
-	if err := LoadMCP(home, "factory-droid", "vision-key"); err != nil {
-		t.Fatalf("LoadMCP: %v", err)
-	}
-	after := readJSON(t, settingsPath)
-	if len(before["customModels"].([]any)) != len(after["customModels"].([]any)) {
-		t.Errorf("settings.json's customModels changed: before=%v after=%v", before["customModels"], after["customModels"])
-	}
-	if settingsPath == mcpConfigPathFactoryDroid(home) {
-		t.Fatal("MCP config path must differ from the credential settings path")
-	}
-}
-
-func TestCursorMCPLoadDetectUnload(t *testing.T) {
-	home := t.TempDir()
-	path := mcpConfigPathCursor(home)
-
-	// Pre-existing unrelated config must survive the round-trip.
-	_ = os.MkdirAll(filepath.Dir(path), 0o700)
-	_ = os.WriteFile(path, []byte(`{"unrelated":true}`), 0o600)
-
-	if err := LoadMCP(home, "cursor", "vision-key"); err != nil {
-		t.Fatalf("LoadMCP: %v", err)
-	}
-
-	m := readJSON(t, path)
-	if m["unrelated"] != true {
-		t.Error("unrelated key lost")
-	}
-	servers := m["mcpServers"].(map[string]any)
-	entry := servers[zaiMCPServerName].(map[string]any)
-	if entry["command"] != "npx" {
-		t.Errorf("unexpected entry: %+v", entry)
-	}
-
-	configured, err := DetectMCPConfigured(home, "cursor")
-	if err != nil || !configured {
-		t.Fatalf("DetectMCPConfigured = %v, %v; want true, nil", configured, err)
-	}
-
-	if err := UnloadMCP(home, "cursor"); err != nil {
-		t.Fatalf("UnloadMCP: %v", err)
-	}
-	m = readJSON(t, path)
-	if m["unrelated"] != true {
-		t.Error("unrelated key lost after unload")
-	}
-	configured, _ = DetectMCPConfigured(home, "cursor")
-	if configured {
-		t.Fatal("should not be configured after unload")
-	}
-}
-
-func TestDetectMCPConfiguredUnknownTool(t *testing.T) {
-	if _, err := DetectMCPConfigured(t.TempDir(), "does-not-exist"); err == nil {
-		t.Fatal("expected an error for an unsupported tool")
-	}
-}
-
-func TestLoadMCPUnknownTool(t *testing.T) {
-	if err := LoadMCP(t.TempDir(), "does-not-exist", "k"); err == nil {
-		t.Fatal("expected an error for an unsupported tool")
+	if _, err := FindMCPServers("nope"); err == nil {
+		t.Error("expected an error for an unknown server")
 	}
 }

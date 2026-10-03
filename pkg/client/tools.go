@@ -20,13 +20,20 @@ type ToolsService struct {
 	client *Client
 }
 
-// Web search engine choices for WebSearchRequest.SearchEngine.
+// Web search engines for WebSearchRequest.SearchEngine and
+// WebSearchDef.SearchEngine. search-prime is the engine docs.z.ai documents
+// for the global platform; the others are China-platform (open.bigmodel.cn)
+// engines.
 const (
-	SearchEngineStd      = "search_std" // Z.AI's basic search engine
-	SearchEnginePro      = "search_pro" // Z.AI's advanced search engine
+	SearchEnginePrime    = "search-prime"
+	SearchEngineStd      = "search_std"
+	SearchEnginePro      = "search_pro"
 	SearchEngineProSogou = "search_pro_sogou"
 	SearchEngineProQuark = "search_pro_quark"
 )
+
+// SearchEngines lists the web search engines, global first.
+var SearchEngines = []string{SearchEnginePrime, SearchEngineStd, SearchEnginePro, SearchEngineProSogou, SearchEngineProQuark}
 
 // Recency filters for WebSearchRequest.SearchRecencyFilter.
 const (
@@ -44,14 +51,12 @@ const (
 )
 
 // WebSearchRequest performs a web search via Z.AI's LLM-optimized search
-// engine. SearchQuery, SearchEngine, and SearchIntent are all required by
-// the API — SearchIntent's zero value (false) is itself a valid explicit
-// choice ("skip intent recognition"), so it's never omitted on the wire.
+// engine. SearchQuery and SearchEngine are required.
 type WebSearchRequest struct {
-	SearchQuery         string `json:"search_query"`    // required, max 70 chars
-	SearchEngine        string `json:"search_engine"`   // required, one of the SearchEngine* consts
-	SearchIntent        bool   `json:"search_intent"`   // required
-	Count               int    `json:"count,omitempty"` // 1-50, default 10
+	SearchQuery         string `json:"search_query"`            // required, max 70 chars
+	SearchEngine        string `json:"search_engine"`           // required; SearchEnginePrime on the global platform
+	SearchIntent        bool   `json:"search_intent,omitempty"` // run intent recognition first
+	Count               int    `json:"count,omitempty"`         // 1-50, default 10
 	SearchDomainFilter  string `json:"search_domain_filter,omitempty"`
 	SearchRecencyFilter string `json:"search_recency_filter,omitempty"` // one of the SearchRecency* consts
 	ContentSize         string `json:"content_size,omitempty"`          // SearchContentMedium/High

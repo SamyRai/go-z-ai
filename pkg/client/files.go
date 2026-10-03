@@ -1,12 +1,8 @@
 package client
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"mime/multipart"
-	"net/http"
 	"net/url"
 )
 
@@ -27,11 +23,19 @@ type FilesService struct {
 type FilePurpose string
 
 const (
-	FilePurposeBatch           FilePurpose = "batch"
-	FilePurposeCodeInterpreter FilePurpose = "code-interpreter"
+	FilePurposeUserData        FilePurpose = "user_data" // docs.z.ai default for agent inputs
 	FilePurposeAgent           FilePurpose = "agent"
+	FilePurposeBatch           FilePurpose = "batch"
+	FilePurposeFileExtract     FilePurpose = "file-extract"
+	FilePurposeCodeInterpreter FilePurpose = "code-interpreter"
 	FilePurposeVoiceCloneInput FilePurpose = "voice-clone-input"
 )
+
+// FilePurposes lists the upload purposes.
+var FilePurposes = []FilePurpose{
+	FilePurposeBatch, FilePurposeUserData, FilePurposeAgent, FilePurposeFileExtract,
+	FilePurposeCodeInterpreter, FilePurposeVoiceCloneInput,
+}
 
 // FileObject describes an uploaded file.
 type FileObject struct {
@@ -72,35 +76,13 @@ func (s *FilesService) Upload(ctx context.Context, filename string, data []byte,
 		return nil, fmt.Errorf("purpose is required")
 	}
 
-	var buf bytes.Buffer
-	w := multipart.NewWriter(&buf)
-	fw, err := w.CreateFormFile("file", filename)
+	form, err := newMultipartBody(&formFile{field: "file", name: filename, data: data}, "purpose", string(purpose))
 	if err != nil {
-		return nil, fmt.Errorf("failed to build multipart file field: %w", err)
-	}
-	if _, err := fw.Write(data); err != nil {
-		return nil, fmt.Errorf("failed to write file data: %w", err)
-	}
-	if err := w.WriteField("purpose", string(purpose)); err != nil {
-		return nil, fmt.Errorf("failed to write purpose field: %w", err)
-	}
-	if err := w.Close(); err != nil {
-		return nil, fmt.Errorf("failed to finalize multipart body: %w", err)
-	}
-
-	resp, err := s.client.sendMultipart(ctx, "/files", w.FormDataContentType(), buf.Bytes())
-	if err != nil {
-		return nil, fmt.Errorf("failed to upload file: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, parseAPIError(resp)
-	}
-
-	var result FileObject
-	if err := s.client.decodeBody(resp, &result); err != nil {
 		return nil, err
+	}
+	var result FileObject
+	if err := s.client.do(ctx, apiRequest{method: "POST", path: "/files", form: form, service: "files"}, &result); err != nil {
+		return nil, fmt.Errorf("failed to upload file: %w", err)
 	}
 	return &result, nil
 }
@@ -139,19 +121,9 @@ func (s *FilesService) Content(ctx context.Context, fileID string) ([]byte, erro
 	if fileID == "" {
 		return nil, fmt.Errorf("file id is required")
 	}
-	resp, err := s.client.send(ctx, s.client.config.BaseURL, s.client.config.APIKey, "GET", "/files/"+url.PathEscape(fileID)+"/content", nil)
+	data, err := s.client.doRaw(ctx, apiRequest{method: "GET", path: "/files/" + url.PathEscape(fileID) + "/content", service: "files"})
 	if err != nil {
 		return nil, fmt.Errorf("failed to download file content: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, parseAPIError(resp)
-	}
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read file content: %w", err)
 	}
 	return data, nil
 }

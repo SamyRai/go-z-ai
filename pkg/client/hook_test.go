@@ -275,34 +275,30 @@ func TestHookFiresOnStreamError(t *testing.T) {
 	}
 }
 
-// TestHookCtxStamping verifies WithService/WithModel stamp values that
-// buildRequestMeta extracts into RequestMeta for hook consumers.
+// TestHookCtxStamping verifies requestMeta takes Service/Model from the
+// issuing service's apiRequest, and that WithService/WithModel context stamps
+// override them.
 func TestHookCtxStamping(t *testing.T) {
-	ctx := context.Background()
-	stamped := WithModel(WithService(ctx, "embeddings"), "embedding-3")
-	c := &Client{} // no hooks; buildRequestMeta is independent of hook config
+	c := &Client{} // no hooks; requestMeta is independent of hook config
+	r := apiRequest{method: "POST", path: "/embeddings", service: "embeddings", model: "embedding-3"}
 
-	meta := c.buildRequestMeta(stamped, "POST", "/embeddings", 2)
-	if meta.Service != "embeddings" {
-		t.Errorf("expected Service='embeddings', got %q", meta.Service)
+	meta := c.requestMeta(context.Background(), r, 2)
+	if meta.Service != "embeddings" || meta.Model != "embedding-3" {
+		t.Errorf("expected service/model from the request, got %+v", meta)
 	}
-	if meta.Model != "embedding-3" {
-		t.Errorf("expected Model='embedding-3', got %q", meta.Model)
-	}
-	if meta.Method != "POST" {
-		t.Errorf("expected Method='POST', got %q", meta.Method)
-	}
-	if meta.Endpoint != "/embeddings" {
-		t.Errorf("expected Endpoint='/embeddings', got %q", meta.Endpoint)
-	}
-	if meta.Attempt != 2 {
-		t.Errorf("expected Attempt=2, got %d", meta.Attempt)
+	if meta.Method != "POST" || meta.Endpoint != "/embeddings" || meta.Attempt != 2 {
+		t.Errorf("unexpected method/endpoint/attempt: %+v", meta)
 	}
 
-	// Unstamped context → empty Service/Model.
-	plain := c.buildRequestMeta(context.Background(), "GET", "/models", 0)
+	stamped := WithModel(WithService(context.Background(), "feature-x"), "override-model")
+	over := c.requestMeta(stamped, r, 0)
+	if over.Service != "feature-x" || over.Model != "override-model" {
+		t.Errorf("expected ctx stamps to override, got %+v", over)
+	}
+
+	plain := c.requestMeta(context.Background(), apiRequest{method: "GET", path: "/models"}, 0)
 	if plain.Service != "" || plain.Model != "" {
-		t.Errorf("expected empty Service/Model on unstamped ctx, got %+v", plain)
+		t.Errorf("expected empty Service/Model for an unlabeled request, got %+v", plain)
 	}
 }
 

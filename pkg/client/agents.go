@@ -2,18 +2,15 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
-// AgentsBaseURL is the base URL for the Agents API. Verified live: a bare
-// root path — nesting /v1/agents under the chat-completions BaseURL (either
-// ProdBaseURL or CodingBaseURL) 404s (confirmed via a real call:
-// api.z.ai/api/coding/paas/v4/v1/agents -> 404, api.z.ai/api/v1/agents -> 200).
-const AgentsBaseURL = "https://api.z.ai/api"
-
 // AgentsService invokes Z.AI's specialized agents (e.g. "general_translation",
 // GLM Slide/Poster, Video Effect Template), each identified by an agent_id,
-// over the shared /v1/agents endpoint.
+// over the shared /v1/agents endpoint under the region's AgentsBaseURL — a
+// bare /api root (verified live: api.z.ai/api/v1/agents -> 200, while
+// api.z.ai/api/coding/paas/v4/v1/agents -> 404).
 type AgentsService struct {
 	client *Client
 }
@@ -48,6 +45,18 @@ type AgentInvokeRequest struct {
 type AgentError struct {
 	Code    string `json:"code,omitempty"`
 	Message string `json:"message,omitempty"`
+}
+
+// Error implements error, so a failed response's Error can be wrapped; a nil
+// or empty AgentError reads as an unknown failure.
+func (e *AgentError) Error() string {
+	switch {
+	case e == nil || (e.Code == "" && e.Message == ""):
+		return "agent failed (no error details)"
+	case e.Code == "":
+		return e.Message
+	}
+	return e.Code + ": " + e.Message
 }
 
 // AgentContent is one content part of an agent's reply message.
@@ -88,12 +97,13 @@ type AgentUsage struct {
 // agents_invoke.yaml); Choices/Usage are modeled from docs.z.ai's example
 // only and not yet confirmed live.
 type AgentResponse struct {
-	ID      string        `json:"id"`
-	AgentID string        `json:"agent_id"`
-	Status  string        `json:"status,omitempty"` // e.g. "failed"; absent on the (unverified) success shape
-	Choices []AgentChoice `json:"choices,omitempty"`
-	Usage   *AgentUsage   `json:"usage,omitempty"`
-	Error   *AgentError   `json:"error,omitempty"`
+	ID             string        `json:"id"`
+	AgentID        string        `json:"agent_id"`
+	ConversationID string        `json:"conversation_id,omitempty"`
+	Status         string        `json:"status,omitempty"` // e.g. "failed"; absent on the (unverified) success shape
+	Choices        []AgentChoice `json:"choices,omitempty"`
+	Usage          *AgentUsage   `json:"usage,omitempty"`
+	Error          *AgentError   `json:"error,omitempty"`
 }
 
 // Failed reports whether the invocation failed at the business level. The
@@ -110,14 +120,14 @@ func (r *AgentResponse) Failed() bool {
 // business-level failure the API reports inside a 200 OK body.
 func (s *AgentsService) Invoke(ctx context.Context, req AgentInvokeRequest) (*AgentResponse, error) {
 	if req.AgentID == "" {
-		return nil, fmt.Errorf("agent_id is required")
+		return nil, errors.New("agent_id is required")
 	}
 	if len(req.Messages) == 0 {
 		return nil, fmt.Errorf("at least one message is required")
 	}
 
 	var resp AgentResponse
-	if err := s.client.doRequestBase(ctx, s.client.config.Region.agentsBaseURL(), "POST", "/v1/agents", req, &resp); err != nil {
+	if err := s.client.do(ctx, s.request("/v1/agents", req), &resp); err != nil {
 		return nil, fmt.Errorf("failed to invoke agent: %w", err)
 	}
 	return &resp, nil
@@ -130,11 +140,16 @@ const (
 	AgentAsyncStatusPending = "pending"
 )
 
-// AgentAsyncResultRequest polls the result of an async agent task (e.g.
-// "intelligent_education_correction_polling"). Both fields are required.
+// AgentAsyncResultRequest polls the result of an async agent task. AgentID
+// and AsyncID are required; agents that run conversations (e.g. the slides
+// agent) also need ConversationID, and the server rejects a missing
+// custom_variables object for some agents (live-verified: "custom_variables
+// is required"), so it is always sent.
 type AgentAsyncResultRequest struct {
-	AgentID string `json:"agent_id"`
-	AsyncID string `json:"async_id"`
+	AgentID         string         `json:"agent_id"`
+	AsyncID         string         `json:"async_id"`
+	ConversationID  string         `json:"conversation_id,omitempty"`
+	CustomVariables map[string]any `json:"custom_variables"`
 }
 
 // AgentAsyncContent is one content item in an async agent result message.
@@ -201,15 +216,23 @@ func (r *AgentAsyncResultResponse) Failed() bool {
 // req.AgentID and req.AsyncID are required.
 func (s *AgentsService) AsyncResult(ctx context.Context, req AgentAsyncResultRequest) (*AgentAsyncResultResponse, error) {
 	if req.AgentID == "" {
-		return nil, fmt.Errorf("agent_id is required")
+		return nil, errors.New("agent_id is required")
 	}
 	if req.AsyncID == "" {
-		return nil, fmt.Errorf("async_id is required")
+		return nil, errors.New("async_id is required")
+	}
+	if req.CustomVariables == nil {
+		req.CustomVariables = map[string]any{}
 	}
 
 	var resp AgentAsyncResultResponse
-	if err := s.client.doRequestBase(ctx, s.client.config.Region.agentsBaseURL(), "POST", "/v1/agents/async-result", req, &resp); err != nil {
+	if err := s.client.do(ctx, s.request("/v1/agents/async-result", req), &resp); err != nil {
 		return nil, fmt.Errorf("failed to get agent async result: %w", err)
 	}
 	return &resp, nil
+}
+
+// request builds a POST against the region's agents root.
+func (s *AgentsService) request(path string, body any) apiRequest {
+	return apiRequest{method: "POST", baseURL: s.client.config.Region.AgentsBaseURL(), path: path, body: body, service: "agents"}
 }

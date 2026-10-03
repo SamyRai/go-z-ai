@@ -1,11 +1,8 @@
 package client
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"mime/multipart"
-	"net/http"
 )
 
 // LayoutService handles layout parsing (OCR / document-to-markdown).
@@ -14,7 +11,7 @@ type LayoutService struct {
 }
 
 // LayoutParsingRequest is the request body for layout parsing. Model is
-// always "glm-ocr". File is an image or PDF, as a URL or base64 string.
+// always DefaultOCRModel. File is an image or PDF, as a URL or base64 string.
 type LayoutParsingRequest struct {
 	Model                   string `json:"model"`
 	File                    string `json:"file"`
@@ -45,16 +42,14 @@ type LayoutParsingResponse struct {
 	RequestID string `json:"request_id"`
 }
 
-const layoutParsingModel = "glm-ocr"
-
 // Parse recognizes an image or PDF's layout, returning the content as
-// Markdown. req.Model is set to "glm-ocr" automatically if empty.
+// Markdown. req.Model defaults to DefaultOCRModel.
 func (s *LayoutService) Parse(ctx context.Context, req LayoutParsingRequest) (*LayoutParsingResponse, error) {
 	if req.File == "" {
 		return nil, fmt.Errorf("file is required")
 	}
 	if req.Model == "" {
-		req.Model = layoutParsingModel
+		req.Model = DefaultOCRModel
 	}
 
 	var resp LayoutParsingResponse
@@ -123,45 +118,21 @@ func (s *LayoutService) HandwritingOCR(ctx context.Context, req HandwritingOCRRe
 		return nil, fmt.Errorf("file name is required")
 	}
 
-	var buf bytes.Buffer
-	w := multipart.NewWriter(&buf)
-	fw, err := w.CreateFormFile("file", req.FileName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build multipart file field: %w", err)
-	}
-	if _, err := fw.Write(req.FileData); err != nil {
-		return nil, fmt.Errorf("failed to write file data: %w", err)
-	}
-	if err := w.WriteField("tool_type", "hand_write"); err != nil {
-		return nil, fmt.Errorf("failed to write tool_type field: %w", err)
-	}
-	if req.LanguageType != "" {
-		if err := w.WriteField("language_type", req.LanguageType); err != nil {
-			return nil, fmt.Errorf("failed to write language_type field: %w", err)
-		}
-	}
+	probability := ""
 	if req.Probability {
-		if err := w.WriteField("probability", "true"); err != nil {
-			return nil, fmt.Errorf("failed to write probability field: %w", err)
-		}
+		probability = "true"
 	}
-	if err := w.Close(); err != nil {
-		return nil, fmt.Errorf("failed to finalize multipart body: %w", err)
-	}
-
-	resp, err := s.client.sendMultipart(ctx, "/files/ocr", w.FormDataContentType(), buf.Bytes())
+	form, err := newMultipartBody(&formFile{field: "file", name: req.FileName, data: req.FileData},
+		"tool_type", "hand_write",
+		"language_type", req.LanguageType,
+		"probability", probability,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, parseAPIError(resp)
-	}
-
-	var result HandwritingOCRResponse
-	if err := s.client.decodeBody(resp, &result); err != nil {
 		return nil, err
+	}
+	var result HandwritingOCRResponse
+	if err := s.client.do(ctx, apiRequest{method: "POST", path: "/files/ocr", form: form, service: "ocr"}, &result); err != nil {
+		return nil, fmt.Errorf("failed to recognize handwriting: %w", err)
 	}
 	return &result, nil
 }

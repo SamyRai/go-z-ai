@@ -13,7 +13,7 @@ func TestGetAsyncResultImageAndVideo(t *testing.T) {
 		if r.URL.Path != "/async-result/task-1" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
-		writeJSON(w, http.StatusOK, `{"task_status":"SUCCESS","data":[{"url":"https://x/img.png"}],"video_result":[{"url":"https://x/v.mp4","cover_image_url":"https://x/c.png"}]}`)
+		writeJSON(w, http.StatusOK, `{"task_status":"SUCCESS","image_result":[{"url":"https://x/img.png"}],"video_result":[{"url":"https://x/v.mp4","cover_image_url":"https://x/c.png"}]}`)
 	}))
 	defer srv.Close()
 
@@ -25,8 +25,8 @@ func TestGetAsyncResultImageAndVideo(t *testing.T) {
 	if result.TaskStatus != TaskStatusSuccess {
 		t.Fatalf("unexpected status: %s", result.TaskStatus)
 	}
-	if len(result.Data) != 1 || result.Data[0].URL != "https://x/img.png" {
-		t.Fatalf("unexpected image data: %+v", result.Data)
+	if len(result.ImageResult) != 1 || result.ImageResult[0].URL != "https://x/img.png" {
+		t.Fatalf("unexpected image data: %+v", result.ImageResult)
 	}
 	if len(result.VideoResult) != 1 || result.VideoResult[0].URL != "https://x/v.mp4" {
 		t.Fatalf("unexpected video result: %+v", result.VideoResult)
@@ -42,7 +42,7 @@ func TestWaitForResultPollsUntilTerminal(t *testing.T) {
 			writeJSON(w, http.StatusOK, `{"task_status":"PROCESSING"}`)
 			return
 		}
-		writeJSON(w, http.StatusOK, `{"task_status":"SUCCESS","data":[{"url":"https://x/img.png"}]}`)
+		writeJSON(w, http.StatusOK, `{"task_status":"SUCCESS","image_result":[{"url":"https://x/img.png"}]}`)
 	}))
 	defer srv.Close()
 
