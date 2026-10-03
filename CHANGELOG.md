@@ -90,6 +90,12 @@ library and the CLI; see *Removed* and *Changed*.
   `internal/modelview`, and `internal/usageview` hold logic the CLI and TUI
   share.
 
+- **Dependencies:** OpenTelemetry 1.47.0; Charm bubbles 2.2.1, bubbletea
+  2.0.10, lipgloss 2.0.6; go-toml 2.4.3; x/term 0.46.0. CI actions:
+  codeql-action 4.37.9, sbom-action/download-syft 0.24.2,
+  markdownlint-cli2-action 24.2.0, with their pinned-version comments
+  corrected (they had drifted from the pinned SHAs).
+
 ### Fixed
 - In-band stream errors (an `{"error":…}` chunk, an Anthropic `event: error`)
   were dropped or decoded as empty chunks; they now end the stream with an
