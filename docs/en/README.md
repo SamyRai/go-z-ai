@@ -12,10 +12,10 @@ Using the `go-z-ai` CLI.
 
 | Doc | Covers |
 |---|---|
-| [Getting Started](getting-started.md) | Install, authenticate, first commands |
-| [CLI Reference](cli-reference.md) | Every command, organized by feature area |
+| [Getting Started](getting-started.md) | Install, authenticate, first commands, troubleshooting |
+| [CLI Reference](cli-reference.md) | Every command and flag, organized by feature area, including the global flags and `--format json` output |
 | [Accounts & Quota](accounts-and-quota.md) | Multiple accounts, quota/usage monitoring, regional gateways (api.z.ai / open.bigmodel.cn) |
-| [Coding Tools](coding-tools.md) | Wiring Claude Code / OpenCode / Crush / Factory Droid / Cursor to your GLM Coding Plan |
+| [Coding Tools](coding-tools.md) | Wiring Claude Code / Codex / OpenCode / Crush / Factory Droid to your GLM Coding Plan: model mapping, Z.AI's MCP servers, status, doctor |
 
 ## For developers
 
@@ -23,10 +23,10 @@ Using `pkg/client` as a Go library, or contributing to this repo.
 
 | Doc | Covers |
 |---|---|
-| [Library Guide](library-guide.md) | Every service, with examples — streaming, function/tool calling, structured output, async polling, the `Region` knob |
-| [Error Handling](error-handling.md) | `APIError`, the full error-code table, retry behavior |
-| [Architecture](architecture.md) | Package layout, the request facade, regional gateway selection, the live-verification convention |
-| [Roadmap & Known Limitations](roadmap.md) | What's unverified, unimplemented, or a known bug — good first-contribution material |
+| [Library Guide](library-guide.md) | Every service, with examples — streaming (iterators), reasoning effort, multimodal messages, function/tool calling, structured output, async polling, the `Region` knob, account detection and balance |
+| [Error Handling](error-handling.md) | `APIError`, the full error-code table, retry behavior, the 200-with-embedded-failure quirk |
+| [Architecture](architecture.md) | Package layout and file ownership, the request facade, streaming, regional gateway selection, the live-verification convention, the TUI |
+| [Roadmap & Known Limitations](roadmap.md) | What's unverified live (biz endpoints, quota, Responses API, agents, embeddings/moderations/rerank) or not implemented (agent conversations) — good first-contribution material |
 | [Contributing](../../CONTRIBUTING.md) | Before you open a PR — including the live-verification/cassette convention |
 | [Security Policy](../../SECURITY.md) | How to report a vulnerability |
 | [Changelog](../../CHANGELOG.md) | What shipped and when |

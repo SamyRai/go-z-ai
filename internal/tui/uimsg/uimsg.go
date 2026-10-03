@@ -42,7 +42,7 @@ func Route(tab int, cmd tea.Cmd) tea.Cmd {
 type CloseOverlay struct{}
 
 // OpenModelPicker asks the root to open the chat model-picker overlay. The
-// chat screen emits this on ctrl+m; the root builds the picker (it owns the
+// chat screen emits this on ctrl+o; the root builds the picker (it owns the
 // client) and, on pick, forwards the chosen id back to chat. Splitting it
 // this way keeps the picker as a root-owned overlay (consistent with help /
 // palette) while the chat screen stays the source of truth for the model.

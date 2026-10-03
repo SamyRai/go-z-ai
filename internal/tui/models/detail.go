@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-
 	"github.com/SamyRai/go-z-ai/internal/modelview"
 	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
 	"github.com/SamyRai/go-z-ai/pkg/client"

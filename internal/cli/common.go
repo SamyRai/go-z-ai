@@ -37,7 +37,7 @@ func runWithClient(fn func(cmd *cobra.Command, args []string, apiClient *client.
 
 // resolveConfig resolves the effective client.Config from, in precedence
 // order: the --api-key flag; an explicitly-named --account; the ZAI_API_KEY
-// (then KEY) env var; and finally the accounts store's active account. It is
+// env var; and finally the accounts store's active account. It is
 // split out from getClient so this precedence — the load-bearing, easy-to-get
 // -wrong part — is testable without constructing a live *client.Client.
 func resolveConfig() (client.Config, error) {

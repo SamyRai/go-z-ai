@@ -29,7 +29,8 @@ const (
 
 // API roots under a gateway host. The agents API uses the bare /api root —
 // nesting /v1/agents under the chat-completions base 404s (live-verified on
-// the global host).
+// the global host). The OpenAI Responses protocol (what Codex speaks) lives
+// under /api/v1 (docs.z.ai/devpack/tool/codex).
 const (
 	paasPath      = "/api/paas/v4"
 	codingPath    = "/api/coding/paas/v4"
@@ -38,6 +39,7 @@ const (
 	bizPath       = "/api/biz"
 	agentsPath    = "/api"
 	mcpPath       = "/api/mcp"
+	responsesPath = "/api/v1"
 )
 
 // Global-gateway base URLs.
@@ -48,6 +50,7 @@ const (
 	MonitorBaseURL   = GlobalHost + monitorPath
 	BizBaseURL       = GlobalHost + bizPath
 	AgentsBaseURL    = GlobalHost + agentsPath
+	ResponsesBaseURL = GlobalHost + responsesPath
 )
 
 // China-gateway base URLs. The China mirror serves the same OpenAPI surface
@@ -62,6 +65,7 @@ const (
 	ChinaMonitorBaseURL   = ChinaHost + monitorPath
 	ChinaBizBaseURL       = ChinaHost + bizPath
 	ChinaAgentsBaseURL    = ChinaHost + agentsPath
+	ChinaResponsesBaseURL = ChinaHost + responsesPath
 )
 
 // ParseRegion maps a user-supplied region name to a Region. It accepts
@@ -104,6 +108,10 @@ func (r Region) BizBaseURL() string { return r.Host() + bizPath }
 
 // AgentsBaseURL is the root of the agents API (bare /api, see agentsPath).
 func (r Region) AgentsBaseURL() string { return r.Host() + agentsPath }
+
+// ResponsesBaseURL is the OpenAI Responses-protocol root (POST /responses),
+// the endpoint Codex is configured against.
+func (r Region) ResponsesBaseURL() string { return r.Host() + responsesPath }
 
 // ConsoleURL is the web console where the region's keys, billing, and
 // subscriptions are managed.

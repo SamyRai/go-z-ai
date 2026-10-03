@@ -300,10 +300,11 @@ func (m Model) unloadTool(tool coding.Tool) tea.Cmd {
 // mcpTool registers every official Z.AI MCP server in the tool.
 func (m Model) mcpTool(tool coding.Tool) tea.Cmd {
 	return m.withCredentials(func(home string, creds *coding.StoredConfig) actionDoneMsg {
-		if err := tool.LoadMCP(home, creds.Plan, creds.APIKey, coding.MCPServers); err != nil {
+		servers := tool.SupportedMCPServers()
+		if err := tool.LoadMCP(home, creds.Plan, creds.APIKey, servers); err != nil {
 			return actionDoneMsg{err: err}
 		}
-		return actionDoneMsg{status: fmt.Sprintf("registered %d Z.AI MCP servers in %s", len(coding.MCPServers), tool.DisplayName)}
+		return actionDoneMsg{status: fmt.Sprintf("registered %d Z.AI MCP servers in %s", len(servers), tool.DisplayName)}
 	})
 }
 

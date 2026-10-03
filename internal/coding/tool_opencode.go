@@ -57,7 +57,7 @@ func isOpenCodePlanModel(model string) bool {
 }
 
 func loadOpenCode(home string, cfg LoadConfig) error {
-	return editJSONMap(openCodeConfigPath(home), func(m map[string]any) {
+	return editConfigMap(openCodeConfigPath(home), func(m map[string]any) {
 		name := openCodeProvider(cfg.Plan)
 		providers := objectField(m, "provider")
 		for other := range openCodeProviders {
@@ -83,7 +83,7 @@ func unloadOpenCode(home string) error {
 	if !d.Configured {
 		return ErrNotConfigured
 	}
-	return editJSONMap(openCodeConfigPath(home), func(m map[string]any) {
+	return editConfigMap(openCodeConfigPath(home), func(m map[string]any) {
 		for name := range openCodeProviders {
 			deleteFromObject(m, "provider", name)
 		}
@@ -96,7 +96,7 @@ func unloadOpenCode(home string) error {
 }
 
 func detectOpenCode(home string) (Detection, error) {
-	m, err := readJSONMap(openCodeConfigPath(home))
+	m, err := readConfigMap(openCodeConfigPath(home))
 	if err != nil {
 		return Detection{}, err
 	}

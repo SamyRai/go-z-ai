@@ -35,7 +35,7 @@ func setViper(t *testing.T, key string, val any) {
 func runCLI(t *testing.T, srv *httptest.Server, args ...string) (string, error) {
 	t.Helper()
 
-	for _, env := range []string{"ZAI_API_KEY", "KEY", "ZAI_API_BASE_URL", "ZAI_CHINA_API_KEY"} {
+	for _, env := range []string{"ZAI_API_KEY", "ZAI_API_BASE_URL", "ZAI_CHINA_API_KEY"} {
 		t.Setenv(env, "")
 	}
 	// Honor a store path the test set for itself (needed for multi-call

@@ -67,11 +67,14 @@ func HasNPX() bool {
 }
 
 // mcpTarget describes where and in which shape a tool registers MCP servers.
+// A nil remote means the tool can't use the hosted servers; noRemote says
+// why.
 type mcpTarget struct {
-	path   func(home string) string
-	key    string // top-level object holding the servers
-	local  func(command string, args []string, env map[string]any) map[string]any
-	remote func(url string, headers map[string]any) map[string]any
+	path     func(home string) string
+	key      string // top-level object holding the servers
+	local    func(command string, args []string, env map[string]any) map[string]any
+	remote   func(url string, headers map[string]any) map[string]any
+	noRemote string
 }
 
 // entry builds s's config entry for plan in this tool's shape.
@@ -87,9 +90,30 @@ func (t mcpTarget) entry(s MCPServer, plan, apiKey string) map[string]any {
 	return t.local("npx", []string{"-y", VisionMCPPackage}, map[string]any{"Z_AI_API_KEY": apiKey, "Z_AI_MODE": mode})
 }
 
-// LoadMCP registers servers in the tool's config for plan.
+// SupportsMCP reports whether the tool can use server s.
+func (t Tool) SupportsMCP(s MCPServer) bool { return !s.IsRemote() || t.mcp.remote != nil }
+
+// SupportedMCPServers returns the official servers the tool can use — the
+// default selection for LoadMCP.
+func (t Tool) SupportedMCPServers() []MCPServer {
+	var out []MCPServer
+	for _, s := range MCPServers {
+		if t.SupportsMCP(s) {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// LoadMCP registers servers in the tool's config for plan. It fails, writing
+// nothing, if the tool can't use one of them.
 func (t Tool) LoadMCP(home, plan, apiKey string, servers []MCPServer) error {
-	return editJSONMap(t.mcp.path(home), func(m map[string]any) {
+	for _, s := range servers {
+		if !t.SupportsMCP(s) {
+			return fmt.Errorf("%s can't use the hosted MCP server %s: %s", t.DisplayName, s.ID, t.mcp.noRemote)
+		}
+	}
+	return editConfigMap(t.mcp.path(home), func(m map[string]any) {
 		entries := objectField(m, t.mcp.key)
 		for _, s := range servers {
 			entries[s.ID] = t.mcp.entry(s, plan, apiKey)
@@ -99,7 +123,7 @@ func (t Tool) LoadMCP(home, plan, apiKey string, servers []MCPServer) error {
 
 // UnloadMCP removes servers from the tool's config, leaving others alone.
 func (t Tool) UnloadMCP(home string, servers []MCPServer) error {
-	return editJSONMap(t.mcp.path(home), func(m map[string]any) {
+	return editConfigMap(t.mcp.path(home), func(m map[string]any) {
 		for _, s := range servers {
 			deleteFromObject(m, t.mcp.key, s.ID)
 		}
@@ -108,7 +132,7 @@ func (t Tool) UnloadMCP(home string, servers []MCPServer) error {
 
 // MCPConfigured returns the official servers registered in the tool's config.
 func (t Tool) MCPConfigured(home string) ([]MCPServer, error) {
-	m, err := readJSONMap(t.mcp.path(home))
+	m, err := readConfigMap(t.mcp.path(home))
 	if err != nil {
 		return nil, err
 	}

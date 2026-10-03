@@ -67,7 +67,7 @@ func loadFactoryDroid(home string, cfg LoadConfig) error {
 			"maxOutputTokens": maxOutput(MainModel, 131_072),
 		}
 	}
-	return editJSONMap(droidSettingsPath(home), func(m map[string]any) {
+	return editConfigMap(droidSettingsPath(home), func(m map[string]any) {
 		existing, _ := m["customModels"].([]any)
 		kept := removeDroidPlanModels(existing)
 		m["customModels"] = append(kept,
@@ -95,7 +95,7 @@ func unloadFactoryDroid(home string) error {
 	if !d.Configured {
 		return ErrNotConfigured
 	}
-	return editJSONMap(droidSettingsPath(home), func(m map[string]any) {
+	return editConfigMap(droidSettingsPath(home), func(m map[string]any) {
 		existing, _ := m["customModels"].([]any)
 		if kept := removeDroidPlanModels(existing); len(kept) > 0 {
 			m["customModels"] = kept
@@ -106,7 +106,7 @@ func unloadFactoryDroid(home string) error {
 }
 
 func detectFactoryDroid(home string) (Detection, error) {
-	m, err := readJSONMap(droidSettingsPath(home))
+	m, err := readConfigMap(droidSettingsPath(home))
 	if err != nil {
 		return Detection{}, err
 	}

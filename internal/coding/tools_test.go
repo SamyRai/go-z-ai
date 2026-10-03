@@ -1,10 +1,10 @@
 package coding
 
 import (
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -12,23 +12,28 @@ import (
 	"github.com/SamyRai/go-z-ai/pkg/client"
 )
 
-// readJSON reads path into a map for assertions.
-func readJSON(t *testing.T, path string) map[string]any {
+// readConfig reads path into a map for assertions, in the format its
+// extension implies.
+func readConfig(t *testing.T, path string) map[string]any {
 	t.Helper()
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)
 	}
 	m := map[string]any{}
-	if err := json.Unmarshal(data, &m); err != nil {
+	if err := formatOf(path).unmarshal(data, &m); err != nil {
 		t.Fatalf("parse %s: %v", path, err)
 	}
 	return m
 }
 
-func writeJSON(t *testing.T, path string, m map[string]any) {
+// writeConfig seeds path with m, in the format its extension implies.
+func writeConfig(t *testing.T, path string, m map[string]any) {
 	t.Helper()
-	data, _ := json.Marshal(m)
+	data, err := formatOf(path).marshal(m)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -86,11 +91,11 @@ func TestToolLoadValidates(t *testing.T) {
 // catalog-derived [1m] model IDs, and the user's own env preserved.
 func TestClaudeCodeConfig(t *testing.T) {
 	home := t.TempDir()
-	writeJSON(t, claudeSettingsPath(home), map[string]any{"env": map[string]any{"MY_VAR": "keep", "ANTHROPIC_API_KEY": "old"}})
+	writeConfig(t, claudeSettingsPath(home), map[string]any{"env": map[string]any{"MY_VAR": "keep", "ANTHROPIC_API_KEY": "old"}})
 	if err := claudeCode.Load(home, NewLoadConfig(PlanChina, "k")); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	env := readJSON(t, claudeSettingsPath(home))["env"].(map[string]any)
+	env := readConfig(t, claudeSettingsPath(home))["env"].(map[string]any)
 	want := map[string]any{
 		"ANTHROPIC_AUTH_TOKEN":           "k",
 		"ANTHROPIC_BASE_URL":             client.ChinaAnthropicBaseURL,
@@ -107,7 +112,7 @@ func TestClaudeCodeConfig(t *testing.T) {
 	if _, ok := env["ANTHROPIC_API_KEY"]; ok {
 		t.Error("ANTHROPIC_API_KEY should be replaced by ANTHROPIC_AUTH_TOKEN")
 	}
-	if readJSON(t, claudeStatePath(home))["hasCompletedOnboarding"] != true {
+	if readConfig(t, claudeStatePath(home))["hasCompletedOnboarding"] != true {
 		t.Error("onboarding flag not set")
 	}
 
@@ -115,7 +120,7 @@ func TestClaudeCodeConfig(t *testing.T) {
 	if err := claudeCode.Load(home, LoadConfig{Plan: PlanChina, APIKey: "k"}); err != nil {
 		t.Fatalf("reload: %v", err)
 	}
-	env = readJSON(t, claudeSettingsPath(home))["env"].(map[string]any)
+	env = readConfig(t, claudeSettingsPath(home))["env"].(map[string]any)
 	if _, ok := env["ANTHROPIC_DEFAULT_OPUS_MODEL"]; ok {
 		t.Error("stale tuning survived a reload")
 	}
@@ -123,7 +128,7 @@ func TestClaudeCodeConfig(t *testing.T) {
 	if err := claudeCode.Unload(home); err != nil {
 		t.Fatalf("Unload: %v", err)
 	}
-	env = readJSON(t, claudeSettingsPath(home))["env"].(map[string]any)
+	env = readConfig(t, claudeSettingsPath(home))["env"].(map[string]any)
 	if env["MY_VAR"] != "keep" || len(env) != 1 {
 		t.Errorf("Unload must leave only the user's env, got %v", env)
 	}
@@ -134,14 +139,14 @@ func TestClaudeCodeConfig(t *testing.T) {
 func TestClaudeCodeForeignConfigUntouched(t *testing.T) {
 	home := t.TempDir()
 	foreign := map[string]any{"env": map[string]any{"ANTHROPIC_AUTH_TOKEN": "x", "ANTHROPIC_BASE_URL": "https://other.example"}}
-	writeJSON(t, claudeSettingsPath(home), foreign)
+	writeConfig(t, claudeSettingsPath(home), foreign)
 	if d, _ := claudeCode.Detect(home); d.Configured {
 		t.Errorf("foreign provider detected as Z.AI: %+v", d)
 	}
 	if err := claudeCode.Unload(home); !errors.Is(err, ErrNotConfigured) {
 		t.Errorf("Unload = %v, want ErrNotConfigured", err)
 	}
-	if env := readJSON(t, claudeSettingsPath(home))["env"].(map[string]any); env["ANTHROPIC_AUTH_TOKEN"] != "x" {
+	if env := readConfig(t, claudeSettingsPath(home))["env"].(map[string]any); env["ANTHROPIC_AUTH_TOKEN"] != "x" {
 		t.Error("foreign token was removed")
 	}
 }
@@ -150,11 +155,11 @@ func TestClaudeCodeForeignConfigUntouched(t *testing.T) {
 // survives while plan defaults are written when unset.
 func TestOpenCodeConfig(t *testing.T) {
 	home := t.TempDir()
-	writeJSON(t, openCodeConfigPath(home), map[string]any{"model": "anthropic/claude", "provider": map[string]any{"mine": map[string]any{}}})
+	writeConfig(t, openCodeConfigPath(home), map[string]any{"model": "anthropic/claude", "provider": map[string]any{"mine": map[string]any{}}})
 	if err := openCode.Load(home, NewLoadConfig(PlanChina, "k")); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	m := readJSON(t, openCodeConfigPath(home))
+	m := readConfig(t, openCodeConfigPath(home))
 	providers := m["provider"].(map[string]any)
 	if _, ok := providers["zhipuai-coding-plan"]; !ok {
 		t.Errorf("missing zhipuai-coding-plan provider: %v", providers)
@@ -174,11 +179,11 @@ func TestOpenCodeConfig(t *testing.T) {
 // cap, alongside the user's own models.
 func TestFactoryDroidConfig(t *testing.T) {
 	home := t.TempDir()
-	writeJSON(t, droidSettingsPath(home), map[string]any{"customModels": []any{map[string]any{"displayName": "My Model"}}})
+	writeConfig(t, droidSettingsPath(home), map[string]any{"customModels": []any{map[string]any{"displayName": "My Model"}}})
 	if err := factoryDroid.Load(home, NewLoadConfig(PlanGlobal, "k")); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	models := readJSON(t, droidSettingsPath(home))["customModels"].([]any)
+	models := readConfig(t, droidSettingsPath(home))["customModels"].([]any)
 	if len(models) != 3 {
 		t.Fatalf("want user model + 2 plan entries, got %d", len(models))
 	}
@@ -197,13 +202,13 @@ func TestFactoryDroidConfig(t *testing.T) {
 // Writes keep a backup of the file as it was before the first write.
 func TestToolWritesKeepOriginalBackup(t *testing.T) {
 	home := t.TempDir()
-	writeJSON(t, crushConfigPath(home), map[string]any{"theme": "dark"})
+	writeConfig(t, crushConfigPath(home), map[string]any{"theme": "dark"})
 	for range 2 {
 		if err := crush.Load(home, NewLoadConfig(PlanGlobal, "k")); err != nil {
 			t.Fatalf("Load: %v", err)
 		}
 	}
-	backup := readJSON(t, crushConfigPath(home)+atomicfile.BackupSuffix)
+	backup := readConfig(t, crushConfigPath(home)+atomicfile.BackupSuffix)
 	if backup["theme"] != "dark" || backup["providers"] != nil {
 		t.Errorf("backup should hold the pre-first-write file, got %v", backup)
 	}
@@ -234,5 +239,96 @@ func TestPlanRegionAndEndpoints(t *testing.T) {
 	}
 	if _, ok := planFromBaseURL(client.DefaultBaseURL); ok {
 		t.Error("the pay-as-you-go endpoint is not a plan endpoint")
+	}
+}
+
+// Codex: config.toml gets the ZAI provider on the plan's Responses root and
+// the catalog-derived model settings; models.json gets the model's entry,
+// replacing a stale one and keeping others; unload keeps the user's settings.
+func TestCodexConfig(t *testing.T) {
+	home := t.TempDir()
+	writeConfig(t, codexConfigPath(home), map[string]any{
+		"approval_policy": "never",
+		"model_providers": map[string]any{"mine": map[string]any{"name": "mine"}},
+	})
+	writeConfig(t, codexModelsPath(home), map[string]any{"models": []any{
+		map[string]any{"slug": MainModel, "description": "stale"},
+		map[string]any{"slug": "my-model"},
+	}})
+	if err := codex.Load(home, NewLoadConfig(PlanChina, "k")); err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	cfg := readConfig(t, codexConfigPath(home))
+	if cfg["model_provider"] != codexProvider || cfg["model"] != MainModel || cfg["model_catalog_json"] != codexCatalogRef {
+		t.Errorf("top-level settings: %v", cfg)
+	}
+	if cfg["model_reasoning_effort"] != client.EffortMax {
+		t.Errorf("model_reasoning_effort = %v, want the strongest level", cfg["model_reasoning_effort"])
+	}
+	zai := cfg["model_providers"].(map[string]any)[codexProvider].(map[string]any)
+	if zai["base_url"] != client.RegionChina.ResponsesBaseURL() || zai["wire_api"] != "responses" || zai["experimental_bearer_token"] != "k" {
+		t.Errorf("ZAI provider: %v", zai)
+	}
+
+	models := readConfig(t, codexModelsPath(home))["models"].([]any)
+	if len(models) != 2 {
+		t.Fatalf("models.json = %v, want the user's model plus one fresh entry", models)
+	}
+	entry := models[1].(map[string]any)
+	e, _ := client.CatalogEntry(MainModel)
+	if entry["slug"] != MainModel || entry["description"] == "stale" || entry["context_window"] != float64(e.ContextSize) {
+		t.Errorf("model entry: %v", entry)
+	}
+	var levels []string
+	for _, l := range entry["supported_reasoning_levels"].([]any) {
+		levels = append(levels, l.(map[string]any)["effort"].(string))
+	}
+	if strings.Join(levels, ",") != "low,high,max" {
+		t.Errorf("reasoning levels = %v, want low,high,max", levels)
+	}
+
+	if err := codex.Unload(home); err != nil {
+		t.Fatalf("Unload: %v", err)
+	}
+	cfg = readConfig(t, codexConfigPath(home))
+	if cfg["approval_policy"] != "never" || cfg["model"] != nil {
+		t.Errorf("after unload: %v", cfg)
+	}
+	if providers := cfg["model_providers"].(map[string]any); providers["mine"] == nil || providers[codexProvider] != nil {
+		t.Errorf("providers after unload: %v", providers)
+	}
+}
+
+// A Codex config whose active provider is the user's own keeps its model
+// settings when the ZAI provider is removed.
+func TestCodexUnloadKeepsForeignModel(t *testing.T) {
+	home := t.TempDir()
+	if err := codex.Load(home, NewLoadConfig(PlanGlobal, "k")); err != nil {
+		t.Fatal(err)
+	}
+	cfg := readConfig(t, codexConfigPath(home))
+	cfg["model_provider"], cfg["model"] = "mine", "my-model"
+	writeConfig(t, codexConfigPath(home), cfg)
+	if err := codex.Unload(home); err != nil {
+		t.Fatal(err)
+	}
+	if cfg := readConfig(t, codexConfigPath(home)); cfg["model"] != "my-model" || cfg["model_provider"] != "mine" {
+		t.Errorf("user's model settings removed: %v", cfg)
+	}
+}
+
+// The repo's zai-claude-config.json example must match what Load writes for
+// the Global plan, so the documented config can't drift from the code.
+func TestClaudeCodeExampleConfigInSync(t *testing.T) {
+	example := readConfig(t, filepath.Join("..", "..", "zai-claude-config.json"))
+	home := t.TempDir()
+	key := example["env"].(map[string]any)["ANTHROPIC_AUTH_TOKEN"].(string)
+	if err := claudeCode.Load(home, NewLoadConfig(PlanGlobal, key)); err != nil {
+		t.Fatal(err)
+	}
+	got := readConfig(t, claudeSettingsPath(home))["env"]
+	if !reflect.DeepEqual(got, example["env"]) {
+		t.Errorf("zai-claude-config.json is stale; Load writes env %v", got)
 	}
 }

@@ -26,7 +26,7 @@ func crushConfigPath(home string) string {
 }
 
 func loadCrush(home string, cfg LoadConfig) error {
-	return editJSONMap(crushConfigPath(home), func(m map[string]any) {
+	return editConfigMap(crushConfigPath(home), func(m map[string]any) {
 		objectField(m, "providers")["zai"] = map[string]any{
 			"id":       "zai",
 			"name":     "ZAI Provider",
@@ -44,14 +44,14 @@ func unloadCrush(home string) error {
 	if !d.Configured {
 		return ErrNotConfigured
 	}
-	return editJSONMap(crushConfigPath(home), func(m map[string]any) {
+	return editConfigMap(crushConfigPath(home), func(m map[string]any) {
 		deleteFromObject(m, "providers", "zai")
 	})
 }
 
 // detectCrush reports a plan only when providers.zai targets a plan endpoint.
 func detectCrush(home string) (Detection, error) {
-	m, err := readJSONMap(crushConfigPath(home))
+	m, err := readConfigMap(crushConfigPath(home))
 	if err != nil {
 		return Detection{}, err
 	}

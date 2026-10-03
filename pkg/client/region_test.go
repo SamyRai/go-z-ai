@@ -10,20 +10,23 @@ func TestRegionBaseURLResolution(t *testing.T) {
 		region       Region
 		monitor, biz string
 		agents       string
+		responses    string
 	}{
 		{
-			name:    "global",
-			region:  RegionGlobal,
-			monitor: MonitorBaseURL,
-			biz:     BizBaseURL,
-			agents:  AgentsBaseURL,
+			name:      "global",
+			region:    RegionGlobal,
+			monitor:   MonitorBaseURL,
+			biz:       BizBaseURL,
+			agents:    AgentsBaseURL,
+			responses: ResponsesBaseURL,
 		},
 		{
-			name:    "china",
-			region:  RegionChina,
-			monitor: ChinaMonitorBaseURL,
-			biz:     ChinaBizBaseURL,
-			agents:  ChinaAgentsBaseURL,
+			name:      "china",
+			region:    RegionChina,
+			monitor:   ChinaMonitorBaseURL,
+			biz:       ChinaBizBaseURL,
+			agents:    ChinaAgentsBaseURL,
+			responses: ChinaResponsesBaseURL,
 		},
 	}
 	for _, tc := range cases {
@@ -36,6 +39,9 @@ func TestRegionBaseURLResolution(t *testing.T) {
 			}
 			if got := tc.region.AgentsBaseURL(); got != tc.agents {
 				t.Errorf("agents: got %q, want %q", got, tc.agents)
+			}
+			if got := tc.region.ResponsesBaseURL(); got != tc.responses {
+				t.Errorf("responses: got %q, want %q", got, tc.responses)
 			}
 		})
 	}

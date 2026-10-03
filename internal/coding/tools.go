@@ -50,7 +50,7 @@ type Tool struct {
 }
 
 // Tools is the ordered registry of supported coding tools.
-var Tools = []Tool{claudeCode, openCode, crush, factoryDroid}
+var Tools = []Tool{claudeCode, codex, openCode, crush, factoryDroid}
 
 // FindTool resolves a tool by ID or alias (e.g. "claude" → "claude-code").
 func FindTool(id string) (Tool, error) {

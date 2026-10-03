@@ -284,17 +284,10 @@ func decodeAnthropicStream(ctx context.Context, body io.Reader, emit func(Anthro
 // InputSchema, unless the caller opted out via Config.DisableToolSchemaCompat.
 // It never mutates the caller's slice.
 func (s *AnthropicService) compatTools(tools []AnthropicTool) []AnthropicTool {
-	if s.client.config.DisableToolSchemaCompat || len(tools) == 0 {
+	if s.client.config.DisableToolSchemaCompat {
 		return tools
 	}
-	out := make([]AnthropicTool, len(tools))
-	for i, t := range tools {
-		out[i] = t
-		if len(t.InputSchema) > 0 {
-			out[i].InputSchema = sanitizeParameters(t.InputSchema)
-		}
-	}
-	return out
+	return sanitizeTools(tools, func(t *AnthropicTool) *map[string]any { return &t.InputSchema })
 }
 
 func validateAnthropicRequest(req *AnthropicMessageRequest) error {

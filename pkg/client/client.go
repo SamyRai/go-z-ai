@@ -34,6 +34,7 @@ type Client struct {
 	voice       *VoiceService
 	fileParser  *FileParserService
 	anthropic   *AnthropicService
+	responses   *ResponsesService
 }
 
 // NewClient creates a client from config, resolving unset fields to their
@@ -68,6 +69,7 @@ func NewClient(config Config) (*Client, error) {
 	c.voice = &VoiceService{client: c}
 	c.fileParser = &FileParserService{client: c}
 	c.anthropic = &AnthropicService{client: c}
+	c.responses = &ResponsesService{client: c}
 	return c, nil
 }
 
@@ -148,3 +150,6 @@ func (c *Client) FileParser() *FileParserService { return c.fileParser }
 
 // Anthropic returns the Anthropic-compatible Messages service.
 func (c *Client) Anthropic() *AnthropicService { return c.anthropic }
+
+// Responses returns the OpenAI Responses-protocol service (what Codex uses).
+func (c *Client) Responses() *ResponsesService { return c.responses }

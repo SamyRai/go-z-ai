@@ -22,7 +22,7 @@ func codingMcpLong() string {
 	for _, s := range coding.MCPServers {
 		fmt.Fprintf(&b, "  %-18s %s\n", s.ID, s.Description)
 	}
-	b.WriteString("\nHosted servers authenticate with the plan key; the Vision server runs locally\nand needs Node.js (npx). --server selects servers (default: all).")
+	b.WriteString("\nHosted servers authenticate with the plan key; the Vision server runs locally\nand needs Node.js (npx). --server selects servers (default: every server the\ntool supports — Codex takes only the Vision server, see openai/codex#14793).")
 	return b.String()
 }
 
@@ -52,27 +52,33 @@ func init() {
 	codingMcpCmd.AddCommand(codingMcpAddCmd, codingMcpRemoveCmd, codingMcpStatusCmd)
 	addCredentialFlags(codingMcpAddCmd)
 	for _, c := range []*cobra.Command{codingMcpAddCmd, codingMcpRemoveCmd} {
-		c.Flags().StringSliceVar(&codingFlags.servers, "server", nil, "MCP server IDs (repeatable; default: all)")
+		c.Flags().StringSliceVar(&codingFlags.servers, "server", nil, "MCP server IDs (repeatable; default: all the tool supports)")
 	}
 	addFormatFlag("text", codingMcpStatusCmd)
 }
 
-// mcpTarget resolves the tool argument and --server selection.
-func mcpTarget(toolID string) (coding.Tool, []coding.MCPServer, string, error) {
+// mcpTarget resolves the tool argument and the --server selection, which
+// defaults to defaults(tool).
+func mcpTarget(toolID string, defaults func(coding.Tool) []coding.MCPServer) (coding.Tool, []coding.MCPServer, string, error) {
 	tool, err := coding.FindTool(toolID)
 	if err != nil {
 		return coding.Tool{}, nil, "", err
 	}
-	servers, err := coding.FindMCPServers(codingFlags.servers...)
-	if err != nil {
-		return coding.Tool{}, nil, "", err
+	servers := defaults(tool)
+	if len(codingFlags.servers) > 0 {
+		if servers, err = coding.FindMCPServers(codingFlags.servers...); err != nil {
+			return coding.Tool{}, nil, "", err
+		}
 	}
 	home, err := os.UserHomeDir()
 	return tool, servers, home, err
 }
 
+// allMCPServers is the default for removal: every official server.
+func allMCPServers(coding.Tool) []coding.MCPServer { return coding.MCPServers }
+
 func runCodingMcpAdd(_ *cobra.Command, args []string) error {
-	tool, servers, home, err := mcpTarget(args[0])
+	tool, servers, home, err := mcpTarget(args[0], coding.Tool.SupportedMCPServers)
 	if err != nil {
 		return err
 	}
@@ -96,7 +102,7 @@ func runCodingMcpAdd(_ *cobra.Command, args []string) error {
 }
 
 func runCodingMcpRemove(_ *cobra.Command, args []string) error {
-	tool, servers, home, err := mcpTarget(args[0])
+	tool, servers, home, err := mcpTarget(args[0], allMCPServers)
 	if err != nil {
 		return err
 	}

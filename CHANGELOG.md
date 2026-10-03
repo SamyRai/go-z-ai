@@ -37,9 +37,22 @@ library and the CLI; see *Removed* and *Changed*.
   `VideoGenerationRequest.OffPeak`, `FilePurposes` (adds `user_data`,
   `file-extract`), `SearchEngines` (global default `search-prime`),
   `SystemVoices`.
+- **Responses API** (`client.Responses()`, `Region.ResponsesBaseURL`): Z.AI's
+  OpenAI Responses-protocol endpoint at `/api/v1`, the one Codex uses —
+  `Create`, `Stream` (in-band `error` / `response.failed` become `*APIError`),
+  reasoning effort validated against the catalog, and output helpers
+  (`OutputText`, `ReasoningText`, `FunctionCalls`). CLI: `responses create`.
+  The request shapes follow OpenAI's spec and are not yet verified live.
+- **Codex** in `go-z-ai coding`: writes the ZAI provider (`wire_api =
+  "responses"`) to `~/.codex/config.toml` and the model's metadata to
+  `~/.codex/models.json`, as docs.z.ai and the official helper do. Codex
+  takes only the local Vision MCP server (openai/codex#14793); hosted ones
+  are refused with the reason. Config files are edited as JSON or TOML by
+  extension.
 - **Coding tools.** All four official MCP servers — Vision
   (`zai-mcp-server`, local) plus hosted `web-search-prime`, `web-reader`, and
-  `zread` — via `coding mcp add|remove <tool> [--server id]`. Claude Code's
+  `zread` — via `coding mcp add|remove <tool> [--server id]` (default: every
+  server the tool supports). Claude Code's
   tier mapping now targets GLM-5.3 / GLM-5.3-Flash with the `[1m]` context
   suffix, and the auto-compact window follows the main model's context.
 - **CLI.** `--format json` on models, tools, agents, audio, parser, voice,
@@ -49,6 +62,11 @@ library and the CLI; see *Removed* and *Changed*.
   `tools web-search --recency/--domain/--content-size`; `video generate
   --off-peak`; `batch create --auto-delete-input/--metadata`; `agents --var`
   and `async-result --conversation-id`; `audio transcribe --model`.
+
+- **Live-verification tests** for the account balance and subscriptions,
+  the coding-plan quota on both gateways, and the Responses API; recorded
+  cassettes now also scrub account identifiers from response bodies.
+  `.env.example` documents how to record them.
 
 ### Changed
 - **One transport.** Every service goes through a single request path with
@@ -87,6 +105,13 @@ library and the CLI; see *Removed* and *Changed*.
   characters; enrichment fields were missing from JSON output.
 - `coding unload` on an unconfigured tool now says so instead of failing;
   `coding doctor` exits non-zero when it finds a problem.
+- CLI errors were printed twice, with the full usage text in between; a
+  runtime failure now prints the error once, and usage appears only for a
+  usage mistake.
+- `.env.example` and `zai-claude-config.json` described old behavior and
+  models; both are current, and a test keeps the Claude example in sync with
+  what `coding load claude-code` writes. `ZAI_ENV`, which nothing read, is
+  gone.
 
 ### Removed
 - **Library:** `ChatService.CreateStream`, `CreateSimple`,

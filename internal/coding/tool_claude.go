@@ -49,7 +49,7 @@ var claudeManagedEnv = []string{
 // Anthropic base URL, the documented timeout and traffic settings, and the
 // tuning in cfg.Claude.
 func loadClaudeCode(home string, cfg LoadConfig) error {
-	err := editJSONMap(claudeStatePath(home), func(m map[string]any) {
+	err := editConfigMap(claudeStatePath(home), func(m map[string]any) {
 		if _, ok := m["hasCompletedOnboarding"].(bool); !ok {
 			m["hasCompletedOnboarding"] = true
 		}
@@ -57,7 +57,7 @@ func loadClaudeCode(home string, cfg LoadConfig) error {
 	if err != nil {
 		return err
 	}
-	return editJSONMap(claudeSettingsPath(home), func(s map[string]any) {
+	return editConfigMap(claudeSettingsPath(home), func(s map[string]any) {
 		env := objectField(s, "env")
 		deleteKeys(env, append(claudeManagedEnv, "ANTHROPIC_API_KEY")...)
 		env["ANTHROPIC_AUTH_TOKEN"] = cfg.APIKey
@@ -78,7 +78,7 @@ func unloadClaudeCode(home string) error {
 	if !d.Configured {
 		return ErrNotConfigured
 	}
-	return editJSONMap(claudeSettingsPath(home), func(s map[string]any) {
+	return editConfigMap(claudeSettingsPath(home), func(s map[string]any) {
 		deleteFromObject(s, "env", claudeManagedEnv...)
 	})
 }
@@ -86,7 +86,7 @@ func unloadClaudeCode(home string) error {
 // detectClaudeCode reports a plan only when ANTHROPIC_BASE_URL points at a
 // plan endpoint — a token set for another provider is not Z.AI's.
 func detectClaudeCode(home string) (Detection, error) {
-	s, err := readJSONMap(claudeSettingsPath(home))
+	s, err := readConfigMap(claudeSettingsPath(home))
 	if err != nil {
 		return Detection{}, err
 	}

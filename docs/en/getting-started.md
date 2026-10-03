@@ -40,7 +40,7 @@ Pick whichever fits how you work. They resolve in this priority order (highest w
 |---|---|
 | `--api-key` flag | One-off calls, scripts, CI |
 | `--account <name>` flag | You've registered multiple accounts (see [Accounts & Quota](accounts-and-quota.md)) |
-| `ZAI_API_KEY` env var (or `.env` file) | Everyday local shell use — the common case |
+| `ZAI_API_KEY` env var (or a `.env` file in the current directory) | Everyday local shell use — the common case |
 | Accounts store's active account | You've run `accounts use <name>` and want it to apply by default |
 
 For a single key, the fastest path:
@@ -50,38 +50,60 @@ export ZAI_API_KEY=your_api_key_here
 go-z-ai validate
 ```
 
-`validate` makes one real API call and confirms the key works before you go
-further.
+`validate` makes one free request (it lists models) and confirms the key works
+before you go further.
+
+These environment variables are read (each has a matching flag):
+
+| Variable | Flag | Purpose |
+|---|---|---|
+| `ZAI_API_KEY` | `--api-key` | Your Z.AI API key |
+| `ZAI_REGION` | `--region` | Regional gateway: `global` (api.z.ai, default) or `china` (open.bigmodel.cn) |
+| `ZAI_API_BASE_URL` | `--base-url` | Override the chat/PaaS API root only (default: the region's) |
+| `ZAI_CHINA_API_KEY` | `--china-api-key` | Separate open.bigmodel.cn key for Embeddings/Moderations (falls back to `ZAI_API_KEY`) |
+
+`ZAI_MONITOR_TIMEZONE` (`--monitor-timezone`) is also read; it only matters for
+quota/usage output.
 
 If your key was issued on Z.AI's China platform (`open.bigmodel.cn`), set
-`--region china` (or `ZAI_REGION=china`) so quota / usage, account-info,
-agents, and account-type detection route to the right host — without it those
-calls hit `api.z.ai` and a China-issued key can fail auth. See
+`--region china` (or `ZAI_REGION=china`). The region selects the host for every
+endpoint — chat, quota / usage, account, agents, and account-type detection —
+so without it those calls go to `api.z.ai`, where a China-issued key can fail
+auth. `accounts add` detects the region for you when you register a key (with
+`--type` it skips detection, so add `--region china` yourself). Embeddings and
+Moderations always use `open.bigmodel.cn`. See
 [Accounts & Quota § Regional gateways](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn)
-for the full picture; most chat / embeddings / moderations usage needs
-nothing extra (a regular `ZAI_API_KEY` authenticates on both platforms).
+for the full picture.
 
 ## 3. Your first commands
 
 ```bash
-# See what models you have access to
+# See what models you have access to (context, prices, capabilities from the catalog)
 go-z-ai models list
 
-# Send a chat completion
+# Send a chat completion (uses the catalog's default chat model)
 go-z-ai chat create "Explain goroutines in one paragraph"
 
 # Stream the response token-by-token
 go-z-ai chat create "Write a haiku about Go" --stream
 
-# Check your quota (GLM Coding Plan accounts)
+# Detect whether the key is Coding Plan or pay-as-you-go, and on which gateway (free)
+go-z-ai account detect
+
+# Check that the key can spend (free for Coding Plan keys; one minimal billed
+# request for pay-as-you-go keys), then your quota (Coding Plan accounts only)
+go-z-ai account status
 go-z-ai usage quota
 ```
+
+Add `--format json` to most commands for machine-readable output; progress
+messages go to stderr, so stdout stays clean.
 
 From here:
 
 - **Full command reference:** [CLI Reference](cli-reference.md)
 - **Multiple accounts / quota monitoring:** [Accounts & Quota](accounts-and-quota.md)
-- **Wire up Claude Code / OpenCode / Crush / Factory Droid / Cursor to your GLM Coding Plan:** [Coding Tools](coding-tools.md)
+- **Wire up Claude Code / OpenCode / Crush / Factory Droid to your GLM Coding Plan:** [Coding Tools](coding-tools.md)
 - **Using this as a Go library instead of a CLI:** [Library Guide](library-guide.md)
 - **Full-screen terminal UI** (chat, models, usage, accounts, coding, media, tools tabs in one place): `go-z-ai tui`
 

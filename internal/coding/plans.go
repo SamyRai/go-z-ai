@@ -61,7 +61,7 @@ func planFromBaseURL(baseURL string) (string, bool) {
 	for _, plan := range Plans {
 		r := Region(plan)
 		switch baseURL {
-		case r.AnthropicBaseURL(), r.CodingBaseURL():
+		case r.AnthropicBaseURL(), r.CodingBaseURL(), r.ResponsesBaseURL():
 			return plan, true
 		}
 	}

@@ -1,31 +1,33 @@
 package coding
 
 import (
+	"errors"
+	"os"
 	"slices"
 	"testing"
 
 	"github.com/SamyRai/go-z-ai/pkg/client"
 )
 
-// Every tool registers all official servers (local Vision + three hosted
-// HTTP servers), detects them, and removes them without touching other
-// entries in the same file.
+// Every tool registers the official servers it supports, detects them, and
+// removes them without touching other entries in the same file.
 func TestToolsMCPLoadDetectUnload(t *testing.T) {
 	for _, tool := range Tools {
 		t.Run(tool.ID, func(t *testing.T) {
 			home := t.TempDir()
-			writeJSON(t, tool.mcp.path(home), map[string]any{tool.mcp.key: map[string]any{"mine": map[string]any{}}, "other": true})
-			if err := tool.LoadMCP(home, PlanGlobal, "k", MCPServers); err != nil {
+			servers := tool.SupportedMCPServers()
+			writeConfig(t, tool.mcp.path(home), map[string]any{tool.mcp.key: map[string]any{"mine": map[string]any{"command": "x"}}, "other": true})
+			if err := tool.LoadMCP(home, PlanGlobal, "k", servers); err != nil {
 				t.Fatalf("LoadMCP: %v", err)
 			}
 			found, err := tool.MCPConfigured(home)
-			if err != nil || len(found) != len(MCPServers) {
+			if err != nil || len(found) != len(servers) {
 				t.Fatalf("MCPConfigured = %v, %v", found, err)
 			}
-			if err := tool.UnloadMCP(home, MCPServers); err != nil {
+			if err := tool.UnloadMCP(home, servers); err != nil {
 				t.Fatalf("UnloadMCP: %v", err)
 			}
-			m := readJSON(t, tool.mcp.path(home))
+			m := readConfig(t, tool.mcp.path(home))
 			entries := m[tool.mcp.key].(map[string]any)
 			if _, ok := entries["mine"]; !ok || len(entries) != 1 || m["other"] != true {
 				t.Errorf("user's entries disturbed: %v", m)
@@ -41,7 +43,7 @@ func TestMCPEntriesFollowRegion(t *testing.T) {
 	if err := claudeCode.LoadMCP(home, PlanChina, "k", MCPServers); err != nil {
 		t.Fatalf("LoadMCP: %v", err)
 	}
-	servers := readJSON(t, claudeStatePath(home))["mcpServers"].(map[string]any)
+	servers := readConfig(t, claudeStatePath(home))["mcpServers"].(map[string]any)
 	vision := servers["zai-mcp-server"].(map[string]any)
 	if vision["type"] != "stdio" || vision["env"].(map[string]any)["Z_AI_MODE"] != "ZHIPU" {
 		t.Errorf("vision entry %v", vision)
@@ -66,5 +68,25 @@ func TestFindMCPServers(t *testing.T) {
 	}
 	if _, err := FindMCPServers("nope"); err == nil {
 		t.Error("expected an error for an unknown server")
+	}
+}
+
+// Codex takes only the local Vision server; asking for a hosted one fails
+// before anything is written.
+func TestCodexRejectsHostedMCP(t *testing.T) {
+	if got := codex.SupportedMCPServers(); len(got) != 1 || got[0].IsRemote() {
+		t.Fatalf("SupportedMCPServers = %v, want only the local Vision server", got)
+	}
+	home := t.TempDir()
+	if err := codex.LoadMCP(home, PlanGlobal, "k", MCPServers); err == nil {
+		t.Fatal("expected an error for hosted servers")
+	}
+	if _, err := os.Stat(codexConfigPath(home)); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("config written despite the error: %v", err)
+	}
+	for _, tool := range Tools {
+		if tool.ID != CodexID && len(tool.SupportedMCPServers()) != len(MCPServers) {
+			t.Errorf("%s should support every official server", tool.ID)
+		}
 	}
 }

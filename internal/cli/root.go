@@ -24,6 +24,11 @@ var rootCmd = &cobra.Command{
 	Short:   "Z.AI API Client",
 	Long:    `A comprehensive CLI client for the Z.AI (Zhipu AI) API platform.`,
 	Version: "dev",
+	// Execute prints the error once; cobra's own copy would repeat it.
+	SilenceErrors: true,
+	// Args and flags are validated before this hook, so a usage mistake
+	// still prints usage while a runtime failure (an API error) doesn't.
+	PersistentPreRun: func(cmd *cobra.Command, _ []string) { cmd.SilenceUsage = true },
 }
 
 // SetBuildInfo configures the version/commit/date reported by --version.
@@ -42,7 +47,7 @@ func SetBuildInfo(version, commit, date string) {
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
 	}
 }
