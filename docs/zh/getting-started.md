@@ -40,7 +40,7 @@ go-z-ai --version
 |---|---|
 | `--api-key` 标志 | 一次性调用、脚本、CI |
 | `--account <name>` 标志 | 你注册了多个账户（见 [Accounts & Quota](accounts-and-quota.md)） |
-| `ZAI_API_KEY` 环境变量（或 `.env` 文件） | 日常本地 shell 使用——最常见的情况 |
+| `ZAI_API_KEY` 环境变量（或当前目录下的 `.env` 文件） | 日常本地 shell 使用——最常见的情况 |
 | 账户仓库的活动账户 | 你已经运行过 `accounts use <name>`，并希望它默认生效 |
 
 只有一个 key 时，最快的路径：
@@ -50,37 +50,57 @@ export ZAI_API_KEY=your_api_key_here
 go-z-ai validate
 ```
 
-`validate` 会发起一次真实的 API 调用，在继续之前确认 key 可用。
+`validate` 会发起一次免费请求（列出模型），在继续之前确认 key 可用。
+
+会读取以下环境变量（每个都有对应的 flag）：
+
+| 变量 | Flag | 用途 |
+|---|---|---|
+| `ZAI_API_KEY` | `--api-key` | 你的 Z.AI API Key |
+| `ZAI_REGION` | `--region` | 区域网关：`global`（api.z.ai，默认）或 `china`（open.bigmodel.cn） |
+| `ZAI_API_BASE_URL` | `--base-url` | 仅覆盖 chat/PaaS API 根地址（默认：所选区域的根地址） |
+| `ZAI_CHINA_API_KEY` | `--china-api-key` | 用于 Embeddings/Moderations 的独立 open.bigmodel.cn key（回退到 `ZAI_API_KEY`） |
+
+另外还会读取 `ZAI_MONITOR_TIMEZONE`（`--monitor-timezone`）；它只对配额 / 用量输出
+有影响。
 
 如果你的 key 是在 Z.AI 中国平台（`open.bigmodel.cn`）签发的，请设置
-`--region china`（或 `ZAI_REGION=china`），这样配额 / 用量、账户信息、agents
-以及账户类型检测都会路由到正确的 host——否则这些调用会打到 `api.z.ai`，而
-中国签发的 key 可能在鉴权时失败。完整情况见
-[Accounts & Quota § Regional gateways](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn)；
-大多数 chat / embeddings / moderations 的使用都不需要额外设置（普通的
-`ZAI_API_KEY` 在两个平台上都能完成鉴权）。
+`--region china`（或 `ZAI_REGION=china`）。区域会决定每个端点所用的主机——chat、
+配额 / 用量、账户、agents 以及账户类型检测——所以如果不设置，这些调用会打到
+`api.z.ai`，而中国签发的 key 可能在鉴权时失败。`accounts add` 在你注册 key 时会
+替你检测区域（如果使用了 `--type`，则会跳过检测，此时请自己加上
+`--region china`）。Embeddings 和 Moderations 始终使用 `open.bigmodel.cn`。完整情况见
+[Accounts & Quota § Regional gateways](accounts-and-quota.md#区域网关apizai--openbigmodelcn)。
 
 ## 3. 你的第一批命令
 
 ```bash
-# 查看你能访问哪些模型
+# See what models you have access to (context, prices, capabilities from the catalog)
 go-z-ai models list
 
-# 发起一次聊天补全
-go-z-ai chat create "用一段话解释 goroutine"
+# Send a chat completion (uses the catalog's default chat model)
+go-z-ai chat create "Explain goroutines in one paragraph"
 
-# 流式地逐 token 输出响应
-go-z-ai chat create "写一首关于 Go 的俳句" --stream
+# Stream the response token-by-token
+go-z-ai chat create "Write a haiku about Go" --stream
 
-# 查看你的配额（GLM Coding Plan 账户）
+# Detect whether the key is Coding Plan or pay-as-you-go, and on which gateway (free)
+go-z-ai account detect
+
+# Check that the key can spend (free for Coding Plan keys; one minimal billed
+# request for pay-as-you-go keys), then your quota (Coding Plan accounts only)
+go-z-ai account status
 go-z-ai usage quota
 ```
+
+大多数命令都可以加上 `--format json` 来获得机器可读的输出；进度信息输出到
+stderr，因此 stdout 保持干净。
 
 接下来：
 
 - **完整命令参考：** [CLI Reference](cli-reference.md)
 - **多账户 / 配额监控：** [Accounts & Quota](accounts-and-quota.md)
-- **把 Claude Code / OpenCode / Crush / Factory Droid / Cursor 接入你的 GLM Coding Plan：** [Coding Tools](coding-tools.md)
+- **把 Claude Code / OpenCode / Crush / Factory Droid 接入你的 GLM Coding Plan：** [Coding Tools](coding-tools.md)
 - **把本项目当作 Go 库使用，而不是 CLI：** [Library Guide](library-guide.md)
 - **全屏终端 UI**（把 chat、models、usage、accounts、coding、media、tools 这些标签页放到一个界面里）：`go-z-ai tui`
 

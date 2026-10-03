@@ -1,6 +1,6 @@
 # 文档
 
-**English** | **简体中文** | [Русский](../ru/README.md)
+[English](../en/README.md) | **简体中文** | [Русский](../ru/README.md)
 
 > 各语言版本位于 `docs/<lang>/`。英文是权威来源，其它语言版本可能落后于它。
 > 改动行为的 PR 请先更新 `docs/en/`。
@@ -11,10 +11,10 @@
 
 | 文档 | 内容 |
 |---|---|
-| [快速开始](getting-started.md) | 安装、鉴权、首批命令 |
-| [CLI 参考](cli-reference.md) | 每条命令，按功能区域组织 |
+| [快速开始](getting-started.md) | 安装、鉴权、首批命令、故障排查 |
+| [CLI 参考](cli-reference.md) | 每条命令和每个 flag，按功能区域组织，包括全局 flag 与 `--format json` 输出 |
 | [账户与配额](accounts-and-quota.md) | 多账户、配额 / 用量监控、区域网关（api.z.ai / open.bigmodel.cn） |
-| [编码工具](coding-tools.md) | 把 Claude Code / OpenCode / Crush / Factory Droid / Cursor 接入你的 GLM Coding Plan |
+| [编码工具](coding-tools.md) | 把 Claude Code / Codex / OpenCode / Crush / Factory Droid 接入你的 GLM Coding Plan：模型映射、Z.AI 的 MCP 服务器、status、doctor |
 
 ## 面向开发者
 
@@ -22,10 +22,10 @@
 
 | 文档 | 内容 |
 |---|---|
-| [库使用指南](library-guide.md) | 每个服务，附示例——流式、函数 / 工具调用、结构化输出、异步轮询、`Region` 旋钮 |
-| [错误处理](error-handling.md) | `APIError`、完整的错误码表、重试行为 |
-| [架构](architecture.md) | 包布局、请求门面、区域网关选择、实测验证约定 |
-| [路线图与已知限制](roadmap.md) | 哪些尚未验证、未实现，或属于已知 bug——适合作为首个贡献 |
+| [库使用指南](library-guide.md) | 每个服务，附示例——流式（迭代器）、推理强度、多模态消息、函数 / 工具调用、结构化输出、异步轮询、`Region` 旋钮、账户检测与余额 |
+| [错误处理](error-handling.md) | `APIError`、完整的错误码表、重试行为、HTTP 200 中嵌入失败的怪异行为 |
+| [架构](architecture.md) | 包布局与文件归属、请求门面、流式、区域网关选择、实测验证约定、TUI |
+| [路线图与已知限制](roadmap.md) | 哪些尚未经实测验证（biz 端点、配额、Responses API、agents、embeddings/moderations/rerank）或尚未实现（agent 对话）——适合作为首个贡献 |
 | [贡献指南](../../CONTRIBUTING.md) | 开 PR 前必读——含实测验证 / cassette 约定 |
 | [安全策略](../../SECURITY.md) | 如何报告漏洞 |
 | [更新日志](../../CHANGELOG.md) | 何时发布了什么 |

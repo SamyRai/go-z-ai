@@ -2,7 +2,7 @@
 
 A Go **CLI**, **library**, and **TUI** for the Z.AI (Zhipu AI / BigModel)
 platform — every GLM model surface in one tool, plus a Go port of
-`@z_ai/coding-helper` that wires Claude Code, OpenCode, Crush, and Factory
+`@z_ai/coding-helper` that wires Claude Code, Codex, OpenCode, Crush, and Factory
 Droid to your GLM Coding Plan.
 
 **English** | [简体中文](README.zh.md) | [Русский](README.ru.md) | [Deutsch](README.de.md) | [Татарча](README.tt.md) | [Türkçe](README.tr.md)

@@ -20,6 +20,7 @@ two ever disagree.
 - [Agents](#agents)
 - [Tools (web search, reader, tokenizer)](#tools-web-search-reader-tokenizer)
 - [Anthropic-compatible endpoint](#anthropic-compatible-endpoint)
+- [Responses endpoint (Codex protocol)](#responses-endpoint-codex-protocol)
 - [Terminal UI](#terminal-ui)
 
 ## Global flags
