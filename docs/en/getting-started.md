@@ -72,7 +72,7 @@ so without it those calls go to `api.z.ai`, where a China-issued key can fail
 auth. `accounts add` detects the region for you when you register a key (with
 `--type` it skips detection, so add `--region china` yourself). Embeddings and
 Moderations always use `open.bigmodel.cn`. See
-[Accounts & Quota § Regional gateways](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn)
+[Accounts & Quota § Regional gateways](accounts-and-quota.md#regional-gateways-apizai--openbigmodelcn)
 for the full picture.
 
 ## 3. Your first commands

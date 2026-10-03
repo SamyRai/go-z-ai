@@ -52,7 +52,7 @@ quota/usage, account (biz), agents, and account-type detection. Set it to
 only the chat/PaaS root and wins over the region's default there.
 Embeddings and Moderations always use `open.bigmodel.cn`. When neither
 `--region` nor `ZAI_REGION` is set, a stored account's region applies. See
-[Accounts & Quota § Regional gateways](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn).
+[Accounts & Quota § Regional gateways](accounts-and-quota.md#regional-gateways-apizai--openbigmodelcn).
 
 ## Chat
 
@@ -291,7 +291,7 @@ go-z-ai rerank <query> <documents...> [--top-n N]
 ```
 
 Embeddings route to `open.bigmodel.cn` — see
-[Accounts & Quota § Regional gateways](accounts-and-quota.md#regional-gateways-apiza--openbigmodelcn)
+[Accounts & Quota § Regional gateways](accounts-and-quota.md#regional-gateways-apizai--openbigmodelcn)
 for why, and what that means for authentication. `--dimensions` applies to
 `embedding-3` only (256, 512, 1024, or 2048). Rerank uses the chat/PaaS root
 (`--base-url`, or the `--region` default); it is not pinned to the China host.
