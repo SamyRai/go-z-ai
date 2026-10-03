@@ -138,10 +138,11 @@ chat-completion 规格和官方 SDK。它们都是增量字段并已通过单元
   `ZAI_RECORD=1 ZAI_API_KEY=… go test -run 'TestVerify(AccountBalance|AccountSubscriptions|QuotaLimit|Responses)$' ./pkg/client -v`，
   然后修正真实响应所推翻的任何字段名。录制钩子会对 key 和账户标识做脱敏；提交前请
   检查 YAML。
-- **Codex 托管的 MCP 服务器**——在 openai/codex#14793（Codex 拒绝 Z.AI 托管服务器
-  对 `notifications/initialized` 返回的空应答）被修复之前，`go-z-ai coding mcp add codex`
-  只提供 Vision 服务器；修复之后，再为 `codex` 提供一种远程 MCP 条目结构
-  （`url` 加 `http_headers`）。
+- **Codex 托管的 MCP 服务器**——与官方助手一致，`go-z-ai coding mcp add codex`
+  只提供 Vision 服务器，原因是 openai/codex#14793（Codex 拒绝不带 Content-Type
+  的应答，而 Z.AI 托管服务器对 `notifications/initialized` 正是这样应答的）。
+  上游 issue 已关闭：一旦确认当前 Codex 版本能接受托管服务器，再为 `codex`
+  提供一种远程 MCP 条目结构（`url` 加 `http_headers`）。
 - **Agent 会话端点**——未实现。`POST /v1/agents/conversation` 返回某个运行会话的
   agent 的会话历史（文档称只支持 `slides_glm_agent`）。`AgentAsyncResultRequest` 已经
   携带 `ConversationID`；缺失的是历史调用本身。相关：`AgentInvokeRequest.Stream` 存在

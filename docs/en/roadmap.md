@@ -163,9 +163,12 @@ wire shape.
   then fix any field names the real responses contradict. The recording hook
   redacts the key and account identifiers; check the YAML before committing.
 - **Codex hosted MCP servers** — `go-z-ai coding mcp add codex` offers only
-  the Vision server until openai/codex#14793 (Codex rejecting an empty
-  `notifications/initialized` reply from Z.AI's hosted servers) is fixed;
-  then give `codex` a remote MCP entry shape (`url` plus `http_headers`).
+  the Vision server, as the official helper does, because of
+  openai/codex#14793 (Codex rejecting a reply without a Content-Type, which
+  Z.AI's hosted servers send to `notifications/initialized`). The upstream
+  issue is now closed: once a current Codex release is confirmed to accept
+  the hosted servers, give `codex` a remote MCP entry shape (`url` plus
+  `http_headers`).
 - **Agent conversation endpoint** — not implemented. `POST /v1/agents/conversation`
   returns the conversation history of an agent that runs conversations (docs
   say it supports only `slides_glm_agent`). `AgentAsyncResultRequest` already
