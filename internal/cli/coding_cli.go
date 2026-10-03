@@ -80,7 +80,7 @@ func init() {
 
 	codingAuthCmd.Flags().BoolVar(&codingFlags.noValidate, "no-validate", false, "Store the key without validating against the API")
 	addCredentialFlags(codingLoadCmd)
-	codingFlags.claude.register(codingCmd)
+	codingFlags.claude.register(codingLoadCmd, codingAuthCmd)
 }
 
 // addCredentialFlags registers --plan/--key, which override the stored
@@ -92,9 +92,9 @@ func addCredentialFlags(cmds ...*cobra.Command) {
 	}
 }
 
-// claudeFlags tunes the Claude Code config. They are persistent on the coding
-// command so 'load' and 'auth reload' share them; unset flags keep the
-// catalog-derived defaults of coding.DefaultClaudeOptions.
+// claudeFlags tunes the Claude Code config written by 'load' and 'auth
+// reload'; unset flags keep the catalog-derived defaults of
+// coding.DefaultClaudeOptions.
 type claudeFlags struct {
 	noModelMap          bool
 	haiku, sonnet, opus string
@@ -103,15 +103,17 @@ type claudeFlags struct {
 	maxOutput           int
 }
 
-func (f *claudeFlags) register(cmd *cobra.Command) {
-	pf := cmd.PersistentFlags()
-	pf.BoolVar(&f.noModelMap, "no-model-mapping", false, "Omit the ANTHROPIC_DEFAULT_*_MODEL tier mapping (match @z_ai/coding-helper exactly)")
-	pf.StringVar(&f.haiku, "haiku", "", "Override the Claude 'haiku' tier model id")
-	pf.StringVar(&f.sonnet, "sonnet", "", "Override the Claude 'sonnet' tier model id")
-	pf.StringVar(&f.opus, "opus", "", "Override the Claude 'opus' tier model id")
-	pf.IntVar(&f.autoCompact, "auto-compact-window", 0, "CLAUDE_CODE_AUTO_COMPACT_WINDOW in tokens (default: the main model's context; 0 to omit)")
-	pf.IntVar(&f.maxThinking, "max-thinking-tokens", 0, "MAX_THINKING_TOKENS extended-thinking budget (0 to omit)")
-	pf.IntVar(&f.maxOutput, "max-output-tokens", 0, "CLAUDE_CODE_MAX_OUTPUT_TOKENS (0 to omit)")
+func (f *claudeFlags) register(cmds ...*cobra.Command) {
+	for _, cmd := range cmds {
+		fs := cmd.Flags()
+		fs.BoolVar(&f.noModelMap, "no-model-mapping", false, "Claude Code: omit the ANTHROPIC_DEFAULT_*_MODEL tier mapping (match @z_ai/coding-helper exactly)")
+		fs.StringVar(&f.haiku, "haiku", "", "Claude Code: override the 'haiku' tier model id")
+		fs.StringVar(&f.sonnet, "sonnet", "", "Claude Code: override the 'sonnet' tier model id")
+		fs.StringVar(&f.opus, "opus", "", "Claude Code: override the 'opus' tier model id")
+		fs.IntVar(&f.autoCompact, "auto-compact-window", 0, "Claude Code: CLAUDE_CODE_AUTO_COMPACT_WINDOW in tokens (default: the main model's context; 0 to omit)")
+		fs.IntVar(&f.maxThinking, "max-thinking-tokens", 0, "Claude Code: MAX_THINKING_TOKENS extended-thinking budget (0 to omit)")
+		fs.IntVar(&f.maxOutput, "max-output-tokens", 0, "Claude Code: CLAUDE_CODE_MAX_OUTPUT_TOKENS (0 to omit)")
+	}
 }
 
 // options applies the flags the user set over the recommended defaults.

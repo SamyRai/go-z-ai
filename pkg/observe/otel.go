@@ -109,21 +109,16 @@ const GenAISystemValue = "z.ai"
 // their own dashboards on top of these primitives.
 type OTelHook struct {
 	tracer trace.Tracer
-	meter  metric.Meter
 	// serviceName is attached to every span as the OTel service.name resource
 	// attribute when non-empty. The OTel SDK usually sets this globally via
 	// resource.Default() — this field is for per-hook overrides (e.g. when
 	// one process serves multiple logical services).
 	serviceName string
 
-	// metricDur is the request-duration histogram, lazily created on first
-	// OnResponse (so a hook whose caller never registers a MeterProvider
-	// doesn't fail at NewOTelHook time).
-	metricDur metric.Float64Histogram
-	// metricTokens is the token-usage counter, lazily created.
-	metricTokens metric.Int64Counter
-	// metricRequests is the request counter (success/error), lazily created.
-	metricRequests metric.Int64Counter
+	// The metric instruments, created once in the constructor.
+	metricDur      metric.Float64Histogram // request duration
+	metricTokens   metric.Int64Counter     // token usage by type
+	metricRequests metric.Int64Counter     // requests by outcome
 }
 
 // NewOTelHook constructs an OTelHook using the global TracerProvider and
@@ -179,7 +174,6 @@ func NewOTelHookWithProvider(serviceName string, tp trace.TracerProvider, mp met
 		metric.WithDescription("Token usage from Z.AI API responses, by type (input/output)"))
 	return &OTelHook{
 		tracer:         tracer,
-		meter:          meter,
 		serviceName:    serviceName,
 		metricDur:      dur,
 		metricRequests: req,
@@ -329,36 +323,14 @@ func spanNameFor(meta client.RequestMeta) string {
 // present. Returns nil for other error types (the error is still recorded as
 // a span event via RecordError in OnError).
 func errorAttrs(err error) []attribute.KeyValue {
-	type codedError interface {
-		GetCode() int
-		GetCategory() client.ErrorCategory
+	ae, ok := errors.AsType[*client.APIError](err)
+	if !ok || ae == nil {
+		return nil
 	}
-	// *client.APIError exposes Code/Category as fields, not getters; use a
-	// concrete type assertion rather than an interface to avoid adding
-	// getter methods to the public API just for this hook. asAPIError walks
-	// the Unwrap chain (errors.As semantics) so a *APIError wrapped in
-	// fmt.Errorf("...: %w", apiErr) is still matched.
-	var ae *client.APIError
-	if asAPIError(err, &ae) && ae != nil {
-		return []attribute.KeyValue{
-			attribute.Int(attrZAIErrorCode, ae.Code),
-			attribute.String(attrZAIErrorCategory, string(ae.Category)),
-		}
+	return []attribute.KeyValue{
+		attribute.Int(attrZAIErrorCode, ae.Code),
+		attribute.String(attrZAIErrorCategory, string(ae.Category)),
 	}
-	_ = codedError(nil) // reserved for a future getter-based path
-	return nil
-}
-
-// asAPIError reports whether err (or any error in its Unwrap chain) is a
-// *client.APIError, setting *target to the first match. It delegates to
-// errors.As, which natively handles the **T target shape (target is
-// **client.APIError): the assignment to *target is type-checked at runtime.
-// A nil err returns false immediately.
-func asAPIError(err error, target **client.APIError) bool {
-	if err == nil {
-		return false
-	}
-	return errors.As(err, target)
 }
 
 // --- metrics ---------------------------------------------------------------

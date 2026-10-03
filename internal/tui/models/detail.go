@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"charm.land/lipgloss/v2"
 
 	"github.com/SamyRai/go-z-ai/internal/modelview"
 	"github.com/SamyRai/go-z-ai/internal/tui/uistyle"
@@ -23,13 +22,9 @@ func capBadges(caps []string) string {
 	if len(names) == 0 {
 		return uistyle.Subtle.Render("no capabilities listed")
 	}
-	badgeStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("15")).
-		Background(uistyle.ColorAccentBg).
-		Padding(0, 1)
 	out := make([]string, len(names))
 	for i, n := range names {
-		out[i] = badgeStyle.Render(n)
+		out[i] = uistyle.Chip.Render(n)
 	}
 	return strings.Join(out, " ")
 }

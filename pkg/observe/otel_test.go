@@ -212,18 +212,13 @@ func TestOTelHookSpanNameFallbacks(t *testing.T) {
 	}
 }
 
-// TestOTelHookLazyMetrics verifies metrics are lazily created (a hook with
-// no requests doesn't fail). Constructs a hook with a real but unused meter
-// provider and asserts no Collect-time errors.
-func TestOTelHookLazyMetrics(t *testing.T) {
-	h, _, reader := newTestHook(t, "")
-	// No OnResponse calls — metrics should not exist yet.
+// A hook that served no requests collects cleanly.
+func TestOTelHookUnusedMetrics(t *testing.T) {
+	_, _, reader := newTestHook(t, "")
 	var rm metricdata.ResourceMetrics
 	if err := reader.Collect(context.Background(), &rm); err != nil {
 		t.Fatalf("Collect on unused hook: %v", err)
 	}
-	// ResourceMetrics may be empty but not an error — just verify no panic.
-	_ = h
 }
 
 // TestNewOTelHookWithProviderNilGuards verifies that passing literal nil for
@@ -285,32 +280,24 @@ func TestNewOTelHookWithProviderNilGuards(t *testing.T) {
 	}
 }
 
-// TestAsAPIError verifies the manual unwrap-to-APIError helper used by
-// errorAttrs (since *APIError exposes fields, not getters).
-func TestAsAPIError(t *testing.T) {
-	// Direct type.
-	ae := &client.APIError{Code: 1113}
-	var got *client.APIError
-	if !asAPIError(ae, &got) || got.Code != 1113 {
-		t.Errorf("direct: expected match with code 1113")
+// errorAttrs finds an *APIError anywhere in the Unwrap chain and ignores
+// other errors.
+func TestErrorAttrs(t *testing.T) {
+	ae := &client.APIError{Code: 1113, Category: client.ErrorCategoryQuota}
+	for _, err := range []error{ae, wrapErr(ae)} {
+		got := attrMap(errorAttrs(err))
+		if got[attrZAIErrorCode] != int64(1113) || got[attrZAIErrorCategory] != string(client.ErrorCategoryQuota) {
+			t.Errorf("%v: attrs = %v", err, got)
+		}
 	}
-	// Wrapped via fmt.Errorf("...: %w", ae) — this uses Unwrap() chain.
-	if !asAPIError(wrapErr(ae), &got) || got.Code != 1113 {
-		t.Errorf("wrapped: expected match with code 1113")
-	}
-	// Non-API error.
-	got = nil
-	if asAPIError(context.DeadlineExceeded, &got) {
-		t.Errorf("expected no match for DeadlineExceeded")
-	}
-	// Nil.
-	if asAPIError(nil, &got) {
-		t.Errorf("expected no match for nil")
+	for _, err := range []error{context.DeadlineExceeded, nil} {
+		if attrs := errorAttrs(err); attrs != nil {
+			t.Errorf("%v: want no attrs, got %v", err, attrs)
+		}
 	}
 }
 
-// wrapErr wraps an error using %w (the standard wrap idiom) for the
-// asAPIError unwrap-chain test.
+// wrapErr wraps an error with an Unwrap method for the unwrap-chain test.
 func wrapErr(err error) error { return &wrappedErr{err: err} }
 
 type wrappedErr struct{ err error }

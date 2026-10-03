@@ -6,9 +6,9 @@
 // Theme. The palette is dual (light + dark pairs) and resolved at render
 // time against the terminal's current background. The root model calls
 // SetDark once it has a tea.BackgroundColorMsg (defaulting to dark until
-// then, matching what most developers run); the resolved styles are package
-// vars, reassigned by applyTheme, so every View() that reads them picks up
-// the new theme on the next frame.
+// then, matching what most developers run); the styles are package vars
+// rebuilt by applyTheme, so every View() picks up the new theme on the next
+// frame.
 //
 // Colors are built via lipgloss.Color only, never raw ANSI escapes, so
 // Bubble Tea's colorprofile layer can auto-downsample them for
@@ -49,8 +49,8 @@ type lightDark struct{ Dark, Light string }
 var isDark = true
 
 // SetDark reconfigures the palette against the terminal's background and
-// rebuilds every exported style so subsequent renders pick up the new theme.
-// Safe to call from any goroutine; called from the Bubble Tea Update loop.
+// rebuilds every style so subsequent renders pick up the new theme. Called
+// from the Bubble Tea Update loop (not goroutine-safe).
 func SetDark(dark bool) {
 	if dark == isDark {
 		return
@@ -59,90 +59,50 @@ func SetDark(dark bool) {
 	applyTheme()
 }
 
-// IsDark reports the currently-resolved theme. Screens that cache
-// theme-dependent state (e.g. chat's glamour renderer) use this to decide
-// when to rebuild.
-func IsDark() bool { return isDark }
-
-// Resolved color roles (read by callers at render time). Reassigned by
-// applyTheme on SetDark.
+// Resolved color roles; set by applyTheme.
 var (
-	ColorAccent   color.Color = lipgloss.Color(palette.accent.Dark)
-	ColorAccentBg color.Color = lipgloss.Color(palette.accentBg.Dark)
-	ColorMuted    color.Color = lipgloss.Color(palette.muted.Dark)
-	ColorBorder   color.Color = lipgloss.Color(palette.border.Dark)
-	ColorError    color.Color = lipgloss.Color(palette.err.Dark)
-	ColorWarn     color.Color = lipgloss.Color(palette.warn.Dark)
-	ColorSuccess  color.Color = lipgloss.Color(palette.success.Dark)
+	colorAccent   color.Color
+	colorAccentBg color.Color
+	colorMuted    color.Color
+	colorBorder   color.Color
+	colorError    color.Color
+	colorWarn     color.Color
+	colorSuccess  color.Color
 )
 
-// Styles (read by callers at render time). Reassigned by applyTheme.
+// Styles, read by callers at render time; built by applyTheme.
 var (
-	// PillActive/PillInactive render a filled rounded "pill" segment, used
-	// for both the root tab bar and in-screen filter rows (Models tab).
-	PillActive = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("15")).
-			Background(ColorAccentBg).
-			Padding(0, 2)
+	// Chip is white text on the accent background — the base of the header
+	// app badge, the active pill, and inline tags.
+	Chip lipgloss.Style
+	// PillActive/PillInactive render the segments of the root tab bar and
+	// in-screen filter rows.
+	PillActive   lipgloss.Style
+	PillInactive lipgloss.Style
+	// Header titles a screen; HeaderApp is the header's app-name badge.
+	Header    lipgloss.Style
+	HeaderApp lipgloss.Style
+	// BadgeValue/BadgeWarn/BadgeOK color a header chip's value (RenderBadge).
+	BadgeValue lipgloss.Style
+	BadgeWarn  lipgloss.Style
+	BadgeOK    lipgloss.Style
+	// Panel wraps the active screen. Only the root applies it — a screen that
+	// adds its own border renders double-boxed.
+	Panel lipgloss.Style
+	// Toast styles color the status line by severity.
+	ToastError lipgloss.Style
+	ToastWarn  lipgloss.Style
+	ToastInfo  lipgloss.Style
+	// SectionTitle labels a sub-panel; Subtle renders secondary text.
+	SectionTitle lipgloss.Style
+	Subtle       lipgloss.Style
+	// EmptyTitle/EmptyHint render an empty state and its call to action.
+	EmptyTitle lipgloss.Style
+	EmptyHint  lipgloss.Style
 
-	PillInactive = lipgloss.NewStyle().
-			Foreground(ColorMuted).
-			Padding(0, 2)
-
-	Header = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(ColorAccent).
-		Padding(0, 1)
-
-	// HeaderApp is the left-side app-name badge in the top header: a solid
-	// accent-on-teal block, mirroring the active tab pill so the brand reads
-	// as part of the navigation chrome.
-	HeaderApp = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("15")).
-			Background(ColorAccentBg).
-			Padding(0, 1)
-
-	// Badge styles for the header's context chips (account, plan, model, …).
-	// Each badge is a compact "label: value" pair; the label is muted and the
-	// value carries the role color, so the eye lands on the value.
-	BadgeLabel = lipgloss.NewStyle().Foreground(ColorMuted)
-	BadgeValue = lipgloss.NewStyle().Foreground(ColorAccent).Bold(true)
-	BadgeWarn  = lipgloss.NewStyle().Foreground(ColorWarn).Bold(true)
-	BadgeOK    = lipgloss.NewStyle().Foreground(ColorSuccess).Bold(true)
-
-	// Panel wraps a screen's content in a bordered container. Only the root
-	// model applies this around the active screen — screens themselves
-	// should not nest another Panel border inside their own View, or the
-	// app ends up with double-boxed content.
-	Panel = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(ColorBorder).
-		Padding(0, 1)
-
-	StatusBar = lipgloss.NewStyle().Foreground(ColorMuted)
-
-	ToastError = lipgloss.NewStyle().Bold(true).Foreground(ColorError)
-	ToastWarn  = lipgloss.NewStyle().Foreground(ColorWarn)
-	ToastInfo  = lipgloss.NewStyle().Foreground(ColorSuccess)
-
-	// SectionTitle labels a sub-panel within a screen (e.g. "Model token
-	// usage" above the Usage tab's heatmap).
-	SectionTitle = lipgloss.NewStyle().Bold(true).Foreground(ColorAccent)
-
-	// Subtle renders secondary/supporting text (e.g. the quota burn-rate hint)
-	// in muted gray so it reads as annotation, not primary data.
-	Subtle = lipgloss.NewStyle().Foreground(ColorMuted)
-
-	// Skeleton renders placeholder block rows while async data is loading, so
-	// the layout reads as "filling in" instead of "empty then jump".
-	Skeleton = lipgloss.NewStyle().Foreground(ColorMuted)
-
-	// EmptyTitle / EmptyHint render friendly empty-state messages with a
-	// one-line call-to-action.
-	EmptyTitle = lipgloss.NewStyle().Bold(true).Foreground(ColorAccent)
-	EmptyHint  = lipgloss.NewStyle().Foreground(ColorMuted)
+	badgeLabel  lipgloss.Style
+	skeleton    lipgloss.Style
+	overlayCard lipgloss.Style
 )
 
 // pick returns the active-palette color for a role under the current theme.
@@ -153,65 +113,47 @@ func pick(c lightDark) color.Color {
 	return lipgloss.Color(c.Light)
 }
 
-// applyTheme reassigns the color roles and rebuilds every exported style for
-// the current isDark value. Called once on init and again whenever SetDark
-// flips the theme.
+// applyTheme resolves the color roles and builds every style for the current
+// theme — the one place styles are defined. Called on init and whenever
+// SetDark flips the theme.
 func applyTheme() {
-	ColorAccent = pick(palette.accent)
-	ColorAccentBg = pick(palette.accentBg)
-	ColorMuted = pick(palette.muted)
-	ColorBorder = pick(palette.border)
-	ColorError = pick(palette.err)
-	ColorWarn = pick(palette.warn)
-	ColorSuccess = pick(palette.success)
+	colorAccent = pick(palette.accent)
+	colorAccentBg = pick(palette.accentBg)
+	colorMuted = pick(palette.muted)
+	colorBorder = pick(palette.border)
+	colorError = pick(palette.err)
+	colorWarn = pick(palette.warn)
+	colorSuccess = pick(palette.success)
 
-	PillActive = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("15")).
-		Background(ColorAccentBg).
-		Padding(0, 2)
-	PillInactive = lipgloss.NewStyle().Foreground(ColorMuted).Padding(0, 2)
-	Header = lipgloss.NewStyle().Bold(true).Foreground(ColorAccent).Padding(0, 1)
-	HeaderApp = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("15")).
-		Background(ColorAccentBg).
-		Padding(0, 1)
-	BadgeLabel = lipgloss.NewStyle().Foreground(ColorMuted)
-	BadgeValue = lipgloss.NewStyle().Foreground(ColorAccent).Bold(true)
-	BadgeWarn = lipgloss.NewStyle().Foreground(ColorWarn).Bold(true)
-	BadgeOK = lipgloss.NewStyle().Foreground(ColorSuccess).Bold(true)
-	Panel = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(ColorBorder).
-		Padding(0, 1)
-	StatusBar = lipgloss.NewStyle().Foreground(ColorMuted)
-	ToastError = lipgloss.NewStyle().Bold(true).Foreground(ColorError)
-	ToastWarn = lipgloss.NewStyle().Foreground(ColorWarn)
-	ToastInfo = lipgloss.NewStyle().Foreground(ColorSuccess)
-	SectionTitle = lipgloss.NewStyle().Bold(true).Foreground(ColorAccent)
-	Subtle = lipgloss.NewStyle().Foreground(ColorMuted)
-	Skeleton = lipgloss.NewStyle().Foreground(ColorMuted)
-	EmptyTitle = lipgloss.NewStyle().Bold(true).Foreground(ColorAccent)
-	EmptyHint = lipgloss.NewStyle().Foreground(ColorMuted)
-	OverlayCardStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(ColorAccent).
-		Padding(1, 2)
+	muted := lipgloss.NewStyle().Foreground(colorMuted)
+	accent := lipgloss.NewStyle().Bold(true).Foreground(colorAccent)
+	chip := lipgloss.NewStyle().Foreground(lipgloss.Color("15")).Background(colorAccentBg)
+	rounded := lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
+
+	Chip = chip.Padding(0, 1)
+	PillActive = chip.Bold(true).Padding(0, 2)
+	PillInactive = muted.Padding(0, 2)
+	Header = accent.Padding(0, 1)
+	HeaderApp = chip.Bold(true).Padding(0, 1)
+	BadgeValue = accent
+	BadgeWarn = lipgloss.NewStyle().Bold(true).Foreground(colorWarn)
+	BadgeOK = lipgloss.NewStyle().Bold(true).Foreground(colorSuccess)
+	Panel = rounded.BorderForeground(colorBorder).Padding(0, 1)
+	ToastError = lipgloss.NewStyle().Bold(true).Foreground(colorError)
+	ToastWarn = lipgloss.NewStyle().Foreground(colorWarn)
+	ToastInfo = lipgloss.NewStyle().Foreground(colorSuccess)
+	SectionTitle = accent
+	Subtle = muted
+	EmptyTitle = accent
+	EmptyHint = muted
+	badgeLabel = muted
+	skeleton = muted
+	// The overlay card reuses the panel's border shape so a modal reads as a
+	// panel on top of the panel.
+	overlayCard = rounded.BorderForeground(colorAccent).Padding(1, 2)
 }
 
 func init() { applyTheme() }
-
-// OverlayCardStyle is the bordered, padded card an overlay renders into. It
-// reuses the panel border shape so modals read as "a panel on top of the
-// panel" rather than an alien element. Defined here (not in the tui root
-// package) so overlay subpackages like palette can wrap their own content in
-// the same card without an import cycle. Rebuilt by applyTheme so the border
-// color tracks the resolved theme.
-var OverlayCardStyle = lipgloss.NewStyle().
-	Border(lipgloss.RoundedBorder()).
-	BorderForeground(ColorAccent).
-	Padding(1, 2)
 
 // RenderOverlayCard wraps a titled body in the modal card style. Shared by
 // the root's help overlay and subpackage overlays (palette, model picker).
@@ -220,7 +162,7 @@ func RenderOverlayCard(title, body string) string {
 	if title != "" {
 		card = SectionTitle.Render(title) + "\n\n" + body
 	}
-	return OverlayCardStyle.Render(card)
+	return overlayCard.Render(card)
 }
 
 // RenderBadge renders a "label value" chip: a muted label followed by a
@@ -231,7 +173,7 @@ func RenderBadge(label, value string, valueStyle lipgloss.Style) string {
 	if value == "" {
 		return ""
 	}
-	return BadgeLabel.Render(label+" ") + valueStyle.Render(value)
+	return badgeLabel.Render(label+" ") + valueStyle.Render(value)
 }
 
 // RenderPills renders names as a row of pill segments, highlighting active.
@@ -257,5 +199,5 @@ func SkeletonRow(width int) string {
 	for i := range row {
 		row[i] = '▒'
 	}
-	return Skeleton.Render(string(row))
+	return skeleton.Render(string(row))
 }

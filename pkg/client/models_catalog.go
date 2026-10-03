@@ -279,7 +279,7 @@ var modelsCatalog = []ModelCatalogEntry{
 		Description:  "Document layout parsing / OCR for images and PDFs (LayoutService).",
 	},
 	{
-		ID: "glm-asr-2512", Family: "GLM", Tier: "asr", Name: "GLM-ASR-2512",
+		ID: DefaultASRModel, Family: "GLM", Tier: "asr", Name: "GLM-ASR-2512",
 		Capabilities: []string{CapAudio},
 		Pricing:      usd(0.03, 0, 0),
 		Description:  "Speech-to-text for clips up to 30 s (AudioService.Transcribe).",
